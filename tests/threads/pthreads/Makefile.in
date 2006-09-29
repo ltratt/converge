@@ -1,0 +1,14 @@
+all: 1
+
+OBJECT_FILES = 1.cvb
+
+include @abs_top_srcdir@/Makefile.inc
+
+1: ${OBJECT_FILES} ${CONVERGE_LIB}
+	${CONVERGE_VM} ${CONVERGEL} -o 1 1.cvb ${OBJECT_FILES} ${CONVERGE_LIB}
+
+clean:
+	rm -f convergep ${OBJECT_FILES}
+
+distclean: clean
+	rm -f Makefile

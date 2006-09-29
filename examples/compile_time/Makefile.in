@@ -1,0 +1,13 @@
+all: printf
+
+printf: printf.cvb
+	${CONVERGE_VM} ${CONVERGEL} -o printf printf.cvb ${CONVERGE_LIB} ${CONVERGE_COMPILER_LIB}
+
+clean:
+	rm -f printf printf.cvb
+
+distclean: clean
+	rm -f Makefile .depend
+
+
+include @abs_top_srcdir@/Makefile.inc

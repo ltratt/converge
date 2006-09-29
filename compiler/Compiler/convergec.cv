@@ -1,0 +1,230 @@
+// Copyright (c) 2003-2006 King's College London, created by Laurence Tratt
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to
+// deal in the Software without restriction, including without limitation the
+// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+// sell copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+// IN THE SOFTWARE.
+
+
+import File, Parse_Options, Strings, Sys
+import Bytecode_Gen, Compiler_Vars, CV_Module, CV_Parser, IModule_Gen, Targets::Thirty_Two_Bit, Tokenizer
+
+
+
+
+// This is a global variable (and no, it's not a bad thing in this case) which tracks the single
+// instance of the Compiler class. This is mostly used by the 'CEI::compiler' function.
+
+compiler := null
+
+
+
+
+class Compiler:
+
+	func compile():
+	
+		self.includes := []
+	
+		options := Parse_Options::Options.new(self._useage_callback)
+		options.add(Parse_Options::Option_Spec.new("output", "o", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ONE))
+		options.add(Parse_Options::Option_Spec.new("includes", "I", Parse_Options::OPTIONAL, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_MORE))
+		options.add(Parse_Options::Option_Spec.new("optimise", "O", Parse_Options::OPTIONAL))
+		options.add(Parse_Options::Option_Spec.new("target", "T", Parse_Options::OPTIONAL, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ONE))
+		
+		self.target_name := "32"
+		parsed, extra := options.parse()
+		for option_name, option_val := parsed.iterate():
+			if option_name == "output":
+				self.output_path := option_val
+			elif option_name == "includes":
+				self.includes := option_val
+			elif option_name == "target":
+				self.target_name := option_val
+			else:
+				raise "XXX"
+		
+		if extra.len() == 0:
+			self._useage_callback("Not enough arguments.")
+		elif extra.len() > 1:
+			self._useage_callback("Too many arguments.")
+
+		if self.target_name == "32":
+			self.target := Thirty_Two_Bit
+			self.target_array_type := "i32"
+		else:
+			self.error(Strings::format("No support yet for target bit size '%s'.", self.target_name))
+		
+		self.src_path := extra[0]
+		
+		if not File::exists(self.src_path):
+			self.error(Strings::format("Source file '%s' not found.", self.input_path))
+
+		if (input_file_dir := File::split_leaf(self.src_path)[0]) == "":
+			self.includes.insert(0, ".")
+		else:
+			self.includes.insert(0, input_file_dir)
+
+		// For the moment, we assume the compiled module name is simply the leaf name (minus its
+		// extension). On platforms with non-case preserving filesystems, perhaps there is a need
+		// for a more sophisticated mechanism?
+		
+		self.src_module_name := File::split_ext(File::split_leaf(self.src_path)[1])[0]
+
+		// In order to make a good stab at finding the Converge library we check in order:
+		//
+		//   ../lib/converge
+		//   ../lib
+		//
+		// where ".." is relative to the directory convergec was contained in.
+		
+		bin_dir := File::split_leaf(Sys::program_path)[0]
+		lib_path_candidates := [File::join_names(bin_dir, "..", "lib", "converge"), File::join_names(bin_dir, "..", "lib")]
+		for lib_path := lib_path_candidates.iterate():
+			if File::exists(lib_path):
+				self.includes.append(File::canon_path(lib_path))
+				break
+		exhausted:
+			self.error("Can't find Converge library.")
+
+		// In order to make a good stab at finding the Compiler package we check in order:
+		//
+		//   ./Compiler
+		//   ../lib/Compiler
+		//
+		// where ".." is relative to the directory convergec was contained in.
+		
+		compiler_path_candidates := [File::join_names(bin_dir, "Compiler"), File::join_names(bin_dir, "..", "lib", "Compiler")]
+		for lib_path := compiler_path_candidates.iterate():
+			if File::exists(lib_path):
+				self.includes.append(File::canon_path(File::join_names(lib_path, "..")))
+				break
+		exhausted:
+			self.error("Can't find Compiler package.")
+		
+		src_file := File::open(self.src_path, "r")
+		src_data := src_file.read()
+		src_file.close()
+		
+		self.tokenizer := Tokenizer::Tokenizer.new()
+		parse_tree := CV_Parser::parse(src_data)
+		
+		imodule := IModule_Gen::IModule_Gen.new().generate(parse_tree)
+		bytecode := Bytecode_Gen::Bytecode_Gen.new().generate(imodule).serialize()
+		
+		output_file := File::File.new(self.output_path, "w")
+		output_file.write(bytecode)
+		
+
+
+	func _useage_callback(msg):
+	
+		if not msg is null:
+			Sys::stderr.writeln(Strings::format("Error: %s", msg))
+		Sys::stderr.writeln("Usage: convergec [-I <include> [-I <include> ...]] [-O] [-T <target bit size>] -o <output> <input>")
+		if not msg is null:
+			Sys::exit(1)
+
+
+
+	func error(msg, src_info := null):
+	
+		self._print_msg("Error", msg, src_info)
+		Sys::exit(1)
+
+
+
+	func warning(msg, src_info := null):
+	
+		self._print_msg("Warning", msg, src_info)
+		Sys::exit(1)
+	
+	
+	
+	func _print_msg(pre_msg, msg, src_info := null):
+	
+		canon_src_path := File::canon_path(self.src_path)
+		if not src_info is null:
+			if src_info.len() == 1 & src_info[0][0] := canon_src_path:
+				src_offset := src_info[0][1]
+				newlines := self.tokenizer.newlines
+				i := 0
+				while i < newlines.len():
+					if src_offset < newlines[i]:
+						break
+					i += 1
+				col := src_offset - newlines[i - 1]
+				Sys::stderr.writeln(Strings::format("%s: Line %d, column %d: %s", pre_msg, i, col, msg))
+			else:
+				Sys::stderr.writeln(Strings::format("%s:", pre_msg))
+				for i := 0.to(src_info.len()):
+					src_path, src_offset := src_info[i]
+					if src_path != src_path:
+						Sys::println(src_path, self.src_path)
+						raise "XXX"
+					newlines := self.tokenizer.newlines
+					i := 0
+					while i < newlines.len():
+						if src_offset < newlines[i]:
+							break
+						i += 1
+					col := src_offset - newlines[i - 1]
+					Sys::stderr.writeln(Strings::format("  Line %d, column %d ", i, col))
+				
+				Sys::stderr.writeln(msg)
+					
+
+
+	func find_import_location(import_name_list):
+
+		func match_path(i, dir):
+		
+			cnd_path := File::join_names(dir, import_name_list[i])
+
+			if File::exists(cnd_path) & File::is_dir(cnd_path):
+				if i + 1 == import_name_list.len():
+					return [cnd_path, i]
+				else:
+					return match_path(i + 1, cnd_path)
+
+			cnd_file_path := File::join_ext(cnd_path, CV_Module::CV_EXTENSION)
+			if File::exists(cnd_file_path) & File::is_file(cnd_file_path):
+				return [cnd_file_path, i]
+			
+			return fail
+			
+	
+		for include_dir := self.includes.iterate():
+			if matched_path, extra_pos := match_path(0, include_dir):
+				import_full_name := File::canon_path(matched_path)
+				import_extras := import_name_list[extra_pos + 1 : ]
+				break
+		exhausted:
+			if Compiler_Vars::BUILTIN_MODULES.find(import_name_list[0]):
+				import_full_name := import_name_list[0]
+				import_extras := []
+			else:
+				return fail
+		
+		return [import_full_name, import_extras]
+
+
+
+func main():
+
+	nonlocal compiler
+	compiler := Compiler.new()
+	compiler.compile()

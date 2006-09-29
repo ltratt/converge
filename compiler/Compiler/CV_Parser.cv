@@ -1,0 +1,301 @@
+// Copyright (c) 2003-2006 King's College London, created by Laurence Tratt
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to
+// deal in the Software without restriction, including without limitation the
+// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+// sell copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+// IN THE SOFTWARE.
+
+
+import File, Strings, Sys
+import CPK::Earley::Grammar, CPK::Earley::Parser, CPK::Tokens, CPK::Tree
+import CEI, Tokenizer
+
+
+
+GRAMMAR := """
+top_level ::= definition ( "NEWLINE" definition )*
+          ::=
+
+
+definition  ::= class_def
+            ::= func_def
+            ::= import
+            ::= var_def ( "," var_def )* ":=" expr
+            ::= splice_insert
+
+
+import      ::= "IMPORT" import_name import_as ( "," import_name import_as )*
+import_name ::= "ID" ( "::" "ID" )* ( "." "ID" )*
+import_as   ::= "AS" "ID"
+            ::=
+
+
+class_def       ::= "CLASS" class_name class_supers class_metaclass ":" "INDENT" class_fields "DEDENT"
+class_name      ::= "ID"
+                ::= splice_insert
+class_supers    ::= "(" expr ( "," expr )* ")"
+                ::=
+class_metaclass ::= "METACLASS" expr
+                ::=
+class_fields    ::= class_field ( "NEWLINE" class_field )*
+class_field     ::= class_def
+                ::= func_def
+                ::= var_def ":=" expr
+                ::= splice_insert
+                ::= "PASS"
+
+func_def            ::= func_type func_name "(" func_params ")" ":" "INDENT" func_decls expr_body "DEDENT"
+                    ::= func_type func_name "(" func_params ")" "{" "INDENT" func_decls expr_body "DEDENT" "NEWLINE" "}"
+func_type           ::= "FUNC"
+                    ::= "BOUND_FUNC"
+                    ::= "UNBOUND_FUNC"
+func_name           ::= "ID"
+                    ::= "+"
+                    ::= "-"
+                    ::= "/"
+                    ::= "*"
+                    ::= "<"
+                    ::= ">"
+                    ::= "=="
+                    ::= "!="
+                    ::= ">="
+                    ::= "<="
+                    ::= splice_insert
+                    ::=
+func_params         ::= func_params_elems "," func_varargs
+                    ::= func_params_elems
+                    ::= func_varargs
+                    ::=
+func_params_elems   ::= var_def func_param_default ( "," var_def func_param_default )*
+func_param_default  ::= ":=" expr
+                    ::=
+func_varargs        ::= "*" var_def
+                    ::= "*" splice_insert
+func_decls          ::= func_decl ( "NEWLINE" func_decl )*
+                    ::=
+func_decl           ::= func_decl_nonlocals
+                    ::= func_decl_rename
+func_decl_nonlocals ::= "NONLOCAL" "ID" ( "," "ID" )* "NEWLINE"
+func_decl_rename    ::= "RENAME" "ID" "AS" "ID" ( "," "ID" "AS" "ID" )* "NEWLINE"
+
+
+expr_body ::= expr ( "NEWLINE" expr )*
+
+expr ::= class_def
+     ::= func_def
+     ::= while
+     ::= if
+     ::= for
+	 ::= try
+     ::= number
+     ::= var_lookup
+     ::= dict
+     ::= set
+     ::= list
+     ::= dict
+     ::= string
+	 ::= module_lookup   %precedence 50
+     ::= slot_lookup     %precedence 50
+     ::= list
+     ::= application     %precedence 40
+     ::= get             %precedence 40
+     ::= slice           %precedence 40
+     ::= exbi
+     ::= return
+     ::= yield
+     ::= raise
+     ::= assert
+     ::= break
+     ::= continue
+     ::= conjunction     %precedence 15
+     ::= alternation     %precedence 15
+     ::= assignment      %precedence 10
+     ::= not             %precedence 17
+     ::= neg             %precedence 35
+     ::= binary          %precedence 30
+     ::= comparison      %precedence 20
+     ::= pass
+     ::= import
+     ::= splice_insert
+     ::= quasi_quotes
+     ::= brackets
+
+if      ::= "IF" expr ":" "INDENT" expr_body "DEDENT" ( if_elif )* if_else
+        ::= "IF" expr "{" "INDENT" expr_body "DEDENT" "NEWLINE" "}" ( if_elif )* if_else
+if_elif ::= "NEWLINE" "ELIF" expr ":" "INDENT" expr_body "DEDENT"
+        ::= "NEWLINE" "ELIF" expr "{" "INDENT" expr_body "DEDENT" "NEWLINE" "}"
+if_else ::= "NEWLINE" "ELSE" ":" "INDENT" expr_body "DEDENT"
+        ::= "NEWLINE" "ELSE" "{" "INDENT" expr_body "DEDENT" "NEWLINE" "}"
+        ::=
+
+while ::= "WHILE" expr ":" "INDENT" expr_body "DEDENT" exhausted broken
+      ::= "WHILE" expr
+
+for ::= "FOR" expr ":" "INDENT" expr_body "DEDENT" exhausted broken
+    ::= "FOR" expr
+
+try           ::= "TRY" ":" "INDENT" expr_body "DEDENT" ( try_catch )* try_else
+try_catch     ::= "NEWLINE" "CATCH" expr try_catch_var ":" "INDENT" expr_body "DEDENT"
+try_catch_var ::= "INTO" var_def
+              ::=
+try_else      ::= "NEWLINE" "ELSE" ":" "INDENT" expr_body "DEDENT"
+              ::=
+
+exhausted ::= "NEWLINE" "EXHAUSTED" ":" "INDENT" expr_body "DEDENT"
+          ::=
+
+broken ::= "NEWLINE" "BROKEN" ":" "INDENT" expr_body "DEDENT"
+       ::=
+
+number ::= "INT"
+
+var_def ::= "ID"
+        ::= "&" "ID"
+    	::= splice_insert
+
+var_lookup ::= "ID"
+           ::= "&" "ID"
+
+string ::= "STRING"
+
+module_lookup ::= expr "::" "ID"
+              ::= expr "::" splice_insert
+
+slot_lookup ::= expr "." "ID"
+            ::= expr "." splice_insert
+
+list ::= "[" expr ( "," expr )* "]"
+     ::= "[" "]"
+
+dict ::= "DICT{" expr ":" expr ( "," expr ":" expr )* "}"
+     ::= "DICT{" "}"
+
+set ::= "SET{" expr ( "," expr )* "}"
+    ::= "SET{" "}"
+
+application ::= expr "(" expr ( "," expr )* ")"
+            ::= expr "(" ")"
+
+get ::= expr "[" expr "]"
+
+slice ::= expr "[" expr ":" expr "]"
+      ::= expr "[" ":" expr "]"
+      ::= expr "[" expr ":" "]"
+      ::= expr "[" ":" "]"
+
+exbi ::= "EXBI" expr "." "ID"
+
+return ::= "RETURN" expr
+       ::= "RETURN"
+
+yield ::= "YIELD" expr
+
+raise ::= "RAISE" expr
+
+assert ::= "ASSERT" expr
+
+break ::= "BREAK"
+
+continue ::= "CONTINUE"
+
+conjunction ::= expr "&" expr ( "&" expr )*
+
+alternation ::= expr "|" expr ( "|" expr )*
+
+assignment        ::= assignment_target ( "," assignment_target )* assignment_type expr
+assignment_target ::= var_def
+                  ::= slot_lookup
+                  ::= get
+                  ::= slice
+assignment_type   ::= ":="
+                  ::= "*="
+                  ::= "/="
+                  ::= "+="
+                  ::= "-="
+
+not ::= "NOT" expr
+
+neg ::= "-" expr
+
+binary    ::= expr binary_op expr
+binary_op ::= "*"       %precedence 40
+          ::= "/"       %precedence 30
+          ::= "%"       %precedence 30
+          ::= "+"       %precedence 20
+          ::= "-"       %precedence 20
+
+comparison    ::= expr comparison_op expr
+comparison_op ::= "IS"
+              ::= "=="
+              ::= "!="
+              ::= "<="
+              ::= ">="
+              ::= "<"
+              ::= ">"
+
+pass ::= "PASS"
+
+splice_insert ::= splice
+              ::= insert
+
+splice        ::= expr_splice
+              ::= block_splice
+expr_splice   ::= "$" "<" expr ">"
+block_splice  ::= "$" "<<" expr ">>" ":" "DSL_BLOCK"
+
+insert        ::= "$" "{" expr "}"
+
+quasi_quotes      ::= expr_quasi_quotes
+                  ::= defn_quasi_quotes
+expr_quasi_quotes ::= quasi_quotes_customize "INDENT" expr ( "NEWLINE" expr )* "DEDENT" "NEWLINE" "|]"
+                  ::= quasi_quotes_customize expr ( "NEWLINE" expr )* "|]"
+defn_quasi_quotes ::= "[D|" definition ( "NEWLINE" definition )* "|]" quasi_quotes_customize
+			      ::= "[D|" "INDENT" definition ( "NEWLINE" definition )* "DEDENT" "NEWLINE" "|]" quasi_quotes_customize
+quasi_quotes_customize ::= "[" "<" expr ">" "|"
+quasi_quotes_customize ::= "[|"
+
+brackets ::= "(" expr ")"
+
+z ::= ( "ID" "ID" )* ( "ID" "ID" )*
+"""
+
+
+
+
+
+class CV_Parser(Parser::Parser):
+
+	func error(token):
+
+		if token.value is null:
+			token_print := token.type
+		else:
+			token_print := token.value
+		
+		CEI::compiler().error(Strings::format("Parsing error at or near `%s' token.", token_print), token.src_info)
+
+
+
+
+func parse(src_data):
+
+	compiler := CEI::compiler()
+
+	compiler.tokenizer.tokenize(src_data, [[compiler.src_path, 0]], [], [])
+	tokens_map := Tokenizer::tokens_map([], [])
+	grammar, rule_names := Grammar::compile(GRAMMAR, "top_level", tokens_map)
+
+	return CV_Parser.new().parse(grammar, rule_names, tokens_map, compiler.tokenizer.tokens)

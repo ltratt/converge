@@ -1,0 +1,320 @@
+// Copyright (c) 2003-2006 King's College London, created by Laurence Tratt
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to
+// deal in the Software without restriction, including without limitation the
+// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+// sell copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+// IN THE SOFTWARE.
+
+
+import Array, File, Sys
+import CEI
+
+
+
+
+// Filename extensions.
+
+CV_EXTENSION := "cv"
+CVB_EXTENSION := "cvb"
+
+
+//
+
+MODULE_INIT_STRING := "CONVMODL"
+MODULE_VERSION := 0
+
+// The following offsets are all in words.
+
+MODULE_BYTECODE_HEADER := 0
+MODULE_BYTECODE_VERSION := 2
+MODULE_BYTECODE_NAME := 3
+MODULE_BYTECODE_NAME_SIZE := 4
+MODULE_BYTECODE_ID := 5
+MODULE_BYTECODE_ID_SIZE := 6
+MODULE_BYTECODE_INSTRUCTIONS := 7
+MODULE_BYTECODE_INSTRUCTIONS_SIZE := 8
+MODULE_BYTECODE_IMPORTS := 9
+MODULE_BYTECODE_IMPORTS_SIZE := 10
+MODULE_BYTECODE_NUM_IMPORTS := 11
+MODULE_BYTECODE_SRC_INFOS := 12
+MODULE_BYTECODE_SRC_INFOS_SIZE := 13
+MODULE_BYTECODE_NEWLINES := 14
+MODULE_BYTECODE_NUM_NEWLINES := 15
+MODULE_BYTECODE_TOP_LEVEL_VARS_MAP := 16
+MODULE_BYTECODE_TOP_LEVEL_VARS_MAP_SIZE := 17
+MODULE_BYTECODE_NUM_TOP_LEVEL_VARS := 18
+MODULE_BYTECODE_NUM_CONSTANTS := 19
+MODULE_BYTECODE_CONSTANTS_OFFSETS := 20
+MODULE_BYTECODE_SIZE := 21
+
+MODULE_BYTECODE_MODULE_IMPORT_FULL_NAME_SIZE := 0
+MODULE_BYTECODE_MODULE_IMPORT_FULL_NAME := 1
+
+BYTECODE_TOP_LEVEL_VAR_NUM := 0
+BYTECODE_TOP_LEVEL_VAR_NAME_SIZE := 1
+BYTECODE_TOP_LEVEL_VAR_NAME := 2
+
+
+
+
+class CV_Module:
+
+	func init(target, target_array_type):
+	
+		self._target := target
+		self._target_array_type := target_array_type
+
+
+
+	func deserialize_str(module_str):
+	
+		self.deserialize_array(Array::Array.new(self._target_array_type, module_str))
+	
+	
+	
+	func deserialize_array(module):
+	
+		self._name := self._decode_string(module, module[MODULE_BYTECODE_NAME], module[MODULE_BYTECODE_NAME_SIZE])
+
+		self._identifier := self._decode_string(module, module[MODULE_BYTECODE_ID], module[MODULE_BYTECODE_ID_SIZE])
+		
+		self._instructions_bytecode := module[module[MODULE_BYTECODE_INSTRUCTIONS] / self._target::WORDSIZE : (module[MODULE_BYTECODE_INSTRUCTIONS] + module[MODULE_BYTECODE_INSTRUCTIONS_SIZE]) / self._target::WORDSIZE]
+
+		self._imports := module[module[MODULE_BYTECODE_IMPORTS] / self._target::WORDSIZE : (module[MODULE_BYTECODE_IMPORTS] + module[MODULE_BYTECODE_IMPORTS_SIZE]) / self._target::WORDSIZE]
+		self._num_imports := module[MODULE_BYTECODE_NUM_IMPORTS]
+		
+		self._src_infos := module[module[MODULE_BYTECODE_SRC_INFOS] / self._target::WORDSIZE : (module[MODULE_BYTECODE_SRC_INFOS] + module[MODULE_BYTECODE_SRC_INFOS_SIZE]) / self._target::WORDSIZE]
+		
+		self._newlines := module[module[MODULE_BYTECODE_NEWLINES] / self._target::WORDSIZE : (module[MODULE_BYTECODE_NEWLINES] / self._target::WORDSIZE) + module[MODULE_BYTECODE_NUM_NEWLINES]]
+		
+		self._top_level_vars_map := module[module[MODULE_BYTECODE_TOP_LEVEL_VARS_MAP] / self._target::WORDSIZE : (module[MODULE_BYTECODE_TOP_LEVEL_VARS_MAP] + module[MODULE_BYTECODE_TOP_LEVEL_VARS_MAP_SIZE]) / self._target::WORDSIZE]
+		self._num_top_level_vars := module[MODULE_BYTECODE_NUM_TOP_LEVEL_VARS]
+		
+		self._constants_offsets := []
+		for constant_offset := module[module[MODULE_BYTECODE_CONSTANTS_OFFSETS] / self._target::WORDSIZE : (module[MODULE_BYTECODE_CONSTANTS_OFFSETS] / self._target::WORDSIZE) + module[MODULE_BYTECODE_NUM_CONSTANTS]].iterate():
+			self._constants_offsets.append(constant_offset - module[MODULE_BYTECODE_INSTRUCTIONS])
+
+
+
+	func get_name():
+	
+		return self._name
+
+
+
+	func set_name(name):
+	
+		return self._name := name
+
+
+
+	func get_identifier():
+	
+		return self._identifier
+
+
+
+	func set_identifier(identifier):
+	
+		self._identifier := identifier
+
+
+
+	func get_instructions_bytecode():
+	
+		return self._instructions_bytecode
+
+
+
+	func set_instructions_bytecode(instructions_bytecode):
+	
+		self._instructions_bytecode := instructions_bytecode
+
+
+
+	func get_imports():
+	
+		i := 0
+		imports_pos := 0
+		imports := []
+		while i < self._num_imports:
+			import_id_size := self._imports[(imports_pos / self._target::WORDSIZE) + MODULE_BYTECODE_MODULE_IMPORT_FULL_NAME_SIZE]
+			imports.append(self._decode_string(self._imports, imports_pos + MODULE_BYTECODE_MODULE_IMPORT_FULL_NAME * self._target::WORDSIZE, import_id_size))
+			imports_pos += self._target::align(import_id_size) + MODULE_BYTECODE_MODULE_IMPORT_FULL_NAME * self._target::WORDSIZE
+			i += 1
+		
+		return imports
+
+
+
+	func set_imports(imports):
+
+		self._imports := Array::Array.new(self._target_array_type)
+		for import_ := imports.iterate():
+			self._imports.append(import_.len())
+			self._imports.extend(self._target::b_aligned_string(import_))
+		self._num_imports := imports.len()
+
+
+
+	func get_src_infos():
+	
+		return self._target::decode_src_infos(self._src_infos)
+
+
+
+	func set_src_infos(src_infos):
+	
+		self._src_infos := self._target::encode_src_infos(src_infos)
+
+
+
+	func get_newlines():
+	
+		return self._newlines
+
+
+
+	func set_newlines(newlines):
+	
+		self._newlines := newlines
+
+
+
+	func get_top_level_vars_map():
+
+		top_level_vars_map := Dict{}
+		top_level_vars_pos := 0
+		for i := 0.to(self._num_top_level_vars):
+			var_num := self._top_level_vars_map[top_level_vars_pos / self._target::WORDSIZE + BYTECODE_TOP_LEVEL_VAR_NUM]
+			var_name_size := self._top_level_vars_map[(top_level_vars_pos / self._target::WORDSIZE) + BYTECODE_TOP_LEVEL_VAR_NAME_SIZE]
+			var_name := self._decode_string(self._top_level_vars_map, top_level_vars_pos + BYTECODE_TOP_LEVEL_VAR_NAME * self._target::WORDSIZE, var_name_size)
+			top_level_vars_map[var_name] := var_num
+			top_level_vars_pos += self._target::align(var_name_size) + BYTECODE_TOP_LEVEL_VAR_NAME * self._target::WORDSIZE
+		
+		return top_level_vars_map
+
+
+
+	func set_top_level_vars_map(top_level_vars_map):
+
+		self._top_level_vars_map := Array::Array.new(self._target_array_type)
+		for var_name, var_num := top_level_vars_map.iterate():
+			self._top_level_vars_map.append(var_num)
+			self._top_level_vars_map.append(var_name.len())
+			self._top_level_vars_map.extend(self._target::b_aligned_string(var_name))
+		self._num_top_level_vars := top_level_vars_map.len()
+
+
+
+	func get_constants_offsets():
+	
+		return self._constants_offsets
+
+
+
+	func set_constants_offsets(constants_offsets):
+	
+		self._constants_offsets := constants_offsets
+
+
+
+	func serialize():
+	
+		module := Array::Array.new(self._target_array_type)
+		module.extend_from_string(MODULE_INIT_STRING)
+		module.append(MODULE_VERSION)
+
+		module.append(-1) // Absolute position of module name (in bytes)
+		module.append(-1) // Size of module name (in bytes)
+		module.append(-1) // Absolute position of fully qualified module name (in bytes)
+		module.append(-1) // Size of fully qualified module name (in bytes)
+		module.append(-1) // Absolute position of program bytecode (in bytes)
+		module.append(-1) // Size of program bytecode (in bytes)
+		module.append(-1) // Absolute position of imports (in bytes)
+		module.append(-1) // Size of imports (in bytes)
+		module.append(-1) // Number of imports
+		module.append(-1) // Absolute position of source code positions (in bytes)
+		module.append(-1) // Size of source code positions (in bytes)
+		module.append(-1) // Absolute position of new line positions (in bytes)
+		module.append(-1) // Number of line positions
+		module.append(-1) // Top level vars offset (in bytes)
+		module.append(-1) // Size of top level vars (in bytes)
+		module.append(-1) // Number of top level vars
+		module.append(-1) // Num constants
+		module.append(-1) // Absolute position of constants offsets (in bytes)
+		module.append(-1) // Size of all of the bytecode (in bytes)
+
+		// Module name
+		
+		module[MODULE_BYTECODE_NAME] := module.len_bytes()
+		module.extend(self._target::b_aligned_string(self._name))
+		module[MODULE_BYTECODE_NAME_SIZE] := self._name.len()
+		
+		// Full module name
+		
+		module[MODULE_BYTECODE_ID] := module.len_bytes()
+		module.extend(self._target::b_aligned_string(self._identifier))
+		module[MODULE_BYTECODE_ID_SIZE] := self._identifier.len()
+
+		// Instructions bytecode
+		
+		module[MODULE_BYTECODE_INSTRUCTIONS] := module.len_bytes()
+		module.extend(self._instructions_bytecode)
+		module[MODULE_BYTECODE_INSTRUCTIONS_SIZE] := module.len_bytes() - module[MODULE_BYTECODE_INSTRUCTIONS]
+		
+		// Imports
+		
+		module[MODULE_BYTECODE_IMPORTS] := module.len_bytes()
+		module.extend(self._imports)
+		module[MODULE_BYTECODE_IMPORTS_SIZE] := module.len_bytes() - module[MODULE_BYTECODE_IMPORTS]
+		module[MODULE_BYTECODE_NUM_IMPORTS] := self._num_imports
+		
+		// Src info
+		
+		module[MODULE_BYTECODE_SRC_INFOS] := module.len_bytes()
+		module.extend(self._src_infos)
+		module[MODULE_BYTECODE_SRC_INFOS_SIZE] := module.len_bytes() - module[MODULE_BYTECODE_SRC_INFOS]
+
+		// Newlines
+		
+		module[MODULE_BYTECODE_NEWLINES] := module.len_bytes()
+		module.extend(self._newlines)
+		module[MODULE_BYTECODE_NUM_NEWLINES] := self._newlines.len()
+		
+		// Top level variables map
+		
+		module[MODULE_BYTECODE_TOP_LEVEL_VARS_MAP] := module.len_bytes()
+		module.extend(self._top_level_vars_map)
+		module[MODULE_BYTECODE_TOP_LEVEL_VARS_MAP_SIZE] := module.len_bytes() - module[MODULE_BYTECODE_TOP_LEVEL_VARS_MAP]
+		module[MODULE_BYTECODE_NUM_TOP_LEVEL_VARS] := self._num_top_level_vars
+		
+		// Constants offsets
+		
+		module[MODULE_BYTECODE_CONSTANTS_OFFSETS] := module.len_bytes()
+		for constant_offset := self._constants_offsets.iterate():
+			module.append(constant_offset + module[MODULE_BYTECODE_INSTRUCTIONS])
+		module[MODULE_BYTECODE_NUM_CONSTANTS] := self._constants_offsets.len()
+		
+		module[MODULE_BYTECODE_SIZE] := module.len_bytes()
+
+		return module.to_str()
+
+
+
+	func _decode_string(module, start, size):
+
+		return module[start / self._target::WORDSIZE : start / self._target::WORDSIZE + self._target::align(size) / self._target::WORDSIZE].to_str()[ : size]

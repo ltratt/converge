@@ -1,0 +1,115 @@
+// Copyright (c) 2003-2006 King's College London, created by Laurence Tratt
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to
+// deal in the Software without restriction, including without limitation the
+// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+// sell copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+// IN THE SOFTWARE.
+
+
+import Builtins, Exceptions, Strings, Thread
+import CPK::Earley::Grammar
+import Compiler_Vars, convergec, CV_Parser, ITree, ITree_TC, Tokenizer
+
+
+
+
+func compiler():
+
+	return convergec::compiler
+
+
+
+func fresh_name(name := null):
+
+	return Compiler_Vars::fresh_name(name)
+
+
+
+func lift(obj, src_info := null):
+
+	if src_info is null:
+		src_info := Thread::get_continuation_src_info(2)
+	else:
+		src_info += [Thread::get_continuation_src_info(2)]
+
+	if obj is null:
+		return ITree::IVar.new("null", src_info)
+	elif Builtins::String.conformed_by(obj):
+		return ITree::IString.new(obj, src_info)
+	elif Builtins::Int.conformed_by(obj):
+		return ITree::IInt.new(obj, src_info)
+	elif Builtins::List.conformed_by(obj):
+		elems := []
+		for e := obj.iterate():
+			elems.append(lift(e, src_info))
+		return ITree::IList.new(elems, src_info)
+	elif Builtins::Set.conformed_by(obj):
+		elems := []
+		for e := obj.iterate():
+			elems.append(lift(e, src_info))
+		return ITree::ISet.new(elems, src_info)
+	else:
+		raise Exceptions::Exception.new(Strings::format("Don't know how to lift instance of '%s': '%s'.", obj.instance_of.name, obj.to_str()))
+
+
+
+func dsl_parse(dsl_block, src_info, extra_keywords, extra_symbols, grammar, start_rule):
+
+	tokenizer := Tokenizer::Tokenizer.new()
+	tokenizer.tokenize(dsl_block, src_info, extra_keywords, extra_symbols)
+	
+	tokens_map := Tokenizer::tokens_map(extra_symbols, extra_keywords)
+	grammar, rule_names := Grammar::compile(grammar, start_rule, tokens_map)
+	parser := CV_Parser::CV_Parser.new()
+	
+	return parser.parse(grammar, rule_names, tokens_map, tokenizer.tokens)
+
+
+
+//
+// This function creates all the factory functions for ITree elements.
+//
+
+func _ibuilder():
+
+	builders := []
+	for def_name := ITree.def_names():
+		if def_name[0] != "I" | not Builtins::Class.instantiated(def := ITree.get_def(def_name)):
+			continue
+		builder_name_var := ITree::IVar.new(def_name.to_lower_case(), __SRC_INFO__)
+		num_params := ITree::IInt.new(ITree.get_def(def_name).get_field("init").num_params, __SRC_INFO__)
+		builders.append([|
+			func ${builder_name_var}(*args):
+			
+				// Add src info from the calling function.
+
+				if args.len() == ${num_params} - 1:
+					args := args[ : -1] + [(args[-1] + Thread::get_continuation_src_info(2))]
+				else:
+					args := args + [Thread::get_continuation_src_info(2)]
+
+				// Create the element and immediately type check it.
+
+				elem := ITree::${def_name}.new.apply(args)
+				ITree_TC::tc(elem)
+				
+				return elem
+		|])
+	
+	return builders
+
+
+$<_ibuilder()>

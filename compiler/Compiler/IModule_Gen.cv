@@ -1,0 +1,1082 @@
+// Copyright (c) 2003-2006 King's College London, created by Laurence Tratt
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to
+// deal in the Software without restriction, including without limitation the
+// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+// sell copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+// IN THE SOFTWARE.
+
+
+import Array, Builtins, Exceptions, File, Strings, Sys, VM
+import Bytecode_Gen, CEI, Compiler_Vars, CV_Module, ITree
+
+
+
+
+SRC_INFO_VAR := "__SRC_INFO__"
+
+_NEST_FUNC := 0
+_NEST_CLASS := 1
+
+
+
+
+class IModule_Gen:
+
+	func generate(parse_tree):
+
+		self._definitions := []
+		self._nesting := []
+		self._qq_level := 0
+
+		// These next two slots are purely for convenience.
+
+		self._compiler := CEI::compiler()
+		self._src_path := self._compiler.src_path
+
+		return self._preorder(parse_tree)
+
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////
+	// Helper functions
+	//
+
+	//
+	// Returns an IExpr_Block representing the expressions in 'node' which should be an 'expr_body'
+	// node.
+	//
+
+	func _eval_expr_body(node, extra_src_info := []):
+
+		// expr_body ::= expr ( "NEWLINE" expr )*
+
+		exprs := []
+		i := 1
+		while i < node.len():
+			// expr_body ::= expr ( "NEWLINE" expr )*
+			expr := self._preorder(node[i], extra_src_info)
+			assert(not Builtins::List.conformed_by(expr))
+			if Builtins::List.conformed_by(expr):
+				exprs.extend(expr)
+			else:
+				exprs.append(expr)
+			i += 2
+
+		return ITree::IExpr_Block.new(exprs, extra_src_info + exprs[0].src_info)
+
+
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////
+	// Node traversal
+	//
+
+	func _preorder(node, extra_src_info := []):
+
+		if not Builtins::List.conformed_by(node):
+			raise "XXX"
+			return fail
+		
+		name := "_t_" + node[0]
+		if f := self.has_slot(name):
+			// Many users won't care about making use of the 'extra_src_info' argument, so we allow
+			// all traversal functions to be defined with only a 'node' argument. Therefore if the
+			// bound function only has 2 arguments (i.e. 'self, node') we don't pass on the
+			// 'extra_src_info' argument.
+			if f.func_.num_params == 2:
+				return f(node)
+			else:
+				assert(f.func_.num_params == 3)
+				return f(node, extra_src_info)
+		else:
+			raise Exceptions::User_Exception.new(Strings::format("Unknown node type '%s'.", node[0]))
+
+
+
+	func _t_top_level(node, extra_src_info):
+
+		// top_level ::= definition ( "NEWLINE" definition )*
+		//           ::=
+
+		i := 1
+		while i < node.len():
+			self._definitions.extend(self._preorder(node[i], extra_src_info))
+			i += 2
+
+		return ITree::IModule.new(self._compiler.src_module_name, self._definitions, extra_src_info + [[self._src_path, null]])
+
+
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////
+	// Definitions
+	//
+
+	//
+	// Returns a list of IDefinition's
+	//
+
+	func _t_definition(node, extra_src_info):
+
+		// definition ::= class_def
+		//            ::= func_def
+		//            ::= import
+		//            ::= var_def ( "," var_def )* ":=" expr
+		//            ::= splice_insert
+
+		if node.len() == 2 & node[1][0] == "class_def":
+			// definition ::= class_def
+			class_def := self._preorder(node[1], extra_src_info)
+			return [ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(class_def.class_name, extra_src_info + node[1][2][1].src_info)], class_def, extra_src_info + node[1][2][1].src_info)]
+		elif node.len() == 2 & node[1][0] == "func_def":
+			// definition ::= func_def
+			return [self._preorder(node[1], extra_src_info)]
+		elif node.len() == 2 & node[1][0] == "import":
+			// definition ::= import
+			return self._preorder(node[1], extra_src_info)
+		elif node.len() >= 4:
+			// definition ::= var_def ( "," var_def )* ":=" expr
+			targets := []
+			i := 1
+			while node[i][0] == "var_def":
+				if node[i].len() == 2 & not Builtins::List.conformed_by(node[i][1]):
+					// var_def ::= "ID"
+					targets.append(ITree::IVar.new(node[i][1].value, extra_src_info + node[i][1].src_info))
+				elif node[i].len() == 3:
+					// var_def ::= "&" "ID"
+					raise "XXX"
+				else:
+					// var_def ::= splice_insert
+					raise "XXX"
+				i += 2
+			return [ITree::IAssignment.new(ITree::STD_ASSIGN, targets, self._preorder(node[-1], extra_src_info), extra_src_info + node[-2].src_info)]
+		elif node[1][0] == "splice_insert":
+			// definition ::= splice_insert
+			
+			result := self._preorder(node[1], extra_src_info)
+			if Builtins::List.conformed_by(result):
+				return result
+			else:
+				return [result]
+
+		raise "XXX"
+
+
+
+	//
+	// Returns a list of assignment's of imports.
+	//
+
+	func _t_import(node, extra_src_info):
+
+		// import ::= "IMPORT" import_name import_as ( "," import_name import_as )*
+
+		imports := []
+		i := 2
+		while i < node.len():
+			// import_name ::= "ID" ( "::" "ID" )* ( "." "ID" )*
+			module_path_list := [node[i][1].value]
+			slot_name_list := []
+			j := 2
+			while j < node[i].len() & node[i][j].type == "::":
+				module_path_list.append(node[i][j + 1].value)
+				j += 2
+
+			while j < node[i].len() & node[i][j].type == ".":
+				slot_name_list.append([node[i][j + 1].value, node[i][j].src_info])
+				j += 2
+
+			import_ := ITree::IImport.new(Strings::join(module_path_list, "::"), extra_src_info + node[1].src_info)
+			
+			for slot_name, slot_name_src_info := slot_name_list.iterate():
+				import_ := ITree::ISlot_Lookup.new(import_, slot_name, extra_src_info + slot_name_src_info)
+
+			if node[i + 1].len() > 1:
+				// import_as ::= "AS" "ID"
+				import_as := ITree::IVar.new(node[i + 1][2].value, extra_src_info + node[i + 1][2].src_info)
+			else:
+				// import_as ::=
+				import_as := ITree::IVar.new(node[i][-1].value, extra_src_info + node[i][-1].src_info)
+			
+			imports.append(ITree::IAssignment.new(ITree::STD_ASSIGN, [import_as], import_, extra_src_info + node[1].src_info))
+			i += 3
+
+		return imports
+
+
+
+	//
+	// Returns an IClass_Def.
+	//
+
+	func _t_class_def(node, extra_src_info):
+
+		// class_def ::= "CLASS" class_name class_supers class_metaclass ":" "INDENT" class_fields "DEDENT"
+		
+		if not Builtins::List.conformed_by(node[2][1]):
+			// class_name ::= "ID"
+			class_name := node[2][1].value
+		else:
+			raise "XXX"
+		
+		supers := []
+		i := 2
+		while i < node[3].len():
+			// class_supers ::= "(" expr ( "," expr )* ")"
+			supers.append(self._preorder(node[3][i], extra_src_info))
+			i += 2
+		
+		if node[4].len() > 1:
+			// class_metaclass ::= "METACLASS" expr	
+			metaclass_ := self._preorder(node[4][2], extra_src_info)
+		else:
+			// class_metaclass ::=
+			metaclass_ := null
+		
+		self._nesting.append(_NEST_CLASS)
+		fields := []
+		i := 1
+		while i < node[7].len():
+			// class_fields ::= class_field { "NEWLINE" class_field }*
+			if node[7][i].len() == 2 & not Builtins::List.conformed_by(node[7][i][1]):
+				// class_field ::= "PASS"
+				pass
+			elif node[7][i].len() == 2 & node[7][i][1][0] == "class_def":
+				// class_field ::= class_def
+				fields.append(self._preorder(node[7][i][1], extra_src_info))
+			elif node[7][i].len() == 2 & node[7][i][1][0] == "func_def":
+				// class_field ::= func_def
+				func_def := node[7][i][1]
+				if func_def[2].len() == 1:
+					// func_def ::=
+					func_name := null
+					raise "XXX"
+				else:
+					func_name := func_def[2][1].value
+				fields.append(self._preorder(func_def, extra_src_info))
+			elif node[7][i].len() == 4 & node[7][i][1][0] == "var_def":
+				// class_field ::= var_def ":=" expr
+				fields.append(ITree::IStd_Assignment.new([self._preorder(node[7][i][1], extra_src_info)], self._preorder(node[7][i][3], extra_src_info), extra_src_info + node[7][i][2].src_info))
+			elif node[7][i].len() == 2:
+				// class_field ::= splice
+				raise "XXX"
+			i += 2
+		self._nesting.del(-1)
+
+		return ITree::IClass_Def.new(class_name, supers, metaclass_, fields, extra_src_info + node[1].src_info)
+
+
+
+	//
+	// Returns an IFunc_Def.
+	//
+
+	func _t_func_def(node, extra_src_info):
+
+		// func_def ::= func_type func_name "(" func_params ")" ":" "INDENT" func_defs expr_body "DEDENT"
+
+		if node[1][1].type == "FUNC":
+			// func_type ::= "FUNC"
+			if self._nesting.len() == 0 | self._nesting[-1] != _NEST_CLASS:
+				is_bound := 0
+			else:
+				is_bound := 1
+		elif node[1][1].type == "BOUND_FUNC":
+			// func_type ::= "BOUND_FUNC"
+			is_bound := 1
+		elif node[1][1].type == "UNBOUND_FUNC":
+			// func_type ::= "UNBOUND_FUNC"
+			is_bound := 0
+
+		if node[2].len() == 1:
+			// func_name ::=
+			func_name := ""
+		elif Builtins::List.conformed_by(node[2][1]):
+			// func_name ::= splice_insert
+			func_name := self._preorder(node[2][1], extra_src_info)
+		elif node[2][1].type == "ID":
+			// func_name ::= "ID"
+			func_name := node[2][1].value
+		else:
+			//           ::= "+"
+			//           ::= "-"
+			//           ::= "/"
+			//           ::= "*"
+			//           ::= "<"
+			//           ::= ">"
+			//           ::= "=="
+			//           ::= "!="
+			//           ::= ">="
+			//           ::= "<="
+			func_name := node[2][1].type
+
+		self._nesting.append(_NEST_FUNC)
+		params := []
+		if node[4].len() > 1:
+			// func_params ::= func_params_elems "," func_varargs
+			//             ::= func_params_elems
+			//             ::= func_varargs
+			params := []
+			var_args := null
+			if node[4][1][0] == "func_params_elems":
+				// func_params_elems  ::= var_def func_param_default { "," var_def func_param_default }*
+				//                    ::= splice_insert
+				if node[4][1].len() == 2:
+					// func_params_elems  ::= splice_insert
+					raise "XXX"
+				else:
+					// func_params_elems  ::= var_def func_param_default { "," var_def func_param_default }*
+					i := 1
+					while i < node[4][1].len():
+						if node[4][1][i + 1].len() > 1:
+							// func_param_default ::= ":=" expr
+							param_default := self._preorder(node[4][1][i + 1][2], extra_src_info)
+						else:
+							param_default := null
+						if node[4][1][i].len() == 2 & not Builtins::List.conformed_by(node[4][1][i][1]):
+							// var_def ::= "ID"
+							params.append(ITree::IParam.new(ITree::IVar.new(node[4][1][i][1].value, extra_src_info + node[4][1][i][1].src_info), param_default, extra_src_info + node[4][1][i][1].src_info))
+						elif node[4][1][i].len() == 2:
+							// var_def ::= splice_insert
+							params.append(self._preorder(node[4][1][i]))
+						else:
+							raise "XXX"
+						i += 3
+			if node[4][-1][0] == "func_varargs":
+				// func_varargs ::= "*" var_def
+				//              ::= "*" splice_insert
+				if node[4][-1][2][0] == "var_def":
+					// func_varargs ::= "*" var_def
+					var_args := ITree::IVar.new(node[4][-1][2][1].value, extra_src_info + node[4][-1][2][1].src_info)
+				else:
+					// func_varargs ::= "*" splice_insert
+					var_args := self._preorder(node[4][-1][1])
+		else:
+			// func_params ::=
+			params := []
+			var_args := null
+
+		nonlocals_ := []
+		renames := []
+		i := 1
+		while i < node[8].len():
+			// func_decls ::= func_decl { "NEWLINE" func_decl }*
+			// func_decl  ::= func_decl_nonlocals
+			//            ::= func_decl_rename
+
+			if node[8][i][1][0] == "func_decl_nonlocals":
+				// func_decl_nonlocals ::= "NONLOCAL" "ID" ( "," "ID" )* "NEWLINE"
+				j := 2
+				while j < node[8][i][1].len():
+					nonlocals_.append(ITree::IVar.new(node[8][i][1][j].value, extra_src_info + node[8][i][1][j].src_info))
+					j += 2
+			else:
+				// func_decl_rename ::= "RENAME" "ID" "AS" "ID" ( "," "RENAME" "ID" "AS" "ID" )* "NEWLINE"
+				j := 2
+				while j < node[8][i][1].len():
+					renames.append([ITree::IVar.new(node[8][i][1][j].value, extra_src_info + node[8][i][1][j].src_info), ITree::IVar.new(node[8][i][1][j + 2].value, extra_src_info + node[8][i][1][j + 2].src_info)])
+					j += 5
+			
+			i += 2
+
+		body := self._eval_expr_body(node[9])
+
+		self._nesting.del(-1)
+		
+		func_def := ITree::IFunc_Def.new(is_bound, func_name, params, var_args, nonlocals_, renames, body, extra_src_info + node[1][1].src_info)
+		
+		if func_name is "":
+			return func_def
+		
+		i := self._nesting.len() - 1
+		while i >= 0:
+			if self._nesting[i] == _NEST_CLASS:
+				break
+			i -= 1
+		broken:
+			return func_def
+		
+		if Builtins::String.instantiated(func_name):
+			func_var := ITree::IVar.new(func_name, extra_src_info + node[1][1].src_info)
+		else:
+			func_var := func_name
+		
+		return ITree::IAssignment.new(ITree::STD_ASSIGN, [func_var], func_def, extra_src_info + node[1][1].src_info)
+
+
+
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////
+	// Expressions
+	//
+	// These functions should all return an instance of IExpr.
+	//
+
+	func _t_expr(node, extra_src_info):
+
+		// expr ::= class_def
+		//      ::= func_def
+		//      ::= while
+		//      ::= if
+		//      ::= for
+		//      ::= try
+		//      ::= number
+		//      ::= var_lookup
+		//      ::= dict
+		//      ::= set
+		//      ::= list
+		//      ::= dict
+		//      ::= string
+		//      ::= slot_lookup
+		//      ::= module_lookup
+		//      ::= list
+		//      ::= application
+		//      ::= get
+		//      ::= slice
+		//      ::= exbi
+		//      ::= return
+		//      ::= yield
+		//      ::= raise
+		//      ::= assert
+		//      ::= break
+		//      ::= continue
+		//      ::= conjunction
+		//      ::= alternation
+		//      ::= assignment
+		//      ::= not
+		//      ::= neg
+		//      ::= binary
+		//      ::= comparison
+		//      ::= pass
+		//      ::= import
+		//      ::= splice_insert
+		//      ::= quasi_quotes
+		//      ::= brackets
+
+		return self._preorder(node[1], extra_src_info)
+
+
+
+	func _t_if(node, extra_src_info):
+	
+		// if ::= "IF" expr ":" "INDENT" expr_body "DEDENT" ( if_elif )* if_else
+		//    ::= "IF" expr "{" "INDENT" expr_body "DEDENT" "NEWLINE" "}" ( if_elif )* if_else
+		
+		clauses := [ITree::IClause.new(self._preorder(node[2], extra_src_info), self._eval_expr_body(node[5]), extra_src_info + node[1].src_info)]
+		if Builtins::List.conformed_by(node[7]):
+			// if ::= "IF" expr ":" "INDENT" expr_body "DEDENT" ( if_elif )* if_else
+			i := 7
+		else:
+			// if ::= "IF" expr "{" "INDENT" expr_body "DEDENT" "NEWLINE" "}" ( if_elif )* if_else
+			i := 9
+		while node[i][0] == "if_elif":
+			// if_elif ::= "NEWLINE" "ELIF" expr ":" "INDENT" expr_body "DEDENT"
+			//         ::= "NEWLINE" "ELIF" expr "{" "INDENT" expr_body "DEDENT" "NEWLINE" "}"
+			clauses.append(ITree::IClause.new(self._preorder(node[i][3], extra_src_info), self._eval_expr_body(node[i][6]), extra_src_info + node[i][2].src_info))
+			i += 1
+		
+		if node[-1].len() > 1:
+			// if_else ::= "NEWLINE" "ELSE" ":" "INDENT" expr_body "DEDENT"
+			//         ::= "NEWLINE" "ELSE" "{" "INDENT" expr_body "DEDENT" "NEWLINE" "}"
+			else_body := self._eval_expr_body(node[-1][5])
+		else:
+			// if_else ::=
+			else_body := null
+
+		return ITree::IIf.new(clauses, else_body, extra_src_info + node[1].src_info)
+
+
+
+	func _t_while(node, extra_src_info):
+	
+		// while ::= "WHILE" expr ":" "INDENT" expr_body "DEDENT" exhausted broken
+		//       ::= "WHILE" expr
+		
+		if node.len() == 9:
+			// while ::= "WHILE" expr ":" "INDENT" expr_body "DEDENT" exhausted broken
+			expr_body := self._eval_expr_body(node[5])
+			if node[7].len() > 1:
+				exhausted_body := self._eval_expr_body(node[7][5])
+			else:
+				exhausted_body := null
+			if node[8].len() > 1:
+				broken_body := self._eval_expr_body(node[8][5])
+			else:
+				broken_body := null
+		else:
+			// while ::= "WHILE" expr
+			expr_body := exhausted_body := broken_body := null
+		
+		return ITree::IWhile.new(self._preorder(node[2], extra_src_info), expr_body, exhausted_body, broken_body, extra_src_info + node[1].src_info)
+
+
+
+	func _t_for(node, extra_src_info):
+	
+		// for ::= "FOR" expr ":" "INDENT" expr_body "DEDENT" exhausted broken
+		//     ::= "FOR" expr
+
+		if node.len() == 9:
+			// while ::= "FOR" expr ":" "INDENT" expr_body "DEDENT" exhausted broken
+			body := self._eval_expr_body(node[5])
+			if node[7].len() > 1:
+				exhausted_body := self._eval_expr_body(node[7][5])
+			else:
+				exhausted_body := null
+			if node[8].len() > 1:
+				broken_body := self._eval_expr_body(node[8][5])
+			else:
+				broken_body := null
+		else:
+			// for ::= "FOR" expr
+			body := null
+			exhausted_body := null
+			broken_body := null
+		
+		return ITree::IFor.new(self._preorder(node[2], extra_src_info), body, exhausted_body, broken_body, extra_src_info + node[1].src_info)
+
+
+
+	func _t_number(node, extra_src_info):
+	
+		// number ::= "INT"
+	
+		return ITree::IInt.new(Builtins::Int.new(node[1].value), extra_src_info + node[1].src_info)
+
+
+
+	func _t_var_def(node, extra_src_info):
+	
+		// var_def ::= "ID"
+		//         ::= "&" "ID"
+		//         ::= splice_insert
+		
+		if node.len() == 2 & not Builtins::List.conformed_by(node[1]):
+			// var_def ::= "ID"
+			if node[1].value == SRC_INFO_VAR:
+				raise "XXX"
+			else:
+				return ITree::IVar.new(node[1].value, extra_src_info + node[1].src_info)
+		elif node.len() == 3:
+			// var_def ::= "&" "ID"
+			raise "XXX"
+		else:
+			// var_def ::= splice_insert
+			return self._preorder(node[1])
+
+
+
+	func _t_var_lookup(node, extra_src_info):
+	
+		// var_lookup ::= "ID"
+		//            ::= "&" "ID"
+		
+		if node.len() == 2 & not Builtins::List.conformed_by(node[1]):
+			// var_def ::= "ID"
+			if node[1].value == SRC_INFO_VAR:
+				assert(node.src_info.len() == 1)
+				src_path := ITree::IString.new(node[1].src_info[0][0], extra_src_info + node[1].src_info)
+				src_info := ITree::IInt.new(node[1].src_info[0][1], extra_src_info + node[1].src_info)
+				return ITree::IList.new([ITree::IList.new([src_path, src_info], extra_src_info + node[1].src_info)], extra_src_info + node[1].src_info)
+			else:
+				return ITree::IVar.new(node[1].value, extra_src_info + node[1].src_info)
+		elif node.len() == 3:
+			// var_def ::= "&" "ID"
+			raise "XXX"
+
+
+
+	func _t_string(node, extra_src_info):
+	
+		// string ::= "STRING"
+		
+		return ITree::IString.new(node[1].value, extra_src_info + node[1].src_info)
+
+
+
+	func _t_slot_lookup(node, extra_src_info):
+	
+		// slot_lookup ::= expr "." "ID"
+		//             ::= expr "." splice_insert
+		
+		if Builtins::List.conformed_by(node[3]):
+			// slot_lookup ::= expr "." splice_insert
+			raise "XXX"
+		else:
+			// slot_lookup ::= expr "." "ID"
+			return ITree::ISlot_Lookup.new(self._preorder(node[1], extra_src_info), node[3].value, extra_src_info + node[2].src_info)
+		
+		
+		
+	func _t_module_lookup(node, extra_src_info):
+	
+		// module_lookup ::= expr "." "ID"
+		//               ::= expr "." splice_insert
+		
+		if Builtins::List.conformed_by(node[3]):
+			// module_lookup ::= expr "." splice_insert
+			return ITree::IModule_Lookup.new(self._preorder(node[1], extra_src_info), self._preorder(node[3], extra_src_info), extra_src_info + node[2].src_info)
+		else:
+			// module_lookup ::= expr "." "ID"
+			return ITree::IModule_Lookup.new(self._preorder(node[1], extra_src_info), node[3].value, extra_src_info + node[2].src_info)
+
+
+
+	func _t_list(node, extra_src_info):
+	
+		// list ::= "[" expr { "," expr }* "]"
+		//      ::= "[" "]"
+		
+		elements := []
+		i := 2
+		while i < node.len() & Builtins::List.conformed_by(node[i]):
+			elements.append(self._preorder(node[i], extra_src_info))
+			i += 2
+		
+		return ITree::IList.new(elements, extra_src_info + node[1].src_info)
+
+
+
+	func _t_dict(node, extra_src_info):
+	
+		// dict ::= "DICT{" expr ":" expr ( "," expr ":" expr )* "CLOSE_CURLY"
+		//      ::= "DICT{" "CLOSE_CURLY"
+		
+		elements := []
+		i := 2
+		while i < node.len() & Builtins::List.conformed_by(node[i]):
+			elements.append([self._preorder(node[i], extra_src_info), self._preorder(node[i + 2], extra_src_info)])
+			i += 4
+		
+		return ITree::IDict.new(elements, extra_src_info + node[1].src_info)
+
+
+
+	func _t_set(node, extra_src_info):
+	
+		// set ::= "SET{" expr ( "," expr )* "CLOSE_CURLY"
+		//     ::= "SET{" "CLOSE_CURLY"
+		
+		elements := []
+		i := 2
+		while i < node.len() & Builtins::List.conformed_by(node[i]):
+			elements.append(self._preorder(node[i], extra_src_info))
+			i += 2
+		
+		return ITree::ISet.new(elements, extra_src_info + node[1].src_info)
+
+
+
+	func _t_application(node, extra_src_info):
+
+		// application ::= expr "(" expr ( "," expr )* ")"
+		//             ::= expr "(" ")"
+		
+		params := []
+		i := 3
+		while i < node.len() & Builtins::List.conformed_by(node[i]):
+			params.append(self._preorder(node[i], extra_src_info))
+			i += 2
+
+		return ITree::IApplication.new(self._preorder(node[1], extra_src_info), params, extra_src_info + node[2].src_info)
+
+
+
+	func _t_get(node, extra_src_info):
+	
+		// get ::= expr "[" expr "]"
+		
+		return ITree::IGet.new(self._preorder(node[1], extra_src_info), self._preorder(node[3], extra_src_info), extra_src_info + node[2].src_info)
+
+
+
+	func _t_slice(node, extra_src_info):
+	
+		// slice ::= expr "[" expr ":" expr "]"
+		//       ::= expr "[" ":" expr "]"
+		//       ::= expr "[" expr ":" "]"
+		//       ::= expr "[" ":" "]"
+		
+		if node.len() == 7:
+			// slice ::= expr "[" expr ":" expr "]"
+			lower_bound := self._preorder(node[3], extra_src_info)
+			upper_bound := self._preorder(node[5], extra_src_info)
+		elif node.len() == 6 & not Builtins::List.conformed_by(node[3]):
+			// slice ::= expr "[" ":" expr "]"
+			lower_bound := null
+			upper_bound := self._preorder(node[4], extra_src_info)
+		elif node.len() == 6:
+			// slice ::= expr "[" expr ":" "]"
+			lower_bound := self._preorder(node[3], extra_src_info)
+			upper_bound := null
+		else:
+			lower_bound := null
+			upper_bound := null
+		
+		return ITree::ISlice.new(self._preorder(node[1], extra_src_info), lower_bound, upper_bound, extra_src_info + node[2].src_info)
+
+
+	
+	func _t_return(node, extra_src_info):
+	
+		// return ::= "RETURN" expr
+		//        ::= "RETURN"
+		
+		if node.len() == 3:
+			return_expr := self._preorder(node[2], extra_src_info)
+		else:
+			return_expr := null
+		
+		return ITree::IReturn.new(return_expr, extra_src_info + node[1].src_info)
+
+
+
+	func _t_yield(node, extra_src_info):
+	
+		// yield ::= "YIELD" expr
+		
+		return ITree::IYield.new(self._preorder(node[2], extra_src_info), extra_src_info + node[1].src_info)
+
+
+
+	func _t_raise(node, extra_src_info):
+	
+		// raise ::= "RAISE" expr
+		
+		return ITree::IRaise.new(self._preorder(node[2], extra_src_info), extra_src_info + node[1].src_info)
+
+
+
+	func _t_assert(node, extra_src_info):
+	
+		// assert ::= "ASSERT" expr
+		
+		return ITree::IAssert.new(self._preorder(node[2], extra_src_info), extra_src_info + node[1].src_info)
+
+
+
+	func _t_break(node, extra_src_info):
+	
+		// break ::= "BREAK"
+		
+		return ITree::IBreak.new(extra_src_info + node[1].src_info)
+
+
+
+	func _t_continue(node, extra_src_info):
+	
+		// continue ::= "CONTINUE"
+		
+		return ITree::IContinue.new(extra_src_info + node[1].src_info)
+
+
+
+	func _t_conjunction(node, extra_src_info):
+	
+		// conjunction ::= expr "&" expr ( "&" expr )*
+		
+		exprs := []
+		i := 1
+		while i < node.len():
+			exprs.append(self._preorder(node[i], extra_src_info))
+			i += 2
+		
+		return ITree::IConjunction.new(exprs, extra_src_info + node[2].src_info)
+
+
+
+	func _t_alternation(node, extra_src_info):
+	
+		// alternation ::= expr "|" expr ( "|" expr )*
+		
+		exprs := []
+		i := 1
+		while i < node.len():
+			exprs.append(self._preorder(node[i], extra_src_info))
+			i += 2
+		
+		return ITree::IAlternation.new(exprs, extra_src_info + node[2].src_info)
+
+
+
+	func _t_assignment(node, extra_src_info):
+
+		// assignment ::= assignment_target ( "," assignment_target )* assignment_type expr
+		
+		targets := []
+		i := 1
+		while node[i][0] == "assignment_target":
+			// assignment_target ::= var_def
+			//                   ::= slot_lookup
+			//                   ::= lookup
+			//                   ::= slice
+			if node[i][1][0] == "var_def":
+				if node[i][1].len() == 2 & not Builtins::List.conformed_by(node[i][1][1]):
+					// var_def ::= "ID"
+					targets.append(self._preorder(node[i][1], extra_src_info))
+				else:
+					Sys.println(node[i][1])
+					raise "XXX"
+			else:
+				targets.append(self._preorder(node[i][1], extra_src_info))
+			i += 2
+			
+		expr := self._preorder(node[-1], extra_src_info)
+		
+		if node[-2][1].type == ":=":
+			// assignment_type ::= ":="
+			type := ITree::STD_ASSIGN
+		elif node[-2][1].type == "*=":
+			//                 ::= "*="
+			type := ITree::MUL_ASSIGN
+		elif node[-2][1].type == "/=":
+			//                 ::= "/="
+			type := ITree::DIV_ASSIGN
+		elif node[-2][1].type == "+=":
+			//                 ::= "+="
+			type := ITree::ADD_ASSIGN
+		else:
+			//                 ::= "-="
+			type := ITree::SUB_ASSIGN
+		
+		return ITree::IAssignment.new(type, targets, expr, extra_src_info + node[-2][1].src_info)
+
+
+
+	func _t_not(node, extra_src_info):
+	
+		// not ::= "NOT" expr
+		
+		return ITree::INot.new(self._preorder(node[2], extra_src_info), extra_src_info + node[1].src_info)
+
+
+
+	func _t_binary(node, extra_src_info):
+	
+		// binary ::= expr binary_op expr
+
+		if node[2][1].type == "*":
+			type := ITree::BINARY_MUL
+		elif node[2][1].type == "/":
+			type := ITree::BINARY_DIV
+		elif node[2][1].type == "%":
+			type := ITree::BINARY_MOD
+		elif node[2][1].type == "+":
+			type := ITree::BINARY_ADD
+		elif node[2][1].type == "-":
+			type := ITree::BINARY_SUB
+		
+		return ITree::IBinary.new(type, self._preorder(node[1], extra_src_info), self._preorder(node[3], extra_src_info), extra_src_info + node[2][1].src_info)
+
+
+
+	func _t_comparison(node, extra_src_info):
+	
+		// comparison ::= expr comparison_op expr
+		
+		if node[2][1].type == "IS":
+			// comparison_op ::= "IS"
+			type := ITree::IS_COMPARISON
+		elif node[2][1].type == "==":
+			// comparison_op ::= ==
+			type := ITree::EQ_COMPARISON
+		elif node[2][1].type == "!=":
+			// comparison_op ::= !=
+			type := ITree::NEQ_COMPARISON
+		elif node[2][1].type == "<=":
+			// comparison_op ::= <=
+			type := ITree::LEQ_COMPARISON
+		elif node[2][1].type == ">=":
+			// comparison_op ::= >=
+			type := ITree::GEQ_COMPARISON
+		elif node[2][1].type == "<":
+			// comparison_op ::= <
+			type := ITree::LE_COMPARISON
+		elif node[2][1].type == ">":
+			// comparison_op ::= >
+			type := ITree::GE_COMPARISON
+
+		return ITree::IComparison.new(type, self._preorder(node[1], extra_src_info), self._preorder(node[3], extra_src_info), extra_src_info + node[2][1].src_info)
+
+
+
+	func _t_pass(node, extra_src_info):
+	
+		// pass ::= "PASS"
+	
+		return ITree::IPass.new(extra_src_info + node[1].src_info)
+
+
+
+	func _t_brackets(node, extra_src_info):
+	
+		// brackets ::= "(" expr ")"
+		
+		return self._preorder(node[2], extra_src_info)
+
+
+
+	func _t_splice_insert(node, extra_src_info):
+	
+		// splice_insert ::= splice
+		//               ::= insert
+		
+		return self._preorder(node[1], extra_src_info)
+		
+
+
+	func _t_splice(node, extra_src_info):
+	
+		// splice ::= expr_splice
+		//        ::= block_splice
+		
+		// This function is unique since it's the "coal face" for compile-time meta-programming.
+		//
+		// This is a euphemism for "it's a bit complicated".
+		
+		if node[1][0] == "expr_splice":
+			// expr_splice  ::= "$" "<" expr ">"
+			expr := self._preorder(node[1][3], extra_src_info)
+		else:
+			// block_splice ::= "$" "<<" expr ">>" ":" "DSL_BLOCK"
+			dsl_block := ITree::IString.new(node[1][6].value, extra_src_info + node[1][6].src_info)
+
+			assert(node[1][1].src_info.len() == 1)			
+			src_path := ITree::IString.new(node[1][1].src_info[0][0], extra_src_info + node[1][1].src_info)
+			src_offset := ITree::IInt.new(node[1][6].src_info[0][1], extra_src_info + node[1][1].src_info)
+			src_info := ITree::IList.new([ITree::IList.new([src_path, src_offset], extra_src_info + node[1][1].src_info)], extra_src_info + node[1][1].src_info)
+			
+			expr := ITree::IApplication.new(self._preorder(node[1][3], extra_src_info), [dsl_block, src_info], extra_src_info + node[1][1].src_info)
+
+		splice_name := CEI::fresh_name()
+
+		// Determine all the definitions we've currently processed into ITree's.
+
+		already_bound_vars := Dict{}
+		for i := 0.to(self._definitions.len()):
+			definition := self._definitions[i]
+			for target := self._definitions[i].targets.iterate():
+				if ITree::IVar.conformed_by(target):
+					already_bound_vars[target.var_name] := i
+				else:
+					for target_var := target.bound_vars.iterate():
+						already_bound_vars[target_var] := i
+
+		defns_to_include := Set{}
+		for free_var := expr.free_vars.iterate():
+			if defn_i := already_bound_vars.find(free_var):
+				defns_to_include.add(defn_i)
+
+		stack := Builtins::List.new(defns_to_include)
+		i := 0
+		while i < stack.len():
+			for free_var := self._definitions[stack[i]].free_vars.iterate():
+				if not defns_to_include.find(free_var) & defn_i := already_bound_vars.find(free_var) & not stack.find_index(defn_i) <= i:
+					stack.append(defn_i)
+					defns_to_include.add(defn_i)
+			i += 1
+
+		// Only include the definitions so far processed if they're absolutely necessary (i.e.
+		// they're referenced by the splice expression, or referenced by something referenced
+		// by the splice expression).
+
+		definitions := []
+		i := 0
+		for i := 0.to(self._definitions.len()):
+			if defns_to_include.find(i):
+				definitions.append(self._definitions[i])
+
+		dummy_func := ITree::IFunc_Def.new(0, splice_name, [], null, [], [], ITree::IExpr_Block.new([ITree::IReturn.new(expr, extra_src_info + node[1][1].src_info)], expr.src_info), extra_src_info + node[1][1].src_info)
+		dummy_definitions := definitions + [ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(splice_name, extra_src_info + node[1][1].src_info)], dummy_func, extra_src_info + node[1][1].src_info)]
+		dummy_imodule := ITree::IModule.new(splice_name, dummy_definitions, extra_src_info + node[1][1].src_info)
+		dummy_module := Bytecode_Gen::Bytecode_Gen.new().generate(dummy_imodule)
+
+		modules_stack := [dummy_module]
+		modules_bytecode := [dummy_module.serialize()]
+		i := 0
+		existing_module_names := Set{}
+		for existing_module_names.add(VM::vm.modules.keys())
+		for existing_module_names.add(Compiler_Vars::BUILTIN_MODULES.iterate())
+		new_module_names := Set{}
+		while modules_stack.len() > 0:
+			module := modules_stack.pop()
+			for import_ := module.get_imports().iterate():
+				if not existing_module_names.find(import_):
+					new_module_file := File::open(File::join_ext(File::split_ext(import_)[0], CV_Module::CVB_EXTENSION), "r")
+					new_module_data := new_module_file.read()
+					modules_bytecode.append(new_module_data)
+					new_module := CV_Module::CV_Module.new(self._compiler.target, self._compiler.target_array_type)
+					new_module.deserialize_str(new_module_data)
+					modules_stack.append(new_module)
+					assert(import_ == new_module.full_name)
+					new_module_names.add(import_)
+			i += 1
+
+		// Import all the modules into the VM.
+
+		module_identifiers := VM::add_modules(modules_bytecode)
+		module := VM::import_module(module_identifiers[0])
+		if not out_itree := module.get_def(splice_name)():
+			self._compiler.error("Splice did not return a value.", expr.src_info)
+		if out_itree is null:
+			self._compiler.error("Splice returned null.", expr.src_info)
+
+		return out_itree
+
+
+
+	func _t_insert(node, extra_src_info):
+	
+		// insert ::= "$" "{" expr "}"
+		
+		return ITree::IInsert.new(self._preorder(node[3], extra_src_info), extra_src_info + node[1].src_info)
+
+
+
+	func _t_quasi_quotes(node, extra_src_info):
+		
+		// quasi_quotes ::= expr_quasi_quotes
+		//              ::= defn_quasi_quotes
+		
+		return self._preorder(node[1], extra_src_info)
+
+
+
+	func _t_expr_quasi_quotes(node, extra_src_info):
+
+		// expr_quasi_quotes ::= quasi_quotes_customize "INDENT" expr ( "NEWLINE" expr )*
+		//                       "DEDENT" "NEWLINE" "|]"
+		//                   ::= quasi_quotes_customize expr ( "NEWLINE" expr )* "|]"
+		
+		exprs := []
+		if Builtins::List.conformed_by(node[2]):
+			i := 2
+		else:
+			i := 3
+		while i < node.len() & Builtins::List.conformed_by(node[i]) & node[i][0] == "expr":
+			exprs.append(self._preorder(node[i], extra_src_info))
+			i += 2
+		
+		if node[1].len() == 2:
+			// quasi_quotes_customize ::= "[|"
+			qq_extra_src_info := null
+		else:
+			// quasi_quotes_customize ::= "[" "<" expr ">" "|"
+			qq_extra_src_info := self._preorder(node[1][3], extra_src_info)
+
+		sqq := ITree::IStandard_Quasi_Quotes.new(exprs, qq_extra_src_info, extra_src_info + node[1][1].src_info)
+
+		import ITree_TC
+		ITree_TC::tc(sqq)
+
+		return sqq

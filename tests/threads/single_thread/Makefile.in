@@ -1,0 +1,8 @@
+all:
+
+
+clean:
+
+
+distclean:
+	rm -f Makefile

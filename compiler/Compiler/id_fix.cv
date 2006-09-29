@@ -1,0 +1,81 @@
+// Copyright (c) 2003-2006 King's College London, created by Laurence Tratt
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to
+// deal in the Software without restriction, including without limitation the
+// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+// sell copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+// IN THE SOFTWARE.
+
+
+import Array, File, Strings, Sys
+import CV_Exec, CV_Module, Targets::Thirty_Two_Bit
+
+
+
+
+func main():
+
+	input_path := Sys::argv[0]
+	output_path := Sys::argv[1]
+	
+	// XXX!!
+	target := Thirty_Two_Bit
+	target_array_type := "i32"
+	
+	input_file := File::File.new(input_path, "r")
+	input_data := input_file.read()
+	input_file.close()
+	
+	input_modules := CV_Exec::deserialize(target, target_array_type, input_data)
+	
+	input_ids := []
+	for module_str, module := input_modules.iterate():
+		input_ids.append(module.get_identifier())
+	
+	original_lcp := Strings::lcp(input_ids)
+	assert original_lcp.len() > 0
+
+	for module_str, module := input_modules.iterate():
+		if module.get_identifier().suffixed_by("IModule_Gen.cv"):
+			imodule_id := module.get_identifier()
+			break
+	exhausted:
+		raise "XXX"
+	
+	top_level_path := File::canon_path(File::join_names(File::split_leaf(Sys::program_path)[0], ".."))
+	imodule_cv_path := File::canon_path(File::join_names(top_level_path, "compiler", "Compiler", "IModule_Gen.cv"))
+	if not File::exists(imodule_cv_path):
+		raise "XXX"
+	
+	if not imodule_cv_path[ : top_level_path.len()] == top_level_path:
+		raise "XXX"
+
+	output_modules := []	
+	for module_str, module := input_modules.iterate():
+		module.set_identifier(File::join_names(top_level_path, module.get_identifier()[original_lcp.len() : ]))
+		new_imports := []
+		for import_ := module.get_imports().iterate():
+			if import_.prefixed_by(original_lcp):
+				new_imports.append(File::join_names(top_level_path, import_[original_lcp.len() : ]))
+			else:
+				new_imports.append(import_)
+		module.set_imports(new_imports)
+		output_modules.append(module.serialize())
+
+	output_exec := CV_Exec::serialize(target, target_array_type, output_modules)
+
+	output_file := File::File.new(output_path, "w")
+	output_file.write(output_exec)
+	output_file.close()

@@ -1,0 +1,69 @@
+// Copyright (c) 2003-2006 King's College London, created by Laurence Tratt
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to
+// deal in the Software without restriction, including without limitation the
+// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+// sell copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+// IN THE SOFTWARE.
+
+
+import Strings
+
+
+
+
+// The file name extension of a normal Converge file.
+
+CV_EXTENSION := "cv"
+
+// The file name extension of a Converge binary file.
+
+CVB_EXTENSION := "cvb"
+
+
+
+
+// The default variables in scope in every Converge module.
+
+DEFAULT_VARS := Set{"self_module", "null", "fail"}
+
+
+
+
+//
+
+BUILTIN_MODULES := Set{"Sys", "Backtrace", "Builtins", "POSIX_File", "Array", "OS", "Exceptions", "C_Earley_Parser", "PCRE", "VM", "Processes", "PThreads", "CEI", "C_Strings", "Thread"}
+
+
+
+UNIQUE_NAME_TEMPLATE := "$$%s$$"
+UNIQUE_NAME_EXTRA_TEMPLATE := "$$%s$$%s$$"
+QUASI_QUOTES_NAME := "$$qq$$%s$$"
+
+
+
+
+_fresh_name_counter := 0
+
+func fresh_name(name := null):
+
+	nonlocal _fresh_name_counter
+	
+	_fresh_name_counter += 1
+	
+	if name is null:
+		return Strings::format(UNIQUE_NAME_TEMPLATE, (_fresh_name_counter - 1).to_str())
+	else:
+		return Strings::format(UNIQUE_NAME_EXTRA_TEMPLATE, (_fresh_name_counter - 1).to_str(), name)

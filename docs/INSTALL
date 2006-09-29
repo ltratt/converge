@@ -1,0 +1,5 @@
+Subject to platform specific notes in README.<platform> one can normally compile
+Converge by executing the following commands:
+
+  ./configure
+  make -f Makefile.bootstrap

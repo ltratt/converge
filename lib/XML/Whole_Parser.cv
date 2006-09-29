@@ -1,0 +1,174 @@
+// Copyright (c) 2003-2006 King's College London, created by Laurence Tratt
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to
+// deal in the Software without restriction, including without limitation the
+// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+// sell copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+// IN THE SOFTWARE.
+
+
+import Exceptions, File, PCRE, Strings, Sys
+
+
+
+
+RE_WHITESPACE := PCRE::compile("[ \\t\\n\\r]+")
+RE_START_TAG := PCRE::compile("<[ \\t]*([a-zA-Z_][a-zA-Z_0-9]*)")
+RE_END_TAG := PCRE::compile("</[ \\t]*([a-zA-Z_][a-zA-Z_0-9]*)[ \\t]*>")
+RE_NAME := PCRE::compile("([a-zA-Z_][a-zA-Z_0-9]*)")
+
+
+
+
+class Whole_Parser:
+
+	func init(xml):
+
+		i, self._tree := self._parse(xml, 0)
+
+
+
+	func preorder(node := self._tree):
+	
+		if not node.conforms_to(List):
+			name := "_n_" + node.get_name().lower_case()
+			if self.has_slot(name):
+				return self.get_slot(name)(node)
+			else:
+				return self._default(node)
+		else:
+			results := []
+			for child := node.iterate():
+				name := "_n_" + child.get_name().lower_case()
+				if self.has_slot(name):
+					results.append(self.get_slot(name)(child))
+				else:
+					results.append(self._default(child))
+			return results
+
+
+
+	func _default(node):
+	
+		raise Exceptions::Exception(Strings::format("No action for node '%s'", node.get_name()))
+
+
+
+	func _parse(xml, i):
+	
+		if match := RE_WHITESPACE.match(xml, i):
+			i += match[0].len()
+			
+		if not match := RE_START_TAG.match(xml, i):
+			raise Exceptions::Exception(Strings::format("Starting tag not found at position %d.", i))
+		name := match[1]
+		i += match[0].len()
+
+		attrs := Dict{} // XXX this should be an *Ordered_Dict*
+		while 1:
+			if match := RE_WHITESPACE.match(xml, i):
+				i += match[0].len()
+		
+			if i > xml.len():
+				raise Exceptions::Exception("Unclosed tag ran to end of XML.")
+			if xml[i : i + 2] == "/>":
+				return [i + 2, Node(name, attrs, [])]
+			if xml[i] == ">":
+				i += 1
+				break
+		
+			if not match := RE_NAME.match(xml, i):
+				raise Exceptions::Exception(Strings::format("Invalid attribute name at position %d.", i))
+			attr_name := match[1]
+			i += match[0].len()
+			
+			if match := RE_WHITESPACE.match(xml, i):
+				i += match[0].len()
+			if xml[i] == "=":
+				i += 1
+				if match := RE_WHITESPACE.match(xml, i):
+					i += match[0].len()
+				i, attr_val := self._parse_string(xml, i)
+			else:
+				attr_val := null
+			
+			attrs[attr_name] := attr_val
+		
+		children := []
+		while 1:
+			if match := RE_WHITESPACE.match(xml, i):
+				i += match[0].len()
+				
+			if match := RE_END_TAG.match(xml, i):
+				if match[1] != name:
+					raise Exceptions::Exception(Strings::format("End tag '%s' at position %d does not match start tag '%s'.", match[1], i, name))
+				return [i + match[0].len(), Node(name, attrs, children)]
+				
+			if RE_START_TAG.match(xml, i):
+				i, child := self._parse(xml, i)
+				children.append(child)
+		exhausted:
+			raise Exceptions::Exception(Strings::format("Tag '%s' ran to end of XML.", match[1], i))
+
+
+
+	func _parse_string(xml, i):
+	
+		assert xml[i] == "\""
+		
+		str := []
+		i += 1
+		while i < xml.len():
+			if xml[i] == "\"":
+				break
+			elif xml[i] == "\\":
+				str.append(xml[i + 1])
+				i += 2
+			else:
+				str.append(xml[i])
+				i += 1
+		exhausted:
+			raise Exceptions::Exception("Unterminated string ran to end of XML.")
+		
+		return [i + 1, Strings::join(str, "")]
+
+
+
+
+class Node:
+
+	func init(name, attrs, children):
+	
+		self._name := name
+		self._attrs := attrs
+		self._children := children
+
+
+
+	func get_name():
+	
+		return self._name
+
+
+
+	func get_attrs():
+	
+		return self._attrs.scopy()
+
+
+
+	func get_children():
+	
+		return self._children[ : ]

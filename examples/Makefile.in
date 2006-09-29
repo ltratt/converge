@@ -1,0 +1,15 @@
+all:
+	cd compile_time && ${MAKE} ${MFLAGS}
+	cd dsls && ${MAKE} ${MFLAGS}
+
+clean:
+	cd compile_time && ${MAKE} ${MFLAGS} clean
+	cd dsls && ${MAKE} ${MFLAGS} clean
+
+distclean: clean
+	cd compile_time && ${MAKE} ${MFLAGS} distclean
+	cd dsls && ${MAKE} ${MFLAGS} distclean
+	rm -f Makefile .depend
+
+
+include @abs_top_srcdir@/Makefile.inc

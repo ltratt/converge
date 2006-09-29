@@ -1,0 +1,184 @@
+/* vm/Config.h.in.  Generated from configure.ac by autoheader.  */
+
+
+#ifndef _CON_CONFIG_H
+#define _CON_CONFIG_H
+
+// Switch to 1 to turn debugging output on
+
+#define CON_FULL_DEBUG 0
+
+// Some constants which may be useful to bump up for performance, at the expense of memory
+
+#define CON_DEFAULT_VM_NUM_THREADS 10
+
+#define CON_DEFAULT_FIRST_N_INTS_TO_INTERN 1024
+
+#define CON_DEFAULT_NUM_COUNTING_MUTEXES 10
+#define CON_DEFAULT_MAX_USERS_PER_COUNTING_MUTEX 512
+#define CON_DEFAULT_NUM_SLOTS 16
+#define CON_DEFAULT_FULL_ENTRIES_SIZE (16 * (sizeof(Con_Slots_Full_Entry) + 8))
+
+#define CON_DEFAULT_GC_STACK_NUM_ENTRIES 5000
+
+#define CON_DEFAULT_DICT_NUM_ENTRIES_ALLOCATED 32
+#define CON_DEFAULT_LIST_NUM_ENTRIES_ALLOCATED 16
+#define CON_DEFAULT_SET_NUM_ENTRIES_ALLOCATED 32
+#define CON_DEFAULT_ARRAY_NUM_ENTRIES_ALLOCATED 256
+
+#define CON_DEFAULT_CON_C_CLASS_OBJ_NUM_INSTANCE_MUTEXES 8
+
+#define CON_DEFAULT_NUM_OBJECTS_TO_TRACK 8192
+
+// Default Converge stack size in words
+
+#define CON_DEFAULT_CON_STACK_SIZE (4096-12)
+
+/* Define this for Linux */
+
+#define _BSD_SOURCE 1
+
+
+/* Define to your system architecture. */
+#undef CON_ARCH
+
+/* Whether this is a big endian (CON_BIG_ENDIAN) or little endian
+   (CON_LITTLE_ENDIAN) machine. */
+#undef CON_BYTEORDER
+
+/* The name of your C compiler. */
+#undef CON_CC
+
+/* Define if the stack grows down from a particular word. Undefine if the
+   stack grows upwards. */
+#undef CON_C_STACK_GROWS_DOWN
+
+/* Define to whatever your dirent struct calls d_fileno (e.g. d_ino under
+   Linux and Cygwin). */
+#undef CON_DIRENT_D_FILENO
+
+/* Define if your dirent struct has the d_reclen member. */
+#undef CON_DIRENT_HAS_D_RECLEN
+
+/* Define if your platform has the getdirentries function. */
+#undef CON_HAVE_GETDIRENTRIES
+
+/* Define if you have the mergesort function. If available, this is used to
+   speed up the garbage collector. */
+#undef CON_HAVE_MERGESORT
+
+/* Define if you have the pthread_yield function. If pthreads are available,
+   this function is used to avoid spin locking. */
+#undef CON_HAVE_PTHREAD_YIELD
+
+/* The integer type equivalent to a machine word. */
+#undef CON_INT
+
+/* Define if you are running on a POSiX platform. Note that you can can only
+   define one CON_PLATFORM_* variable. */
+#undef CON_PLATFORM_POSIX
+
+/* Define if you have, and want to use, pthreads. Note that you can can only
+   define one CON_THREADS_* variable. */
+#undef CON_THREADS_PTHREADS
+
+/* Define if you don't have a supported threads library on your platform, or
+   if you wish to use the single threaded version of Converge. Note that you
+   can can only define one CON_THREADS_* variable. */
+#undef CON_THREADS_SINGLE_THREADED
+
+/* Define to one of `_getb67', `GETB67', `getb67' for Cray-2 and Cray-YMP
+   systems. This function is required for `alloca.c' support on those systems.
+   */
+#undef CRAY_STACKSEG_END
+
+/* Define to 1 if using `alloca.c'. */
+#undef C_ALLOCA
+
+/* Define to 1 if you have `alloca', as a function or macro. */
+#undef HAVE_ALLOCA
+
+/* Define to 1 if you have <alloca.h> and it should be used (not on Ultrix).
+   */
+#undef HAVE_ALLOCA_H
+
+/* Define to 1 if you have the declaration of `strerror_r', and to 0 if you
+   don't. */
+#undef HAVE_DECL_STRERROR_R
+
+/* Define to 1 if you have the <inttypes.h> header file. */
+#undef HAVE_INTTYPES_H
+
+/* Define to 1 if you have the <memory.h> header file. */
+#undef HAVE_MEMORY_H
+
+/* Define to 1 if you have the <stdint.h> header file. */
+#undef HAVE_STDINT_H
+
+/* Define to 1 if you have the <stdlib.h> header file. */
+#undef HAVE_STDLIB_H
+
+/* Define to 1 if you have the `strerror_r' function. */
+#undef HAVE_STRERROR_R
+
+/* Define to 1 if you have the <strings.h> header file. */
+#undef HAVE_STRINGS_H
+
+/* Define to 1 if you have the <string.h> header file. */
+#undef HAVE_STRING_H
+
+/* Define to 1 if you have the <sys/stat.h> header file. */
+#undef HAVE_SYS_STAT_H
+
+/* Define to 1 if you have the <sys/types.h> header file. */
+#undef HAVE_SYS_TYPES_H
+
+/* Define to 1 if you have the <unistd.h> header file. */
+#undef HAVE_UNISTD_H
+
+/* Define to the address where bug reports for this package should be sent. */
+#undef PACKAGE_BUGREPORT
+
+/* Define to the full name of this package. */
+#undef PACKAGE_NAME
+
+/* Define to the full name and version of this package. */
+#undef PACKAGE_STRING
+
+/* Define to the one symbol short name of this package. */
+#undef PACKAGE_TARNAME
+
+/* Define to the version of this package. */
+#undef PACKAGE_VERSION
+
+/* The size of a `CON_INT', as computed by sizeof. */
+#undef SIZEOF_CON_INT
+
+/* The size of a `int', as computed by sizeof. */
+#undef SIZEOF_INT
+
+/* The size of a `long', as computed by sizeof. */
+#undef SIZEOF_LONG
+
+/* If using the C implementation of alloca, define if you know the
+   direction of stack growth for your system; otherwise it will be
+   automatically deduced at run-time.
+	STACK_DIRECTION > 0 => grows toward higher addresses
+	STACK_DIRECTION < 0 => grows toward lower addresses
+	STACK_DIRECTION = 0 => direction of growth unknown */
+#undef STACK_DIRECTION
+
+/* Define to whatever your stat struct calls st_mtimespec (e.g. st_mtim under
+   Linux and Cygwin). */
+#undef STAT_ST_MTIMESPEC
+
+/* Define to 1 if you have the ANSI C header files. */
+#undef STDC_HEADERS
+
+/* Define to 1 if strerror_r returns char *. */
+#undef STRERROR_R_CHAR_P
+
+/* Define to `unsigned char' if <sys/types.h> does not define. */
+#undef u_char
+
+#endif

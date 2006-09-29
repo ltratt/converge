@@ -1,0 +1,19 @@
+OBJECT_FILES = File.cvb Functional.cvb Parse_Options.cvb Maths.cvb Numbers.cvb Sort.cvb Strings.cvb \
+	CPK/Tokens.cvb CPK/init.cvb CPK/Token.cvb CPK/Earley/init.cvb \
+	CPK/Earley/Grammar.cvb CPK/Earley/Parser.cvb CPK/Traverser.cvb CPK/Tree.cvb
+
+
+all: libconverge.cvl
+
+
+libconverge.cvl: ${OBJECT_FILES}
+	${CONVERGE_VM} ${CONVERGEL} -l -o libconverge.cvl ${OBJECT_FILES}
+
+clean:
+	rm -f ${OBJECT_FILES} libconverge.cvl
+
+distclean: clean
+	rm -f Makefile .depend
+
+
+include @abs_top_srcdir@/Makefile.inc

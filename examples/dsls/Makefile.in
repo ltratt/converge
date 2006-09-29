@@ -1,0 +1,13 @@
+all: switch
+
+switch: switch.cvb
+	${CONVERGE_VM} ${CONVERGEL} -o switch switch.cvb ${CONVERGE_LIB} ${CONVERGE_COMPILER_LIB}
+
+clean:
+	rm -f switch switch.cvb
+
+distclean: clean
+	rm -f Makefile .depend
+
+
+include @abs_top_srcdir@/Makefile.inc

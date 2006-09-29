@@ -1,0 +1,70 @@
+// Copyright (c) 2003-2006 King's College London, created by Laurence Tratt
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to
+// deal in the Software without restriction, including without limitation the
+// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+// sell copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+// IN THE SOFTWARE.
+
+import Array
+import CV_Module
+
+
+
+
+EXEC_INIT_STRING := "CONVEXEC"
+
+EXEC_BYTECODE_HEADER := 0
+EXEC_BYTECODE_FORMAT_VERSION := 2
+EXEC_BYTECODE_NUM_MODULES := 3
+EXEC_BYTECODE_MODULE_OFFSETS := 4
+
+
+
+
+func serialize(target, target_array_type, modules):
+
+	exec := Array::Array.new(target_array_type)
+	exec.extend_from_string(EXEC_INIT_STRING)
+	exec.append(0)  // Version
+	exec.append(modules.len()) // Number of modules
+	
+	exec.extend([-1] * modules.len())
+
+	for i := 0.to(modules.len()):
+		exec[EXEC_BYTECODE_MODULE_OFFSETS + i] := exec.len_bytes()
+		exec.extend_from_string(modules[i])
+	
+	return exec.serialize()
+
+
+
+func deserialize(target, target_array_type, exec_str):
+
+	exec_array := Array::Array.new(target_array_type, exec_str)
+	
+	if exec_array[0 : EXEC_INIT_STRING.len() / target::WORDSIZE].to_str() != EXEC_INIT_STRING:
+		raise "XXX"
+	
+	modules := []
+	for i := 0.to(exec_array[EXEC_BYTECODE_NUM_MODULES]):
+		module_offset := exec_array[EXEC_BYTECODE_MODULE_OFFSETS + i] / target::WORDSIZE
+		to := module_offset + (exec_array[module_offset + CV_Module::MODULE_BYTECODE_SIZE] / target::WORDSIZE)
+		module := CV_Module::CV_Module.new(target, target_array_type)
+		module.deserialize_array(exec_array[module_offset : to])
+		modules.append([exec_str[module_offset * target::WORDSIZE : to * target::WORDSIZE], module])
+		assert module.serialize() == exec_str[module_offset * target::WORDSIZE : to * target::WORDSIZE]
+	
+	return modules

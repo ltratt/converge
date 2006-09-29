@@ -1,0 +1,48 @@
+# this line is only needed for bootstrapping the new VM
+OLD_CONVERGE_VM=/home/ltratt/src/converge/src/vm/converge
+
+CONVERGE_DIR=@abs_srcdir@
+
+CONVERGE_VM_DIR=${CONVERGE_DIR}/vm
+CONVERGE_VM=${CONVERGE_VM_DIR}/converge
+
+CONVERGE_COMPILER_DIR=${CONVERGE_DIR}/compiler
+CONVERGEC=${CONVERGE_COMPILER_DIR}/convergec
+CONVERGEL=${CONVERGE_COMPILER_DIR}/convergel
+CONVERGED=${CONVERGE_COMPILER_DIR}/converged
+CONVERGE_COMPILER_LIB=${CONVERGE_COMPILER_DIR}/libcompiler.cvl
+
+OLD_CONVERGE_COMPILER_DIR=${CONVERGE_DIR}/bootstrap
+OLD_CONVERGEC=${OLD_CONVERGE_COMPILER_DIR}/convergec
+OLD_CONVERGEL=${OLD_CONVERGE_COMPILER_DIR}/convergel
+OLD_CONVERGED=${OLD_CONVERGE_COMPILER_DIR}/converged
+OLD_CONVERGE_COMPILER_LIB=${OLD_CONVERGE_COMPILER_DIR}/libcompiler.cvl
+
+CONVERGE_LIB_DIR=${CONVERGE_DIR}/lib
+CONVERGE_LIB=${CONVERGE_LIB_DIR}/libconverge.cvl
+
+CONVERGE_EXAMPLES_DIR=${CONVERGE_DIR}/examples
+
+
+#
+# C
+#
+
+
+
+#
+# Converge
+#
+
+.SUFFIXES: .cv .cvb
+
+CONVERGEC_FLAGS?=
+
+.cv.cvb:
+	${CONVERGE_VM} ${CONVERGEC} ${CONVERGEC_FLAGS} -o $@ $<
+
+
+depend::
+	${CONVERGE_VM} ${CONVERGED} -o .depend ${OBJECT_FILES}
+
+sinclude "${.CURDIR}/.depend"

@@ -1,0 +1,875 @@
+// Copyright (c) 2003-2006 King's College London, created by Laurence Tratt
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to
+// deal in the Software without restriction, including without limitation the
+// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+// sell copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+// IN THE SOFTWARE.
+
+
+import Array, Exceptions
+
+
+
+
+WORDSIZE := 4
+
+
+//INSTR_ASSIGN := 1                  // bits 0-7 := 1
+INSTR_LOOKUP_VAR := 2              // bits 0-7 := 2, bits 8-19 := continuation offset, bits 20-31 := var number
+INSTR_ASSIGN_VAR := 3              // bits 0-7 := 3, bits 8-19 := closures offset, bits 20-31 := var number
+INSTR_INT := 4                     // bits 0-7 := 4, bits 8-30 := integer value, bit 31 := sign
+INSTR_ADD_FAILURE_FRAME := 5       // bits 0-7 := 5, bits 8-30 := pc offset, bit 31 := offset sign
+INSTR_ADD_FAIL_UP_FRAME := 6       // bits 0-7 := 6
+INSTR_REMOVE_FAILURE_FRAME := 7    // bits 0-7 := 7
+INSTR_IS_ASSIGNED := 8             // bits 0-7 := 8, bits 8-19 := closures offset, bits 20-31 := var number,
+//   bits 32-39 := 0, 40-62 := pc offset, bit 63 := offset sign
+INSTR_IS := 9                      // bits 0-7 := 9
+INSTR_FAIL_NOW := 10               // bits 0-7 := 10
+INSTR_POP := 11                    // bits 0-7 := 11
+INSTR_LIST := 12                   // bits 0-7 := 12, bits 8-31 := number of list elements
+INSTR_SLOT_LOOKUP := 13            // bits 0-7 := 13, bits 8-31 := size of slot name, bits 32-.. := slot name
+INSTR_APPLY := 14                  // bits 0-7 := 14, bits 8-15 := number of args
+INSTR_FUNC_DEF := 15               // bits 0-7 := 15, bits 8-15 := is_bound, bit 16 := is bound
+INSTR_RETURN := 16                 // bits 0-7 := 16
+INSTR_BRANCH := 17                 // bits 0-7 := 17, bits 8-30 := pc offset, bit 31 := offset sign
+INSTR_YIELD := 18                  // bits 0-7 := 18
+INSTR_PUSH_FAIL := 19              // bits 0-7 := 19
+INSTR_IMPORT := 20                 // bits 0-7 := 20, bits 8-31 := module name
+INSTR_DICT := 21                   // bits 0-7 := 21, bits 8-31 := number of dictionary elements
+INSTR_DUP := 22                    // bits 0-7 := 22
+INSTR_PULL := 23                   // bits 0-7 := 23, bits 8-31 := number of entries back in the stack to pull the value from
+INSTR_CHANGE_FAIL_POINT := 24      // bits 0-7 := 24, bits 8-30 := pc offset, bit 31 := offset sign
+INSTR_STRING := 25                 // bits 0-7 := 25, bits 8-31 := size of string, bits 32-.. := string
+INSTR_BUILTIN_LOOKUP := 26         // bits 0-7 := 26, bits 8-15 := builtin number
+INSTR_ASSIGN_SLOT := 27            // bits 0-7 := 27, bits 8-31 := size of slot name, bits 32-.. := slot name
+INSTR_EYIELD := 28                 // bits 0-7 := 28
+INSTR_ADD_EXCEPTION_FRAME := 29    // bits 0-7 := 5, bits 8-30 := pc offset, bit 31 := offset sign
+INSTR_PUSH_EXCEPTION := 30         // bits 0-7 := 30
+INSTR_INSTANCE_OF := 31            // bits 0-7 := 31
+INSTR_REMOVE_EXCEPTION_FRAME := 32 // bits 0-7 := 32
+INSTR_RAISE := 33                  // bits 0-7 := 33
+INSTR_SET_ITEM := 34
+INSTR_UNPACK_ARGS := 35            // bits 0-7 := 40, bits 8-15 := num args, bit 16 := is bound
+// each variable is then a subsequent word:
+//   word 1: 0-11 := var number, bit 12 := is mandatory arg
+INSTR_SET := 36
+INSTR_BRANCH_IF_NOT_FAIL := 37     // bits 0-7 := 48, bits 8-30 := pc offset, bit 31 := offset sign
+INSTR_BRANCH_IF_FAIL := 38         // bits 0-7 := 49, bits 8-30 := pc offset, bit 31 := offset sign
+INSTR_CONSTANT_GET := 39           // bits 0-7 := 50, bits 8-30 := constant number
+INSTR_CONSTANT_SET := 40           // bits 0-7 := 51, bits 8-30 := constant number
+INSTR_PRE_APPLY_SLOT_LOOKUP := 41  // bits 0-7 := 52, bits 8-31 := size of slot name, bits 32-.. := slot name
+INSTR_UNPACK_ASSIGN := 42          // bits 0-7 := 42, bits 8-31 := number of elements to be unpacked
+INSTR_EQ := 43				       // bits 0-7 := 43
+INSTR_LE := 44				       // bits 0-7 := 44
+INSTR_ADD := 45				       // bits 0-7 := 45
+INSTR_SUB := 46				       // bits 0-7 := 46
+INSTR_NEQ := 47				       // bits 0-7 := 47
+INSTR_LEQ := 48				       // bits 0-7 := 48
+INSTR_GEQ := 49				       // bits 0-7 := 49
+INSTR_GE := 50				       // bits 0-7 := 50
+INSTR_MODULE_LOOKUP := 51          // bits 0-7 := 51, bits 8-31 := size of slot name, bits 32-.. := slot name
+
+
+
+
+class Instruction:
+
+	func init(src_info):
+
+		self.src_info := src_info
+
+
+
+	func bytecode_len_bytes():
+	
+		return WORDSIZE
+
+
+
+
+class Instr_Lookup_Var(Instruction):
+
+	func init(src_info, closures_offset, var_number):
+	
+		self.src_info := src_info
+		self.closures_offset := closures_offset
+		self.var_number := var_number
+
+
+
+	func to_bytecode():
+	
+		return b_8_12_12(INSTR_LOOKUP_VAR, self.closures_offset, self.var_number)
+
+
+
+
+class Instr_Assign_Var(Instruction):
+
+	func init(src_info, closures_offset, var_number):
+	
+		self.src_info := src_info
+		self.closures_offset := closures_offset
+		self.var_number := var_number
+
+
+
+	func to_bytecode():
+	
+		return b_8_12_12(INSTR_ASSIGN_VAR, self.closures_offset, self.var_number)
+
+
+
+
+class Instr_Int(Instruction):
+
+	func init(src_info, val):
+	
+		self.src_info := src_info
+		self.val := val
+
+
+
+	func to_bytecode():
+	
+		if self.val < 0:
+			int_val := (0 - self.val).or(1.lsl(23))
+		else:
+			int_val := self.val
+		if int_val.and(0x000000FF.lsl(24)) != 0:
+			raise Exceptions::Exception("Unable to squeeze int into 24 bits")
+		else:
+			return b_8_s24(INSTR_INT, int_val)
+
+
+
+
+class Instr_Add_Failure_Frame(Instruction):
+
+	func init(src_info, pc_offset):
+	
+		self.src_info := src_info
+		self.pc_offset := pc_offset
+
+
+
+	func to_bytecode():
+	
+		return b_8_s24(INSTR_ADD_FAILURE_FRAME, self.pc_offset)
+
+
+
+
+class Instr_Add_Fail_Up_Frame(Instruction):
+
+	func to_bytecode():
+	
+		return b_8(INSTR_ADD_FAIL_UP_FRAME)
+
+
+
+
+class Instr_Remove_Failure_Frame(Instruction):
+
+	func to_bytecode():
+	
+		return b_8(INSTR_REMOVE_FAILURE_FRAME)
+
+
+
+
+class Instr_Is_Assigned(Instruction):
+
+	func init(src_info, closures_offset, var_number, pc_offset):
+	
+		self.src_info := src_info
+		self.closures_offset := closures_offset
+		self.var_number := var_number
+		self.pc_offset := pc_offset
+
+
+
+	func bytecode_len_bytes():
+	
+		return 2 * WORDSIZE
+
+
+
+	func to_bytecode():
+	
+		return [b_8_12_12(INSTR_IS_ASSIGNED, self.closures_offset, self.var_number), b_8_s24(0, self.pc_offset)]
+
+
+
+
+
+class Instr_Fail_Now(Instruction):
+
+	func to_bytecode():
+	
+		return b_8(INSTR_FAIL_NOW)
+
+
+
+
+class Instr_Pop(Instruction):
+
+	func to_bytecode():
+	
+		return b_8(INSTR_POP)
+
+
+
+
+class Instr_List(Instruction):
+
+	func init(src_info, num_elements):
+		
+		self.src_info := src_info
+		self.num_elements := num_elements
+
+
+
+	func to_bytecode():
+	
+		return b_8_8(INSTR_LIST, self.num_elements)
+
+
+
+
+class Instr_Slot_Lookup(Instruction):
+
+
+	func init(src_info, slot_name):
+
+		self.src_info := src_info	
+		self.slot_name := slot_name
+
+
+
+	func bytecode_len_bytes():
+	
+		return WORDSIZE + align(self.slot_name.len())
+
+
+
+	func to_bytecode():
+	
+		return [b_8_8(INSTR_SLOT_LOOKUP, self.slot_name.len())] + b_aligned_string(self.slot_name)
+
+
+
+
+
+class Instr_Apply(Instruction):
+
+	func init(src_info, num_args):
+		
+		self.src_info := src_info
+		self.num_args := num_args
+
+
+
+	func to_bytecode():
+	
+		return b_8_8(INSTR_APPLY, self.num_args)
+
+
+
+
+class Instr_Func_Def(Instruction):
+
+	func init(src_info, is_bound):
+		
+		self.src_info := src_info
+		self.is_bound := is_bound
+
+
+
+	func to_bytecode():
+	
+		return b_8_1(INSTR_FUNC_DEF, self.is_bound)
+
+
+
+
+class Instr_Return(Instruction):
+
+	func to_bytecode():
+	
+		return b_8(INSTR_RETURN)
+
+
+
+
+class Instr_Branch(Instruction):
+
+	func init(src_info, pc_offset):
+		
+		self.src_info := src_info
+		self.pc_offset := pc_offset
+
+
+
+	func to_bytecode():
+	
+		return b_8_s24(INSTR_BRANCH, self.pc_offset)
+
+
+
+
+class Instr_Import(Instruction):
+
+	func init(src_info, import_num):
+		
+		self.src_info := src_info
+		self.import_num := import_num
+
+
+
+	func to_bytecode():
+	
+		return b_8_24(INSTR_IMPORT, self.import_num)
+
+
+
+
+class Instr_Dict(Instruction):
+
+	func init(src_info, num_elements):
+		
+		self.src_info := src_info
+		self.num_elements := num_elements
+
+
+
+	func to_bytecode():
+	
+		return b_8_24(INSTR_DICT, self.num_elements)
+
+
+
+
+class Instr_Dup(Instruction):
+
+	func to_bytecode():
+	
+		return b_8(INSTR_DUP)
+
+
+
+
+class Instr_Pull(Instruction):
+
+	func init(src_info, num_entries):
+
+		self.src_info := src_info	
+		self.num_entries := num_entries
+
+
+
+	func to_bytecode():
+	
+		return b_8_24(INSTR_PULL, self.num_entries)
+
+
+
+
+class Instr_String(Instruction):
+
+	func init(src_info, string):
+
+		self.src_info := src_info	
+		self.string := string
+	
+
+
+	func bytecode_len_bytes():
+	
+		return WORDSIZE + align(self.string.len())
+
+	
+	
+	func to_bytecode():
+	
+		return [b_8_24(INSTR_STRING, self.string.len())] + b_aligned_string(self.string)
+
+
+
+
+class Instr_Builtin_Lookup(Instruction):
+
+	func init(src_info, builtin):
+		
+		self.src_info := src_info
+		self.builtin := builtin
+
+
+
+	func to_bytecode():
+	
+		return b_8_8(INSTR_BUILTIN_LOOKUP, self.builtin)
+
+
+
+
+class Instr_EYield(Instruction):
+
+	func to_bytecode():
+	
+		return b_8(INSTR_EYIELD)
+
+
+
+
+class Instr_Assign_Slot(Instruction):
+
+
+	func init(src_info, slot_name):
+
+		self.src_info := src_info	
+		self.slot_name := slot_name 
+
+
+
+	func bytecode_len_bytes():
+	
+		return WORDSIZE + align(self.slot_name.len())
+
+	
+	
+	func to_bytecode():
+	
+		return [b_8_8(INSTR_ASSIGN_SLOT, self.slot_name.len())] + b_aligned_string(self.slot_name)
+
+
+
+
+class Instr_Raise(Instruction):
+
+	func to_bytecode():
+	
+		return b_8(INSTR_RAISE)
+
+
+
+
+class Instr_Unpack_Args(Instruction):
+
+	func init(src_info, params_info, has_var_args):
+		
+		self.src_info := src_info
+		self.params_info := params_info
+		self.has_var_args := has_var_args
+
+
+
+	func bytecode_len_bytes():
+	
+		return self.to_bytecode().len() * WORDSIZE
+
+
+
+	func to_bytecode():
+	
+		if self.has_var_args == 1:
+			num_params := self.params_info.len() - 1
+		else:
+			num_params := self.params_info.len()
+
+		bytecode := [b_8_8_1(INSTR_UNPACK_ARGS, num_params, self.has_var_args)]
+		for var_num, is_mandatory := self.params_info.iterate():
+			bytecode.append(b_8_1(var_num, is_mandatory))
+		
+		return bytecode
+
+
+
+
+class Instr_Set(Instruction):
+
+	func init(src_info, num_elements):
+		
+		self.src_info := src_info
+		self.num_elements := num_elements
+
+
+
+	func to_bytecode():
+	
+		return b_8_24(INSTR_SET, self.num_elements)
+
+
+
+
+class Instr_Branch_If_Not_Fail(Instruction):
+
+	func init(src_info, pc_offset):
+	
+		self.src_info := src_info
+		self.pc_offset := pc_offset
+
+
+
+	func to_bytecode():
+	
+		return b_8_s24(INSTR_BRANCH_IF_NOT_FAIL, self.pc_offset)
+
+
+
+
+class Instr_Branch_If_Fail(Instruction):
+
+	func init(src_info, pc_offset):
+	
+		self.src_info := src_info
+		self.pc_offset := pc_offset
+
+
+
+	func to_bytecode():
+	
+		return b_8_s24(INSTR_BRANCH_IF_FAIL, self.pc_offset)
+
+
+
+
+class Instr_Constant_Get(Instruction):
+
+	func init(src_info, constant_num):
+	
+		self.src_info := src_info
+		self.constant_num := constant_num
+
+
+
+	func to_bytecode():
+	
+		return b_8_24(INSTR_CONSTANT_GET, self.constant_num)
+
+
+
+
+class Instr_Constant_Set(Instruction):
+
+	func init(src_info, constant_num):
+	
+		self.src_info := src_info
+		self.constant_num := constant_num
+
+
+
+	func to_bytecode():
+	
+		return b_8_24(INSTR_CONSTANT_SET, self.constant_num)
+
+
+
+
+class Instr_Pre_Apply_Slot_Lookup(Instruction):
+
+	func init(src_info, slot_name):
+	
+		self.src_info := src_info
+		self.slot_name := slot_name
+
+
+
+	func bytecode_len_bytes():
+	
+		return WORDSIZE + align(self.slot_name.len())
+
+
+
+	func to_bytecode():
+	
+		return [b_8_8(INSTR_PRE_APPLY_SLOT_LOOKUP, self.slot_name.len())] + b_aligned_string(self.slot_name)
+
+
+
+
+class Instr_Is(Instruction):
+
+	func to_bytecode():
+	
+		return b_8(INSTR_IS)
+
+
+
+
+class Instr_Unpack_Assign(Instruction):
+
+	func init(src_info, num_elements):
+	
+		self.src_info := src_info
+		self.num_elements := num_elements
+
+
+
+	func to_bytecode():
+	
+		return b_8_24(INSTR_UNPACK_ASSIGN, self.num_elements)
+
+
+
+
+class Instr_EQ(Instruction):
+
+	func to_bytecode():
+	
+		return b_8(INSTR_EQ)
+
+
+
+
+class Instr_LE(Instruction):
+
+	func to_bytecode():
+	
+		return b_8(INSTR_LE)
+
+
+
+
+class Instr_Add(Instruction):
+
+	func to_bytecode():
+	
+		return b_8(INSTR_ADD)
+
+
+
+
+class Instr_Sub(Instruction):
+
+	func to_bytecode():
+	
+		return b_8(INSTR_SUB)
+
+
+
+
+class Instr_NEQ(Instruction):
+
+	func to_bytecode():
+	
+		return b_8(INSTR_NEQ)
+
+
+
+
+class Instr_LEQ(Instruction):
+
+	func to_bytecode():
+	
+		return b_8(INSTR_LEQ)
+
+
+
+
+class Instr_GEQ(Instruction):
+
+	func to_bytecode():
+	
+		return b_8(INSTR_GEQ)
+
+
+
+
+class Instr_GE(Instruction):
+
+	func to_bytecode():
+	
+		return b_8(INSTR_GE)
+
+
+
+
+class Instr_Module_Lookup(Instruction):
+
+
+	func init(src_info, slot_name):
+
+		self.src_info := src_info	
+		self.slot_name := slot_name
+
+
+
+	func bytecode_len_bytes():
+	
+		return WORDSIZE + align(self.slot_name.len())
+
+
+
+	func to_bytecode():
+	
+		return [b_8_8(INSTR_MODULE_LOOKUP, self.slot_name.len())] + b_aligned_string(self.slot_name)
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
+
+func encode_src_infos(src_infos):
+
+	src_infos_array := Array::Array.new("i32")
+	for num_instructions, src_info := src_infos.iterate():
+		src_infos_array.append(num_instructions.or(src_info.len().lsl(16)))
+		for import_num, src_offset := src_info.iterate():
+			if import_num == -1:
+				src_infos_array.append(4095.or(src_offset.lsl(12)))
+			else:
+				src_infos_array.append(import_num.or(src_offset.lsl(12)))
+	
+	return src_infos_array
+
+
+
+func decode_src_infos(src_infos_array):
+
+	src_infos := []
+	i := 0
+	while i < src_infos_array.len():
+		src_info := []
+		num_instructions := src_infos_array[i].and(65535)
+		num_src_info := src_infos_array[i].lsr(16)
+		i += 1
+		for j := 0.to(num_src_info):
+			import_num := src_infos_array[i].and(4095)
+			if import_num == 4095:
+				import_num := -1
+			src_offset := src_infos_array[i].lsr(12)
+			src_info.append([import_num, src_offset])
+			i += 1
+		src_infos.append([num_instructions, src_info])
+	
+	return src_infos
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Bit manipulation etc.
+//
+
+
+func align(i):
+
+	if i % WORDSIZE == 0:
+		return i
+	else:
+		return (i - (i % WORDSIZE)) + WORDSIZE
+
+
+
+func b_8(b_8):
+
+	//    assert b_8 && 0xFFFFFF00 == 0, "Unable to fit %s into 8 bits" % `b_8`
+
+	return b_8
+
+
+
+func b_8_1(b_8, b_1):
+
+	//    assert b_8 && 0xFFFFFF00 == 0, "Unable to fit %s into 8 bits" % `b_8`
+
+	return b_8.or(b_1.lsl(8))
+
+
+
+func b_8_8(b1_8, b2_8):
+
+	//	assert b1_8 && 0xFFFFFF00 == 0, "Unable to fit %s into 8 bits" % `b1_8`
+	//	assert b2_8 && 0xFFFFFF00 == 0, "Unable to fit %s into 8 bits" % `b2_8`
+
+	return b1_8.or(b2_8.lsl(8))
+
+
+
+func b_8_8_1(b1_8, b2_8, b3_1):
+
+	//	assert b1_8 && 0xFFFFFF00 == 0, "Unable to fit %s into 8 bits" % `b1_8`
+	//	assert b2_8 && 0xFFFFFF00 == 0, "Unable to fit %s into 8 bits" % `b2_8`
+
+	return b1_8.or(b2_8.lsl(8)).or(b3_1.lsl(16))
+
+
+
+//def b_8_8_8(b1_8, b2_8, b3_8):
+//
+////	assert b1_8 && 0xFFFFFF00 == 0, "Unable to fit %s into 8 bits" % `b1_8`
+////	assert b2_8 && 0xFFFFFF00 == 0, "Unable to fit %s into 8 bits" % `b2_8`
+////	assert b3_8 && 0xFFFFFF00 == 0, "Unable to fit %s into 8 bits" % `b3_8`
+//
+//	return b1_8 ^ (b2_8 << 8) ^ (b3_8 << 16)
+
+
+
+func b_8_8_8_8(b1_8, b2_8, b3_8, b4_8):
+
+	//	assert b1_8 && 0xFFFFFF00 == 0, "Unable to fit %s into 8 bits" % `b1_8`
+	//	assert b2_8 && 0xFFFFFF00 == 0, "Unable to fit %s into 8 bits" % `b2_8`
+	//	assert b3_8 && 0xFFFFFF00 == 0, "Unable to fit %s into 8 bits" % `b3_8`
+	//	assert b4_8 && 0xFFFFFF00 == 0, "Unable to fit %s into 8 bits" % `b4_8`
+
+	return b1_8.or(b2_8.lsl(8)).or(b3_8.lsl(16)).or(b4_8.lsl(24))
+
+
+
+func b_8_24(b_8, b_24):
+
+	//	assert b_8 && 0xFFFFFF00 == 0, "Unable to fit %s into 8 bits" % `b_8`
+	//	assert b_24 && 0xFF000000 == 0, "Unable to fit %s into 24 bits" % `b_24`
+
+	return b_8.or(b_24.lsl(8))
+
+
+
+func b_8_s24(b_8, bs_24):
+
+	//	assert b_8 && 0xFFFFFF00 == 0, "Unable to fit %s into 8 bits" % `b_8`
+	if bs_24 < 0:
+		b_24 := 0 - bs_24
+	else:
+		b_24 := bs_24
+	//	assert b_24 && 0x7F000000 == 0, "Unable to fit %s into 24 bits" % `b_24`
+
+	if bs_24 < 0:
+		return b_8.or(b_24.lsl(8)).or(1.lsl(31))
+	else:
+		return b_8.or(b_24.lsl(8))
+
+
+
+func b_8_12_12(b_8, b1_12, b2_12):
+
+	//	assert b_8 && 0xFFFFFF00 == 0, "Unable to fit %s into 8 bits" % `b_8`
+	//	assert b1_12 && 0xFFF00000 == 0, "Unable to fit %s into 12 bits" % `b1_12`
+	//	assert b2_12 && 0xFFF00000 == 0, "Unable to fit %s into 12 bits" % `b2_12`
+
+	return b_8.or(b1_12.lsl(8)).or(b2_12.lsl(20))
+
+
+
+func b_aligned_string(s):
+
+	aligned_str := Array::Array.new("i32", s + ("\0" * (align(s.len()) - s.len())))
+	
+	assert(aligned_str.len() * WORDSIZE == align(s.len()))
+	
+	return aligned_str

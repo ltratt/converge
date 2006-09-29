@@ -1,0 +1,121 @@
+// Copyright (c) 2003-2006 King's College London, created by Laurence Tratt
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to
+// deal in the Software without restriction, including without limitation the
+// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+// sell copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+// IN THE SOFTWARE.
+
+
+import Sys
+import Compiler::CEI, Compiler::CV_Parser, Compiler::IModule_Gen, Compiler::ITree_Format, Compiler::Tokenizer
+import CPK::Earley::Grammar, CPK::Earley::Parser
+
+
+
+
+GRAMMAR := CV_Parser::GRAMMAR + """
+switch  ::= "SWITCH" "ID" ":" "INDENT" clauses default "DEDENT"
+clauses ::= ( clause "NEWLINE" )* clause
+clause  ::= "CASE" expr ":" "INDENT" expr_body "DEDENT"
+default ::= "NEWLINE" "DEFAULT" ":" "INDENT" expr_body "DEDENT"
+        ::=
+"""
+
+
+
+
+class Switch_Translator(IModule_Gen::IModule_Gen):
+
+	func _t_switch(node, extra_src_info):
+	
+		// switch ::= "SWITCH" "ID" ":" "INDENT" clauses default "DEDENT"
+		
+		self._var := CEI::ivar(node[2].value)
+		
+		clauses := self._preorder(node[5], extra_src_info + __SRC_INFO__)
+		default := self._preorder(node[6], extra_src_info + __SRC_INFO__)
+		
+		return return CEI::iif(clauses, default, node[1].src_info)
+
+
+
+	func _t_clauses(node, extra_src_info):
+
+		// clauses ::= { clause "NEWLINE" }* clause
+		//         ::=
+		
+		i := 1
+		clauses := []
+		while i < node.len():
+			clauses.append(self._preorder(node[i], extra_src_info + __SRC_INFO__))
+			i += 2
+		
+		return clauses
+		
+
+	
+	func _t_clause(node, extra_src_info):
+	
+		// clause ::= "CASE" expr ":" "INDENT" expr_body "DEDENT"
+		
+		return CEI::iclause([<node[1].src_info>| ${self._var} == ${self._preorder(node[2], extra_src_info + __SRC_INFO__)} |], self._eval_expr_body(node[5], extra_src_info + __SRC_INFO__))
+		
+
+
+	func _t_default(node, extra_src_info):
+	
+		// default ::= "NEWLINE" "DEFAULT" ":" "INDENT" expr_body "DEDENT"
+		//         ::=
+		
+		if node.len() == 1:
+			return [| pass |]
+		else:
+			return self._eval_expr_body(node[5], extra_src_info + __SRC_INFO__)
+	
+
+
+
+
+func switch(dsl_block, src_info):
+
+	parse_tree := CEI::dsl_parse(dsl_block, src_info, ["switch", "case", "default"], [], GRAMMAR, "switch")
+	
+	x := Switch_Translator.new().generate(parse_tree)
+	
+	Sys::println(ITree_Format::format(x))
+	
+	return x
+
+
+
+func f():
+
+	x := 2
+	$<<switch>>:
+		switch x:
+			case 1:
+				Sys::println("c1")
+
+			case 2:
+				Sys::lprintln("c2")
+
+			default:
+				Sys::println("default")
+
+
+
+func main():
+	f()

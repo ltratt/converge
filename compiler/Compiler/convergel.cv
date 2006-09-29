@@ -1,0 +1,194 @@
+// Copyright (c) 2003-2006 King's College London, created by Laurence Tratt
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to
+// deal in the Software without restriction, including without limitation the
+// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+// sell copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+// IN THE SOFTWARE.
+
+
+import Array, File, Maths, Parse_Options, Strings, Sys
+import Compiler_Vars, CV_Exec, CV_Module, CV_Library, Targets::Thirty_Two_Bit
+
+
+
+
+func _useage(msg):
+	
+	Sys::stderr.writeln(Strings::format("Error: %s", msg))
+	Sys::stderr.writeln("Usage: convergel [-l] -o <output> <input> [... <input>]")
+	Sys::exit(1)
+
+
+
+func _error(msg):
+	
+	Sys::stderr.writeln(Strings::format("Error: %s", msg))
+	Sys::stderr.writeln("Usage: convergel [-l] -o <output> <input> [... <input>]")
+	Sys::exit(1)
+		
+
+
+
+class Linker:
+
+	func init():
+	
+		self.includes := []
+	
+		options := Parse_Options::Options.new(_useage)
+		options.add(Parse_Options::Option_Spec.new("output", "o", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ONE))
+		
+		parsed_args, extra_args := options.parse()
+		for option_name, option_val := parsed_args.iterate():
+			if option_name == "output":
+				output_path := option_val
+			else:
+				raise "XXX"
+		
+		if extra_args.len() == 0:
+			_useage("Not enough arguments.")
+
+		// XXX!!
+		target := Thirty_Two_Bit
+		target_array_type := "i32"
+
+		modules := Dict{}
+		for input_path := extra_args.iterate():
+			input_path := File::canon_path(input_path)
+			input_file := File::open(input_path, "r")
+			input_file_data := input_file.read()
+			assert(CV_Library::LIBRARY_INIT_STRING.len() == CV_Module::MODULE_INIT_STRING.len())
+			file_type := input_file_data[ : CV_Library::LIBRARY_INIT_STRING.len()]
+			
+			if file_type == CV_Library::LIBRARY_INIT_STRING:
+				library := CV_Library::CV_Library.new(target, target_array_type)
+				for module_str, module := library.deserialize(input_file_data).iterate():
+					modules[module.get_identifier()] := [module_str, module]
+			elif file_type == CV_Module::MODULE_INIT_STRING:
+				module := CV_Module::CV_Module.new(target, target_array_type)
+				module.deserialize_str(input_file_data)
+				modules[module.get_identifier()] := [input_file_data, module]
+			else:
+				_error(Strings.format("File '%s' is not of a known type.", input_path))
+
+		linked_bytecode := Array::Array.new(target_array_type)
+		linked_bytecode.extend_from_string(CV_Exec::EXEC_INIT_STRING)
+		linked_bytecode.append(0)  // Version
+		linked_bytecode.append(-1) // Number of modules
+		
+		module_names_to_include := [File::join_ext(File::split_ext(File::canon_path(extra_args[0]))[0], CV_Module::CV_EXTENSION)]
+		modules_offsets := []
+		modules_bytecode := Array::Array.new(target_array_type)
+		i := 0
+		while i < module_names_to_include.len():
+			module_name := module_names_to_include[i]
+			if not (module_str, module := modules.find(module_name)):
+				_error(Strings::format("Module '%s' not found in input files.", module_name))
+			modules_offsets.append(modules_bytecode.len_bytes())
+			modules_bytecode.extend_from_string(module_str)
+			for import_ := module.get_imports().iterate():
+				if not Compiler_Vars::BUILTIN_MODULES.find(import_):
+					if not module_names_to_include.find(import_):
+						module_names_to_include.append(import_)
+			i += 1
+
+		linked_bytecode[3] := modules_offsets.len()
+		
+		preamble_length := (linked_bytecode.len() + modules_offsets.len()) * target::WORDSIZE
+		for module_offset := modules_offsets.iterate():
+			linked_bytecode.append(preamble_length + module_offset)
+
+		linked_bytecode.extend(modules_bytecode)
+
+		output_file := File::File.new(output_path, "w")
+		output_file.write(linked_bytecode.serialize())
+
+
+
+
+
+
+class Library_Linker:
+
+	func init():
+	
+		self.includes := []
+	
+		options := Parse_Options::Options.new(_useage)
+		options.add(Parse_Options::Option_Spec.new("library_mode", "l", Parse_Options::NONE, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ONE))
+		options.add(Parse_Options::Option_Spec.new("output", "o", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ONE))
+		
+		parsed_args, extra_args := options.parse()
+		for option_name, option_val := parsed_args.iterate():
+			if option_name == "library_mode":
+				pass
+			elif option_name == "output":
+				output_path := option_val
+			else:
+				raise "XXX"
+		
+		if extra_args.len() == 0:
+			_useage("Not enough arguments.")
+
+		// XXX!!
+		target := Thirty_Two_Bit
+		target_array_type := "i32"
+
+		modules := []
+		for input_path := extra_args.iterate():
+			input_path := File::canon_path(input_path)
+			input_file := File::open(input_path, "r")
+			input_file_data := input_file.read()
+			assert(CV_Library::LIBRARY_INIT_STRING.len() == CV_Module::MODULE_INIT_STRING.len())
+			file_type := input_file_data[ : CV_Library::LIBRARY_INIT_STRING.len()]
+			
+			if file_type == CV_Library::LIBRARY_INIT_STRING:
+				library := CV_Library::CV_Library.new(target, target_array_type)
+				for module_str, module := library.deserialize(input_file_data).iterate():
+					modules.append(module_str)
+			elif file_type == CV_Module::MODULE_INIT_STRING:
+				modules.append(input_file_data)
+
+		// In one sense, the following should belong in CV_Library::CV_Library.serialize. But by
+		// doing it here we can forego the pointless string -> array -> string conversion.
+
+		library := Array::Array.new(target_array_type)
+		library.extend_from_string(CV_Library::LIBRARY_INIT_STRING)
+		library.append(CV_Library::LIBRARY_VERSION)
+
+		library.append(modules.len())
+		
+		offsets := Array::Array.new(target_array_type)
+		serialized_modules := Array::Array.new(target_array_type)
+		for module := modules.iterate():
+			offsets.append((library.len() + modules.len() + serialized_modules.len()) * target::WORDSIZE)
+			serialized_modules.extend_from_string(module)
+		
+		library.extend(offsets)
+		library.extend(serialized_modules)		
+		
+		output_file := File::File.new(output_path, "w")
+		output_file.write(library.serialize())
+
+
+
+
+func main():
+
+	if Sys::argv.len() > 1 & Sys::argv[0] == "-l":
+		Library_Linker.new()
+	else:
+		Linker.new()

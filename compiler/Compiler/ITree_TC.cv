@@ -1,0 +1,335 @@
+// Copyright (c) 2003-2006 King's College London, created by Laurence Tratt
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to
+// deal in the Software without restriction, including without limitation the
+// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+// sell copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+// IN THE SOFTWARE.
+
+
+import Builtins, File, Functional, Strings
+import CEI, ITree
+
+
+
+
+_EXPRS := [ITree::IClass_Def, ITree::IFunc_Def, ITree::IIf, ITree::IVar, ITree::IImport, ITree::IWhile, ITree::IFor, ITree::IInt, ITree::IString, ITree::ISlot_Lookup, ITree::IModule_Lookup, ITree::IList, ITree::IDict, ITree::ISet, ITree::IApplication, ITree::IGet, ITree::ISlice, ITree::IReturn, ITree::IYield, ITree::IRaise, ITree::IAssert, ITree::IBreak, ITree::IContinue, ITree::IConjunction, ITree::IAlternation, ITree::IAssignment, ITree::INot, ITree::IBinary, ITree::IComparison, ITree::IPass, ITree::IInsert, ITree::IStandard_Quasi_Quotes, ITree::IOriginal_Name]
+
+
+
+
+class ITree_TC:
+
+	func tc(itree):
+	
+		self._indent_level := 0
+		
+		return self._preorder(itree)
+
+
+
+	func _type_error(parent_node, part, node, should_be):
+	
+		CEI::compiler().error(Strings::format("In %s node, got %s type for %s instead of %s.", parent_node.instance_of.name, node.instance_of.name, part, should_be), parent_node.src_info)
+
+
+
+	func _check_expr(parent_node, part, node):
+	
+		for elem_class := _EXPRS.iterate():
+			if elem_class.instantiated(node):
+				break
+		exhausted:
+			self._type_error(parent_node, part, node, "IExpr")
+			raise "XXX"
+		
+		self._preorder(node)
+
+
+
+	func _check_expr_block(parent_node, part, node):
+	
+		if not Builtins::List.conformed_by(node.exprs):
+			self._type_error(node, "exprs", node.exprs, "List")
+		
+		for i := 0.to(node.exprs.len()):
+			expr := node.exprs[i]
+			self._check_expr(node, Strings::format("exprs[%d]", i), expr)
+
+
+
+	////////////////////////////////////////////////////////////////////////////////////////////////
+	// Traversal
+	//
+
+
+	func _preorder(node):
+	
+		return self.get_slot("_t_" + node.instance_of.name.to_lower_case())(node)
+
+
+	
+	func _t_ifunc_def(node):
+	
+		if not (node.is_bound == 0 | node.is_bound == 1):
+			raise "XXX"
+		
+		if not (Builtins::String.instantiated(node.func_name) | ITree::IInsert.instantiated(node.func_name)):
+			self._type_error(node, "func_name", node.func_name, "[String, IInsert]")
+		
+		if not Builtins::List.conformed_by(node.params):
+			self._type_error(node, "params", node.params, "List")
+		for i := 0.to(node.params.len()):
+			param := node.params[i]
+			if not (ITree::IParam.instantiated(param) | ITree::IInsert.instantiated(param)):
+				self._type_error(node, Strings::format("param[%d]", i), param, "[IParam, IInsert]")
+			
+		if not node.var_arg is null:
+			if not ITree::IVar.instantiated(node.var_arg):
+				self._type_error(node, "var_arg", node.var_arg, "IVar")
+
+		if not Builtins::List.conformed_by(node.nonlocals):
+			self._type_error(node, "nonlocals", node.nonlocals, "List")
+		for i := 0.to(node.nonlocals.len()):
+			nonlocal_ := node.nonlocals[i]
+			if not ITree::IVar.instantiated(nonlocal_):
+				self._type_error(node, Strings::format("nonlocal[%s]", i), param, "IVar")
+
+		if not Builtins::List.conformed_by(node.renames):
+			self._type_error(node, "renames", node.renames, "List")
+		for i := 0.to(node.renames.len()):
+			raise "XXX"
+		
+		self._check_expr_block(node, "body", node.body)
+
+
+
+	func _t_iif(node):
+
+		for clause := node.clauses.iterate():
+			if not ITree::IClause.instantiated(clause):
+				self._type_error(node, "clause", clause, "IClause")
+		
+		if not node.else_body is null:
+			self._check_expr_block(node, "else body", node.else_body)
+
+
+
+	func _t_ivar(node):
+	
+		pass
+
+
+
+	func _t_iint(node):
+
+		if not Builtins::Int.instantiated(node.val):
+			self._type_error(node, "value", node.val, "Int")
+
+
+
+	func _t_istring(node):
+
+		if not Builtins::String.instantiated(node.string):
+			self._type_error(node, "value", node.string, "String")
+
+
+
+	func _t_islot_lookup(node):
+	
+		self._check_expr(node, "object expr", node.object_expr)
+		
+		if not Builtins::String.instantiated(node.slot_name):
+			self._type_error(node, "slot_name", node.slot_name, "String")
+
+
+
+	func _t_imodule_lookup(node):
+	
+		self._check_expr(node, "object expr", node.object_expr)
+		
+		if not (Builtins::String.instantiated(node.def_name) | ITree::IInsert.instantiated(node.def_name)):
+			self._type_error(node, "def_name", node.def_name, "[String, IInsert]")
+
+
+
+	func _t_ilist(node):
+	
+		if not Builtins::List.conformed_by(node.elements):
+			self._type_error(node, "elements", node.elements, "List")
+		for i := 0.to(node.elements.len()):
+			elem := node.elements[i]
+			self._check_expr(node, Strings::format("elem[%d]", i), elem)
+
+
+
+	func _t_iapplication(node):
+	
+		self._check_expr(node, "func_expr", node.func_expr)
+
+		if not Builtins::List.conformed_by(node.args):
+			self._type_error(node, "args", node.args, "List")
+		for arg := node.args.iterate():
+			self._check_expr(node, "arg", arg)
+
+
+
+	func _t_iget(node):
+	
+		self._check_expr(node, "get_object", node.get_object)
+		self._check_expr(node, "index", node.index)
+
+
+
+	func _t_islice(node):
+	
+		self._check_expr(node, "slice_object", node.slice_object)
+		
+		if not node.lower_bound is null:
+			self._check_expr(node, "lower_bound", node.lower_bound)
+			
+		if not node.upper_bound is null:
+			self._check_expr(node, "upper_bound", node.upper_bound)
+
+
+
+	func _t_ireturn(node):
+	
+		self._check_expr(node, "return_expr", node.return_expr)
+
+
+
+	func _t_iyield(node):
+	
+		self._check_expr(node, "yield_expr", node.yield_expr)
+
+
+
+	func _t_iraise(node):
+	
+		self._check_expr(node, "raise_expr", node.raise_expr)
+
+
+
+	func _t_iassert(node):
+	
+		self._check_expr(node, "assert_expr", node.assert_expr)
+
+
+
+	func _t_ibreak(node):
+	
+		pass
+
+
+
+	func _t_icontinue(node):
+	
+		pass
+
+
+
+	func _t_iassignment(node):
+	
+		if not ITree::ALL_ASSIGNMENTS.find(node.type):
+			raise "XXX"
+
+		if not Builtins::List.conformed_by(node.targets):
+			self._type_error(node, "targets", node.exprs, "List")
+		for target := node.targets.iterate():
+			if ITree::IVar.instantiated(target) | ITree::IGet.instantiated(target) | ITree::ISlot_Lookup.instantiated(target) | ITree::IInsert.instantiated(target):
+				self._preorder(target)
+			else:
+				self._type_error(node, "target", target, "[IVar, IGet, ISlot_Lookup]")
+		
+		self._check_expr(node, "expr", node.expr)
+
+
+
+	func _t_ibinary(node):
+	
+		if not ITree::ALL_BINARIES.find(node.type):
+			raise "XXX"
+		
+		self._check_expr(node, "lhs", node.lhs)
+		self._check_expr(node, "rhs", node.rhs)
+
+
+
+	func _t_icomparison(node):
+	
+		if not ITree::ALL_COMPARISONS.find(node.type):
+			raise "XXX"
+		
+		self._check_expr(node, "lhs", node.lhs)
+		self._check_expr(node, "rhs", node.rhs)
+
+
+
+	func _t_ipass(node):
+	
+		pass
+
+
+
+	func _t_iinsert(node):
+	
+		self._check_expr(node, "expr", node.expr)
+	
+	
+	
+	func _t_istandard_quasi_quotes(node):
+	
+		if not Builtins::List.conformed_by(node.exprs):
+			self._type_error(node, "exprs", node.exprs, "List")
+		
+		for expr := node.exprs.iterate():
+			self._check_expr(node, "expr", expr)
+		
+		if not node.extra_src_info is null:
+			self._check_expr(node, "extra_src_info", node.extra_src_info)
+	
+
+	
+	func _t_iexpr_block(node):
+
+		if not Builtins::List.conformed_by(node.exprs):
+			self._type_error(node, "exprs", node.exprs, "List")
+		for elem := node.exprs.iterate():
+			self._check_expr(node, "expr", elem)
+
+
+
+	func _t_iparam(node):
+	
+		if not ITree::IVar.instantiated(node.var):
+			self._type_error(node, "var", node.var, "IVar")
+		
+		if not node.default is null:
+			self._check_expr(node, "default", node.default)
+
+
+
+	func _t_iclause(node):
+	
+		self._check_expr(node, "condition", node.condition)
+		self._check_expr_block(node, "body", node.body)
+
+
+
+
+func tc(itree):
+
+	return ITree_TC.new().tc(itree)

@@ -1,0 +1,12 @@
+# This is an *example* of how to successfully bootstrap Converge. It's not necessarily the only way
+# of doing it, and depending on your platform you might need to perform extra steps.
+
+all: 
+	cd vm && ${MAKE} ${MFLAGS}
+	vm/converge bootstrap/id_fix.bootstrap bootstrap/convergec.bootstrap compiler/convergec
+	cp bootstrap/convergel.bootstrap compiler/convergel
+	gmake
+
+configure: configure.ac
+	autoconf
+	autoheader

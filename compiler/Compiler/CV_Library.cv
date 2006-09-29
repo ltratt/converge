@@ -1,0 +1,93 @@
+// Copyright (c) 2003-2006 King's College London, created by Laurence Tratt
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to
+// deal in the Software without restriction, including without limitation the
+// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+// sell copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+// IN THE SOFTWARE.
+
+
+import Array, File, Sys
+import CEI, CV_Module
+
+
+
+
+// Filename extensions.
+
+CVL_EXTENSION := "cvl"
+
+
+//
+
+LIBRARY_INIT_STRING := "CONVLIBR"
+LIBRARY_VERSION := 0
+
+// The following offsets are all in words.
+
+LIBRARY_BYTECODE_HEADER := 0
+LIBRARY_BYTECODE_FORMAT_VERSION := 2
+LIBRARY_BYTECODE_NUM_MODULES := 3
+LIBRARY_BYTECODE_MODULE_OFFSETS := 4
+
+
+
+
+class CV_Library:
+
+	func init(target, target_array_type):
+	
+		self._target := target
+		self._target_array_type := target_array_type
+
+
+
+	func deserialize(module_str):
+	
+		library := Array::Array.new(self._target_array_type, module_str)
+	
+		self.modules := []
+		modules_and_str := []
+		for i := 0.to(library[LIBRARY_BYTECODE_NUM_MODULES]):
+			module := CV_Module::CV_Module.new(self._target, self._target_array_type)
+			module_offset := library[LIBRARY_BYTECODE_MODULE_OFFSETS + i] / self._target::WORDSIZE
+			to := module_offset + library[module_offset + CV_Module::MODULE_BYTECODE_SIZE] / self._target::WORDSIZE
+			module.deserialize_array(library[module_offset : to])
+			self.modules.append(module)
+			modules_and_str.append([module_str[module_offset * self._target::WORDSIZE : to * self._target::WORDSIZE], module])
+		
+		return modules_and_str
+
+
+
+	func serialize():
+	
+		library := Array::Array.new(self._target_array_type)
+		library.extend_from_string(LIBRARY_INIT_STRING)
+		library.append(LIBRARY_VERSION)
+
+		library.append(self.modules.len())
+		library.append(-1) // Offset to modules offsets
+		
+		library[LIBRARY_BYTECODE_MODULE_OFFSETS] := library.len_bytes()
+		
+		serialized_modules := Array::Array.new(self._target_array_type)
+		for module := self.modules.iterate():
+			library.append(library.len_bytes() + serialized_modules.len_bytes())
+			serialized_modules.extend_from_string(module.serialize())
+		
+		library.extend(serialized_modules)
+		
+		return library

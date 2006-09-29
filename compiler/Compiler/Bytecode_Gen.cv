@@ -1,0 +1,957 @@
+// Copyright (c) 2003-2006 King's College London, created by Laurence Tratt
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to
+// deal in the Software without restriction, including without limitation the
+// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+// sell copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+// IN THE SOFTWARE.
+
+
+import Array, Builtins, File, Strings, Sys
+import CEI, Compiler_Vars, CV_Module, ITree, QQ_Mode
+
+
+
+
+_BUILTIN_NULL_OBJ := 0
+_BUILTIN_FAIL_OBJ := 1
+_BUILTIN_ATOM_DEF_OBJECT := 2
+_BUILTIN_SLOTS_ATOM_DEF_OBJECT := 3
+_BUILTIN_CLASS_ATOM_DEF_OBJECT := 4
+_BUILTIN_VM_ATOM_DEF_OBJECT := 5
+_BUILTIN_THREAD_ATOM_DEF_OBJECT := 6
+_BUILTIN_FUNC_ATOM_DEF_OBJECT := 7
+_BUILTIN_STRING_ATOM_DEF_OBJECT := 8
+_BUILTIN_CON_STACK_ATOM_DEF_OBJECT := 9
+_BUILTIN_LIST_ATOM_DEF_OBJECT := 10
+_BUILTIN_DICT_ATOM_DEF_OBJECT := 11
+_BUILTIN_MODULE_ATOM_DEF_OBJECT := 12
+_BUILTIN_INT_ATOM_DEF_OBJECT := 13
+_BUILTIN_UNIQUE_ATOM_DEF_OBJECT := 14
+_BUILTIN_CLOSURE_ATOM_DEF_OBJECT := 15
+_BUILTIN_PARTIAL_APPLICATION_ATOM_DEF_OBJECT := 16
+_BUILTIN_EXCEPTION_ATOM_DEF_OBJECT := 17
+_BUILTIN_SET_ATOM_DEF_OBJECT := 18
+_BUILTIN_OBJECT_CLASS := 19
+_BUILTIN_CLASS_CLASS := 20
+_BUILTIN_VM_CLASS := 21
+_BUILTIN_THREAD_CLASS := 22
+_BUILTIN_FUNC_CLASS := 23
+_BUILTIN_STRING_CLASS := 24
+_BUILTIN_CON_STACK_CLASS := 25
+_BUILTIN_LIST_CLASS := 26
+_BUILTIN_DICT_CLASS := 27
+_BUILTIN_MODULE_CLASS := 28
+_BUILTIN_INT_CLASS := 29
+_BUILTIN_CLOSURE_CLASS := 30
+_BUILTIN_PARTIAL_APPLICATION_CLASS := 31
+_BUILTIN_EXCEPTION_CLASS := 32
+_BUILTIN_SET_CLASS := 33
+_BUILTIN_C_FILE_MODULE := 34
+_BUILTIN_EXCEPTIONS_MODULE := 35
+_BUILTIN_SYS_MODULE := 36
+
+_CONSTANT_STRING_TEMPLATE := "str_%s"
+_CONSTANT_INT_TEMPLATE := "int_%s"
+
+//
+// Definition and expression nesting
+//
+
+NEST_NORMAL := 0 // [NEST_NORMAL]
+NEST_WHILE := 1  // [NEST_WHILE, <continue label>, <break label>]
+NEST_FOR := 2    // [NEST_FOR, <break label>]
+NEST_CLASS := 3  // [NEST_CLASS]
+NEST_FUNC := 4   // [NEST_FUNC, <bound = 1> | <unbound = 0>]
+
+
+
+
+class Bytecode_Gen:
+
+	func generate(imodule):
+	
+		// 'vars' and 'renames' are two lists which shadow each other, recording the variables and
+		// renames at each level of nesting. At all times, the length of each list is identical. Each
+		// level of nesting is recorded as a dictionary in each.
+		//
+		// 'vars' maps variable names to an integer denoting the number of that variable in the
+		// corresponding closure at execution time.
+		//
+		// 'renames' maps a rename to its original variable name. e.g. "rename x as y" is stored as
+		// Dict{"y" : "x"}. This might seem backwards, but the _add_assign_to_var function is the
+		// main consumer of these lists and it needs to discover what a variable is named in the
+		// outer scope (for the running example, this means that when it goes up a level of nesting,
+		// rather than search for "y", it needs to search for "x").
+	
+		self.vars := []
+		self.renames := []
+		
+		self.parent_mode := null
+		
+		self._nesting := []
+		self._imports := Dict{}
+		self._instructions := []
+		self._labels := Dict{}
+		
+		self._constants := Dict{}
+		self._constants_instructions := []
+		self._constants_labels := []
+		
+		// The next three slots are purely for convenience.
+		
+		self._compiler := CEI::compiler()
+		self._src_path := self._compiler.src_path
+		self._target := self._compiler.target
+		
+		self.preorder(imodule)
+		
+		// Fudge for constants.
+		
+		for label := self._constants_labels.iterate():
+			self._labels[label] += self._instructions.len()
+
+		self._instructions += self._constants_instructions
+
+		// Now we need to go through all the Instruction instances, and replace any labels with real
+		// integer offsets.
+		//
+		// This is a two stage process. First of all we have to go through every instruction and work
+		// out how much room it will take up. Then we go back over the instructions and replace every
+		// label with a real integer offset.
+		
+		pc := 0
+		bytecode_offsets := []
+		for instruction := self._instructions.iterate():
+			bytecode_offsets.append(pc)
+			pc += instruction.bytecode_len_bytes()
+
+		i := 0
+		while i < self._instructions.len():
+			instruction := self._instructions[i]
+			if instruction.has_slot("pc_offset") & Builtins::String.conformed_by(instruction.pc_offset):
+				instruction.pc_offset := bytecode_offsets[self._labels[instruction.pc_offset]] - bytecode_offsets[i] 
+			i += 1
+		
+		// Convert instructions into bytecode.
+		//
+		// At the same time we also populate the src_infos array.
+		
+		instructions_bytecode := Array::Array.new(self._compiler.target_array_type)
+		src_infos := []
+		for instruction := self._instructions.iterate():
+			instruction_bytecode := instruction.to_bytecode()
+			
+			src_info := []
+			//Sys::println(instruction.instance_of.name, " ", instruction.src_info)
+			for src_path, src_offset := instruction.src_info.iterate():
+				if src_path == self._compiler.src_path:
+					import_num := -1
+				else:
+					if not (import_num := self._imports.find(src_path)):
+						import_num := self._imports.len()
+						self._imports[src_path] := import_num
+				
+				if src_offset is null:
+					src_info.append([import_num, -1])
+				else:
+					src_info.append([import_num, src_offset])
+			
+			if Builtins::List.conformed_by(instruction_bytecode):
+				src_infos.append([instruction_bytecode.len(), src_info])
+				instructions_bytecode.extend(instruction_bytecode)
+			else:
+				src_infos.append([1, src_info])
+				instructions_bytecode.append(instruction_bytecode)
+
+		// Calculate the imports that we'll populate the module with. Note that we calculate
+
+		module_imports := [null] * self._imports.len()
+		for import_name, import_num := self._imports.iterate():
+			module_imports[import_num] := import_name
+		
+		constants_offsets := []
+		for label := self._constants_labels.iterate():
+			constants_offsets.append(bytecode_offsets[self._labels[label]])
+		
+		module := CV_Module::CV_Module.new(self._compiler.target, self._compiler.target_array_type)
+		module.set_name(imodule.module_name)
+		module.set_identifier(File::canon_path(self._compiler.src_path))
+		module.set_top_level_vars_map(self._top_level_vars_map)
+		module.set_instructions_bytecode(instructions_bytecode)
+		module.set_imports(module_imports)
+		module.set_src_infos(src_infos)
+		module.set_newlines(self._compiler.tokenizer.newlines)
+		module.set_constants_offsets(constants_offsets)
+		
+		return module
+
+
+
+	func _create_label():
+	
+		new_label := self._labels.len().to_str()
+		self._labels[new_label] := null
+		
+		return new_label
+
+
+
+	func _set_label(label, offset := self._instructions.len()):
+	
+		self._labels[label] := offset
+
+
+
+	func _add_vars(vars, renames):
+	
+		vars_dict := Dict{}
+		for var := vars.iterate():
+			vars_dict[var] := vars_dict.len()
+
+		self.vars.append(vars_dict)
+		self.renames.append(renames)
+
+
+
+	func _pop_vars():
+	
+		self.vars.del(-1)
+		self.renames.del(-1)
+
+
+
+	func _get_var_offsets(var_name, src_info):
+
+		i := self.vars.len() - 1
+		search_var_name := var_name
+		while i >= 0:
+			if self.vars[i].find(search_var_name):
+				break
+			if rename_as := self.renames[i].find(search_var_name):
+				search_var_name := rename_as
+			i -= 1
+		exhausted:
+			self._compiler.error(Strings::format("Unknown variable '%s'.", var_name), src_info)
+		
+		return [(self.vars.len() - i) - 1, self.vars[i][search_var_name]]
+
+
+
+	func _add_assign_to_var(var_name, src_info):
+	
+		closures_offset, var_num := self._get_var_offsets(var_name, src_info)
+		
+		self._instructions.append(self._target::Instr_Assign_Var.new(src_info, closures_offset, var_num))
+
+
+
+	func _add_lookup_var(var_name, src_info):
+	
+		closures_offset, var_num := self._get_var_offsets(var_name, src_info)
+		
+		self._instructions.append(self._target::Instr_Lookup_Var.new(src_info, closures_offset, var_num))
+		
+
+
+	////////////////////////////////////////////////////////////////////////////////////////////////
+	// Traversal
+	//
+
+	func preorder(node):
+	
+		self.get_slot("_t_" + node.instance_of.name.to_lower_case())(node)
+
+
+
+	func _t_iexpr_block(node):
+	
+		for expr := node.exprs.iterate():
+			end_of_expr_label := self._create_label()
+			self._nesting.append([NEST_NORMAL])
+			self._instructions.append(self._target::Instr_Add_Failure_Frame.new(expr.src_info, end_of_expr_label))
+			if ITree::IFunc_Def.instantiated(expr):
+				self.preorder(ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(expr.func_name, expr.src_info)], expr, expr.src_info))
+			else:
+				self.preorder(expr)
+
+			self._instructions.append(self._target::Instr_Remove_Failure_Frame.new(expr.src_info))
+			self._nesting.del(-1)
+			self._set_label(end_of_expr_label)
+
+
+
+	//
+	// Definitions
+	//
+
+	func _t_imodule(node):
+
+		self._add_vars(node.bound_vars, Dict{})
+		
+		self._instructions.append(self._target::Instr_Pop.new(node.src_info))
+		
+		self._add_assign_to_var("self_module", node.src_info)
+
+		self._instructions.append(self._target::Instr_Builtin_Lookup.new(node.src_info, _BUILTIN_FAIL_OBJ))
+		self._add_assign_to_var("fail", node.src_info)
+		self._instructions.append(self._target::Instr_Builtin_Lookup.new(node.src_info, _BUILTIN_NULL_OBJ))
+		self._add_assign_to_var("null", node.src_info)
+
+		for definition := node.definitions.iterate():
+			end_of_definition_label := self._create_label()
+			self._instructions.append(self._target::Instr_Add_Failure_Frame.new(node.src_info, end_of_definition_label))
+			self.preorder(definition)
+			self._instructions.append(self._target::Instr_Remove_Failure_Frame.new(node.src_info))
+			self._set_label(end_of_definition_label)
+
+		self._instructions.append(self._target::Instr_Builtin_Lookup.new(node.src_info, _BUILTIN_NULL_OBJ))
+		self._instructions.append(self._target::Instr_Return.new(node.src_info))
+		
+		self._top_level_vars_map := self.vars[0]
+		
+		self._pop_vars()
+
+
+
+	func _t_iclass_def(node):
+		
+		if node.metaclass_ is null:
+			self._instructions.append(self._target::Instr_Builtin_Lookup.new(node.src_info, _BUILTIN_CLASS_CLASS))
+		else:
+			self.preorder(node.metaclass_)
+		self._instructions.append(self._target::Instr_Pre_Apply_Slot_Lookup.new(node.src_info, "new"))
+		
+		self._instructions.append(self._target::Instr_String.new(node.src_info, node.class_name))
+		
+		if node.supers.len() > 0:
+			for super_ := node.supers.iterate():
+				self.preorder(super_)
+			self._instructions.append(self._target::Instr_List.new(node.src_info, node.supers.len()))
+		else:
+			// Object is the default superclass
+			self._instructions.append(self._target::Instr_Builtin_Lookup.new(node.src_info, _BUILTIN_OBJECT_CLASS))
+			self._instructions.append(self._target::Instr_List.new(node.src_info, 1))
+		
+		// XXX this is wrong for nested classes
+		
+		self._add_lookup_var("self_module", node.src_info)
+		
+		self._instructions.append(self._target::Instr_Apply.new(node.src_info, 3))
+
+		self._nesting.append([NEST_CLASS])
+		for field := node.fields.iterate():
+			if ITree::IPass.instantiated(field):
+				continue
+			
+			self._instructions.append(self._target::Instr_Dup.new(field.src_info))
+			self._instructions.append(self._target::Instr_Pre_Apply_Slot_Lookup.new(field.src_info, "set_field"))
+		
+			if ITree::IFunc_Def.instantiated(field):
+				self._instructions.append(self._target::Instr_String.new(field.src_info, field.func_name))
+				self.preorder(field)
+			elif ITree::IClass_Def.instantiated(field):
+				self._instructions.append(self._target::Instr_String.new(field.src_info, field.class_name))
+				self.preorder(field)
+			elif ITree::IAssignment.instantiated(field):
+				assert field.targets.len() == 1
+				self._instructions.append(self._target::Instr_String.new(field.src_info, field.targets[0].var_name))
+				self.preorder(field.expr)
+			else:
+				Sys::println(field.pp(0))
+				raise "XXX"
+			self._instructions.append(self._target::Instr_Apply.new(field.src_info, 2))
+			self._instructions.append(self._target::Instr_Pop.new(field.src_info))
+		self._nesting.del(-1)
+
+
+
+	func _t_ifunc_def(node):
+		
+		bound_vars := node.internal_bound_vars
+
+		if node.is_bound == 1:
+			bound_vars.add("self")
+		
+		renames := Dict{}
+		for rename_ := node.renames.iterate():
+			raise "XXX"
+		
+		self._add_vars(bound_vars, renames)
+		
+		self._nesting.append([NEST_FUNC, node.is_bound])
+		
+		params := node.params[ : ]
+		if node.is_bound == 1:
+			params.insert(0, ITree::IParam.new(ITree::IVar.new("self", node.src_info), null, node.src_info))
+
+		self._instructions.append(self._target::Instr_String.new(node.src_info, node.func_name))
+		self._instructions.append(self._target::Instr_Int.new(node.src_info, bound_vars.len() + node.is_bound))
+		self._instructions.append(self._target::Instr_Int.new(node.src_info, params.len()))
+		self._instructions.append(self._target::Instr_Func_Def.new(node.src_info, node.is_bound))
+		end_of_func_body_label := self._create_label()
+		self._instructions.append(self._target::Instr_Branch.new(node.src_info, end_of_func_body_label))
+		
+		params_info := []
+		for param := params.iterate():
+			closures_offset, var_num := self._get_var_offsets(param.var.var_name, param.var.src_info)
+			assert(closures_offset == 0)
+			if param.default is null:
+				params_info.append([var_num, 0])
+			else:
+				params_info.append([var_num, 1])
+		
+		if node.var_arg is null:
+			self._instructions.append(self._target::Instr_Unpack_Args.new(node.src_info, params_info, 0))
+		else:
+			closures_offset, var_num := self._get_var_offsets(node.var_arg.var_name, node.var_arg.src_info)
+			assert(closures_offset == 0)
+			params_info.append([var_num, 0])
+			self._instructions.append(self._target::Instr_Unpack_Args.new(node.src_info, params_info, 1))
+		
+		for param := params.iterate():
+			if param.default is null:
+				continue
+			next_param_label := self._create_label()
+			self._nesting.append([NEST_NORMAL])
+			closures_offset, var_num := self._get_var_offsets(param.var.var_name, param.var.src_info)
+			self._instructions.append(self._target::Instr_Is_Assigned.new(node.src_info, closures_offset, var_num, next_param_label))
+			self._instructions.append(self._target::Instr_Add_Failure_Frame.new(node.src_info, next_param_label))
+			self.preorder(param.default)
+			self._add_assign_to_var(param.var.var_name, node.src_info)
+			self._instructions.append(self._target::Instr_Remove_Failure_Frame.new(node.src_info))
+			self._nesting.del(-1)
+			self._set_label(next_param_label)
+
+		self.preorder(node.body)
+		self._pop_vars()
+		self._nesting.del(-1)
+
+		self._instructions.append(self._target::Instr_Builtin_Lookup.new(node.src_info, _BUILTIN_NULL_OBJ))
+		self._instructions.append(self._target::Instr_Return.new(node.src_info))
+		
+		self._set_label(end_of_func_body_label)
+
+
+
+	//
+	// Expressions
+	//
+
+	func _t_iif(node):
+	
+		end_of_if_label := self._create_label()
+		for clause := node.clauses.iterate():
+			end_of_clause_label := self._create_label()
+			self._nesting.append([NEST_NORMAL])
+			self._instructions.append(self._target::Instr_Add_Failure_Frame.new(node.src_info, end_of_clause_label))
+			self.preorder(clause.condition)
+			body_label := self._create_label()
+			self._instructions.append(self._target::Instr_Branch_If_Not_Fail.new(node.src_info, body_label))
+			self._instructions.append(self._target::Instr_Remove_Failure_Frame.new(node.src_info))
+			self._nesting.del(-1)
+			self._instructions.append(self._target::Instr_Branch.new(node.src_info, end_of_clause_label))
+			self._set_label(body_label)
+			self._instructions.append(self._target::Instr_Remove_Failure_Frame.new(node.src_info))
+			self.preorder(clause.body)
+			self._instructions.append(self._target::Instr_Branch.new(node.src_info, end_of_if_label))
+			self._set_label(end_of_clause_label)
+		
+		if not node.else_body is null:
+			self.preorder(node.else_body)
+		
+		self._set_label(end_of_if_label)
+
+
+
+	func _t_iimport(node):
+	
+		import_name_list := Strings::split(node.module_path, "::")
+	
+		if not import_full_name, import_extras := self._compiler.find_import_location(import_name_list):
+			self._compiler.error(Strings::format("Can't find module / package '%s'", node.module_path), node.src_info)
+
+		if import_num := self._imports.find(import_full_name):
+			self._instructions.append(self._target::Instr_Import.new(node.src_info, import_num))
+		else:
+			self._imports[import_full_name] := self._imports.len()
+			self._instructions.append(self._target::Instr_Import.new(node.src_info, self._imports.len() - 1))
+		
+		for import_extra := import_extras.iterate():
+			self._instructions.append(self._target::Instr_Module_Lookup.new(node.src_info, import_extra))
+
+
+
+	func _t_ivar(node):
+	
+		self._add_lookup_var(node.var_name, node.src_info)
+
+
+
+	func _t_iint(node):
+	
+		constant_name := Strings::format(_CONSTANT_INT_TEMPLATE, node.val.to_str())
+		if not self._constants.find(constant_name):
+			self._constants[constant_name] := self._constants.len()
+			label := self._create_label()
+			self._set_label(label, self._constants_instructions.len())
+			self._constants_labels.append(label)
+			self._constants_instructions.append(self._target::Instr_Int.new(node.src_info, node.val))
+			self._constants_instructions.append(self._target::Instr_Constant_Set.new(node.src_info, self._constants[constant_name]))
+			self._constants_instructions.append(self._target::Instr_Fail_Now.new(node.src_info))
+		
+		self._instructions.append(self._target::Instr_Constant_Get.new(node.src_info, self._constants[constant_name]))
+
+
+
+	func _t_iwhile(node):
+	
+		start_of_while_label := self._create_label()
+		body_label := self._create_label()
+		end_of_while_label := self._create_label()
+		broken_body_label := self._create_label()
+		
+		if not node.exhausted_body is null:
+			exhausted_body_label := self._create_label()
+			self._nesting.append([NEST_NORMAL])
+			self._instructions.append(self._target::Instr_Add_Failure_Frame.new(node.src_info, exhausted_body_label))
+			self._set_label(start_of_while_label)
+			self.preorder(node.condition)
+			self._instructions.append(self._target::Instr_Branch_If_Not_Fail.new(node.src_info, body_label))
+			self._instructions.append(self._target::Instr_Remove_Failure_Frame.new(node.src_info))
+			self._instructions.append(self._target::Instr_Branch.new(node.src_info, exhausted_body_label))
+			self._nesting.del(-1)
+		else:
+			self._set_label(start_of_while_label)
+			self.preorder(node.condition)
+			self._instructions.append(self._target::Instr_Branch_If_Not_Fail.new(node.src_info, body_label))
+			self._instructions.append(self._target::Instr_Remove_Failure_Frame.new(node.src_info))
+			self._instructions.append(self._target::Instr_Fail_Now.new(node.src_info))
+		
+		self._set_label(body_label)
+		self._nesting.append([NEST_WHILE, start_of_while_label, broken_body_label])
+		self._instructions.append(self._target::Instr_Add_Failure_Frame.new(node.src_info, start_of_while_label))
+		self.preorder(node.body)
+		self._instructions.append(self._target::Instr_Remove_Failure_Frame.new(node.src_info))
+		self._nesting.del(-1)
+		self._instructions.append(self._target::Instr_Branch.new(node.src_info, start_of_while_label))
+		
+		if not node.exhausted_body is null:
+			self._set_label(exhausted_body_label)
+			self.preorder(node.exhausted_body)
+			self._instructions.append(self._target::Instr_Fail_Now.new(node.src_info))
+
+		self._set_label(broken_body_label)
+		self._instructions.append(self._target::Instr_Remove_Failure_Frame.new(node.src_info))
+		if not node.exhausted_body is null:
+			self._instructions.append(self._target::Instr_Remove_Failure_Frame.new(node.src_info))
+		if not node.broken_body is null:
+			self.preorder(node.broken_body)
+		self._instructions.append(self._target::Instr_Fail_Now.new(node.src_info))
+
+
+
+	func _t_ifor(node):
+	
+		broken_body_label := self._create_label()
+		body_label := self._create_label()
+
+		if not node.exhausted_body is null:
+			exhausted_body_label := self._create_label()
+			self._instructions.append(self._target::Instr_Add_Failure_Frame.new(node.src_info, exhausted_body_label))
+			self._instructions.append(self._target::Instr_Add_Fail_Up_Frame.new(node.src_info))
+			self._nesting.append([NEST_NORMAL])
+			self.preorder(node.condition)
+			self._nesting.del(-1)
+			self._instructions.append(self._target::Instr_Branch_If_Not_Fail.new(node.src_info, body_label))
+			self._instructions.append(self._target::Instr_Remove_Failure_Frame.new(node.src_info))
+			self._instructions.append(self._target::Instr_Fail_Now.new(node.src_info))
+		else:
+			self._instructions.append(self._target::Instr_Add_Fail_Up_Frame.new(node.src_info))
+			self._nesting.append([NEST_NORMAL])
+			self.preorder(node.condition)
+			self._nesting.del(-1)
+			self._instructions.append(self._target::Instr_Branch_If_Not_Fail.new(node.src_info, body_label))
+			self._instructions.append(self._target::Instr_Remove_Failure_Frame.new(node.src_info))
+			self._instructions.append(self._target::Instr_Fail_Now.new(node.src_info))
+		
+		self._set_label(body_label)
+		if not node.body is null:
+			fail_now_label := self._create_label()
+			self._nesting.append([NEST_FOR, broken_body_label])
+			self._instructions.append(self._target::Instr_Add_Failure_Frame.new(node.src_info, fail_now_label))
+			self.preorder(node.body)
+			self._instructions.append(self._target::Instr_Remove_Failure_Frame.new(node.src_info))
+			self._nesting.del(-1)
+			self._set_label(fail_now_label)
+		self._instructions.append(self._target::Instr_Fail_Now.new(node.src_info))
+
+		if not node.exhausted_body is null:
+			self._set_label(exhausted_body_label)
+			self.preorder(node.exhausted_body)
+			self._instructions.append(self._target::Instr_Fail_Now.new(node.src_info))
+
+		self._set_label(broken_body_label)
+		self._instructions.append(self._target::Instr_Remove_Failure_Frame.new(node.src_info))
+		self._instructions.append(self._target::Instr_Remove_Failure_Frame.new(node.src_info))
+		if not node.exhausted_body is null:
+			self._instructions.append(self._target::Instr_Remove_Failure_Frame.new(node.src_info))
+		if not node.broken_body is null:
+			self.preorder(node.broken_body)
+		self._instructions.append(self._target::Instr_Fail_Now.new(node.src_info))
+
+
+
+	func _t_istring(node):
+	
+		constant_name := Strings::format(_CONSTANT_STRING_TEMPLATE, node.string)
+		if not self._constants.find(constant_name):
+			self._constants[constant_name] := self._constants.len()
+			label := self._create_label()
+			self._set_label(label, self._constants_instructions.len())
+			self._constants_labels.append(label)
+			self._constants_instructions.append(self._target::Instr_String.new(node.src_info, node.string))
+			self._constants_instructions.append(self._target::Instr_Constant_Set.new(node.src_info, self._constants[constant_name]))
+			self._constants_instructions.append(self._target::Instr_Fail_Now.new(node.src_info))
+		
+		self._instructions.append(self._target::Instr_Constant_Get.new(node.src_info, self._constants[constant_name]))
+
+
+
+	func _t_islot_lookup(node):
+	
+		self.preorder(node.object_expr)
+		self._instructions.append(self._target::Instr_Slot_Lookup.new(node.src_info, node.slot_name))
+
+
+
+	func _t_imodule_lookup(node):
+	
+		self.preorder(node.object_expr)
+		self._instructions.append(self._target::Instr_Module_Lookup.new(node.src_info, node.def_name))
+
+
+
+	func _t_ilist(node):
+	
+		for elem := node.elements.iterate():
+			self.preorder(elem)
+		self._instructions.append(self._target::Instr_List.new(node.src_info, node.elements.len()))
+
+
+
+	func _t_idict(node):
+	
+		for key, val := node.elements.iterate():
+			self.preorder(key)
+			self.preorder(val)
+		self._instructions.append(self._target::Instr_Dict.new(node.src_info, node.elements.len()))
+
+
+
+	func _t_iset(node):
+	
+		for elem := node.elements.iterate():
+			self.preorder(elem)
+		self._instructions.append(self._target::Instr_Set.new(node.src_info, node.elements.len()))
+
+
+
+	func _t_iapplication(node):
+	
+		if ITree::ISlot_Lookup.instantiated(node.func_expr):
+			self.preorder(node.func_expr.object_expr)
+			self._instructions.append(self._target::Instr_Pre_Apply_Slot_Lookup.new(node.func_expr.src_info, node.func_expr.slot_name))
+		else:
+			self.preorder(node.func_expr)
+			
+		for arg := node.args.iterate():
+			self.preorder(arg)
+			
+		self._instructions.append(self._target::Instr_Apply.new(node.src_info, node.args.len()))
+
+
+
+	func _t_iget(node):
+
+		self.preorder(node.get_object)
+		self._instructions.append(self._target::Instr_Pre_Apply_Slot_Lookup.new(node.src_info, "get"))
+		self.preorder(node.index)
+		self._instructions.append(self._target::Instr_Apply.new(node.src_info, 1))
+
+
+
+	func _t_islice(node):
+	
+		self.preorder(node.slice_object)
+		self._instructions.append(self._target::Instr_Pre_Apply_Slot_Lookup.new(node.src_info, "get_slice"))
+		
+		if node.lower_bound is null:
+			self._instructions.append(self._target::Instr_Builtin_Lookup.new(node.src_info, _BUILTIN_NULL_OBJ))
+		else:
+			self.preorder(node.lower_bound)
+			
+		if node.upper_bound is null:
+			self._instructions.append(self._target::Instr_Builtin_Lookup.new(node.src_info, _BUILTIN_NULL_OBJ))
+		else:
+			self.preorder(node.upper_bound)
+			
+		self._instructions.append(self._target::Instr_Apply.new(node.src_info, 2))
+
+
+
+	func _t_ireturn(node):
+	
+		if node.return_expr is null:
+			self._instructions.append(self._target::Instr_Builtin_Lookup.new(node.src_info, _BUILTIN_NULL_OBJ))
+			self._instructions.append(self._target::Instr_Return.new(node.src_info))
+		else:
+			return_failed_label := self._create_label()
+			self._instructions.append(self._target::Instr_Add_Failure_Frame.new(node.src_info, return_failed_label))
+			self._nesting.append([NEST_NORMAL])
+			self.preorder(node.return_expr)
+			self._nesting.del(-1)
+			self._instructions.append(self._target::Instr_Return.new(node.src_info))
+
+			self._set_label(return_failed_label)
+			self._instructions.append(self._target::Instr_Builtin_Lookup.new(node.src_info, _BUILTIN_FAIL_OBJ))
+			self._instructions.append(self._target::Instr_Return.new(node.src_info))
+
+
+
+	func _t_iyield(node):
+	
+		self.preorder(node.yield_expr)
+		self._instructions.append(self._target::Instr_Yield.new(node.src_info))
+
+
+
+	func _t_iraise(node):
+	
+		self.preorder(node.raise_expr)
+		self._instructions.append(self._target::Instr_Raise.new(node.src_info))
+
+
+
+	func _t_iassert(node):
+	
+		assert_failed_label := self._create_label()
+		assert_end_label := self._create_label()
+		
+		// XXX
+		//self._nesting.append([NEST_NORMAL])
+		//self.instructions.append(self._target::Instr_Add_Failure_Frame.new(node.src_info, assert_failed_label))
+		//self.preorder(node.assert_expr)
+		//self.instructions.append(self._target::Instr_Remove_Failure_Frame.new(node.src_info))
+		//self._nesting.del(-1)
+		//self.instructions.append(self._target::Instr_Branch.new(node.src_info, assert_end_label))
+		//
+		//self._set_label(assert_failed_label)
+		//self.preorder(ITree::IOriginal_Name("Exceptions", Bytecode.IMPORT_BUILTIN, "Assert_Exception", node.src_info))
+		//self.instructions.append(self._target::Instr_String.new(node.src_info, "Assertion failed."))
+		//self.instructions.append(self._target::Instr_Apply.new(node.src_info, 1))
+		//self.instructions.append(self._target::Instr_Raise.new(node.src_info))
+		
+		self._set_label(assert_end_label)
+
+
+
+	func _t_ibreak(node):
+
+		i := self._nesting.len() - 1
+		while not [NEST_FOR, NEST_WHILE].find(self._nesting[i][0]):
+			if [NEST_CLASS, NEST_FUNC].find(self._nesting[i][0]):
+				self._compiler.error("Trying to break whilst not in a 'while' or 'for' loop", node.src_info)
+			self._instructions.append(self._target::Instr_Remove_Failure_Frame.new(node.src_info))
+			i -= 1
+		
+		if self._nesting[i][0] == NEST_WHILE:
+			self._instructions.append(self._target::Instr_Branch.new(node.src_info, self._nesting[i][2]))
+		elif self._nesting[i][0] == NEST_FOR:
+			self._instructions.append(self._target::Instr_Branch.new(node.src_info, self._nesting[i][1]))
+		else:
+			raise "XXX"
+
+
+
+	func _t_icontinue(node):
+
+		i := self._nesting.len() - 1
+		while not [NEST_FOR, NEST_WHILE].find(self._nesting[i][0]):
+			if [NEST_CLASS, NEST_FUNC].find(self._nesting[i][0]):
+				self._compiler.error("Trying to continue whilst not in a 'while' or 'for' loop", node.src_info)
+			self._instructions.append(self._target::Instr_Remove_Failure_Frame.new(node.src_info))
+			i -= 1
+		
+		if self._nesting[i][0] == NEST_WHILE:
+			self._instructions.append(self._target::Instr_Remove_Failure_Frame.new(node.src_info))
+			self._instructions.append(self._target::Instr_Branch.new(node.src_info, self._nesting[i][1]))
+		elif self._nesting[i][0] == NEST_FOR:
+			self._instructions.append(self._target::Instr_Remove_Failure_Frame.new(node.src_info))
+			self._instructions.append(self._target::Instr_Fail_Now.new(node.src_info))
+
+
+
+	func _t_iconjunction(node):
+
+		for i := 0.to(node.exprs.len()):
+			next_expr_label := self._create_label()
+			self.preorder(node.exprs[i])
+			if i + 1 == node.exprs.len():
+				self._instructions.append(self._target::Instr_Dup.new(node.src_info))
+			self._instructions.append(self._target::Instr_Branch_If_Not_Fail.new(node.src_info, next_expr_label))
+			self._instructions.append(self._target::Instr_Fail_Now.new(node.src_info))
+			self._set_label(next_expr_label)
+
+
+
+	func _t_ialternation(node):
+
+		end_of_alternation_label := self._create_label()
+		for expr := node.exprs.iterate():
+			next_expr_label := self._create_label()
+			self._nesting.append([NEST_NORMAL])
+			self._instructions.append(self._target::Instr_Add_Failure_Frame.new(node.src_info, next_expr_label))
+			self.preorder(expr)
+			self._instructions.append(self._target::Instr_EYield.new(node.src_info))
+			self._nesting.del(-1)
+			self._instructions.append(self._target::Instr_Branch.new(node.src_info, end_of_alternation_label))
+			self._set_label(next_expr_label)
+		self._instructions.append(self._target::Instr_Fail_Now.new(node.src_info))
+		
+		self._set_label(end_of_alternation_label)
+
+
+
+	func _t_iassignment(node):
+	
+		if node.type != ITree::STD_ASSIGN:
+			for target := node.targets.iterate():
+				if ITree::IVar.instantiated(target):
+					self._add_lookup_var(target.var_name, target.src_info)
+				elif ITree::ISlot_Lookup.instantiated(target):
+					self.preorder(target)
+				elif ITree::IGet.instantiated(target):
+					self.preorder(target)
+				else:
+					raise "XXX"
+	
+		self.preorder(node.expr)
+		
+		if node.targets.len() > 1:
+			self._instructions.append(self._target::Instr_Unpack_Assign.new(node.src_info, node.targets.len()))
+		
+		for target := node.targets.iterate():
+			if node.type == ITree::ADD_ASSIGN:
+				self._instructions.append(self._target::Instr_Add.new(node.src_info))
+			elif node.type == ITree::SUB_ASSIGN:
+				self._instructions.append(self._target::Instr_Sub.new(node.src_info))
+
+			if ITree::IVar.instantiated(target):
+				self._add_assign_to_var(target.var_name, target.src_info)
+			elif ITree::ISlot_Lookup.instantiated(target):
+				self.preorder(target.object_expr)
+				self._instructions.append(self._target::Instr_Assign_Slot.new(target.src_info, target.slot_name))
+			elif ITree::IGet.instantiated(target):
+				self.preorder(target.get_object)
+				self._instructions.append(self._target::Instr_Pre_Apply_Slot_Lookup.new(target.src_info, "set"))
+				self.preorder(target.index)
+				self._instructions.append(self._target::Instr_Pull.new(target.src_info, 2))
+				self._instructions.append(self._target::Instr_Apply.new(target.src_info, 2))
+			else:
+				raise "XXX"
+
+			if node.targets.len() > 1:
+				self._instructions.append(self._target::Instr_Pop.new(node.src_info))
+
+
+
+	func _t_inot(node):
+	
+		success_label := self._create_label()
+		self._nesting.append([NEST_NORMAL])
+		self._instructions.append(self._target::Instr_Add_Failure_Frame.new(node.src_info, success_label))
+		self.preorder(node.expr)
+		self._instructions.append(self._target::Instr_Branch_If_Fail.new(node.src_info, success_label))
+		self._instructions.append(self._target::Instr_Remove_Failure_Frame.new(node.src_info))
+		self._nesting.del(-1)
+		self._instructions.append(self._target::Instr_Fail_Now.new(node.src_info))
+		
+		self._set_label(success_label)
+		self._instructions.append(self._target::Instr_Builtin_Lookup.new(node.src_info, _BUILTIN_NULL_OBJ))
+
+
+	
+	func _t_ibinary(node):
+
+		self.preorder(node.lhs)
+		
+		if node.type == ITree::BINARY_ADD:
+			slot_name := "+"
+		elif node.type == ITree::BINARY_SUB:
+			slot_name := "-"
+		elif node.type == ITree::BINARY_MUL:
+			slot_name := "*"
+		elif node.type == ITree::BINARY_DIV:
+			slot_name := "/"
+		elif node.type == ITree::BINARY_MOD:
+			slot_name := "%"
+
+		self._instructions.append(self._target::Instr_Pre_Apply_Slot_Lookup.new(node.src_info, slot_name))
+		self.preorder(node.rhs)
+		self._instructions.append(self._target::Instr_Apply.new(node.src_info, 1))
+
+
+
+	func _t_icomparison(node):
+
+		self.preorder(node.lhs)
+		self.preorder(node.rhs)
+		if node.type == ITree::IS_COMPARISON:
+			self._instructions.append(self._target::Instr_Is.new(node.src_info))
+		elif node.type == ITree::EQ_COMPARISON:
+			self._instructions.append(self._target::Instr_EQ.new(node.src_info))
+		elif node.type == ITree::NEQ_COMPARISON:
+			self._instructions.append(self._target::Instr_NEQ.new(node.src_info))
+		elif node.type == ITree::LEQ_COMPARISON:
+			self._instructions.append(self._target::Instr_LEQ.new(node.src_info))
+		elif node.type == ITree::GEQ_COMPARISON:
+			self._instructions.append(self._target::Instr_GEQ.new(node.src_info))
+		elif node.type == ITree::LE_COMPARISON:
+			self._instructions.append(self._target::Instr_LE.new(node.src_info))
+		else:
+			self._instructions.append(self._target::Instr_GE.new(node.src_info))
+
+
+
+	func _t_ipass(node):
+	
+		pass
+
+
+
+	func _t_istandard_quasi_quotes(node):
+	
+		self.preorder(QQ_Mode::QQ_Mode.new().generate(self, node))
+
+
+
+	func _t_ioriginal_name(node):
+	
+		if node.module_id := self._src_path:
+			assert(self.vars[0].find(node.def_name))
+			self._instructions.append(self._target::Instr_Lookup_Var.new(node.src_info, self.vars.len() - 1, self.vars[0][node.def_name]))
+		else:
+			raise "XXX"

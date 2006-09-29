@@ -1,0 +1,33 @@
+all: 
+	cd vm && ${MAKE} ${MFLAGS}
+	cd lib && ${MAKE} ${MFLAGS}
+	cd compiler && ${MAKE} ${MFLAGS}
+	cd examples && ${MAKE} ${MFLAGS}
+	cd tests && ${MAKE} ${MFLAGS}
+
+clean:
+	cd bootstrap && ${MAKE} ${MFLAGS} clean
+	cd vm && ${MAKE} ${MFLAGS} clean
+	cd lib && ${MAKE} ${MFLAGS} clean
+	cd compiler && ${MAKE} ${MFLAGS} clean
+	cd examples && ${MAKE} ${MFLAGS} clean
+	cd tests && ${MAKE} ${MFLAGS} clean
+
+distclean:
+	cd bootstrap && ${MAKE} ${MFLAGS} distclean
+	cd vm && ${MAKE} ${MFLAGS} distclean
+	cd lib && ${MAKE} ${MFLAGS} distclean
+	cd compiler && ${MAKE} ${MFLAGS} distclean
+	cd examples && ${MAKE} ${MFLAGS} distclean
+	cd tests && ${MAKE} ${MFLAGS} distclean
+	rm -rf autom4te.cache Makefile Makefile.inc configure config.log config.status
+
+release: distclean
+	mkdir converge-@CONVERGE_VERSION@
+	${MAKE} -f Makefile.bootstrap configure
+	find . -type d | grep -v "_darcs" | grep -v "^\.$$" | sed "s/^\..//" | grep -v "^autom4te.cache" | grep -v "converge-@CONVERGE_VERSION@" | xargs -I {} mkdir -p converge-@CONVERGE_VERSION@/{}
+	find . \! -type d | grep -v "_darcs" | sed "s/^\..//" | grep -v "^autom4te.cache" | grep -v "config\..*" | grep -v "\.binaries" | grep -v "\.boring" | grep -v "\.cvsignore" | grep -v "\.core$$" | grep -v ".depend$$" | grep -v "converge-@CONVERGE_VERSION@" | xargs -I {} cp -r {} converge-@CONVERGE_VERSION@/{}
+	tar cfz converge-@CONVERGE_VERSION@.tar.gz converge-@CONVERGE_VERSION@
+	@echo "\nMake sure that this distribution has the correct version and date!\n  @CONVERGE_VERSION@ (@CONVERGE_DATE@)"
+
+include @abs_top_srcdir@/Makefile.inc

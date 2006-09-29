@@ -1,0 +1,786 @@
+// Copyright (c) 2003-2006 King's College London, created by Laurence Tratt
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to
+// deal in the Software without restriction, including without limitation the
+// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+// sell copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+// IN THE SOFTWARE.
+
+
+import Builtins, Strings, Sys
+import CEI, Compiler_Vars
+
+
+
+
+
+STD_ASSIGN := 0
+ADD_ASSIGN := 1
+SUB_ASSIGN := 2
+MUL_ASSIGN := 3
+DIV_ASSIGN := 4
+ALL_ASSIGNMENTS := [STD_ASSIGN, ADD_ASSIGN, SUB_ASSIGN, MUL_ASSIGN, DIV_ASSIGN]
+
+BINARY_ADD := 0
+BINARY_SUB := 1
+BINARY_MUL := 2
+BINARY_DIV := 3
+BINARY_MOD := 4
+ALL_BINARIES := [BINARY_ADD, BINARY_SUB, BINARY_MUL, BINARY_DIV, BINARY_MOD]
+
+IS_COMPARISON := 0
+EQ_COMPARISON := 1
+NEQ_COMPARISON := 2
+LEQ_COMPARISON := 3
+GEQ_COMPARISON := 4
+LE_COMPARISON := 5
+GE_COMPARISON := 6
+ALL_COMPARISONS := [IS_COMPARISON, EQ_COMPARISON, NEQ_COMPARISON, LEQ_COMPARISON, GEQ_COMPARISON, LE_COMPARISON, GE_COMPARISON]
+
+
+
+
+class IModule:
+	
+	func init(module_name, definitions, src_info):
+	
+		self.module_name := module_name
+		self.definitions := definitions
+		self.src_info := src_info
+
+		self.bound_vars := Compiler_Vars::DEFAULT_VARS.scopy()
+		for definition := definitions.iterate():
+			self.bound_vars.extend(definition.bound_vars)
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Definitions
+//
+
+class IClass_Def:
+
+	func init(class_name, supers, metaclass_, fields, src_info):
+
+		self.class_name := class_name
+		self.supers := supers
+		self.metaclass_ := metaclass_
+		self.fields := fields
+		self.src_info := src_info
+		
+		self.bound_vars := Set{}
+		self.qq_bound_vars := Set{}
+		for super := supers.iterate():
+			self.bound_vars.extend(super.bound_vars)
+			self.qq_bound_vars.extend(super.qq_bound_vars)
+		if not metaclass_ is null:
+			self.bound_vars.extend(metaclass_.bound_vars)
+			self.qq_bound_vars.extend(metaclass_.qq_bound_vars)
+		for field := fields.iterate():
+			self.bound_vars.extend(field.bound_vars)
+			self.qq_bound_vars.extend(field.qq_bound_vars)
+		
+		self.free_vars := Set{}
+		for super := supers.iterate():
+			self.free_vars.extend(super.free_vars)
+		if not metaclass_ is null:
+			self.free_vars.extend(metaclass_.free_vars)
+		for field := fields.iterate():
+			self.free_vars.extend(field.free_vars)
+
+
+
+
+class IFunc_Def:
+
+	func init(is_bound, func_name, params, var_arg, nonlocals, renames, body, src_info):
+
+		self.is_bound := is_bound
+		self.func_name := func_name
+		self.params := params
+		self.var_arg := var_arg
+		self.nonlocals := nonlocals
+		self.renames := renames
+		self.body := body
+		self.src_info := src_info
+
+		self.bound_vars := Set{}
+
+		if self.is_bound == 1:
+			all_internal_bound_vars := Set{"self"}
+			self.qq_bound_vars := Set{"Self"}
+		else:
+			all_internal_bound_vars := Set{}
+			self.qq_bound_vars := Set{}
+
+		for param := params.iterate():
+			all_internal_bound_vars.extend(param.bound_vars)
+			self.qq_bound_vars.extend(param.qq_bound_vars)
+			
+		if not var_arg is null:
+			if IInsert.instantiated(var_arg):
+				all_internal_bound_vars.extend(var_arg.bound_vars)
+				self.qq_bound_vars.extend(var_arg.qq_bound_vars)
+			else:
+				all_internal_bound_vars.add(self.var_arg.var_name)
+				self.qq_bound_vars.add(self.var_arg.var_name)
+
+		all_internal_bound_vars.extend(self.body.bound_vars)
+		self.qq_bound_vars.extend(self.body.qq_bound_vars)
+
+		nonlocals_ := Set{}
+		for nonlocal_ := nonlocals.iterate():
+			nonlocals_.extend(Set{nonlocal_.var_name})
+
+		for rename_from, rename_as := renames.iterate():
+			nonlocals_.add(rename_as.var_name)
+
+		self.internal_bound_vars := all_internal_bound_vars.complement(nonlocals_)
+		
+		all_free_vars := Set{}
+		for param := params.iterate():
+			all_free_vars.extend(param.free_vars)
+		all_free_vars.extend(self.body.free_vars)
+		
+		self.free_vars := all_free_vars.complement(all_internal_bound_vars)
+
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Expressions
+//
+
+class IIf:
+
+	// 'clauses' is a list of 'IClause's.
+	// 'else_body' can be null.
+
+	func init(clauses, else_body, src_info):
+	
+		self.clauses := clauses
+		self.else_body := else_body
+		self.src_info := src_info
+
+		self.bound_vars := Set{}
+		self.qq_bound_vars := Set{}
+		self.free_vars := Set{}
+		for clause := clauses.iterate():
+			self.bound_vars.extend(clause.bound_vars)
+			self.qq_bound_vars.extend(clause.qq_bound_vars)
+			self.free_vars.extend(clause.free_vars)
+		
+		if not else_body is null:
+			self.bound_vars.extend(else_body.bound_vars)
+			self.free_vars.extend(else_body.free_vars)
+
+
+
+
+class IVar:
+
+	func init(var_name, src_info):
+	
+		self.var_name := var_name
+		self.src_info := src_info
+
+		self.bound_vars := Set{}
+		self.qq_bound_vars := Set{}
+		self.free_vars := Set{self.var_name}
+
+
+
+
+class IImport:
+
+	func init(module_path, src_info):
+
+		self.module_path := module_path
+		self.src_info := src_info
+
+		self.bound_vars := Set{}
+		self.qq_bound_vars := Set{}
+		self.free_vars := Set{}
+
+
+
+
+class IWhile:
+
+	func init(condition, body, exhausted_body, broken_body, src_info):
+	
+		self.condition := condition
+		self.body := body
+		self.exhausted_body := exhausted_body
+		self.broken_body := broken_body
+		self.src_info := src_info
+
+		self.bound_vars := condition.bound_vars.scopy()
+		self.qq_bound_vars := condition.qq_bound_vars.scopy()
+		self.free_vars := condition.free_vars.scopy()
+		if not body is null:
+			self.bound_vars.extend(body.bound_vars)
+			self.qq_bound_vars.extend(body.qq_bound_vars)
+			self.free_vars.extend(body.free_vars)
+		if not exhausted_body is null:
+			self.bound_vars.extend(exhausted_body.bound_vars)
+			self.qq_bound_vars.extend(exhausted_body.qq_bound_vars)
+			self.free_vars.extend(exhausted_body.free_vars)
+		if not broken_body is null:
+			self.bound_vars.extend(broken_body.bound_vars)
+			self.qq_bound_vars.extend(broken_body.qq_bound_vars)
+			self.free_vars.extend(broken_body.free_vars)
+
+
+
+
+class IFor:
+
+	func init(condition, body, exhausted_body, broken_body, src_info):
+	
+		self.condition := condition
+		self.body := body
+		self.exhausted_body := exhausted_body
+		self.broken_body := broken_body
+		self.src_info := src_info
+
+		self.bound_vars := condition.bound_vars.scopy()
+		self.qq_bound_vars := condition.qq_bound_vars.scopy()
+		self.free_vars := condition.free_vars.scopy()
+		if not body is null:
+			self.bound_vars.extend(body.bound_vars)
+			self.qq_bound_vars.extend(body.qq_bound_vars)
+			self.free_vars.extend(body.free_vars)
+		if not exhausted_body is null:
+			self.bound_vars.extend(exhausted_body.bound_vars)
+			self.qq_bound_vars.extend(exhausted_body.qq_bound_vars)
+			self.free_vars.extend(exhausted_body.free_vars)
+		if not broken_body is null:
+			self.bound_vars.extend(broken_body.bound_vars)
+			self.qq_bound_vars.extend(broken_body.qq_bound_vars)
+			self.free_vars.extend(broken_body.free_vars)
+
+
+
+
+class IInt:
+
+	func init(val, src_info):
+
+		self.val := val
+		self.src_info := src_info
+
+		self.bound_vars := Set{}
+		self.qq_bound_vars := Set{}
+		self.free_vars := Set{}
+
+
+
+
+class IString:
+
+	func init(string, src_info):
+
+		self.string := string
+		self.src_info := src_info
+
+		self.bound_vars := Set{}
+		self.qq_bound_vars := Set{}
+		self.free_vars := Set{}
+
+
+
+
+class ISlot_Lookup:
+
+	func init(object_expr, slot_name, src_info):
+	
+		self.object_expr := object_expr
+		self.slot_name := slot_name
+		self.src_info := src_info
+
+		self.bound_vars := self.object_expr.bound_vars
+		self.qq_bound_vars := self.object_expr.qq_bound_vars
+		self.free_vars := self.object_expr.free_vars
+
+
+
+
+class IModule_Lookup:
+
+	func init(object_expr, def_name, src_info):
+	
+		self.object_expr := object_expr
+		self.def_name := def_name
+		self.src_info := src_info
+
+		self.bound_vars := self.object_expr.bound_vars
+		self.qq_bound_vars := self.object_expr.qq_bound_vars
+		self.free_vars := self.object_expr.free_vars
+
+
+
+
+class IList:
+
+	func init(elements, src_info):
+	
+		self.elements := elements
+		self.src_info := src_info
+
+		self.bound_vars := Set{}
+		self.qq_bound_vars := Set{}
+		self.free_vars := Set{}
+		for elem := elements.iterate():
+			self.bound_vars.extend(elem.bound_vars)
+			self.qq_bound_vars.extend(elem.qq_bound_vars)
+			self.free_vars.extend(elem.free_vars)
+
+
+
+
+class IDict:
+
+	func init(elements, src_info):
+	
+		self.elements := elements
+		self.src_info := src_info
+
+		self.bound_vars := Set{}
+		self.qq_bound_vars := Set{}
+		self.free_vars := Set{}
+		for key, val := elements.iterate():
+			self.bound_vars.extend(key.bound_vars)
+			self.bound_vars.extend(val.bound_vars)
+			self.qq_bound_vars.extend(key.qq_bound_vars)
+			self.qq_bound_vars.extend(val.qq_bound_vars)
+			self.free_vars.extend(key.free_vars)
+			self.free_vars.extend(val.free_vars)
+
+
+
+
+class ISet:
+
+	func init(elements, src_info):
+	
+		self.elements := elements
+		self.src_info := src_info
+
+		self.bound_vars := Set{}
+		self.qq_bound_vars := Set{}
+		self.free_vars := Set{}
+		for elem := elements.iterate():
+			self.bound_vars.extend(elem.bound_vars)
+			self.qq_bound_vars.extend(elem.qq_bound_vars)
+			self.free_vars.extend(elem.free_vars)
+
+
+
+
+class IApplication:
+
+	func init(func_expr, args, src_info):
+	
+		self.func_expr := func_expr
+		self.args := args
+		self.src_info := src_info
+
+		self.bound_vars := func_expr.bound_vars.scopy()
+		for self.bound_vars.extend(args.iterate().bound_vars)
+
+		self.qq_bound_vars := func_expr.qq_bound_vars.scopy()
+		for self.qq_bound_vars.extend(args.iterate().qq_bound_vars)
+
+		self.free_vars := func_expr.free_vars.scopy()
+		for self.free_vars.extend(args.iterate().free_vars)
+
+
+
+
+class IGet:
+
+	func init(get_object, index, src_info):
+	
+		self.get_object := get_object
+		self.index := index
+		self.src_info := src_info
+
+		self.bound_vars := get_object.bound_vars + index.bound_vars
+		self.qq_bound_vars := get_object.qq_bound_vars + index.qq_bound_vars
+		self.free_vars := get_object.free_vars + index.free_vars
+
+
+
+
+class ISlice:
+
+	func init(slice_object, lower_bound, upper_bound, src_info):
+	
+		self.slice_object := slice_object
+		self.lower_bound := lower_bound
+		self.upper_bound := upper_bound
+		self.src_info := src_info
+
+		self.bound_vars := slice_object.bound_vars.scopy()
+		self.qq_bound_vars := slice_object.qq_bound_vars.scopy()
+		self.free_vars := slice_object.free_vars.scopy()
+		if not lower_bound is null:
+			self.bound_vars.extend(lower_bound.bound_vars)
+			self.qq_bound_vars.extend(lower_bound.qq_bound_vars)
+			self.free_vars.extend(lower_bound.free_vars)
+		if not upper_bound is null:
+			self.bound_vars.extend(upper_bound.bound_vars)
+			self.qq_bound_vars.extend(upper_bound.qq_bound_vars)
+			self.free_vars.extend(upper_bound.free_vars)
+
+
+
+
+class IReturn:
+
+	// return_expr can be null.
+
+	func init(return_expr, src_info):
+	
+		self.return_expr := return_expr
+		self.src_info := src_info
+
+		if self.return_expr is null:
+			self.bound_vars := Set{}
+			self.qq_bound_vars := Set{}
+			self.free_vars := Set{}
+		else:
+			self.bound_vars := return_expr.bound_vars
+			self.qq_bound_vars := return_expr.qq_bound_vars
+			self.free_vars := return_expr.free_vars
+
+
+
+
+class IYield:
+
+	func init(yield_expr, src_info):
+	
+		self.yield_expr := yield_expr
+		self.src_info := src_info
+		
+		self.bound_vars := yield_expr.bound_vars
+		self.qq_bound_vars := yield_expr.qq_bound_vars
+		self.free_vars := yield_expr.free_vars
+
+
+
+
+class IRaise:
+
+	func init(raise_expr, src_info):
+	
+		self.raise_expr := raise_expr
+		self.src_info := src_info
+		
+		self.bound_vars := raise_expr.bound_vars
+		self.qq_bound_vars := raise_expr.qq_bound_vars
+		self.free_vars := raise_expr.free_vars
+
+
+
+
+class IAssert:
+
+	func init(assert_expr, src_info):
+	
+		self.assert_expr := assert_expr
+		self.src_info := src_info
+		
+		self.bound_vars := assert_expr.bound_vars
+		self.qq_bound_vars := assert_expr.qq_bound_vars
+		self.free_vars := assert_expr.free_vars
+
+
+
+
+class IBreak:
+
+	func init(src_info):
+	
+		self.src_info := src_info
+		
+		self.bound_vars := Set{}
+		self.qq_bound_vars := Set{}
+		self.free_vars := Set{}
+
+
+
+
+class IContinue:
+
+	func init(src_info):
+	
+		self.src_info := src_info
+		
+		self.bound_vars := Set{}
+		self.qq_bound_vars := Set{}
+		self.free_vars := Set{}
+
+
+
+
+class IConjunction:
+
+	func init(exprs, src_info):
+	
+		self.exprs := exprs
+		self.src_info := src_info
+		
+		self.bound_vars := Set{}
+		self.qq_bound_vars := Set{}
+		self.free_vars := Set{}
+		for expr := exprs.iterate():
+			self.bound_vars.extend(expr.bound_vars)
+			self.qq_bound_vars.extend(expr.qq_bound_vars)
+			self.free_vars.extend(expr.free_vars)
+
+
+
+
+class IAlternation:
+
+	func init(exprs, src_info):
+	
+		self.exprs := exprs
+		self.src_info := src_info
+		
+		self.bound_vars := Set{}
+		self.qq_bound_vars := Set{}
+		self.free_vars := Set{}
+		for expr := exprs.iterate():
+			self.bound_vars.extend(expr.bound_vars)
+			self.qq_bound_vars.extend(expr.qq_bound_vars)
+			self.free_vars.extend(expr.free_vars)
+
+
+
+
+class IAssignment:
+
+	func init(type, targets, expr, src_info):
+		
+		self.type := type
+		self.targets := targets
+		self.expr := expr
+		self.src_info := src_info
+
+		self.bound_vars := Set{}
+		self.qq_bound_vars := Set{}
+		self.free_vars := Set{}
+		for target := targets.iterate():
+			if IVar.instantiated(target):
+				self.bound_vars.add(target.var_name)
+				self.qq_bound_vars.add(target.var_name)
+			else:
+				self.bound_vars.extend(target.bound_vars)
+				self.qq_bound_vars.extend(target.qq_bound_vars)
+				self.free_vars.extend(target.free_vars)
+		self.bound_vars.extend(expr.bound_vars)
+		self.qq_bound_vars.extend(expr.qq_bound_vars)
+		self.free_vars.extend(expr.free_vars)
+
+
+
+
+class INot:
+
+	func init(expr, src_info):
+	
+		self.expr := expr
+		self.src_info := src_info
+		
+		self.bound_vars := expr.bound_vars
+		self.qq_bound_vars := expr.qq_bound_vars
+		self.free_vars := expr.free_vars
+
+
+
+
+class IBinary:
+
+	func init(type, lhs, rhs, src_info):
+		
+		self.type := type
+		self.lhs := lhs
+		self.rhs := rhs
+		self.src_info := src_info
+
+		self.bound_vars := lhs.bound_vars + rhs.bound_vars
+		self.qq_bound_vars := lhs.qq_bound_vars + rhs.qq_bound_vars
+		self.free_vars := lhs.free_vars + rhs.free_vars
+
+
+
+
+
+class IComparison:
+
+	func init(type, lhs, rhs, src_info):
+		
+		self.type := type
+		self.lhs := lhs
+		self.rhs := rhs
+		self.src_info := src_info
+
+		self.bound_vars := lhs.bound_vars + rhs.bound_vars
+		self.qq_bound_vars := lhs.qq_bound_vars + rhs.qq_bound_vars
+		self.free_vars := lhs.free_vars + rhs.free_vars
+
+
+
+
+class IPass:
+
+	func init(src_info):
+	
+		self.src_info := src_info
+		
+		self.bound_vars := Set{}
+		self.qq_bound_vars := Set{}
+		self.free_vars := Set{}
+
+
+
+
+class IInsert:
+
+	func init(expr, src_info):
+	
+		self.expr := expr
+		self.src_info := src_info
+		
+		self.bound_vars := expr.bound_vars
+		self.qq_bound_vars := expr.bound_vars
+		self.free_vars := expr.free_vars
+
+
+
+
+class IStandard_Quasi_Quotes:
+
+	func init(exprs, extra_src_info, src_info):
+	
+		self.exprs := exprs
+		self.extra_src_info := extra_src_info
+		self.src_info := src_info
+		
+		self.bound_vars := Set{}
+		self.qq_bound_vars := Set{}
+		self.free_vars := Set{}
+		for expr := exprs.iterate():
+			for var := expr.qq_bound_vars.iterate():
+				self.qq_bound_vars.add(Strings::format(Compiler_Vars::QUASI_QUOTES_NAME, var))
+				self.bound_vars.add(Strings::format(Compiler_Vars::QUASI_QUOTES_NAME, var))
+			self.free_vars.extend(expr.free_vars)
+		
+		if not extra_src_info is null:
+			self.extra_src_info_var_name := CEI::fresh_name()
+			self.bound_vars.add(self.extra_src_info_var_name)
+			self.qq_bound_vars.add(self.extra_src_info_var_name)
+			
+			self.bound_vars.extend(extra_src_info.bound_vars)
+			self.qq_bound_vars.extend(extra_src_info.qq_bound_vars)
+			self.free_vars.extend(extra_src_info.free_vars)
+
+
+
+
+class IOriginal_Name:
+
+	func init(module_id, def_name, src_info):
+	
+		self.module_id := module_id
+		self.def_name := def_name
+		self.src_info := src_info
+		
+		self.bound_vars := Set{}
+		self.qq_bound_vars := Set{}
+		self.free_vars := Set{}
+
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// "Virtual" elements
+//
+
+class IExpr_Block:
+
+	func init(exprs, src_info):
+	
+		self.exprs := exprs
+		self.src_info := src_info
+
+		self.bound_vars := Set{}
+		self.qq_bound_vars := Set{}
+		for expr := self.exprs.iterate():
+			//if IClass_Def.instantiated(expr):
+			//	raise "XXX"
+			if IFunc_Def.instantiated(expr) & expr.func_name != "":
+				self.bound_vars.add(expr.func_name)
+				self.qq_bound_vars.add(expr.func_name)
+			self.bound_vars.extend(expr.bound_vars)
+			self.qq_bound_vars.extend(expr.qq_bound_vars)
+
+		self.free_vars := Set{}
+		for expr := self.exprs.iterate():
+			self.free_vars.extend(expr.free_vars)
+
+
+
+
+class IParam:
+
+	func init(var, default, src_info):
+	
+		self.var := var
+		self.default := default
+		self.src_info := src_info
+		
+		self.bound_vars := Set{var.var_name}
+		self.qq_bound_vars := Set{var.var_name}
+		if not default is null:
+			self.bound_vars.extend(default.bound_vars)
+			self.qq_bound_vars.extend(default.qq_bound_vars)
+		
+		if default is null:
+			self.free_vars := Set{}
+		else:
+			self.free_vars := default.free_vars
+			
+			
+
+
+class IClause:
+
+	func init(condition, body, src_info):
+	
+		self.condition := condition
+		self.body := body
+		self.src_info := src_info
+
+		self.bound_vars := condition.bound_vars + body.bound_vars
+		self.qq_bound_vars := condition.qq_bound_vars + body.qq_bound_vars
+		self.free_vars := condition.free_vars + body.free_vars

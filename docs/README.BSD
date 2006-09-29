@@ -1,0 +1,3 @@
+Because of the unfortunate incompatibilities between different makes, Converge
+is forced to use GNU make idioms in its makefiles. On BSD one thus has to
+substitute the "gmake" command for "make"

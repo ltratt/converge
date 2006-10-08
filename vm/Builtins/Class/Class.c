@@ -357,15 +357,27 @@ Con_Obj *_Con_Builtins_Class_Class_instantiated_func(Con_Obj *thread)
 	if (instance_of == self)
 		CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
 	else {
-		CON_MUTEX_LOCK(&self->mutex);
-		for (Con_Int i = 0; i < class_atom->num_supers; i += 1) {
-			Con_Obj *super = class_atom->supers[i];
-			CON_MUTEX_UNLOCK(&self->mutex);
-			if (CON_GET_SLOT_APPLY_NO_FAIL(super, "instantiated", o) != NULL)
+		Con_Obj *stack = Con_Builtins_List_Atom_new(thread);
+		CON_GET_SLOT_APPLY(stack, "append", self);
+		Con_Int i = 0;
+		while (i < Con_Numbers_Number_to_Con_Int(thread, CON_GET_SLOT_APPLY(stack, "len"))) {
+			Con_Obj *cnd = CON_GET_SLOT_APPLY(stack, "get", CON_NEW_INT(i));
+			if (instance_of == self)
 				CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
-			CON_MUTEX_LOCK(&self->mutex);
+			
+			Con_Builtins_Class_Atom *cnd_class_atom = CON_GET_ATOM(cnd, CON_BUILTIN(CON_BUILTIN_CLASS_ATOM_DEF_OBJECT));
+			
+			CON_MUTEX_LOCK(&cnd->mutex);
+			for (Con_Int j = 0; j < cnd_class_atom->num_supers; j += 1) {
+				Con_Obj *super = cnd_class_atom->supers[j];
+				CON_MUTEX_UNLOCK(&cnd->mutex);
+				CON_GET_SLOT_APPLY(stack, "append", super);
+				CON_MUTEX_LOCK(&cnd->mutex);
+			}
+			CON_MUTEX_LOCK(&cnd->mutex);
+			
+			i += 1;
 		}
-		CON_MUTEX_UNLOCK(&self->mutex);
 		
 		CON_RETURN(CON_BUILTIN(CON_BUILTIN_FAIL_OBJ));
 	}

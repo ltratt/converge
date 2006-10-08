@@ -351,12 +351,17 @@ Con_Obj *_Con_Builtins_Class_Class_instantiated_func(Con_Obj *thread)
 	Con_Obj *self, *o;
 	CON_UNPACK_ARGS("CO", &self, &o);
 
-	Con_Builtins_Class_Atom *class_atom = CON_GET_ATOM(self, CON_BUILTIN(CON_BUILTIN_CLASS_ATOM_DEF_OBJECT));
-
 	Con_Obj *instance_of = CON_GET_SLOT(o, "instance_of");
-	if (instance_of == self)
+	if (instance_of == self) {
+		// We optimise the easy case.
 		CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+	}
 	else {
+		// What we do now is to put 'self' onto a stack; if the current class on the stack does
+		// not match 'instance_of', we push all the class's superclasses onto the stack.
+		//
+		// If we run off the end of the stack then there is no match.
+		
 		Con_Obj *stack = Con_Builtins_List_Atom_new(thread);
 		CON_GET_SLOT_APPLY(stack, "append", self);
 		Con_Int i = 0;

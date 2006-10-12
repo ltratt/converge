@@ -323,14 +323,14 @@ AC_CONFIG_FILES([Makefile Makefile.inc compiler/Makefile vm/Version.h vm/Makefil
 AC_OUTPUT
 
 
-if [[ ! -f bootstrap/convergec ]]; then
+if [[ ! -f bootstrap/convergec.bootstrap ]]; then
 	echo "copying over bootstrap compiler"
 	cp $bootstrap_dir/convergec.bootstrap bootstrap
 else
 	echo "preserving existing bootstrap compiler"
 fi
 
-if [[ ! -f bootstrap/convergel ]]; then
+if [[ ! -f bootstrap/convergel.bootstrap ]]; then
 	echo "copying over bootstrap linker"
 	cp $bootstrap_dir/convergel.bootstrap bootstrap
 else

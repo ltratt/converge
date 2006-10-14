@@ -117,13 +117,19 @@ void Con_Builtins_List_Class_bootstrap(Con_Obj *thread)
 
 Con_Obj *_Con_Builtins_List_Class_new_object(Con_Obj *thread)
 {
-	Con_Obj *class_, *o;
-	CON_UNPACK_ARGS("OO", &class_, &o);
+	Con_Obj *class_, *var_args;
+	CON_UNPACK_ARGS("OOv", &class_, &var_args);
 	
-	Con_Obj *new_list = Con_Builtins_List_Atom_new_sized(thread, Con_Numbers_Number_to_Con_Int(thread, CON_GET_SLOT_APPLY(o, "len")));
+	Con_Obj *new_list;
+	if (Con_Numbers_Number_to_Con_Int(thread, CON_GET_SLOT_APPLY(var_args, "len")) == 0)
+		new_list = Con_Builtins_List_Atom_new(thread);
+	else {
+		Con_Obj *first_elem = CON_GET_SLOT_APPLY(var_args, "get", CON_NEW_INT(0));
+		new_list = Con_Builtins_List_Atom_new_sized(thread, Con_Numbers_Number_to_Con_Int(thread, CON_GET_SLOT_APPLY(first_elem, "len")));
+	}
 	
-	CON_GET_SLOT_APPLY(new_list, "init", o);
-	
+	CON_GET_SLOT_APPLY(CON_GET_SLOT(new_list, "init"), "apply", var_args);
+
 	CON_RETURN(new_list);
 }
 

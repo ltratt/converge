@@ -118,7 +118,7 @@ void Con_Builtins_List_Class_bootstrap(Con_Obj *thread)
 Con_Obj *_Con_Builtins_List_Class_new_object(Con_Obj *thread)
 {
 	Con_Obj *class_, *var_args;
-	CON_UNPACK_ARGS("OOv", &class_, &var_args);
+	CON_UNPACK_ARGS("Ov", &class_, &var_args);
 	
 	Con_Obj *new_list;
 	if (Con_Numbers_Number_to_Con_Int(thread, CON_GET_SLOT_APPLY(var_args, "len")) == 0)

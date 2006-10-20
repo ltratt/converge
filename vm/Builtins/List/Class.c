@@ -120,14 +120,25 @@ Con_Obj *_Con_Builtins_List_Class_new_object(Con_Obj *thread)
 	Con_Obj *class_, *var_args;
 	CON_UNPACK_ARGS("Ov", &class_, &var_args);
 	
-	Con_Obj *new_list;
+	Con_Int num_entries_to_allocate;
 	if (Con_Numbers_Number_to_Con_Int(thread, CON_GET_SLOT_APPLY(var_args, "len")) == 0)
-		new_list = Con_Builtins_List_Atom_new(thread);
+		num_entries_to_allocate = 0;
 	else {
 		Con_Obj *first_elem = CON_GET_SLOT_APPLY(var_args, "get", CON_NEW_INT(0));
-		new_list = Con_Builtins_List_Atom_new_sized(thread, Con_Numbers_Number_to_Con_Int(thread, CON_GET_SLOT_APPLY(first_elem, "len")));
+		num_entries_to_allocate = Con_Numbers_Number_to_Con_Int(thread, CON_GET_SLOT_APPLY(first_elem, "len"));
 	}
 	
+	Con_Obj *new_list = Con_Object_new_from_class(thread, sizeof(Con_Obj) + sizeof(Con_Builtins_List_Atom) + sizeof(Con_Builtins_Slots_Atom), class_);
+	Con_Builtins_List_Atom *list_atom = (Con_Builtins_List_Atom *) new_list->first_atom;
+	Con_Builtins_Slots_Atom *slots_atom = (Con_Builtins_Slots_Atom *) (list_atom + 1);
+	list_atom->next_atom = (Con_Atom *) slots_atom;
+	slots_atom->next_atom = NULL;
+	
+	Con_Builtins_List_Atom_init_atom(thread, list_atom, num_entries_to_allocate);
+	Con_Builtins_Slots_Atom_Def_init_atom(thread, slots_atom);
+	
+	Con_Memory_change_chunk_type(thread, new_list, CON_MEMORY_CHUNK_OBJ);
+
 	CON_GET_SLOT_APPLY(CON_GET_SLOT(new_list, "init"), "apply", var_args);
 
 	CON_RETURN(new_list);

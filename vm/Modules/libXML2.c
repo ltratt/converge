@@ -55,11 +55,15 @@ Con_Obj *_Con_Modules_libXML2_parse_func(Con_Obj *);
 
 Con_Obj *Con_Modules_libXML2_init(Con_Obj *thread, Con_Obj *identifier)
 {
-	Con_Obj *xdm_mod = Con_Builtins_Module_Atom_new_c(thread, identifier, CON_NEW_STRING("XML"), CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+	Con_Obj *libxml2_mod = Con_Builtins_Module_Atom_new_c(thread, identifier, CON_NEW_STRING("XML"), CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
 	
-	CON_SET_SLOT(xdm_mod, "parse", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_libXML2_parse_func, "parse", CON_BUILTIN(CON_BUILTIN_NULL_OBJ)));
+	Con_Obj *user_exception = CON_GET_MODULE_DEF(CON_BUILTIN(CON_BUILTIN_EXCEPTIONS_MODULE), "User_Exception");
+	Con_Obj *xml_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("XML_Exception"), Con_Builtins_List_Atom_new_va(thread, user_exception, NULL), libxml2_mod);
+	CON_SET_SLOT(libxml2_mod, "XML_Exception", xml_exception);
 	
-	return xdm_mod;
+	CON_SET_SLOT(libxml2_mod, "parse", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_libXML2_parse_func, "parse", libxml2_mod));
+
+	return libxml2_mod;
 }
 
 
@@ -68,7 +72,8 @@ Con_Obj *Con_Modules_libXML2_init(Con_Obj *thread, Con_Obj *identifier)
 // Functions in libXML2 module
 //
 
-void _Con_Modules_libXML2_parse_func_characters (void *, const xmlChar *, int);
+void _Con_Modules_libXML2_parse_func_characters(void *, const xmlChar *, int);
+void _Con_Modules_libXML2_parse_error(void *, const char *, ...);
 void _Con_Modules_libXML2_parse_start_element(void *, const xmlChar *, const xmlChar *, const xmlChar *, int, const xmlChar **, int, int, const xmlChar **);
 void _Con_Modules_libXML2_parse_end_element(void *, const xmlChar *, const xmlChar *, const xmlChar *);
 
@@ -95,7 +100,7 @@ static xmlSAXHandler _Con_Modules_libXML2_parse_func_handler = {
 	NULL,
 	NULL,
 	NULL,
-	NULL,
+	_Con_Modules_libXML2_parse_error,
 	NULL,
 	NULL,
 	NULL,
@@ -109,12 +114,15 @@ static xmlSAXHandler _Con_Modules_libXML2_parse_func_handler = {
 
 typedef struct {
 	Con_Obj *thread;
+	Con_Obj *libxml2_mod;
 	Con_Obj *elements_stack;
 	Con_Obj *elements_module;
 } _Con_Modules_libXML2_parse_func_state;
 
 Con_Obj *_Con_Modules_libXML2_parse_func(Con_Obj *thread)
 {
+	Con_Obj *libxml2_mod = Con_Builtins_VM_Atom_get_functions_module(thread);
+
 	// XXX passing in elements_module is a hack, but is needed until we have a sane way to import
 	// user modules from C modules.
 
@@ -134,6 +142,7 @@ Con_Obj *_Con_Modules_libXML2_parse_func(Con_Obj *thread)
 	Con_Obj *document_elems = Con_Builtins_List_Atom_new(thread);
 	state.elements_stack = Con_Builtins_List_Atom_new_va(thread, document_elems, NULL);
 	state.elements_module = elements_module;
+	state.libxml2_mod = libxml2_mod;
 	
 	if (xmlSAXUserParseMemory(&_Con_Modules_libXML2_parse_func_handler, &state, xml_string_atom->str, xml_string_atom->size) < 0)
 		CON_XXX;
@@ -156,6 +165,27 @@ void _Con_Modules_libXML2_parse_func_characters(void *user_data, const xmlChar *
 	Con_Obj *text_node = CON_APPLY(CON_GET_SLOT(CON_GET_MODULE_DEF(state->elements_module, "Text"), "new"), str);
 	
 	CON_GET_SLOT_APPLY(current_elem, "append", text_node);
+}
+
+
+
+#define ERROR_BUF_SIZE 1024
+
+void _Con_Modules_libXML2_parse_error(void *user_data, const char *msg, ...)
+{
+	_Con_Modules_libXML2_parse_func_state *state = (_Con_Modules_libXML2_parse_func_state *) user_data;
+	Con_Obj *thread = state->thread;
+
+	char *buf = Con_Memory_malloc(thread, ERROR_BUF_SIZE, CON_MEMORY_CHUNK_OPAQUE);
+
+	va_list args;
+	va_start(args, msg);
+	if (vsnprintf(buf, ERROR_BUF_SIZE, msg, args) > ERROR_BUF_SIZE)
+		CON_XXX;
+	va_end(args);
+	
+	Con_Obj *exception = CON_GET_SLOT_APPLY(CON_GET_MODULE_DEF(state->libxml2_mod, "XML_Exception"), "new", Con_Builtins_String_Atom_new_no_copy(thread, buf, strlen(buf), CON_STR_UTF_8));
+	Con_Builtins_VM_Atom_raise(thread, exception);
 }
 
 

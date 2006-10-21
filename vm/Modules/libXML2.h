@@ -1,4 +1,4 @@
-// Copyright (c) 2003-2006 King's College London, created by Laurence Tratt
+// Copyright (c) 2006 Laurence Tratt
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to
@@ -19,51 +19,11 @@
 // IN THE SOFTWARE.
 
 
-import Strings
+#ifndef _CON_MODULES_libXML2_H
+#define _CON_MODULES_libXML2_H
 
+#include "Core.h"
 
+Con_Obj *Con_Modules_libXML2_init(Con_Obj *, Con_Obj *);
 
-
-// The file name extension of a normal Converge file.
-
-CV_EXTENSION := "cv"
-
-// The file name extension of a Converge binary file.
-
-CVB_EXTENSION := "cvb"
-
-
-
-
-// The default variables in scope in every Converge module.
-
-DEFAULT_VARS := Set{"self_module", "null", "fail"}
-
-
-
-
-//
-
-BUILTIN_MODULES := Set{"Sys", "Backtrace", "Builtins", "POSIX_File", "Array", "OS", "Exceptions", "C_Earley_Parser", "PCRE", "VM", "Processes", "PThreads", "CEI", "C_Strings", "Thread", "libXML2"}
-
-
-
-UNIQUE_NAME_TEMPLATE := "$$%s$$"
-UNIQUE_NAME_EXTRA_TEMPLATE := "$$%s$$%s$$"
-QUASI_QUOTES_NAME := "$$qq$$%s$$"
-
-
-
-
-_fresh_name_counter := 0
-
-func fresh_name(name := null):
-
-	nonlocal _fresh_name_counter
-	
-	_fresh_name_counter += 1
-	
-	if name is null:
-		return Strings::format(UNIQUE_NAME_TEMPLATE, (_fresh_name_counter - 1).to_str())
-	else:
-		return Strings::format(UNIQUE_NAME_EXTRA_TEMPLATE, (_fresh_name_counter - 1).to_str(), name)
+#endif

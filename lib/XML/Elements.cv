@@ -1,0 +1,39 @@
+import Builtins
+
+
+
+
+class Document(Builtins::List):
+
+	func get_root_elem():
+	
+		for elem := self.iterate():
+			if Element.instantiated(elem):
+				return elem
+		
+		raise "XXX"
+
+
+
+
+class Element(Builtins::List):
+
+	func init(name, attr_namespaces):
+	
+		self.name := name
+		self._attr_namespaces := attr_namespaces
+
+
+
+	func get_attr(name, namespace := ""):
+	
+		return self._attr_namespaces[namespace][name]
+
+
+
+
+class Text:
+
+	func init(str):
+	
+		self.str := str

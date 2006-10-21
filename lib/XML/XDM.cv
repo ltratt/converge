@@ -1,0 +1,9 @@
+import libXML2
+import Elements
+
+
+
+
+func parse(xml):
+
+	return libXML2::parse(xml, Elements)

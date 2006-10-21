@@ -82,6 +82,10 @@ AH_TEMPLATE(CON_CC, [The name of your C compiler.])
 AC_DEFINE_UNQUOTED(CON_CC, [$CC])
 
 
+extra_cflags="-I/usr/local/include -I/usr/include/pcre"
+extra_libs="-L/usr/local/lib"
+
+
 
 ####################################################################################################
 # Machine dependent configuration
@@ -206,6 +210,8 @@ if [[ "$with_threads" = "yes" ]]; then
 	AC_SUBST(CON_THREAD_CLASS_OBJ, "Platform/Threads/PThreads/PThreads_Class.o")
 	AC_SUBST(CON_THREAD_MODULE_OBJ, "Platform/Threads/PThreads/PThreads_Module.o")
 	AC_SUBST(CON_THREAD_TEST_DIR, "pthreads")
+	
+	extra_libs="$extra_libs -lpthread"
 else
 	AC_MSG_RESULT(no)
 	AC_DEFINE(CON_THREADS_SINGLE_THREADED, [], [Define if you don't have a supported threads library on your platform, or if you wish to use the single threaded version of Converge. Note that you can can only define one CON_THREADS_* variable.])
@@ -220,15 +226,22 @@ fi
 # Package / header file checks
 #
 
-includes="-I/usr/local/include -I/usr/include/pcre"
-
-CFLAGS="$REAL_CFLAGS $includes"
+CFLAGS="$extra_cflags"
 
 AC_CHECK_HEADER(pcre.h, , [AC_MSG_ERROR([Unable to find pcre.h])], [#include "pcre.h"])
 
 case $operating_system in
-	CYGWIN_NT*) AC_SUBST(PCRE_CYGWIN_HACK, /usr/lib/libpcre.a);;
+	CYGWIN_NT*) extra_libs="$extra_libs /usr/lib/libpcre.a";;
+	*) extra_libs="$extra_libs -lpcre";;
 esac
+
+
+AC_PATH_PROG(xml2_config, xml2-config, fail)
+if [[ "$xml2_config" = "fail" ]]; then
+	AC_MSG_ERROR([Unable to find xml2-config])
+fi
+extra_cflags="$extra_cflags `$xml2_config --cflags`"
+extra_libs="$extra_libs `$xml2_config --libs`"
 
 
 
@@ -314,7 +327,8 @@ AC_FUNC_STRERROR_R
 
 # C flags
 
-CFLAGS="-g -DNDEBUG -O2 -Wall -Wstrict-prototypes -Wmissing-prototypes -Wwrite-strings -Wpointer-arith -Wbad-function-cast -Wsign-compare $includes"
+CFLAGS="-g -DNDEBUG -O2 -Wall -Wstrict-prototypes -Wmissing-prototypes -Wwrite-strings -Wpointer-arith -Wbad-function-cast -Wsign-compare $extra_cflags"
+LIBS="$extra_libs"
 
 AC_CONFIG_FILES([Makefile Makefile.inc compiler/Makefile vm/Version.h vm/Makefile lib/Makefile
 	bootstrap/Makefile tests/Makefile tests/threads/Makefile tests/threads/pthreads/Makefile

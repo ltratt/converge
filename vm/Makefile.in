@@ -1,5 +1,6 @@
 CC=@CC@
 CFLAGS=@CFLAGS@ -std=c99
+LIBS=@LIBS@
 
 .SUFFIXES: .c .S .o
 
@@ -26,7 +27,7 @@ OBJECT_FILES = 	@CON_THREAD_ATOM_OBJ@ @CON_THREAD_CLASS_OBJ@ @CON_THREAD_MODULE_
 	Modules/C_Strings.o Modules/VM.o \
 	Modules/Exceptions.o Modules/PCRE.o Modules/Sys.o Numbers.o Object.o \
 	Platform/Arch/@CON_ARCH@/Arch.o Platform/Arch/@CON_ARCH@/memmove.o \
-	Platform/POSIX/POSIX_File_Module.o Slots.o main.o Modules/Thread.o
+	Platform/POSIX/POSIX_File_Module.o Slots.o main.o Modules/Thread.o Modules/libXML2.o
 	
 
 all: converge
@@ -43,7 +44,7 @@ libconverge.a: ${OBJECT_FILES}
 	ranlib libconverge.a
 
 converge: libconverge.a
-	gcc -o converge -L/usr/local/lib -lpcre -lpthread main.o libconverge.a @PCRE_CYGWIN_HACK@
+	gcc -o converge main.o libconverge.a ${LIBS}
 
 clean:
 	rm -rf *.core libconverge.a converge ${OBJECT_FILES}

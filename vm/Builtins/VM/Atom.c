@@ -280,7 +280,7 @@ Con_Obj *Con_Builtins_VM_Atom_apply(Con_Obj *thread, Con_Obj *func, bool suppres
 		num_args = 0;
 	
 	if (CON_FIND_ATOM(func, CON_BUILTIN(CON_BUILTIN_FUNC_ATOM_DEF_OBJECT)) == NULL)
-		CON_XXX;
+		CON_RAISE_EXCEPTION("Apply_Exception", func);
 
 	va_list ap;
 	Con_Obj *arg_obj;

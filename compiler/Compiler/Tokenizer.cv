@@ -380,9 +380,18 @@ class Tokenizer:
 					i := i + quote_char.len()
 					while i < self._str.len():
 						if i + quote_char.len() <= self._str.len() & self._str[i : i + quote_char.len()] == quote_char:
+							if quote_char == "\"\"\"" & i + 4 <= self._str.len() & self._str[i + 3] == "\"":
+								// In triple quotes, """" (indeed, 4 or more consecutive quote marks)
+								// are not counted as being the end of the quote. Only when we reach
+								// a triple quotes that has no quotes after it are we finished.
+								string.append("\"")
+								i += 1
+								continue
+
 							// We've found the closing quote.
 							i += quote_char.len()
 							break
+
 						if i + 1 < self._str.len() & self._str[i] == ESCAPE:
 							if self._str[i + 1] == "n":
 								string.append("\n")

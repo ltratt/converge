@@ -1,4 +1,5 @@
 // Copyright (c) 2003-2006 King's College London, created by Laurence Tratt
+// Copyright (c) 2006 Laurence Tratt
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to
@@ -21,6 +22,7 @@
 
 import File, PCRE, Strings, Sys
 import CPK::Token::Token, CPK::Tokens
+import CEI
 
 
 
@@ -72,7 +74,7 @@ class Tokenizer:
 		self._str := str
 		if src_info.len() != 1:
 			raise "XXX"
-		src_path := src_info[0][0]
+		self._src_path := src_info[0][0]
 		self._src_offset := src_info[0][1]
 		self._re_keywords := PCRE::compile(Strings::format("(?:%s)\\b", Strings::join(KEYWORDS + extra_keywords, "|")))
 		escaped_symbols := []
@@ -155,7 +157,7 @@ class Tokenizer:
 			if m[0].len() > self._indents[-1]:
 				// Indents are easy: they always result in a single INDENT token being added.
 				
-				self.tokens.append(Token.new("INDENT", null, [[src_path, self._src_offset + i]]))
+				self.tokens.append(Token.new("INDENT", null, [[self._src_path, self._src_offset + i]]))
 				self._indents.append(m[0].len())
 				i += m[0].len()
 				
@@ -221,7 +223,7 @@ class Tokenizer:
 				while m[0].len() < self._indents[-1]:
 					// For however many levels of indentation we have decreased by, a DEDENT token is
 					// generated.
-					self.tokens.append(Token.new("DEDENT", null, [[src_path, self._src_offset + i]]))
+					self.tokens.append(Token.new("DEDENT", null, [[self._src_path, self._src_offset + i]]))
 					self._indents.del(-1)
 				continue
 			elif m[0].len() == self._indents[-1] & self.tokens.len() > 0:
@@ -250,7 +252,7 @@ class Tokenizer:
 						n := RE_COMMENT.match(self._str, i + m[0].len())
 					continue
 				else:
-					self.tokens.append(Token.new("NEWLINE", null, [[src_path, self._src_offset + i]]))
+					self.tokens.append(Token.new("NEWLINE", null, [[self._src_path, self._src_offset + i]]))
 			
 			while i < self._str.len():
 				// This inner while loop is the part that tokenizes actual characters. It always
@@ -299,7 +301,7 @@ class Tokenizer:
 				// as <SYMBOL -> AND <INTEGER 2> rather than <INTEGER -2>.
 
 				if m := RE_INT.match(self._str, i):
-					self.tokens.append(Token.new("INT", m[0], [[src_path, self._src_offset + i]]))
+					self.tokens.append(Token.new("INT", m[0], [[self._src_path, self._src_offset + i]]))
 					i += m[0].len()
 					continue
 
@@ -307,7 +309,7 @@ class Tokenizer:
 				// otherwise be incorrectly tokenized as an identifier and a different symbol.
 
 				if m := self._re_symbols.match(self._str, i):
-					self.tokens.append(Token.new(m[0].to_upper_case(), null, [[src_path, self._src_offset + i]]))
+					self.tokens.append(Token.new(m[0].to_upper_case(), null, [[self._src_path, self._src_offset + i]]))
 					i += m[0].len()
 					if m[0] == ":" & self.tokens.len() > 2 & self.tokens[-2].type == ">>":
 						// We have just matched the beginning of a DSL block (when tokens
@@ -347,7 +349,7 @@ class Tokenizer:
 									// This line has sufficient indentation, and is non-blank.
 									i += RE_INDENT_PLUS_CONTENTS.match(self._str, i)[0].len()
 									dsl_block_end := i
-							self.tokens.append(Token.new("DSL_BLOCK", self._str[dsl_block_start : dsl_block_end], [[src_path, self._src_offset + dsl_block_start]]))
+							self.tokens.append(Token.new("DSL_BLOCK", self._str[dsl_block_start : dsl_block_end], [[self._src_path, self._src_offset + dsl_block_start]]))
 							// Since a DSL block implictly finishes at the end of a line, we need
 							// to break the outer while loop too.
 							break
@@ -355,13 +357,13 @@ class Tokenizer:
 
 				if m := self._re_keywords.match(self._str, i):
 					// Keywords are automatically capitalized for their type.
-					self.tokens.append(Token.new(m[0].to_upper_case(), m[0], [[src_path, self._src_offset + i]]))
+					self.tokens.append(Token.new(m[0].to_upper_case(), m[0], [[self._src_path, self._src_offset + i]]))
 					i += m[0].len()
 					continue
 
 				if m := RE_ID.match(self._str, i):
 					// Identifiers are matched after keywords for obvious reasons.
-					self.tokens.append(Token.new("ID", m[0], [[src_path, self._src_offset + i]]))
+					self.tokens.append(Token.new("ID", m[0], [[self._src_path, self._src_offset + i]]))
 					i += m[0].len()
 					continue
 				
@@ -406,7 +408,7 @@ class Tokenizer:
 					exhausted:
 						self.error(Strings::format("Unterminated string"), string_start)
 					
-					self.tokens.append(Token.new("STRING", Strings::join(string, ""), [[src_path, self._src_offset + i]]))
+					self.tokens.append(Token.new("STRING", Strings::join(string, ""), [[self._src_path, self._src_offset + i]]))
 					
 					continue
 				
@@ -415,7 +417,7 @@ class Tokenizer:
 				self.error(Strings::format("Unknown char '%s'", self._str[i]), i)
 		
 		while self._indents.len() > 1:
-			self.tokens.append(Token.new("DEDENT", null, [[src_path, self._src_offset + i]]))
+			self.tokens.append(Token.new("DEDENT", null, [[self._src_path, self._src_offset + i]]))
 			self._indents.del(-1)
 				
 						
@@ -459,17 +461,7 @@ class Tokenizer:
 
 	func error(msg, src_pos):
 	
-		i := 0
-		while i < self.newlines.len() & self.newlines[i] < self._src_offset + src_pos:
-			i += 1
-		if i == self.newlines.len():
-			line := i
-			col := (self._src_offset + src_pos) - self.newlines[-1]
-		else:
-			line := i + 1
-			col := self.newlines[i] - (self._src_offset + src_pos)
-		Sys::println(Strings::format("Line %d column %d: %s", self._line_offset + line, col, msg))
-		Sys::exit(1)
+		CEI::compiler().error(msg, [[self._src_path, src_pos]])
 					
 
 

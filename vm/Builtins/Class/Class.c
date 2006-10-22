@@ -107,7 +107,7 @@ Con_Obj *_Con_Builtins_Class_Class_new_object(Con_Obj *thread)
 	class_atom->virgin_class = 0;
 	class_atom->custom_get_slot_field = 0;
 	class_atom->custom_set_slot_field = 0;
-	class_atom->custom_has_slot_field = 0;
+	class_atom->custom_find_slot_field = 0;
 
 	class_atom->num_supers = Con_Numbers_Number_to_Con_Int(thread, CON_GET_SLOT_APPLY(supers, "len"));
 	class_atom->supers = Con_Memory_malloc(thread, sizeof(Con_Obj *) * class_atom->num_supers, CON_MEMORY_CHUNK_OPAQUE);
@@ -301,7 +301,7 @@ Con_Obj *_Con_Builtins_Class_Class_conformed_by_func(Con_Obj *thread)
 	if (!((class_atom->class_fields_for_children != NULL) && (o->creator_slots == class_atom->class_fields_for_children))) {
 		// Bugger. We have to do it the long way by checking that 'o' has a slot for every field
 		// in 'self'.
-		if (o->custom_has_slot)
+		if (o->custom_find_slot)
 			CON_XXX;
 		else {
 			Con_Builtins_Slots_Atom *o_slots_atom = CON_FIND_ATOM(o, CON_BUILTIN(CON_BUILTIN_SLOTS_ATOM_DEF_OBJECT));

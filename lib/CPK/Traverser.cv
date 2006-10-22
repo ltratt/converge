@@ -32,7 +32,7 @@ class Traverser:
 			return fail
 			
 		name := "_t_" + node[0]
-		if self.has_slot(name):
+		if self.find_slot(name):
 			return self.get_slot(name)(node)
 		else:
 			return self._default(node)

@@ -158,7 +158,7 @@ typedef struct Con_Memory_Store Con_Memory_Store;
 //
 //   custom_get_slot : whether this object defines a non-default get_slot function
 //   custom_set_slot : whether this object defines a non-default get_slot function
-//   custom_has_slot : whether this object defines a non-default get_slot function
+//   custom_find_slot : whether this object defines a non-default get_slot function
 
 typedef struct Con_Obj Con_Obj;
 
@@ -176,7 +176,7 @@ struct Con_Obj {
 	Con_Mutex mutex;
 	Con_Slots *creator_slots;
 	unsigned int
-		virgin : 1, custom_get_slot : 1, custom_set_slot : 1, custom_has_slot : 1;
+		virgin : 1, custom_get_slot : 1, custom_set_slot : 1, custom_find_slot : 1;
 	Con_Atom first_atom[0];
 };
 

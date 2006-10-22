@@ -89,7 +89,7 @@ class IModule_Gen:
 			return fail
 		
 		name := "_t_" + node[0]
-		if f := self.has_slot(name):
+		if f := self.find_slot(name):
 			// Many users won't care about making use of the 'extra_src_info' argument, so we allow
 			// all traversal functions to be defined with only a 'node' argument. Therefore if the
 			// bound function only has 2 arguments (i.e. 'self, node') we don't pass on the

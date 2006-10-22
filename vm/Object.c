@@ -93,10 +93,10 @@ Con_Obj *Con_Object_new_from_class(Con_Obj *thread, Con_Int size, Con_Obj *_clas
 	else
 		new_obj->custom_set_slot = 0;
 
-	if (class_atom->custom_has_slot_field)
-		new_obj->custom_has_slot = 1;
+	if (class_atom->custom_find_slot_field)
+		new_obj->custom_find_slot = 1;
 	else
-		new_obj->custom_has_slot = 0;
+		new_obj->custom_find_slot = 0;
 	CON_MUTEX_UNLOCK(&_class->mutex);
 	
 #	ifndef CON_THREADS_SINGLE_THREADED
@@ -121,7 +121,7 @@ Con_Obj *Con_Object_new_from_proto(Con_Obj *thread, Con_Int size, Con_Obj *proto
 		new_obj->creator_slots = NULL;
 		new_obj->custom_get_slot = 0;
 		new_obj->custom_set_slot = 0;
-		new_obj->custom_has_slot = 0;
+		new_obj->custom_find_slot = 0;
 		new_obj->virgin = 0;
 	}
 	else {
@@ -130,7 +130,7 @@ Con_Obj *Con_Object_new_from_proto(Con_Obj *thread, Con_Int size, Con_Obj *proto
 		new_obj->virgin = proto_obj->virgin;
 		new_obj->custom_get_slot = proto_obj->custom_get_slot;
 		new_obj->custom_set_slot = proto_obj->custom_set_slot;
-		new_obj->custom_set_slot = proto_obj->custom_has_slot;
+		new_obj->custom_set_slot = proto_obj->custom_find_slot;
 		CON_MUTEX_UNLOCK(&proto_obj->mutex);
 	}
 	
@@ -319,10 +319,10 @@ Con_Obj *Con_Object_get_slot_no_custom(Con_Obj *thread, Con_Obj *obj, const char
 //
 // If 'slot_name' is not found, 'obj's mutex is unlocked and NULL is returned.
 //
-// This function is intended for internal use and by Object.has_slot.
+// This function is intended for internal use and by Object.find_slot.
 //
 
-Con_Obj *Con_Object_has_slot_no_custom(Con_Obj *thread, Con_Obj *obj, const char *slot_name, Con_Int slot_name_size)
+Con_Obj *Con_Object_find_slot_no_custom(Con_Obj *thread, Con_Obj *obj, const char *slot_name, Con_Int slot_name_size)
 {
 	Con_Builtins_Slots_Atom *slots_atom = CON_FIND_ATOM(obj, CON_BUILTIN(CON_BUILTIN_SLOTS_ATOM_DEF_OBJECT));
 	if (slots_atom != NULL) {

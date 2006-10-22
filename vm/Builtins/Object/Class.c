@@ -45,7 +45,7 @@ Con_Obj *_Con_Builtins_Object_Class_new_object(Con_Obj *);
 
 Con_Obj *_Con_Builtins_Object_Class_init_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Object_Class_get_slot_func(Con_Obj *);
-Con_Obj *_Con_Builtins_Object_Class_has_slot_func(Con_Obj *);
+Con_Obj *_Con_Builtins_Object_Class_find_slot_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Object_Class_to_str_func(Con_Obj *);
 
 
@@ -71,7 +71,7 @@ void Con_Builtins_Object_Class_bootstrap(Con_Obj *thread)
 	
 	CON_SET_FIELD(object_class, "init", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Object_Class_init_func, "init", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), object_class));
 	CON_SET_FIELD(object_class, "get_slot", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Object_Class_get_slot_func, "get_slot", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), object_class));
-	CON_SET_FIELD(object_class, "has_slot", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Object_Class_has_slot_func, "has_slot", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), object_class));
+	CON_SET_FIELD(object_class, "find_slot", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Object_Class_find_slot_func, "find_slot", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), object_class));
 	CON_SET_FIELD(object_class, "to_str", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Object_Class_to_str_func, "to_str", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), object_class));
 }
 
@@ -121,7 +121,7 @@ Con_Obj *_Con_Builtins_Object_Class_init_func(Con_Obj *thread)
 
 
 //
-// 'has_slot(name, caller)' returns the slot named 'name' in 'self'.
+// 'find_slot(name, caller)' returns the slot named 'name' in 'self'.
 //
 
 Con_Obj *_Con_Builtins_Object_Class_get_slot_func(Con_Obj *thread)
@@ -151,7 +151,7 @@ Con_Obj *_Con_Builtins_Object_Class_get_slot_func(Con_Obj *thread)
 // 'get_slot(name, caller)' returns the slot named 'name' in 'self'.
 //
 
-Con_Obj *_Con_Builtins_Object_Class_has_slot_func(Con_Obj *thread)
+Con_Obj *_Con_Builtins_Object_Class_find_slot_func(Con_Obj *thread)
 {
 	// This 'get_slot' function is rather unusual: as the "root" get_slot, it has a deep knowledge of
 	// how this functionality works in Converge.
@@ -163,7 +163,7 @@ Con_Obj *_Con_Builtins_Object_Class_has_slot_func(Con_Obj *thread)
 	assert(slot_name_string_atom->encoding == CON_STR_UTF_8);
 
 	CON_MUTEX_LOCK(&self->mutex);
-	Con_Obj *slot_val = Con_Object_has_slot_no_custom(thread, self, slot_name_string_atom->str, slot_name_string_atom->size);
+	Con_Obj *slot_val = Con_Object_find_slot_no_custom(thread, self, slot_name_string_atom->str, slot_name_string_atom->size);
 	CON_MUTEX_UNLOCK(&self->mutex);
 	
 	if (slot_val == NULL)

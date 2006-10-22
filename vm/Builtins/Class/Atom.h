@@ -44,9 +44,9 @@ typedef struct {
 	//  					   virgin objects.
 	// custom_get_slot_field : whether this object defines a non-default get_slot function
 	// custom_set_slot_field : whether this object defines a non-default get_slot function
-	// custom_has_slot_field : whether this object defines a non-default get_slot function
+	// custom_find_slot_field : whether this object defines a non-default get_slot function
 	unsigned int
-		virgin_class : 1, custom_get_slot_field : 1, custom_set_slot_field : 1, custom_has_slot_field : 1;
+		virgin_class : 1, custom_get_slot_field : 1, custom_set_slot_field : 1, custom_find_slot_field : 1;
 	
 	Con_Int num_supers;
 	Con_Obj **supers;

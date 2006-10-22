@@ -47,7 +47,7 @@ void Con_Builtins_Atom_Def_Atom_bootstrap(Con_Obj *thread)
 	atom_def_object->creator_slots = NULL;
 	atom_def_object->custom_get_slot = 0;
 	atom_def_object->custom_set_slot = 0;
-	atom_def_object->custom_has_slot = 0;
+	atom_def_object->custom_find_slot = 0;
 
 	Con_Builtins_Atom_Def_Atom *atom_def_atom = (Con_Builtins_Atom_Def_Atom *) atom_def_object->first_atom;
 	Con_Builtins_Slots_Atom *slots_atom = (Con_Builtins_Slots_Atom *) (atom_def_atom + 1);

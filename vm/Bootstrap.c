@@ -284,7 +284,7 @@ Con_Obj *Con_Bootstrap_do(u_char *c_stack_start, int argc, char **argv)
 			CON_MUTEX_UNLOCK(&creator->mutex);
 			obj->custom_get_slot = class_atom->custom_get_slot_field;
 			obj->custom_set_slot = class_atom->custom_set_slot_field;
-			obj->custom_has_slot = class_atom->custom_has_slot_field;
+			obj->custom_find_slot = class_atom->custom_find_slot_field;
 		}
 	}
 	

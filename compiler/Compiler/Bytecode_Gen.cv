@@ -141,7 +141,7 @@ class Bytecode_Gen:
 		i := 0
 		while i < self._instructions.len():
 			instruction := self._instructions[i]
-			if instruction.has_slot("pc_offset") & Builtins::String.conformed_by(instruction.pc_offset):
+			if instruction.find_slot("pc_offset") & Builtins::String.conformed_by(instruction.pc_offset):
 				instruction.pc_offset := bytecode_offsets[self._labels[instruction.pc_offset]] - bytecode_offsets[i] 
 			i += 1
 		

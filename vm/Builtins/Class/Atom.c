@@ -87,7 +87,7 @@ Con_Obj *Con_Builtins_Class_Atom_new(Con_Obj *thread, Con_Obj *name, Con_Obj *ne
 	class_atom->class_fields_for_children = NULL;
 	class_atom->custom_get_slot_field = 0;
 	class_atom->custom_set_slot_field = 0;
-	class_atom->custom_has_slot_field = 0;
+	class_atom->custom_find_slot_field = 0;
 	class_atom->new_object = new_object;
 	
 	va_list ap;
@@ -132,7 +132,7 @@ void Con_Builtins_Class_Atom_init_atom(Con_Obj *thread, Con_Builtins_Class_Atom 
 	class_atom->class_fields_for_children = NULL;
 	class_atom->custom_get_slot_field = 0;
 	class_atom->custom_set_slot_field = 0;
-	class_atom->custom_has_slot_field = 0;
+	class_atom->custom_find_slot_field = 0;
 	class_atom->new_object = new_object;
 
 	va_list ap;
@@ -191,8 +191,8 @@ void Con_Builtins_Class_Atom_set_field(Con_Obj *thread, Con_Obj *class_, const c
 			class_atom->custom_get_slot_field = 1;
 		else if (NAME_COMPARISON("set_slot")) 
 			class_atom->custom_set_slot_field = 1;
-		else if (NAME_COMPARISON("has_slot")) 
-			class_atom->custom_has_slot_field = 1;
+		else if (NAME_COMPARISON("find_slot")) 
+			class_atom->custom_find_slot_field = 1;
 	}
 
 	CON_MUTEX_UNLOCK(&class_->mutex);
@@ -215,7 +215,7 @@ Con_Slots *Con_Builtins_Class_Atom_get_creator_slots(Con_Obj *thread, Con_Obj *c
 	
 	// We're going to have to create a new class_fields_for_children.
 	
-	bool custom_get_slot_field = false, custom_set_slot_field = false, custom_has_slot_field = false;
+	bool custom_get_slot_field = false, custom_set_slot_field = false, custom_find_slot_field = false;
 	class_fields_for_children = Con_Memory_malloc_no_gc(thread, sizeof(Con_Slots), CON_MEMORY_CHUNK_CONSERVATIVE);
 	if (class_fields_for_children == NULL)
 		CON_XXX;
@@ -241,8 +241,8 @@ Con_Slots *Con_Builtins_Class_Atom_get_creator_slots(Con_Obj *thread, Con_Obj *c
 			custom_get_slot_field = 1;
 		if (super_class_atom->custom_set_slot_field)
 			custom_set_slot_field = 1;
-		if (super_class_atom->custom_has_slot_field)
-			custom_has_slot_field = 1;
+		if (super_class_atom->custom_find_slot_field)
+			custom_find_slot_field = 1;
 		CON_MUTEX_UNLOCK(&super_obj->mutex);
 		
 		CON_MUTEX_LOCK(&class_->mutex);
@@ -278,8 +278,8 @@ Con_Slots *Con_Builtins_Class_Atom_get_creator_slots(Con_Obj *thread, Con_Obj *c
 		class_atom->custom_get_slot_field = 1;
 	if (custom_set_slot_field)
 		class_atom->custom_set_slot_field = 1;
-	if (custom_has_slot_field)
-		class_atom->custom_has_slot_field = 1;
+	if (custom_find_slot_field)
+		class_atom->custom_find_slot_field = 1;
 
 	// Update class_fields_for_children so it won't be unnecessarily calculated again.
 

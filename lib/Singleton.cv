@@ -27,7 +27,7 @@ class Singleton(Builtins::Class):
 
 	func new():
 	
-		if not self.has_slot("instance"):
+		if not self.find_slot("instance"):
 			self.instance := exbi Builtins::Class.new()
 		
 		return self.instance

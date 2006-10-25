@@ -676,8 +676,13 @@ parse_func_Alternative_Or_Alternatives _Con_Modules_C_Earley_Parser_Parser_parse
 						definite_alternative = definite_alternatives->entries[0];
 						definite_alternatives = NULL;
 					}
-					else
+					else {
 						_Con_Modules_C_Earley_Parser_Parser_parse_func_resolve_tree_ambiguities(thread, parser, definite_alternatives);
+						if (definite_alternatives->num_entries == 1) {
+							definite_alternative = definite_alternatives->entries[0];
+							definite_alternatives = NULL;
+						}
+					}
 				}
 				
 				if (definite_alternatives == NULL) {
@@ -1012,7 +1017,7 @@ void _Con_Modules_C_Earley_Parser_Parser_parse_func_resolve_tree_ambiguities(Con
 	// wish to work on.
 
 	// We need to know the depth of the deepest tree.
-	
+
 	Con_Int max_depth = 0;
 	for (Con_Int x = 0; x < alternatives->num_entries; x += 1) {
 		Con_Int new_depth = _Con_Modules_C_Earley_Parser_Parser_parse_calc_max_depth(thread, parser, alternatives->entries[0].tree);
@@ -1021,42 +1026,42 @@ void _Con_Modules_C_Earley_Parser_Parser_parse_func_resolve_tree_ambiguities(Con
 	}
 	
 	for (Con_Int depth = 0; depth <= max_depth + 1; depth += 1) {
-		Con_Int lowest_precedence, highest_precedence;
-		lowest_precedence = highest_precedence = _Con_Modules_C_Earley_Parser_Parser_parse_calc_precedence(thread, parser, alternatives->entries[0].tree, depth);
-		if (lowest_precedence == -1)
-			lowest_precedence = highest_precedence = 0;
-		Con_Int lowest_precedence_pos = 0, highest_precedence_pos = 0;
-		for (Con_Int x = 1; x < alternatives->num_entries; x += 1) {
+		Con_Int lowest_precedence = -1, highest_precedence = -1;
+		for (Con_Int x = 0; x < alternatives->num_entries; x += 1) {
 			Con_Int new_precedence = _Con_Modules_C_Earley_Parser_Parser_parse_calc_precedence(thread, parser, alternatives->entries[x].tree, depth);
-			if (new_precedence == -1)
+			if (new_precedence == 0)
 				continue;
 			
-			if (new_precedence < lowest_precedence) {
+			if (lowest_precedence == -1)
+				lowest_precedence = highest_precedence = new_precedence;
+			else if (new_precedence < lowest_precedence)
 				lowest_precedence = new_precedence;
-				lowest_precedence_pos = x;
-			}
-			else if (new_precedence > highest_precedence) {
+			else if (new_precedence > highest_precedence)
 				highest_precedence = new_precedence;
-				highest_precedence_pos = x;
-			}
 		}
 
-		if (lowest_precedence_pos != highest_precedence_pos) {
-			// We choose the alternative with the *lowest* precedence. This is counter-intuitive
-			// but the highest precedence alternative will be the embedded further into the tree,
-			// leaving the lower precedence (which we've come recorded) at the outer-most limit
-			// of the tree.
-
-			alternatives->entries[0] = alternatives->entries[lowest_precedence_pos];
-			alternatives->num_entries = 1;
-			bzero(alternatives->entries + 1, (alternatives->num_entries - 1) * sizeof(parse_func_parse_Tree_Alternatives));
-			return;
-		}
-	}
+		if (lowest_precedence == -1)
+			continue;
 		
-	alternatives->entries[0] = alternatives->entries[alternatives->num_entries - 1];
+		if (lowest_precedence == highest_precedence)
+			break;
+
+		Con_Int i = 0;
+		while (i < alternatives->num_entries) {
+			Con_Int precedence = _Con_Modules_C_Earley_Parser_Parser_parse_calc_precedence(thread, parser, alternatives->entries[i].tree, depth);
+			if (precedence == lowest_precedence) {
+				i += 1;
+				continue;
+			}
+
+			memmove(alternatives->entries + i, alternatives->entries + i + 1, (alternatives->num_entries - (i + 1)) * sizeof(parse_func_parse_Tree_Alternative));
+			alternatives->num_entries -= 1;
+		}
+		
+		return;
+	}
+	
 	alternatives->num_entries = 1;
-	bzero(alternatives->entries + 1, (alternatives->num_entries - 1) * sizeof(parse_func_parse_Tree_Alternatives));
 }
 
 

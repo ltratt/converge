@@ -71,7 +71,7 @@ class Compiler:
 		self.src_path := extra[0]
 		
 		if not File::exists(self.src_path):
-			self.error(Strings::format("Source file '%s' not found.", self.input_path))
+			self.error(Strings::format("Source file '%s' not found.", self.src_path))
 
 		if (input_file_dir := File::split_leaf(self.src_path)[0]) == "":
 			self.includes.insert(0, ".")

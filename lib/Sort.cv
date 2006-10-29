@@ -19,23 +19,55 @@
 // IN THE SOFTWARE.
 
 
+//
+// Sort 'list' in place into the order determined by 'comparison' using the quickest available
+// sorting algorithm. Note that the sort is not guaranteed to be stable.
+//
+
 func sort(list, comparison := func (x, y) {
 	return x < y
 }):
 
-	if list.len() == 0:
-		return list[ : ]
-	
-	new_list := list[ : ]
-	while 1:
-		changed := 0
-		i := 0
-		while i < (new_list.len() - 1):
-			if comparison(new_list[i + 1], new_list[i]):
-				temp := new_list[i + 1]
-				new_list[i + 1] := new_list[i]
-				new_list[i] := temp
-				changed := 1
-			i += 1
-		if changed == 0:
-			return new_list
+	heapsort(list, comparison)
+
+
+
+//
+// Sort 'list' in place into the order determined by 'comparison' using the heapsort algorithm.
+//
+
+func heapsort(list, comparison := func (x, y) {
+	return x < y
+}):
+
+	// This implementation of heapsort is as described at:
+	//
+	//   http://en.wikipedia.org/wiki/Heapsort
+
+	start := list.len() / 2 - 1
+	while start >= 0:
+		_heapsort_sift(list, comparison, start, list.len())
+		start := start - 1
+
+	end := list.len() - 1
+	while end > 0:
+		t := list[0]
+		list[0] := list[end]
+		list[end] := t
+		_heapsort_sift(list, comparison, 0, end)
+		end := end - 1
+
+
+
+func _heapsort_sift(list, comparison, start, count):
+
+	while (child := start * 2 + 1) < count:
+		if child < count - 1 & comparison(list[child], list[child + 1]):
+			child += 1
+		if comparison(list[start], list[child]):
+			t := list[start]
+			list[start] := list[child]
+			list[child] := t
+			start := child
+		else:
+			return

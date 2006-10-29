@@ -52,6 +52,7 @@ Con_Obj *_Con_Builtins_String_Class_find_func(Con_Obj *);
 Con_Obj *_Con_Builtins_String_Class_find_index_func(Con_Obj *);
 Con_Obj *_Con_Builtins_String_Class_get_func(Con_Obj *);
 Con_Obj *_Con_Builtins_String_Class_get_slice_func(Con_Obj *);
+Con_Obj *_Con_Builtins_String_Class_hash_func(Con_Obj *);
 Con_Obj *_Con_Builtins_String_Class_iterate_func(Con_Obj *);
 Con_Obj *_Con_Builtins_String_Class_len_func(Con_Obj *);
 Con_Obj *_Con_Builtins_String_Class_prefixed_by_func(Con_Obj *);
@@ -91,6 +92,7 @@ void Con_Builtins_String_Class_bootstrap(Con_Obj *thread)
 	CON_SET_FIELD(string_class, "find_index", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_find_index_func, "find_index", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
 	CON_SET_FIELD(string_class, "get", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_get_func, "get", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
 	CON_SET_FIELD(string_class, "get_slice", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_get_slice_func, "get_slice", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
+	CON_SET_FIELD(string_class, "hash", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_hash_func, "hash", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
 	CON_SET_FIELD(string_class, "iterate", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_iterate_func, "iterate", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
 	CON_SET_FIELD(string_class, "len", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_len_func, "len", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
 	CON_SET_FIELD(string_class, "prefixed_by", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_prefixed_by_func, "prefixed_by", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
@@ -306,6 +308,22 @@ Con_Obj *_Con_Builtins_String_Class_get_func(Con_Obj *thread)
 		CON_XXX;
 	
 	return Con_Builtins_String_Atom_new_no_copy(thread, self_string_atom->str + i, 1, self_string_atom->encoding);
+}
+
+
+
+//
+// 'hash()' returns this strings hash.
+//
+
+Con_Obj *_Con_Builtins_String_Class_hash_func(Con_Obj *thread)
+{
+	Con_Obj *self;
+	CON_UNPACK_ARGS("S", &self);
+	
+	Con_Builtins_String_Atom *self_string_atom = CON_GET_ATOM(self, CON_BUILTIN(CON_BUILTIN_STRING_ATOM_DEF_OBJECT));
+	
+	return CON_NEW_INT(self_string_atom->hash);
 }
 
 

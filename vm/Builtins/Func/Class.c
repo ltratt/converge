@@ -133,7 +133,10 @@ Con_Obj *_Con_Builtins_Func_Class_path_func(Con_Obj *thread)
 		return CON_GET_SLOT(self, "name");
 	else {
 		Con_Obj *rtn = CON_GET_SLOT_APPLY(container, "path", stop_at);
-		rtn = CON_ADD(rtn, CON_NEW_STRING("."));
+		if (CON_GET_SLOT_APPLY_NO_FAIL(CON_BUILTIN(CON_BUILTIN_MODULE_CLASS), "instantiated", container) != NULL)
+			rtn = CON_ADD(rtn, CON_NEW_STRING("::"));
+		else
+			rtn = CON_ADD(rtn, CON_NEW_STRING("."));
 		rtn = CON_ADD(rtn, CON_GET_SLOT(self, "name"));
 		
 		return rtn;

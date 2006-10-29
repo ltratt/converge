@@ -331,6 +331,15 @@ class Instr_Branch(Instruction):
 
 
 
+class Instr_Yield(Instruction):
+
+	func to_bytecode():
+	
+		return b_8(INSTR_YIELD)
+
+
+
+
 class Instr_Import(Instruction):
 
 	func init(src_info, import_num):

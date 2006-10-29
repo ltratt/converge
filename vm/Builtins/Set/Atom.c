@@ -71,6 +71,13 @@ void Con_Builtins_Set_Atom_bootstrap(Con_Obj *thread)
 // Set creation functions
 //
 
+Con_Obj *Con_Builtins_Set_Atom_new(Con_Obj *thread)
+{
+	return Con_Builtins_Set_Atom_new_sized(thread, CON_DEFAULT_SET_NUM_ENTRIES_ALLOCATED);
+}
+
+
+
 //
 // Create a new set and initialize it with 'num_entries' objects from the stack.
 //

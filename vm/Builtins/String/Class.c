@@ -130,9 +130,9 @@ Con_Obj *_Con_Builtins_String_Class_eq_func(Con_Obj *thread)
 	}
 	
 	if (equal)
-		CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+		return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 	else
-		CON_RETURN(CON_BUILTIN(CON_BUILTIN_FAIL_OBJ));
+		return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
 }
 
 
@@ -160,9 +160,9 @@ Con_Obj *_Con_Builtins_String_Class_neq_func(Con_Obj *thread)
 	}
 	
 	if (!equal)
-		CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+		return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 	else
-		CON_RETURN(CON_BUILTIN(CON_BUILTIN_FAIL_OBJ));
+		return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
 }
 
 
@@ -186,7 +186,7 @@ Con_Obj *_Con_Builtins_String_Class_add_func(Con_Obj *thread)
 	memmove(str_mem, self_string_atom->str, self_string_atom->size);
 	memmove(str_mem + self_string_atom->size, obj_string_atom->str, obj_string_atom->size);
 	
-	CON_RETURN(Con_Builtins_String_Atom_new_no_copy(thread, (const char *) str_mem, self_string_atom->size + obj_string_atom->size, CON_STR_UTF_8));
+	return Con_Builtins_String_Atom_new_no_copy(thread, (const char *) str_mem, self_string_atom->size + obj_string_atom->size, CON_STR_UTF_8);
 }
 
 
@@ -214,7 +214,7 @@ Con_Obj *_Con_Builtins_String_Class_mul_func(Con_Obj *thread)
 		memmove(str_mem + j * self_string_atom->size, self_string_atom->str, self_string_atom->size);
 	}
 	
-	CON_RETURN(Con_Builtins_String_Atom_new_no_copy(thread, (const char *) str_mem, self_string_atom->size * i, CON_STR_UTF_8));
+	return Con_Builtins_String_Atom_new_no_copy(thread, (const char *) str_mem, self_string_atom->size * i, CON_STR_UTF_8);
 }
 
 
@@ -228,7 +228,7 @@ Con_Obj *_Con_Builtins_String_Class_to_str_func(Con_Obj *thread)
 	Con_Obj *self;
 	CON_UNPACK_ARGS("S", &self);
 	
-	CON_RETURN(CON_ADD(CON_NEW_STRING("\""), CON_ADD(self, CON_NEW_STRING("\""))));
+	return CON_ADD(CON_NEW_STRING("\""), CON_ADD(self, CON_NEW_STRING("\"")));
 }
 
 
@@ -257,7 +257,7 @@ Con_Obj *_Con_Builtins_String_Class_find_func(Con_Obj *thread)
 		i += 1;
 	}
 	
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_FAIL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
 }
 
 
@@ -285,7 +285,7 @@ Con_Obj *_Con_Builtins_String_Class_find_index_func(Con_Obj *thread)
 		i += 1;
 	}
 	
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_FAIL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
 }
 
 
@@ -305,7 +305,7 @@ Con_Obj *_Con_Builtins_String_Class_get_func(Con_Obj *thread)
 	if (self_string_atom->encoding != CON_STR_UTF_8)
 		CON_XXX;
 	
-	CON_RETURN(Con_Builtins_String_Atom_new_no_copy(thread, self_string_atom->str + i, 1, self_string_atom->encoding));
+	return Con_Builtins_String_Atom_new_no_copy(thread, self_string_atom->str + i, 1, self_string_atom->encoding);
 }
 
 
@@ -328,7 +328,7 @@ Con_Obj *_Con_Builtins_String_Class_get_slice_func(Con_Obj *thread)
 	if (self_string_atom->encoding != CON_STR_UTF_8)
 		CON_XXX;
 	
-	CON_RETURN(Con_Builtins_String_Atom_new_no_copy(thread, self_string_atom->str + lower, upper - lower, self_string_atom->encoding));
+	return Con_Builtins_String_Atom_new_no_copy(thread, self_string_atom->str + lower, upper - lower, self_string_atom->encoding);
 }
 
 
@@ -351,7 +351,7 @@ Con_Obj *_Con_Builtins_String_Class_iterate_func(Con_Obj *thread)
 		CON_YIELD(Con_Builtins_String_Atom_new_no_copy(thread, self_string_atom->str + i, 1, self_string_atom->encoding));
 	}
 	
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_FAIL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
 }
 
 
@@ -370,7 +370,7 @@ Con_Obj *_Con_Builtins_String_Class_len_func(Con_Obj *thread)
 	if (self_string_atom->encoding != CON_STR_UTF_8)
 		CON_XXX;
 
-	CON_RETURN(CON_NEW_INT(self_string_atom->size));
+	return CON_NEW_INT(self_string_atom->size);
 }
 
 
@@ -391,9 +391,9 @@ Con_Obj *_Con_Builtins_String_Class_prefixed_by_func(Con_Obj *thread)
 		CON_XXX;
 	
 	if (self_string_atom->size >= o_string_atom->size && memcmp(self_string_atom->str, o_string_atom->str, o_string_atom->size) == 0)
-		CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+		return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 	else
-		CON_RETURN(CON_BUILTIN(CON_BUILTIN_FAIL_OBJ));
+		return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
 }
 
 
@@ -422,7 +422,7 @@ Con_Obj *_Con_Builtins_String_Class_rfind_index_func(Con_Obj *thread)
 		i -= 1;
 	}
 	
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_FAIL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
 }
 
 
@@ -479,9 +479,9 @@ Con_Obj *_Con_Builtins_String_Class_suffixed_by_func(Con_Obj *thread)
 		CON_XXX;
 	
 	if (self_string_atom->size >= o_string_atom->size && memcmp(self_string_atom->str + self_string_atom->size - o_string_atom->size, o_string_atom->str, o_string_atom->size) == 0)
-		CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+		return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 	else
-		CON_RETURN(CON_BUILTIN(CON_BUILTIN_FAIL_OBJ));
+		return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
 }
 
 
@@ -505,7 +505,7 @@ Con_Obj *_Con_Builtins_String_Class_to_lower_case_func(Con_Obj *thread)
 				c -= 'A' - 'a';
 			new_str_mem[i] = c;
 		}
-		CON_RETURN(Con_Builtins_String_Atom_new_no_copy(thread, new_str_mem, self_string_atom->size, CON_STR_UTF_8));
+		return Con_Builtins_String_Atom_new_no_copy(thread, new_str_mem, self_string_atom->size, CON_STR_UTF_8);
 	}
 	else
 		CON_XXX;
@@ -532,7 +532,7 @@ Con_Obj *_Con_Builtins_String_Class_to_upper_case_func(Con_Obj *thread)
 				c -= 'a' - 'A';
 			new_str_mem[i] = c;
 		}
-		CON_RETURN(Con_Builtins_String_Atom_new_no_copy(thread, new_str_mem, self_string_atom->size, CON_STR_UTF_8));
+		return Con_Builtins_String_Atom_new_no_copy(thread, new_str_mem, self_string_atom->size, CON_STR_UTF_8);
 	}
 	else
 		CON_XXX;

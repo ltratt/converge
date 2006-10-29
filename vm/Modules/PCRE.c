@@ -150,7 +150,7 @@ Con_Obj *_Con_Modules_PCRE_compile_func(Con_Obj *thread)
 	Con_Obj *pattern;
 	CON_UNPACK_ARGS("O", &pattern);
 	
-	CON_RETURN(CON_GET_SLOT_APPLY(CON_GET_MODULE_DEF(Con_Builtins_VM_Atom_get_functions_module(thread), "Pattern"), "new", pattern));
+	return CON_GET_SLOT_APPLY(CON_GET_MODULE_DEF(Con_Builtins_VM_Atom_get_functions_module(thread), "Pattern"), "new", pattern);
 }
 
 
@@ -189,7 +189,7 @@ Con_Obj *_Con_Modules_PCRE_Pattern_new(Con_Obj *thread)
 	
 	Con_Memory_change_chunk_type(thread, new_pattern, CON_MEMORY_CHUNK_OBJ);
 	
-	CON_RETURN(new_pattern);
+	return new_pattern;
 }
 
 
@@ -230,7 +230,7 @@ Con_Obj *_Con_Modules_PCRE_Pattern_match_func(Con_Obj *thread)
 	int *ovector = Con_Memory_malloc(thread, ovector_size * sizeof(int), CON_MEMORY_CHUNK_OPAQUE);
 	if ((err = pcre_exec(pattern_atom->compiled_re, NULL, string_atom->str, string_atom->size, start_pos, PCRE_ANCHORED, ovector, ovector_size)) < 0) {
 		if (err == PCRE_ERROR_NOMATCH)
-			CON_RETURN(CON_BUILTIN(CON_BUILTIN_FAIL_OBJ));
+			return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
 		else
 			CON_XXX;
 	}
@@ -248,7 +248,7 @@ Con_Obj *_Con_Modules_PCRE_Pattern_match_func(Con_Obj *thread)
 
 	Con_Memory_change_chunk_type(thread, new_match, CON_MEMORY_CHUNK_OBJ);
 	
-	CON_RETURN(new_match);
+	return new_match;
 }
 
 
@@ -285,7 +285,7 @@ Con_Obj *_Con_Modules_PCRE_Pattern_search_func(Con_Obj *thread)
 	int *ovector = Con_Memory_malloc(thread, ovector_size * sizeof(int), CON_MEMORY_CHUNK_OPAQUE);
 	if ((err = pcre_exec(pattern_atom->compiled_re, NULL, string_atom->str, string_atom->size, start_pos, 0, ovector, ovector_size)) < 0) {
 		if (err == PCRE_ERROR_NOMATCH)
-			CON_RETURN(CON_BUILTIN(CON_BUILTIN_FAIL_OBJ));
+			return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
 		else
 			CON_XXX;
 	}
@@ -303,7 +303,7 @@ Con_Obj *_Con_Modules_PCRE_Pattern_search_func(Con_Obj *thread)
 
 	Con_Memory_change_chunk_type(thread, new_match, CON_MEMORY_CHUNK_OBJ);
 	
-	CON_RETURN(new_match);
+	return new_match;
 }
 
 
@@ -329,7 +329,7 @@ Con_Obj *_Con_Modules_PCRE_Match_get_func(Con_Obj *thread)
 	// num_captures.
 	Con_Int group_num = Con_Misc_translate_index(thread, NULL, Con_Numbers_Number_to_Con_Int(thread, group_num_obj), 1 + match_atom->num_captures);
 	
-	CON_RETURN(CON_GET_SLOT_APPLY(match_atom->string, "get_slice", CON_NEW_INT(match_atom->ovector[group_num * 2]), CON_NEW_INT(match_atom->ovector[group_num * 2 + 1])));
+	return CON_GET_SLOT_APPLY(match_atom->string, "get_slice", CON_NEW_INT(match_atom->ovector[group_num * 2]), CON_NEW_INT(match_atom->ovector[group_num * 2 + 1]));
 }
 
 
@@ -351,5 +351,5 @@ Con_Obj *_Con_Modules_PCRE_Match_get_indexes_func(Con_Obj *thread)
 	// num_captures.
 	Con_Int group_num = Con_Misc_translate_index(thread, NULL, Con_Numbers_Number_to_Con_Int(thread, group_num_obj), 1 + match_atom->num_captures);
 	
-	CON_RETURN(Con_Builtins_List_Atom_new_va(thread, CON_NEW_INT(match_atom->ovector[group_num * 2]), CON_NEW_INT(match_atom->ovector[group_num * 2 + 1]), NULL));
+	return Con_Builtins_List_Atom_new_va(thread, CON_NEW_INT(match_atom->ovector[group_num * 2]), CON_NEW_INT(match_atom->ovector[group_num * 2 + 1]), NULL);
 }

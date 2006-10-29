@@ -153,7 +153,7 @@ Con_Obj *_Con_Builtins_Class_Class_new_object(Con_Obj *thread)
 	
 	CON_GET_SLOT_APPLY(CON_GET_SLOT(new_class, "init"), "apply", Con_Builtins_List_Atom_new_va(thread, name, supers, container));
 	
-	CON_RETURN(new_class);
+	return new_class;
 }
 
 
@@ -181,7 +181,7 @@ Con_Obj *_Con_Builtins_Class_Class_new_func(Con_Obj *thread)
 	if (new_object == NULL)
 		CON_XXX; // temporary?
 
-	CON_RETURN(CON_GET_SLOT_APPLY(new_object, "apply", var_args));
+	return CON_GET_SLOT_APPLY(new_object, "apply", var_args);
 }
 
 
@@ -201,10 +201,10 @@ Con_Obj *_Con_Builtins_Class_Class_get_slot_func(Con_Obj *thread)
 		CON_MUTEX_LOCK(&self->mutex);
 		Con_Obj *name = class_atom->name;
 		CON_MUTEX_UNLOCK(&self->mutex);
-		CON_RETURN(name);
+		return name;
 	}
 	else
-		CON_RETURN(CON_APPLY(CON_EXBI(CON_BUILTIN(CON_BUILTIN_OBJECT_CLASS), "get_slot", self), slot_name));
+		return CON_APPLY(CON_EXBI(CON_BUILTIN(CON_BUILTIN_OBJECT_CLASS), "get_slot", self), slot_name);
 }
 
 
@@ -222,7 +222,7 @@ Con_Obj *_Con_Builtins_Class_Class_path_func(Con_Obj *thread)
 	CON_UNPACK_ARGS("CO", &self, &stop_at);
 
 	if (self == stop_at)
-		CON_RETURN(CON_NEW_STRING(""));
+		return CON_NEW_STRING("");
 
 	Con_Builtins_Class_Atom *self_class_atom = CON_GET_ATOM(self, CON_BUILTIN(CON_BUILTIN_CLASS_ATOM_DEF_OBJECT));
 	
@@ -232,13 +232,13 @@ Con_Obj *_Con_Builtins_Class_Class_path_func(Con_Obj *thread)
 	CON_MUTEX_UNLOCK(&self->mutex);
 	
 	if ((container == CON_BUILTIN(CON_BUILTIN_NULL_OBJ)) || (container == stop_at))
-		CON_RETURN(name);
+		return name;
 	else {
 		Con_Obj *rtn = CON_GET_SLOT_APPLY(container, "path", stop_at);
 		rtn = CON_ADD(rtn, CON_NEW_STRING("."));
 		rtn = CON_ADD(rtn, name);
 		
-		CON_RETURN(rtn);
+		return rtn;
 	}
 }
 
@@ -257,7 +257,7 @@ Con_Obj *_Con_Builtins_Class_Class_get_field_func(Con_Obj *thread)
 	
 	assert(name_string_atom->encoding = CON_STR_UTF_8);
 	
-	CON_RETURN(Con_Builtins_Class_Atom_get_field(thread, self, name_string_atom->str, name_string_atom->size));
+	return Con_Builtins_Class_Atom_get_field(thread, self, name_string_atom->str, name_string_atom->size);
 }
 
 
@@ -277,7 +277,7 @@ Con_Obj *_Con_Builtins_Class_Class_set_field_func(Con_Obj *thread)
 	
 	Con_Builtins_Class_Atom_set_field(thread, self, name_string_atom->str, name_string_atom->size, o);
 
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }
 
 
@@ -334,9 +334,9 @@ Con_Obj *_Con_Builtins_Class_Class_conformed_by_func(Con_Obj *thread)
 	CON_MUTEXES_UNLOCK(&self->mutex, &o->mutex);
 
 	if (match)
-		CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+		return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 	else
-		CON_RETURN(CON_BUILTIN(CON_BUILTIN_FAIL_OBJ));
+		return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
 }
 
 
@@ -354,7 +354,7 @@ Con_Obj *_Con_Builtins_Class_Class_instantiated_func(Con_Obj *thread)
 	Con_Obj *instance_of = CON_GET_SLOT(o, "instance_of");
 	if (instance_of == self) {
 		// We optimise the easy case.
-		CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+		return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 	}
 	else {
 		// What we do now is to put 'self' onto a stack; if the current class on the stack does
@@ -368,7 +368,7 @@ Con_Obj *_Con_Builtins_Class_Class_instantiated_func(Con_Obj *thread)
 		while (i < Con_Numbers_Number_to_Con_Int(thread, CON_GET_SLOT_APPLY(stack, "len"))) {
 			Con_Obj *cnd = CON_GET_SLOT_APPLY(stack, "get", CON_NEW_INT(i));
 			if (instance_of == self)
-				CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+				return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 			
 			Con_Builtins_Class_Atom *cnd_class_atom = CON_GET_ATOM(cnd, CON_BUILTIN(CON_BUILTIN_CLASS_ATOM_DEF_OBJECT));
 			
@@ -384,6 +384,6 @@ Con_Obj *_Con_Builtins_Class_Class_instantiated_func(Con_Obj *thread)
 			i += 1;
 		}
 		
-		CON_RETURN(CON_BUILTIN(CON_BUILTIN_FAIL_OBJ));
+		return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
 	}
 }

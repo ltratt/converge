@@ -198,7 +198,7 @@ Con_Obj *_Con_Modules_Exception_System_Exit_Exception_init_func(Con_Obj *thread)
 	CON_SET_SLOT(self, "msg", CON_NEW_STRING("<System attempting to exit>."));
 	CON_SET_SLOT(self, "code", code_obj);
 
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }
 
 
@@ -214,7 +214,7 @@ Con_Obj *_Con_Modules_Exception_VM_Exception_init_func(Con_Obj *thread)
 
 	CON_SET_SLOT(self, "msg", msg);
 	
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }
 
 
@@ -238,7 +238,7 @@ Con_Obj *_Con_Modules_Exception_Apply_Exception_init_func(Con_Obj *thread)
 	
 	CON_SET_SLOT(self, "msg", msg);
 	
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }
 
 
@@ -263,7 +263,7 @@ Con_Obj *_Con_Modules_Exception_Bounds_Exception_init_func(Con_Obj *thread)
 	
 	CON_SET_SLOT(self, "msg", msg);
 	
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }
 
 
@@ -283,7 +283,7 @@ Con_Obj *_Con_Modules_Exception_Import_Exception_init_func(Con_Obj *thread)
 	
 	CON_SET_SLOT(self, "msg", msg);
 	
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }
 
 
@@ -305,7 +305,7 @@ Con_Obj *_Con_Modules_Exception_Indices_Exception_init_func(Con_Obj *thread)
 	
 	CON_SET_SLOT(self, "msg", msg);
 	
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }
 
 
@@ -325,7 +325,7 @@ Con_Obj *_Con_Modules_Exception_Key_Exception_init_func(Con_Obj *thread)
 	
 	CON_SET_SLOT(self, "msg", msg);
 	
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }
 
 
@@ -345,7 +345,7 @@ Con_Obj *_Con_Modules_Exception_Number_Exception_init_func(Con_Obj *thread)
 	
 	CON_SET_SLOT(self, "msg", msg);
 	
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }
 
 
@@ -367,7 +367,7 @@ Con_Obj *_Con_Modules_Exception_Slot_Exception_init_func(Con_Obj *thread)
 	
 	CON_SET_SLOT(self, "msg", msg);
 	
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }
 
 
@@ -395,7 +395,7 @@ Con_Obj *_Con_Modules_Exception_Type_Exception_init_func(Con_Obj *thread)
 	
 	CON_SET_SLOT(self, "msg", msg);
 	
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }
 
 
@@ -417,7 +417,7 @@ Con_Obj *_Con_Modules_Exception_Unpack_Exception_init_func(Con_Obj *thread)
 	
 	CON_SET_SLOT(self, "msg", msg);
 	
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }
 
 
@@ -536,5 +536,5 @@ Con_Obj *_Con_Modules_Exception_backtrace_func(Con_Obj *thread)
 	
 	output = CON_ADD(output, CON_GET_SLOT_APPLY(exception, "to_str"));
 	
-	CON_RETURN(output);
+	return output;
 }

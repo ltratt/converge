@@ -108,7 +108,7 @@ Con_Obj *_Con_Builtins_Thread_Class_new_object(Con_Obj *thread)
 	
 	Con_Builtins_Thread_Atom_add_thread(thread, thread_obj);
 		
-	CON_RETURN(thread_obj);
+	return thread_obj;
 }
 
 
@@ -153,7 +153,7 @@ Con_Obj *_Con_Builtins_Thread_Class_start_func(Con_Obj *thread)
 #		endif
 	}
 
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }
 
 
@@ -235,5 +235,5 @@ Con_Obj *_Con_Builtins_Thread_Class_join_func(Con_Obj *thread)
 	pthread_join(thread_id, NULL);
 	CON_THREAD_END_BLOCKING_CALL();
 
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }

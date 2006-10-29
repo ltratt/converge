@@ -103,7 +103,7 @@ Con_Obj *_Con_Builtins_Set_Class_add_plus_func(Con_Obj *thread)
 	Con_Obj *new_set = CON_GET_SLOT_APPLY(self, "scopy");
 	CON_GET_SLOT_APPLY(new_set, "extend", o);
 	
-	CON_RETURN(new_set);
+	return new_set;
 }
 
 //
@@ -192,7 +192,7 @@ Con_Obj *_Con_Builtins_Set_Class_to_str_func(Con_Obj *thread)
 	memmove(str_mem + str_mem_size, SET_TO_STR_END, SET_TO_STR_END_SIZE);
 	str_mem_size += SET_TO_STR_END_SIZE;
 	
-	CON_RETURN(Con_Builtins_String_Atom_new_no_copy(thread, str_mem, str_mem_size, CON_STR_UTF_8));
+	return Con_Builtins_String_Atom_new_no_copy(thread, str_mem, str_mem_size, CON_STR_UTF_8);
 }
 
 
@@ -212,7 +212,7 @@ Con_Obj *_Con_Builtins_Set_Class_add_func(Con_Obj *thread)
 	Con_Builtins_Set_Atom_add_entry(thread, self, o, hash);
 	CON_MUTEX_UNLOCK(&self->mutex);
 	
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }
 
 
@@ -263,7 +263,7 @@ Con_Obj *_Con_Builtins_Set_Class_complement_func(Con_Obj *thread)
 		}
 		CON_MUTEX_UNLOCK(&self_obj->mutex);
 		
-		CON_RETURN(new_set);
+		return new_set;
 	}
 
 	CON_RAISE_EXCEPTION("Type_Exception", CON_BUILTIN(CON_BUILTIN_SET_CLASS), o_obj, CON_NEW_STRING("XXX"));
@@ -303,7 +303,7 @@ Con_Obj *_Con_Builtins_Set_Class_extend_func(Con_Obj *thread)
 	else
 		CON_RAISE_EXCEPTION("Type_Exception", CON_BUILTIN(CON_BUILTIN_SET_CLASS), o_obj, CON_NEW_STRING("XXX"));
 			
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }
 
 
@@ -334,7 +334,7 @@ Con_Obj *_Con_Builtins_Set_Class_find_func(Con_Obj *thread)
 	}
 	CON_MUTEX_UNLOCK(&self->mutex);
 	
-	CON_RETURN(rtn);
+	return rtn;
 }
 
 
@@ -363,7 +363,7 @@ Con_Obj *_Con_Builtins_Set_Class_iterate_func(Con_Obj *thread)
 	}
 	CON_MUTEX_UNLOCK(&self->mutex);
 	
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_FAIL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
 }
 
 
@@ -383,7 +383,7 @@ Con_Obj *_Con_Builtins_Set_Class_len_func(Con_Obj *thread)
 	Con_Int len = set_atom->num_entries;
 	CON_MUTEX_UNLOCK(&self->mutex);
 	
-	CON_RETURN(CON_NEW_INT(len));
+	return CON_NEW_INT(len);
 }
 
 
@@ -421,5 +421,5 @@ Con_Obj *_Con_Builtins_Set_Class_scopy_func(Con_Obj *thread)
 	Con_Builtins_Slots_Atom_Def_init_atom(thread, slots_atom);
 	Con_Memory_change_chunk_type(thread, new_set, CON_MEMORY_CHUNK_OBJ);
 
-	CON_RETURN(new_set);
+	return new_set;
 }

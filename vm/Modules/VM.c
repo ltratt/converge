@@ -92,7 +92,7 @@ Con_Obj *_Con_Modules_VM_add_modules_func(Con_Obj *thread)
 		CON_GET_SLOT_APPLY(module_identifiers, "append", identifier);
 	}
 	
-	CON_RETURN(module_identifiers);
+	return module_identifiers;
 }
 
 
@@ -106,5 +106,5 @@ Con_Obj *_Con_Modules_VM_import_module_func(Con_Obj *thread)
 	Con_Obj *identifier;
 	CON_UNPACK_ARGS("O", &identifier);
 	
-	CON_RETURN(Con_Builtins_Module_Atom_import(thread, identifier));
+	return Con_Builtins_Module_Atom_import(thread, identifier);
 }

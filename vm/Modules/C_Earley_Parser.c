@@ -326,7 +326,7 @@ Con_Obj *_Con_Modules_C_Earley_Parser_Parser_parse_func(Con_Obj *thread)
 	
 	// Turn the parse tree into a nested list (removing the D0 node at the very top).
 	
-	CON_RETURN(_Con_Modules_C_Earley_Parser_Parser_parse_func_tree_to_list(thread, parser, alternatives.entry.alternative.tree->entries[0].entry.tree));
+	return _Con_Modules_C_Earley_Parser_Parser_parse_func_tree_to_list(thread, parser, alternatives.entry.alternative.tree->entries[0].entry.tree);
 }
 
 

@@ -103,7 +103,7 @@ Con_Obj *_Con_Builtins_Exception_Class_new_object(Con_Obj *thread)
 	
 	CON_GET_SLOT_APPLY(CON_GET_SLOT(new_exception, "init"), "apply", var_args);
 	
-	CON_RETURN(new_exception);
+	return new_exception;
 }
 
 
@@ -126,7 +126,7 @@ Con_Obj *_Con_Builtins_Exception_Class_init_func(Con_Obj *thread)
 	else
 		CON_SET_SLOT(self, "msg", msg);
 
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }
 
 
@@ -142,5 +142,5 @@ Con_Obj *_Con_Builtins_Exception_Class_to_str_func(Con_Obj *thread)
 
 	// Format the output as '<self.name>: <self.msg>'.
 	
-	CON_RETURN(CON_ADD(CON_ADD(CON_GET_SLOT(CON_GET_SLOT(self, "instance_of"), "name"), CON_NEW_STRING(": ")), CON_GET_SLOT(self, "msg")));
+	return CON_ADD(CON_ADD(CON_GET_SLOT(CON_GET_SLOT(self, "instance_of"), "name"), CON_NEW_STRING(": ")), CON_GET_SLOT(self, "msg"));
 }

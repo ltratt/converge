@@ -134,10 +134,10 @@ Con_Obj *_Con_Builtins_Partial_Application_Class_get_slot_func(Con_Obj *thread)
 		CON_MUTEX_LOCK(&self->mutex);
 		Con_Obj *func = partial_application_atom->func;
 		CON_MUTEX_UNLOCK(&self->mutex);
-		CON_RETURN(func);
+		return func;
 	}
 	else
-		CON_RETURN(CON_APPLY(CON_EXBI(CON_BUILTIN(CON_BUILTIN_OBJECT_CLASS), "get_slot", self), slot_name));
+		return CON_APPLY(CON_EXBI(CON_BUILTIN(CON_BUILTIN_OBJECT_CLASS), "get_slot", self), slot_name);
 }
 
 
@@ -187,5 +187,5 @@ Con_Obj *_Con_Builtins_Partial_Application_Class_apply_func(Con_Obj *thread)
 		CON_YIELD(val);
 	}
 	
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_FAIL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
 }

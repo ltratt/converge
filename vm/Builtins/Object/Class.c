@@ -97,7 +97,7 @@ Con_Obj *_Con_Builtins_Object_Class_new_object(Con_Obj *thread)
 	
 	CON_GET_SLOT_APPLY(CON_GET_SLOT(new_obj, "init"), "apply", var_args);
 	
-	CON_RETURN(new_obj);
+	return new_obj;
 }
 
 
@@ -115,7 +115,7 @@ Con_Obj *_Con_Builtins_Object_Class_init_func(Con_Obj *thread)
 	Con_Obj *self, *var_args;
 	CON_UNPACK_ARGS("Ov", &self, &var_args);
 
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }
 
 
@@ -142,7 +142,7 @@ Con_Obj *_Con_Builtins_Object_Class_get_slot_func(Con_Obj *thread)
 	if ((CON_FIND_ATOM(slot_val, CON_BUILTIN(CON_BUILTIN_FUNC_ATOM_DEF_OBJECT)) != NULL) && Con_Builtins_Func_Atom_is_bound(thread, slot_val))
 		slot_val = Con_Builtins_Partial_Application_Class_new(thread, slot_val, self, NULL);
 	
-	CON_RETURN(slot_val);
+	return slot_val;
 }
 
 
@@ -173,7 +173,7 @@ Con_Obj *_Con_Builtins_Object_Class_find_slot_func(Con_Obj *thread)
 			slot_val = Con_Builtins_Partial_Application_Class_new(thread, slot_val, self, NULL);
 	}
 	
-	CON_RETURN(slot_val);
+	return slot_val;
 }
 
 
@@ -195,5 +195,5 @@ Con_Obj *_Con_Builtins_Object_Class_to_str_func(Con_Obj *thread)
 
 	size_t str_size = strlen(str);
 
-	CON_RETURN(Con_Builtins_String_Atom_new_copy(thread, str, str_size, CON_STR_UTF_8));
+	return Con_Builtins_String_Atom_new_copy(thread, str, str_size, CON_STR_UTF_8);
 }

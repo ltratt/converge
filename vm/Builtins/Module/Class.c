@@ -102,7 +102,7 @@ Con_Obj *_Con_Builtins_Module_Class_to_str_func(Con_Obj *thread)
 	rtn = CON_ADD(rtn, identifier);
 	rtn = CON_ADD(rtn, CON_NEW_STRING(">"));
 	
-	CON_RETURN(rtn);
+	return rtn;
 }
 
 
@@ -130,7 +130,7 @@ Con_Obj *_Con_Builtins_Module_Class_def_names_func(Con_Obj *thread)
 		CON_YIELD(def_name);
 	}
 
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_FAIL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
 }
 
 
@@ -146,7 +146,7 @@ Con_Obj *_Con_Builtins_Module_Class_get_def_func(Con_Obj *thread)
 
 	Con_Builtins_String_Atom *name_string_atom = CON_GET_ATOM(name_obj, CON_BUILTIN(CON_BUILTIN_STRING_ATOM_DEF_OBJECT));
 	
-	CON_RETURN(Con_Builtins_Module_Atom_get_definition(thread, self, name_string_atom->str, name_string_atom->size));
+	return Con_Builtins_Module_Atom_get_definition(thread, self, name_string_atom->str, name_string_atom->size);
 }
 
 
@@ -162,7 +162,7 @@ Con_Obj *_Con_Builtins_Module_Class_path_func(Con_Obj *thread)
 	CON_UNPACK_ARGS("MO", &self, &stop_at);
 	
 	if (self == stop_at)
-		CON_RETURN(CON_NEW_STRING(""));
+		return CON_NEW_STRING("");
 
 	Con_Builtins_Module_Atom *self_module_atom = CON_GET_ATOM(self, CON_BUILTIN(CON_BUILTIN_MODULE_ATOM_DEF_OBJECT));
 	
@@ -172,12 +172,12 @@ Con_Obj *_Con_Builtins_Module_Class_path_func(Con_Obj *thread)
 	CON_MUTEX_UNLOCK(&self->mutex);
 	
 	if ((container == CON_BUILTIN(CON_BUILTIN_NULL_OBJ)) || (container == stop_at))
-		CON_RETURN(name);
+		return name;
 	else {
 		Con_Obj *rtn = CON_GET_SLOT_APPLY(container, "path", stop_at);
 		rtn = CON_ADD(rtn, CON_NEW_STRING("."));
 		rtn = CON_ADD(rtn, name);
 		
-		CON_RETURN(rtn);
+		return rtn;
 	}
 }

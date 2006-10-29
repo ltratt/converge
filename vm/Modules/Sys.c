@@ -152,5 +152,5 @@ Con_Obj *_Con_Modules_Sys_println_func(Con_Obj *thread)
 	}
 	printf("\n");
 
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }

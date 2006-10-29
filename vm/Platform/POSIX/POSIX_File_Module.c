@@ -178,7 +178,7 @@ Con_Obj *_Con_Modules_POSIX_File_Module_File_new_func(Con_Obj *thread)
 	
 	Con_Memory_change_chunk_type(thread, new_file, CON_MEMORY_CHUNK_OBJ);
 	
-	CON_RETURN(new_file);
+	return new_file;
 }
 
 
@@ -207,7 +207,7 @@ Con_Obj *_Con_Modules_POSIX_File_Module_File_Class_close_func(Con_Obj *thread)
 	
 	file_atom->file = NULL;
 
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }
 
 
@@ -244,7 +244,7 @@ Con_Obj *_Con_Modules_POSIX_File_Module_File_Class_read_func(Con_Obj *thread)
 			CON_XXX;
 	}
 
-	CON_RETURN(Con_Builtins_String_Atom_new_no_copy(thread, data, data_size, CON_STR_UTF_8));
+	return Con_Builtins_String_Atom_new_no_copy(thread, data, data_size, CON_STR_UTF_8);
 }
 
 
@@ -269,7 +269,7 @@ Con_Obj *_Con_Modules_POSIX_File_Module_File_Class_write_func(Con_Obj *thread)
 	if (fwrite(s_string_atom->str, s_string_atom->size, 1, file_atom->file) < 1)
 		CON_XXX;
 
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }
 
 
@@ -297,7 +297,7 @@ Con_Obj *_Con_Modules_POSIX_File_Module_File_Class_writeln_func(Con_Obj *thread)
 	if (fwrite("\n", sizeof("\n"), 1, file_atom->file) < 1)
 		CON_XXX;
 
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }
 
 
@@ -323,7 +323,7 @@ Con_Obj *_Con_Modules_POSIX_File_Module_canon_path_func(Con_Obj *thread)
 	if (realpath(Con_Builtins_String_Atom_to_c_string(thread, path), resolved) == NULL)
 		_Con_Modules_POSIX_File_Module_error(thread, path, errno);
 
-	CON_RETURN(Con_Builtins_String_Atom_new_copy(thread, resolved, strlen(resolved), CON_STR_UTF_8));
+	return Con_Builtins_String_Atom_new_copy(thread, resolved, strlen(resolved), CON_STR_UTF_8);
 }
 
 
@@ -342,12 +342,12 @@ Con_Obj *_Con_Modules_POSIX_File_Module_exists_func(Con_Obj *thread)
 	int rtn;
 	if ((rtn = stat(Con_Builtins_String_Atom_to_c_string(thread, path), &sb)) != 0) {
 		if (errno == ENOENT)
-			CON_RETURN(CON_BUILTIN(CON_BUILTIN_FAIL_OBJ));
+			return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
 		else
 			_Con_Modules_POSIX_File_Module_error(thread, path, errno);
 	}
 
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }
 
 
@@ -370,9 +370,9 @@ Con_Obj *_Con_Modules_POSIX_File_Module_is_dir_func(Con_Obj *thread)
 		_Con_Modules_POSIX_File_Module_error(thread, path, errno);
 	
 	if (sb.st_mode & S_IFDIR)
-		CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+		return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 	else
-		CON_RETURN(CON_BUILTIN(CON_BUILTIN_FAIL_OBJ));
+		return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
 }
 
 
@@ -396,7 +396,7 @@ Con_Obj *_Con_Modules_POSIX_File_Module_is_file_func(Con_Obj *thread)
 		_Con_Modules_POSIX_File_Module_error(thread, path, errno);
 	
 	if (sb.st_mode & S_IFREG)
-		CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+		return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 	else
-		CON_RETURN(CON_BUILTIN(CON_BUILTIN_FAIL_OBJ));
+		return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
 }

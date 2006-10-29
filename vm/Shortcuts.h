@@ -148,11 +148,9 @@
 #	error "Unsupported compiler"
 #endif
 
-// CON_YIELD and CON_RETURN are a little odd. If the current continuation is being pumped for values,
-// they use yield to return values. If they are only being requested to produce a single value,
-// they return the obj directly up the call chain.
-//
-// CON_RETURN differs from CON_YIELD in that it completes execution of the current continuation.
+// CON_YIELD is a little odd. If the current continuation is being pumped for values, it uses yield
+// to return values. If it is only being requested to produce a single value, it returns the object
+// directly up the call chain.
 
 #define CON_YIELD(obj) do { \
 		Con_Obj *con_stack = Con_Builtins_Thread_Atom_get_con_stack(thread); \
@@ -164,9 +162,6 @@
 		else \
 			return obj; \
 	} while (0)
-
-//#define CON_RETURN(obj) return obj
-#define CON_RETURN(obj) return obj
 
 #define CON_EXBI(_class, slot_name, self) \
 	Con_Builtins_VM_Atom_exbi(thread, _class, NULL, slot_name, sizeof(slot_name) - 1, self)

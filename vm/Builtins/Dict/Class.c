@@ -186,7 +186,7 @@ Con_Obj *_Con_Builtins_Dict_Class_to_str_func(Con_Obj *thread)
 	memmove(str_mem + str_mem_size, DICT_TO_STR_END, DICT_TO_STR_END_SIZE);
 	str_mem_size += DICT_TO_STR_END_SIZE;
 	
-	CON_RETURN(Con_Builtins_String_Atom_new_no_copy(thread, str_mem, str_mem_size, CON_STR_UTF_8));
+	return Con_Builtins_String_Atom_new_no_copy(thread, str_mem, str_mem_size, CON_STR_UTF_8);
 }
 
 
@@ -217,7 +217,7 @@ Con_Obj *_Con_Builtins_Dict_Class_find_func(Con_Obj *thread)
 	}
 	CON_MUTEX_UNLOCK(&self->mutex);
 	
-	CON_RETURN(val);
+	return val;
 }
 
 
@@ -248,7 +248,7 @@ Con_Obj *_Con_Builtins_Dict_Class_get_func(Con_Obj *thread)
 	}
 	CON_MUTEX_UNLOCK(&self->mutex);
 	
-	CON_RETURN(val);
+	return val;
 }
 
 
@@ -278,7 +278,7 @@ Con_Obj *_Con_Builtins_Dict_Class_iterate_func(Con_Obj *thread)
 	}
 	CON_MUTEX_UNLOCK(&self_obj->mutex);
 	
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_FAIL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
 }
 
 
@@ -308,7 +308,7 @@ Con_Obj *_Con_Builtins_Dict_Class_keys_func(Con_Obj *thread)
 	}
 	CON_MUTEX_UNLOCK(&self_obj->mutex);
 	
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_FAIL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
 }
 
 
@@ -328,7 +328,7 @@ Con_Obj *_Con_Builtins_Dict_Class_len_func(Con_Obj *thread)
 	Con_Int len = dict_atom->num_entries;
 	CON_MUTEX_UNLOCK(&self->mutex);
 	
-	CON_RETURN(CON_NEW_INT(len));
+	return CON_NEW_INT(len);
 }
 
 
@@ -379,7 +379,7 @@ Con_Obj *_Con_Builtins_Dict_Class_set_func(Con_Obj *thread)
 	dict_atom->entries[pos].val = val;
 	CON_MUTEX_UNLOCK(&self->mutex);
 	
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }
 
 
@@ -409,5 +409,5 @@ Con_Obj *_Con_Builtins_Dict_Class_vals_func(Con_Obj *thread)
 	}
 	CON_MUTEX_UNLOCK(&self_obj->mutex);
 	
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_FAIL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
 }

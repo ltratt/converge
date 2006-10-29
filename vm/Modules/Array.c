@@ -208,7 +208,7 @@ Con_Obj *_Con_Modules_Array_Array_new(Con_Obj *thread)
 			CON_GET_SLOT_APPLY(new_array, "extend", initial_data);
 	}
 	
-	CON_RETURN(new_array);
+	return new_array;
 }
 
 
@@ -244,7 +244,7 @@ Con_Obj *_Con_Modules_Array_Array_append_func(Con_Obj *thread)
 	else
 		CON_XXX;
 	
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }
 
 
@@ -278,7 +278,7 @@ Con_Obj *_Con_Modules_Array_Array_extend_func(Con_Obj *thread)
 			self_array_atom->num_entries += container_array_atom->num_entries;
 			CON_MUTEXES_UNLOCK(&self->mutex, &container->mutex);
 			
-			CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+			return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 		}
 	}
 	CON_MUTEX_UNLOCK(&container->mutex);
@@ -293,7 +293,7 @@ Con_Obj *_Con_Modules_Array_Array_extend_func(Con_Obj *thread)
 		CON_GET_SLOT_APPLY(self, "append", val);
 	}
 	
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }
 
 
@@ -363,7 +363,7 @@ Con_Obj *_Con_Modules_Array_Array_get_func(Con_Obj *thread)
 	else
 		CON_XXX;
 	
-	CON_RETURN(rtn);
+	return rtn;
 }
 
 
@@ -413,7 +413,7 @@ Con_Obj *_Con_Modules_Array_Array_get_slice_func(Con_Obj *thread)
 	
 	Con_Memory_change_chunk_type(thread, new_array, CON_MEMORY_CHUNK_OBJ);
 	
-	CON_RETURN(new_array);
+	return new_array;
 }
 
 
@@ -460,7 +460,7 @@ Con_Obj *_Con_Modules_Array_Array_iterate_func(Con_Obj *thread)
 	}
 	CON_MUTEX_UNLOCK(&self->mutex);
 	
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_FAIL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
 }
 
 
@@ -482,7 +482,7 @@ Con_Obj *_Con_Modules_Array_Array_len_func(Con_Obj *thread)
 	Con_Int len = array_atom->num_entries;
 	CON_MUTEX_UNLOCK(&self->mutex);
 	
-	CON_RETURN(CON_NEW_INT(len));
+	return CON_NEW_INT(len);
 }
 
 
@@ -504,7 +504,7 @@ Con_Obj *_Con_Modules_Array_Array_len_bytes_func(Con_Obj *thread)
 	Con_Int len_bytes = array_atom->entry_size * array_atom->num_entries;
 	CON_MUTEX_UNLOCK(&self->mutex);
 	
-	CON_RETURN(CON_NEW_INT(len_bytes));
+	return CON_NEW_INT(len_bytes);
 }
 
 
@@ -530,7 +530,7 @@ Con_Obj *_Con_Modules_Array_Array_serialize_func(Con_Obj *thread)
 	memmove(str_mem, array_atom->entries, str_size);
 	CON_MUTEX_UNLOCK(&self->mutex);
 	
-	CON_RETURN(Con_Builtins_String_Atom_new_no_copy(thread, str_mem, str_size, CON_STR_UTF_8));
+	return Con_Builtins_String_Atom_new_no_copy(thread, str_mem, str_size, CON_STR_UTF_8);
 }
 
 
@@ -563,7 +563,7 @@ Con_Obj *_Con_Modules_Array_Array_set_func(Con_Obj *thread)
 	else
 		CON_XXX;
 	
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }
 
 
@@ -588,5 +588,5 @@ Con_Obj *_Con_Modules_Array_Array_to_str_func(Con_Obj *thread)
 	memmove(str_mem, array_atom->entries, array_atom->num_entries * array_atom->entry_size);
 	CON_MUTEX_UNLOCK(&self->mutex);
 	
-	CON_RETURN(Con_Builtins_String_Atom_new_no_copy(thread, str_mem, array_atom->num_entries * array_atom->entry_size, CON_STR_UTF_8));
+	return Con_Builtins_String_Atom_new_no_copy(thread, str_mem, array_atom->num_entries * array_atom->entry_size, CON_STR_UTF_8);
 }

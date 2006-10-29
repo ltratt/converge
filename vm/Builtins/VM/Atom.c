@@ -939,7 +939,7 @@ Con_Obj *_Con_Builtins_VM_Atom_execute(Con_Obj *thread)
 			CON_RAISE_EXCEPTION("Signal_Exception", CON_NEW_STRING("SIGINT."));
 		}
 		Con_Memory_gc_poll(thread);
-		CON_RETURN(pc.pc.c_function(thread));
+		return pc.pc.c_function(thread);
 	}
 	else if (pc.type == PC_TYPE_BYTECODE) {
 		int poll = 0;
@@ -1178,7 +1178,7 @@ Con_Obj *_Con_Builtins_VM_Atom_execute(Con_Obj *thread)
 					pc.pc.bytecode_offset += CON_INSTR_DECODE_BRANCH_OFFSET(instruction);
 					Con_Builtins_Con_Stack_Atom_update_continuation_frame_pc(thread, con_stack, pc);
 					CON_MUTEX_UNLOCK(&con_stack->mutex);
-					CON_RETURN(rtn_obj);
+					return rtn_obj;
 				}
 				case CON_INSTR_BRANCH:
 					if (CON_INSTR_DECODE_BRANCH_SIGN(instruction))

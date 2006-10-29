@@ -109,7 +109,7 @@ Con_Obj *_Con_Builtins_Func_Class_apply_func(Con_Obj *thread)
 		CON_YIELD(val);
 	}
 	
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_FAIL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
 }
 
 
@@ -125,17 +125,17 @@ Con_Obj *_Con_Builtins_Func_Class_path_func(Con_Obj *thread)
 	CON_UNPACK_ARGS("FO", &self, &stop_at);
 
 	if (self == stop_at)
-		CON_RETURN(CON_NEW_STRING(""));
+		return CON_NEW_STRING("");
 
 	Con_Obj *container = CON_GET_SLOT(self, "container");
 
 	if ((container == CON_BUILTIN(CON_BUILTIN_NULL_OBJ)) || (container == stop_at))
-		CON_RETURN(CON_GET_SLOT(self, "name"));
+		return CON_GET_SLOT(self, "name");
 	else {
 		Con_Obj *rtn = CON_GET_SLOT_APPLY(container, "path", stop_at);
 		rtn = CON_ADD(rtn, CON_NEW_STRING("."));
 		rtn = CON_ADD(rtn, CON_GET_SLOT(self, "name"));
 		
-		CON_RETURN(rtn);
+		return rtn;
 	}
 }

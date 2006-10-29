@@ -141,7 +141,7 @@ Con_Obj *_Con_Builtins_List_Class_new_object(Con_Obj *thread)
 
 	CON_GET_SLOT_APPLY(CON_GET_SLOT(new_list, "init"), "apply", var_args);
 
-	CON_RETURN(new_list);
+	return new_list;
 }
 
 
@@ -161,7 +161,7 @@ Con_Obj *_Con_Builtins_List_Class_init_func(Con_Obj *thread)
 	
 	CON_GET_SLOT_APPLY(self, "extend", o);
 
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }
 
 
@@ -199,7 +199,7 @@ Con_Obj *_Con_Builtins_List_Class_add_func(Con_Obj *thread)
 		new_list_list_atom->num_entries = self_list_atom->num_entries + o_list_atom->num_entries;
 		CON_MUTEXES_UNLOCK(&self->mutex, &o->mutex, &new_list->mutex);
 
-		CON_RETURN(new_list);
+		return new_list;
 	}
 	else {
 		// The slow case: 'o' isn't a list or is a list but isn't a virgin object. We can use memmove
@@ -235,7 +235,7 @@ Con_Obj *_Con_Builtins_List_Class_add_func(Con_Obj *thread)
 			CON_MUTEX_UNLOCK(&new_list->mutex);
 		}
 		
-		CON_RETURN(new_list);
+		return new_list;
 	}
 }
 
@@ -270,7 +270,7 @@ Con_Obj *_Con_Builtins_List_Class_mult_func(Con_Obj *thread)
 	new_list_list_atom->num_entries = new_list_size;
 	CON_MUTEXES_UNLOCK(&self->mutex, &new_list->mutex);
 
-	CON_RETURN(new_list);
+	return new_list;
 }
 
 
@@ -357,7 +357,7 @@ Con_Obj *_Con_Builtins_List_Class_to_str_func(Con_Obj *thread)
 	memmove(str_mem + str_mem_size, LIST_TO_STR_END, LIST_TO_STR_END_SIZE);
 	str_mem_size += LIST_TO_STR_END_SIZE;
 	
-	CON_RETURN(Con_Builtins_String_Atom_new_no_copy(thread, str_mem, str_mem_size, CON_STR_UTF_8));
+	return Con_Builtins_String_Atom_new_no_copy(thread, str_mem, str_mem_size, CON_STR_UTF_8);
 }
 
 
@@ -414,9 +414,9 @@ Con_Obj *_Con_Builtins_List_Class_eq_func(Con_Obj *thread)
 		CON_RAISE_EXCEPTION("Type_Exception", CON_BUILTIN(CON_BUILTIN_LIST_CLASS), o, CON_NEW_STRING("XXX"));
 	
 	if (equal)
-		CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+		return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 	else
-		CON_RETURN(CON_BUILTIN(CON_BUILTIN_FAIL_OBJ));
+		return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
 }
 
 
@@ -473,9 +473,9 @@ Con_Obj *_Con_Builtins_List_Class_neq_func(Con_Obj *thread)
 		CON_XXX;
 	
 	if (not_equal)
-		CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+		return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 	else
-		CON_RETURN(CON_BUILTIN(CON_BUILTIN_FAIL_OBJ));
+		return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
 }
 
 
@@ -499,7 +499,7 @@ Con_Obj *_Con_Builtins_List_Class_append_func(Con_Obj *thread)
 	
 	CON_MUTEX_UNLOCK(&self->mutex);
 	
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }
 
 
@@ -523,7 +523,7 @@ Con_Obj *_Con_Builtins_List_Class_del_func(Con_Obj *thread)
 	list_atom->num_entries -= 1;
 	CON_MUTEX_UNLOCK(&self->mutex);
 	
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }
 
 
@@ -577,7 +577,7 @@ Con_Obj *_Con_Builtins_List_Class_extend_func(Con_Obj *thread)
 		}
 	}
 
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }
 
 
@@ -603,7 +603,7 @@ Con_Obj *_Con_Builtins_List_Class_find_func(Con_Obj *thread)
 	}
 	CON_MUTEX_UNLOCK(&self->mutex);
 	
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_FAIL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
 }
 
 
@@ -630,7 +630,7 @@ Con_Obj *_Con_Builtins_List_Class_find_index_func(Con_Obj *thread)
 	}
 	CON_MUTEX_UNLOCK(&self->mutex);
 	
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_FAIL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
 }
 
 
@@ -684,7 +684,7 @@ Con_Obj *_Con_Builtins_List_Class_flattened_func(Con_Obj *thread)
 	else
 		CON_MUTEX_UNLOCK(&self->mutex);
 	
-	CON_RETURN(flattened_list);
+	return flattened_list;
 }
 
 
@@ -706,7 +706,7 @@ Con_Obj *_Con_Builtins_List_Class_get_func(Con_Obj *thread)
 	Con_Obj *elem = list_atom->entries[Con_Misc_translate_index(thread, &self->mutex, i_val, list_atom->num_entries)];
 	CON_MUTEX_UNLOCK(&self->mutex);
 	
-	CON_RETURN(elem);
+	return elem;
 }
 
 
@@ -745,7 +745,7 @@ Con_Obj *_Con_Builtins_List_Class_get_slice_func(Con_Obj *thread)
 	}
 	CON_MUTEXES_UNLOCK(&self->mutex, &new_list->mutex);
 	
-	CON_RETURN(new_list);
+	return new_list;
 }
 
 
@@ -773,7 +773,7 @@ Con_Obj *_Con_Builtins_List_Class_insert_func(Con_Obj *thread)
 	
 	CON_MUTEX_UNLOCK(&self->mutex);
 	
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }
 
 
@@ -808,7 +808,7 @@ Con_Obj *_Con_Builtins_List_Class_iterate_func(Con_Obj *thread)
 	}
 	CON_MUTEX_UNLOCK(&self->mutex);
 	
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_FAIL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
 }
 
 
@@ -828,7 +828,7 @@ Con_Obj *_Con_Builtins_List_Class_len_func(Con_Obj *thread)
 	Con_Int len = list_atom->num_entries;
 	CON_MUTEX_UNLOCK(&self->mutex);
 	
-	CON_RETURN(CON_NEW_INT(len));
+	return CON_NEW_INT(len);
 }
 
 
@@ -849,7 +849,7 @@ Con_Obj *_Con_Builtins_List_Class_pop_func(Con_Obj *thread)
 	Con_Obj *entry = list_atom->entries[--list_atom->num_entries];
 	CON_MUTEX_UNLOCK(&self->mutex);
 	
-	CON_RETURN(entry);
+	return entry;
 }
 
 
@@ -873,5 +873,5 @@ Con_Obj *_Con_Builtins_List_Class_set_func(Con_Obj *thread)
 	list_atom->entries[Con_Misc_translate_index(thread, &self->mutex, i_val, list_atom->num_entries)] = o;
 	CON_MUTEX_UNLOCK(&self->mutex);
 	
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }

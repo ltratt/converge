@@ -150,7 +150,7 @@ Con_Obj *_Con_Modules_libXML2_parse_func(Con_Obj *thread)
 	if (Con_Numbers_Number_to_Con_Int(thread, CON_GET_SLOT_APPLY(state.elements_stack, "len")) != 1)
 		CON_XXX;
 	
-	CON_RETURN(CON_GET_SLOT_APPLY(CON_GET_MODULE_DEF(elements_module, "Document"), "new", document_elems));
+	return CON_GET_SLOT_APPLY(CON_GET_MODULE_DEF(elements_module, "Document"), "new", document_elems);
 }
 
 

@@ -78,7 +78,7 @@ Con_Obj *_Con_Modules_Random_random_func(Con_Obj *thread)
 {
 	CON_UNPACK_ARGS("");
 
-	CON_RETURN(CON_NEW_INT(random()));
+	return CON_NEW_INT(random());
 }
 
 
@@ -104,5 +104,5 @@ Con_Obj *_Con_Modules_Random_shuffle_func(Con_Obj *thread)
 		CON_GET_SLOT_APPLY(collection, "set", CON_NEW_INT(j), ith);
 	}
 	
-	CON_RETURN(CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }

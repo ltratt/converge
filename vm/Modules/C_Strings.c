@@ -125,5 +125,5 @@ Con_Obj *_Con_Modules_C_Strings_join_func(Con_Obj *thread)
 	if (str_mem_size_allocated > str_mem_size)
 		str_mem = Con_Memory_realloc(thread, str_mem, str_mem_size);
 
-	CON_RETURN(Con_Builtins_String_Atom_new_no_copy(thread, str_mem, str_mem_size, CON_STR_UTF_8));
+	return Con_Builtins_String_Atom_new_no_copy(thread, str_mem, str_mem_size, CON_STR_UTF_8);
 }

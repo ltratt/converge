@@ -51,9 +51,9 @@ ESCAPE := "\\"
 RE_INNER_LINE_WHITESPACE := PCRE::compile("[ \t]+")
 RE_ID := PCRE::compile("[a-zA-Z_][a-zA-Z_0-9]*")
 RE_INT := PCRE::compile("-?(?:(?:0x[0-9A-Fa-f]+)|(?:\\d+))")
-RE_COMMENT := PCRE::compile("//.*")
+RE_COMMENT := PCRE::compile("//.*?$")
 RE_INDENT := PCRE::compile("\t*")
-RE_INDENT_PLUS_CONTENTS := PCRE::compile(".*")
+RE_INDENT_PLUS_CONTENTS := PCRE::compile(".*?$")
 RE_CHARS_NOT_TO_ESCAPE := PCRE::compile("[a-zA-Z]")
 
 

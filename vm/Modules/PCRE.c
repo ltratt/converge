@@ -186,7 +186,7 @@ Con_Obj *_Con_Modules_PCRE_Pattern_new(Con_Obj *thread)
 	pattern_atom->atom_type = CON_GET_MODULE_DEF(pcre_mod, "Pattern_Atom_Def");
 	const char *errptr;
 	int erroffset;
-	if ((pattern_atom->compiled_re = pcre_compile(Con_Builtins_String_Atom_to_c_string(thread, pattern), 0, &errptr, &erroffset, NULL)) == NULL) {
+	if ((pattern_atom->compiled_re = pcre_compile(Con_Builtins_String_Atom_to_c_string(thread, pattern), PCRE_DOTALL | PCRE_MULTILINE, &errptr, &erroffset, NULL)) == NULL) {
 		Con_Obj *msg = Con_Builtins_String_Atom_new_no_copy(thread, errptr, strlen(errptr), CON_STR_UTF_8);
 		msg = CON_ADD(msg, CON_NEW_STRING(" at pattern position "));
 		msg = CON_ADD(msg, CON_GET_SLOT_APPLY(CON_NEW_INT(erroffset), "to_str"));

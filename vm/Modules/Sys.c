@@ -46,6 +46,7 @@
 
 
 Con_Obj *_Con_Modules_Sys_exit_func(Con_Obj *);
+Con_Obj *_Con_Modules_Sys_print_func(Con_Obj *);
 Con_Obj *_Con_Modules_Sys_println_func(Con_Obj *);
 
 
@@ -55,7 +56,8 @@ Con_Obj *Con_Modules_Sys_init(Con_Obj *thread, Con_Obj *identifier)
 	Con_Obj *sys_mod = Con_Builtins_Module_Atom_new_c(thread, identifier, CON_NEW_STRING("Sys"), CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
 	
 	CON_SET_SLOT(sys_mod, "exit", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_Sys_exit_func, "exit", CON_BUILTIN(CON_BUILTIN_NULL_OBJ)));
-	CON_SET_SLOT(sys_mod, "println", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_Sys_println_func, "get", CON_BUILTIN(CON_BUILTIN_NULL_OBJ)));
+	CON_SET_SLOT(sys_mod, "print", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_Sys_print_func, "print", CON_BUILTIN(CON_BUILTIN_NULL_OBJ)));
+	CON_SET_SLOT(sys_mod, "println", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_Sys_println_func, "println", CON_BUILTIN(CON_BUILTIN_NULL_OBJ)));
 	
 	// Setup stdin, stdout, and stderr.
 	
@@ -117,6 +119,43 @@ Con_Obj *_Con_Modules_Sys_exit_func(Con_Obj *thread)
 	
 	CON_RAISE_EXCEPTION("System_Exit_Exception", code_obj);
 }
+
+
+
+Con_Obj *_Con_Modules_Sys_print_func(Con_Obj *thread)
+{
+	Con_Obj *var_args;
+	CON_UNPACK_ARGS("v", &var_args);
+
+	CON_PRE_GET_SLOT_APPLY_PUMP(var_args, "iterate");
+	while (1) {
+		Con_Obj *val = CON_APPLY_PUMP();
+		if (val == NULL)
+			break;
+		Con_Builtins_String_Atom *val_string_atom = CON_FIND_ATOM(val, CON_BUILTIN(CON_BUILTIN_STRING_ATOM_DEF_OBJECT));
+		if (val_string_atom == NULL) {
+			val_string_atom = CON_GET_ATOM(CON_GET_SLOT_APPLY(val, "to_str"), CON_BUILTIN(CON_BUILTIN_STRING_ATOM_DEF_OBJECT));
+		}
+		Con_Int i = 0;
+		while (i < val_string_atom->size) {
+			Con_Int j = i;
+			while ((j < val_string_atom->size) && (*(val_string_atom->str + j) != '\0'))
+				j += 1;
+				
+			printf("%.*s", j - i, val_string_atom->str + i);
+			if (j == val_string_atom->size)
+				break;
+			else {
+				// We've hit a NUL.
+				printf("\\0");
+				i = j + 1;
+			}
+		}
+	}
+
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
+}
+
 
 
 

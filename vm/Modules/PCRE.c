@@ -22,6 +22,7 @@
 #include "Config.h"
 
 #include <pcre.h>
+#include <string.h>
 
 #include "Core.h"
 #include "Misc.h"
@@ -84,6 +85,12 @@ Con_Obj *_Con_Modules_PCRE_Match_get_indexes_func(Con_Obj *);
 Con_Obj *Con_Modules_PCRE_init(Con_Obj *thread, Con_Obj *identifier)
 {
 	Con_Obj *pcre_mod = Con_Builtins_Module_Atom_new_c(thread, identifier, CON_NEW_STRING("PCRE"), CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+
+	// PCRE_Exception
+
+	Con_Obj *user_exception = CON_GET_MODULE_DEF(CON_BUILTIN(CON_BUILTIN_EXCEPTIONS_MODULE), "User_Exception");
+	Con_Obj *pcre_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("PCRE_Exception"), Con_Builtins_List_Atom_new_va(thread, user_exception, NULL), pcre_mod);
+	CON_SET_SLOT(pcre_mod, "PCRE_Exception", pcre_exception);
 
 	// Pattern_Atom_Def
 	
@@ -179,8 +186,15 @@ Con_Obj *_Con_Modules_PCRE_Pattern_new(Con_Obj *thread)
 	pattern_atom->atom_type = CON_GET_MODULE_DEF(pcre_mod, "Pattern_Atom_Def");
 	const char *errptr;
 	int erroffset;
-	if ((pattern_atom->compiled_re = pcre_compile(Con_Builtins_String_Atom_to_c_string(thread, pattern), 0, &errptr, &erroffset, NULL)) == NULL)
+	if ((pattern_atom->compiled_re = pcre_compile(Con_Builtins_String_Atom_to_c_string(thread, pattern), 0, &errptr, &erroffset, NULL)) == NULL) {
+		Con_Obj *msg = Con_Builtins_String_Atom_new_no_copy(thread, errptr, strlen(errptr), CON_STR_UTF_8);
+		msg = CON_ADD(msg, CON_NEW_STRING(" at pattern position "));
+		msg = CON_ADD(msg, CON_GET_SLOT_APPLY(CON_NEW_INT(erroffset), "to_str"));
+		msg = CON_ADD(msg, CON_NEW_STRING("."));
+		Con_Obj *exception = CON_GET_SLOT_APPLY(CON_GET_MODULE_DEF(pcre_mod, "PCRE_Exception"), "new", msg);
+	Con_Builtins_VM_Atom_raise(thread, exception);
 		CON_XXX;
+	}
 	
 	if (pcre_fullinfo(pattern_atom->compiled_re, NULL, PCRE_INFO_CAPTURECOUNT, &pattern_atom->num_captures) != 0)
 		CON_XXX;

@@ -104,7 +104,7 @@ class CV_Module:
 		self._num_top_level_vars := module[MODULE_BYTECODE_NUM_TOP_LEVEL_VARS]
 		
 		self._constants_offsets := []
-		for constant_offset := module[module[MODULE_BYTECODE_CONSTANTS_OFFSETS] / self._target::WORDSIZE : (module[MODULE_BYTECODE_CONSTANTS_OFFSETS] / self._target::WORDSIZE) + module[MODULE_BYTECODE_NUM_CONSTANTS]].iterate():
+		for constant_offset := module[module[MODULE_BYTECODE_CONSTANTS_OFFSETS] / self._target::WORDSIZE : module[MODULE_BYTECODE_CONSTANTS_OFFSETS] / self._target::WORDSIZE + module[MODULE_BYTECODE_NUM_CONSTANTS]].iterate():
 			self._constants_offsets.append(constant_offset - module[MODULE_BYTECODE_INSTRUCTIONS])
 
 
@@ -151,7 +151,7 @@ class CV_Module:
 		imports_pos := 0
 		imports := []
 		while i < self._num_imports:
-			import_id_size := self._imports[(imports_pos / self._target::WORDSIZE) + MODULE_BYTECODE_MODULE_IMPORT_FULL_NAME_SIZE]
+			import_id_size := self._imports[imports_pos / self._target::WORDSIZE + MODULE_BYTECODE_MODULE_IMPORT_FULL_NAME_SIZE]
 			imports.append(self._decode_string(self._imports, imports_pos + MODULE_BYTECODE_MODULE_IMPORT_FULL_NAME * self._target::WORDSIZE, import_id_size))
 			imports_pos += self._target::align(import_id_size) + MODULE_BYTECODE_MODULE_IMPORT_FULL_NAME * self._target::WORDSIZE
 			i += 1
@@ -200,7 +200,7 @@ class CV_Module:
 		top_level_vars_pos := 0
 		for i := 0.to(self._num_top_level_vars):
 			var_num := self._top_level_vars_map[top_level_vars_pos / self._target::WORDSIZE + BYTECODE_TOP_LEVEL_VAR_NUM]
-			var_name_size := self._top_level_vars_map[(top_level_vars_pos / self._target::WORDSIZE) + BYTECODE_TOP_LEVEL_VAR_NAME_SIZE]
+			var_name_size := self._top_level_vars_map[top_level_vars_pos / self._target::WORDSIZE + BYTECODE_TOP_LEVEL_VAR_NAME_SIZE]
 			var_name := self._decode_string(self._top_level_vars_map, top_level_vars_pos + BYTECODE_TOP_LEVEL_VAR_NAME * self._target::WORDSIZE, var_name_size)
 			top_level_vars_map[var_name] := var_num
 			top_level_vars_pos += self._target::align(var_name_size) + BYTECODE_TOP_LEVEL_VAR_NAME * self._target::WORDSIZE

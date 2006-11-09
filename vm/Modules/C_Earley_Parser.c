@@ -193,6 +193,8 @@ typedef struct {
 #define _SYMBOL_TOKEN 1
 #define _SYMBOL_OPEN_KLEENE_STAR_GROUP 2
 #define _SYMBOL_CLOSE_KLEENE_STAR_GROUP 3
+#define _SYMBOL_OPEN_OPTIONAL_GROUP 4
+#define _SYMBOL_CLOSE_OPTIONAL_GROUP 5
 
 #define _COMPILED_ALTERNATIVES_MAP_NUM 0
 #define _COMPILED_ALTERNATIVES_MAP_OFFSETS 1
@@ -323,6 +325,7 @@ Con_Obj *_Con_Modules_C_Earley_Parser_Parser_parse_func(Con_Obj *thread)
 	states_in_processing.num_states = 0;
 	parse_func_Alternative_Or_Alternatives alternatives = _Con_Modules_C_Earley_Parser_Parser_parse_func_states_to_tree(thread, parser, parser->num_tokens, 0, 2, 0, &states_in_processing);
 	assert(alternatives.is_single == 1);
+	assert(alternatives.entry.alternative.tree->entries[0].entry.tree != NULL);
 	
 	// Turn the parse tree into a nested list (removing the D0 node at the very top).
 	
@@ -427,7 +430,9 @@ void _Con_Modules_C_Earley_Parser_Parser_parse_func_add_state(Con_Obj *thread, p
 	parse_func_LState *lstate_store = &parser->lstates[lstate];
 	
 	if (j < _GET_PRODUCTION_INT(p, _COMPILED_PRODUCTION_NUM_SYMBOLS) && (_GET_PRODUCTION_INT(p, _COMPILED_PRODUCTION_SYMBOLS + j) == _SYMBOL_OPEN_KLEENE_STAR_GROUP ||
-		 _GET_PRODUCTION_INT(p, _COMPILED_PRODUCTION_SYMBOLS + j) == _SYMBOL_CLOSE_KLEENE_STAR_GROUP)) {
+		 _GET_PRODUCTION_INT(p, _COMPILED_PRODUCTION_SYMBOLS + j) == _SYMBOL_CLOSE_KLEENE_STAR_GROUP ||
+		 _GET_PRODUCTION_INT(p, _COMPILED_PRODUCTION_SYMBOLS + j) == _SYMBOL_OPEN_OPTIONAL_GROUP ||
+		 _GET_PRODUCTION_INT(p, _COMPILED_PRODUCTION_SYMBOLS + j) == _SYMBOL_CLOSE_OPTIONAL_GROUP)) {
 		 
 		Con_Int *brackets_map = &parser->grammar[parser->grammar[parser->grammar[_COMPILED_OFFSET_TO_RECOGNISER_BRACKETS_MAPS] / sizeof(Con_Int) + _COMPILED_BRACKETS_MAPS_ENTRIES + _GET_PRODUCTION_INT(p, _COMPILED_PRODUCTION_SYMBOLS + j + 1)] / sizeof(Con_Int)];
 		
@@ -517,7 +522,7 @@ parse_func_Alternative_Or_Alternatives _Con_Modules_C_Earley_Parser_Parser_parse
 	parse_func_parse_Tree_Alternatives *malloc_alternatives = NULL;
 	parse_func_parse_Tree_Alternatives *alternatives = stack_alternatives;
 
-	if (start_j > 0 && _GET_PRODUCTION_INT(start_p, _COMPILED_PRODUCTION_SYMBOLS + start_j - 2) == _SYMBOL_CLOSE_KLEENE_STAR_GROUP) {
+	if (start_j > 0 && (_GET_PRODUCTION_INT(start_p, _COMPILED_PRODUCTION_SYMBOLS + start_j - 2) == _SYMBOL_CLOSE_KLEENE_STAR_GROUP || _GET_PRODUCTION_INT(start_p, _COMPILED_PRODUCTION_SYMBOLS + start_j - 2) == _SYMBOL_CLOSE_OPTIONAL_GROUP)) {
 		// If start_j points to close kleene star (by definition 'start_j' can't point to an open
 		// kleene star) then we have to immediately start with multiple alternatives.
 		
@@ -826,6 +831,9 @@ parse_func_Alternative_Or_Alternatives _Con_Modules_C_Earley_Parser_Parser_parse
 				}
 			}
 		}
+		
+		if (lstate > start_f)
+			goto remove_alternative;
 		
 		x += 1;
 		continue;

@@ -30,7 +30,7 @@ _PRECEDENCE := "%precedence"
 
 _RE_INNER_LINE_WHITESPACE := PCRE::compile("[ \t]+")
 _RE_ID := PCRE::compile("[a-zA-Z_][a-zA-Z_0-9]*")
-_RE_SYMBOLS := PCRE::compile("(::=|%precedence|%long|%short|[(]|[)][*])")
+_RE_SYMBOLS := PCRE::compile("(::=|%precedence|%long|%short|[(]|[)][*]|[)][?]|[)][+])")
 _RE_TOKEN := PCRE::compile("\"(.*?)\"")
 _RE_INT := PCRE::compile("[0-9]+")
 
@@ -65,6 +65,8 @@ _COMPILED_RULE_REF := 0
 _COMPILED_TOKEN := 1
 _COMPILED_OPEN_KLEENE_STAR_GROUP := 2
 _COMPILED_CLOSE_KLEENE_STAR_GROUP := 3
+_COMPILED_OPEN_OPTIONAL_GROUP := 4
+_COMPILED_CLOSE_OPTIONAL_GROUP := 5
 
 	
 
@@ -204,6 +206,11 @@ class Grammar:
 						semi_compiled_alternative.extend([_COMPILED_TOKEN, self._tokens_map[token.value]])
 						i += 1
 					elif token.type == "(":
+						// By default, we assume that all open brackets are open kleene stars; if
+						// later we discover that this bracket opens an optional group, we come back
+						// and change the value from _COMPILED_OPEN_KLEENE_STAR_GROUP to
+						// _COMPILED_OPEN_OPTIONAL_GROUP.
+						
 						semi_compiled_alternative.extend([_COMPILED_OPEN_KLEENE_STAR_GROUP, -1])
 						i += 1
 						j := i
@@ -212,6 +219,26 @@ class Grammar:
 						if j == alternative.len():
 							self._error("Open group lacks corresponding close.", token)
 					elif token.type == ")*":
+						semi_compiled_alternative.extend([_COMPILED_CLOSE_KLEENE_STAR_GROUP, -1])
+						i += 1
+					elif token.type == ")?":
+						j := semi_compiled_alternative.len() - 2
+						count := 1
+						while count > 0:
+							if semi_compiled_alternative[j] == _COMPILED_OPEN_KLEENE_STAR_GROUP:
+								count -= 1
+							j -= 2
+						semi_compiled_alternative[j + 2] := _COMPILED_OPEN_OPTIONAL_GROUP
+						semi_compiled_alternative.extend([_COMPILED_CLOSE_OPTIONAL_GROUP, -1])
+						i += 1
+					elif token.type == ")+":
+						j := semi_compiled_alternative.len() - 2
+						count := 1
+						while count > 0:
+							if semi_compiled_alternative[j] == _COMPILED_OPEN_KLEENE_STAR_GROUP:
+								count -= 1
+							j -= 2
+						semi_compiled_alternative[j + 2 : j + 2] := semi_compiled_alternative[j + 4 : ]
 						semi_compiled_alternative.extend([_COMPILED_CLOSE_KLEENE_STAR_GROUP, -1])
 						i += 1
 					elif token.type == "%PRECEDENCE":
@@ -232,10 +259,10 @@ class Grammar:
 				i := _RULE_ENTRIES
 				brackets_count := 0
 				while i < alternative.len():
-					if alternative[i] == _COMPILED_OPEN_KLEENE_STAR_GROUP:
+					if alternative[i] == _COMPILED_OPEN_KLEENE_STAR_GROUP | alternative[i] == _COMPILED_OPEN_OPTIONAL_GROUP:
 						brackets_count += 1
 						i += 2
-					elif alternative[i] == _COMPILED_CLOSE_KLEENE_STAR_GROUP:
+					elif alternative[i] == _COMPILED_CLOSE_KLEENE_STAR_GROUP | alternative[i] == _COMPILED_CLOSE_OPTIONAL_GROUP:
 						brackets_count -= 1
 						i += 2
 					elif alternative[i] == _COMPILED_RULE_REF:
@@ -263,10 +290,10 @@ class Grammar:
 						i := _RULE_ENTRIES
 						brackets_count := 0
 						while i < alternative.len():
-							if alternative[i] == _COMPILED_OPEN_KLEENE_STAR_GROUP:
+							if alternative[i] == _COMPILED_OPEN_KLEENE_STAR_GROUP | alternative[i] == _COMPILED_OPEN_OPTIONAL_GROUP:
 								brackets_count += 1
 								i += 2
-							elif alternative[i] == _COMPILED_CLOSE_KLEENE_STAR_GROUP:
+							elif alternative[i] == _COMPILED_CLOSE_KLEENE_STAR_GROUP | alternative[i] == _COMPILED_CLOSE_OPTIONAL_GROUP:
 								brackets_count -= 1
 								i += 2
 							elif alternative[i] == _COMPILED_RULE_REF:
@@ -309,6 +336,12 @@ class Grammar:
 					elif alternative[i] == _COMPILED_CLOSE_KLEENE_STAR_GROUP:
 						compiled_rule.extend([_COMPILED_CLOSE_KLEENE_STAR_GROUP, -1])
 						i += 2
+					elif alternative[i] == _COMPILED_OPEN_OPTIONAL_GROUP:
+						compiled_rule.extend([_COMPILED_OPEN_OPTIONAL_GROUP, -1])
+						i += 2
+					elif alternative[i] == _COMPILED_CLOSE_OPTIONAL_GROUP:
+						compiled_rule.extend([_COMPILED_CLOSE_OPTIONAL_GROUP, -1])
+						i += 2
 					elif alternative[i] == _COMPILED_RULE_REF:
 						compiled_rule.append(_COMPILED_RULE_REF)
 						compiled_rule.append(rule_names_map[alternative[i + 1]])
@@ -327,7 +360,8 @@ class Grammar:
 		for rule_name, compiled_alternative := compiled_alternatives.iterate():
 			i := _RULE_ENTRIES
 			while i < compiled_alternative.len():
-				if compiled_alternative[i] == _COMPILED_OPEN_KLEENE_STAR_GROUP | compiled_alternative[i] == _COMPILED_CLOSE_KLEENE_STAR_GROUP:
+				type := compiled_alternative[i]
+				if type == _COMPILED_OPEN_KLEENE_STAR_GROUP | type == _COMPILED_CLOSE_KLEENE_STAR_GROUP | type == _COMPILED_OPEN_OPTIONAL_GROUP | type == _COMPILED_CLOSE_OPTIONAL_GROUP:
 					compiled_alternative[i + 1] := recogniser_brackets_map.len()
 					recogniser_brackets_map.append(self._make_recogniser_brackets_map(compiled_alternative, i))
 					parser_brackets_map.append(self._make_parser_brackets_map(compiled_alternative, i))
@@ -401,18 +435,16 @@ class Grammar:
 
 	func _make_recogniser_brackets_map(compiled_alternative, j):
 	
-		if j < compiled_alternative.len() & (compiled_alternative[j] == _COMPILED_OPEN_KLEENE_STAR_GROUP | compiled_alternative[j] == _COMPILED_CLOSE_KLEENE_STAR_GROUP):
+		if j < compiled_alternative.len() & [_COMPILED_OPEN_KLEENE_STAR_GROUP, _COMPILED_CLOSE_KLEENE_STAR_GROUP, _COMPILED_OPEN_OPTIONAL_GROUP, _COMPILED_CLOSE_OPTIONAL_GROUP].find(compiled_alternative[j]):
 			bracket_map := self._make_recogniser_brackets_map(compiled_alternative, j + 2)
-			if compiled_alternative[j] == _COMPILED_OPEN_KLEENE_STAR_GROUP:
+			if compiled_alternative[j] == _COMPILED_OPEN_KLEENE_STAR_GROUP | compiled_alternative[j] == _COMPILED_OPEN_OPTIONAL_GROUP:
 				count := 1
 				j += 2
 				while count > 0:
-					if compiled_alternative[j] == _COMPILED_OPEN_KLEENE_STAR_GROUP:
-						count += 1
-					elif compiled_alternative[j] == _COMPILED_CLOSE_KLEENE_STAR_GROUP:
+					if compiled_alternative[j] == _COMPILED_CLOSE_OPTIONAL_GROUP | compiled_alternative[j] == _COMPILED_CLOSE_KLEENE_STAR_GROUP:
 						count -= 1
 					j += 2
-			else:
+			elif compiled_alternative[j] == _COMPILED_CLOSE_KLEENE_STAR_GROUP:
 				count := 1
 				j -= 2
 				while count > 0:
@@ -422,6 +454,10 @@ class Grammar:
 						count += 1
 					j -= 2
 				j += 4
+			elif compiled_alternative[j] == _COMPILED_CLOSE_OPTIONAL_GROUP:
+				return bracket_map
+			else:
+				raise "XXX"
 			for new_j := self._make_recogniser_brackets_map(compiled_alternative, j).iterate():
 				if not bracket_map.find(new_j):
 					bracket_map.append(new_j)
@@ -434,7 +470,7 @@ class Grammar:
 
 	func _make_parser_brackets_map(compiled_alternative, j):
 	
-		if j < compiled_alternative.len() & (compiled_alternative[j] == _COMPILED_OPEN_KLEENE_STAR_GROUP | compiled_alternative[j] == _COMPILED_CLOSE_KLEENE_STAR_GROUP):
+		if j < compiled_alternative.len() & (compiled_alternative[j] == _COMPILED_OPEN_KLEENE_STAR_GROUP | compiled_alternative[j] == _COMPILED_CLOSE_KLEENE_STAR_GROUP | compiled_alternative[j] == _COMPILED_OPEN_OPTIONAL_GROUP | compiled_alternative[j] == _COMPILED_CLOSE_OPTIONAL_GROUP):
 			if compiled_alternative[j] == _COMPILED_OPEN_KLEENE_STAR_GROUP:
 				count := 1
 				k := j + 2
@@ -451,7 +487,7 @@ class Grammar:
 					brackets_map.extend(self._make_parser_brackets_map(compiled_alternative, j - 2))
 				
 				return brackets_map
-			else:
+			elif compiled_alternative[j] == _COMPILED_CLOSE_KLEENE_STAR_GROUP:
 				count := 1
 				k := j - 2
 				while count > 0:
@@ -465,6 +501,28 @@ class Grammar:
 					brackets_map := self._make_parser_brackets_map(compiled_alternative, k)
 				else:
 					brackets_map := []
+				brackets_map.extend(self._make_parser_brackets_map(compiled_alternative, j - 2))
+				
+				return brackets_map
+			elif compiled_alternative[j] == _COMPILED_OPEN_OPTIONAL_GROUP:
+				if j - _RULE_ENTRIES == 0:
+					return [-2]
+				else:
+					return self._make_parser_brackets_map(compiled_alternative, j - 2)
+			else:
+				count := 1
+				k := j - 2
+				while count > 0:
+					if compiled_alternative[k] == _COMPILED_OPEN_OPTIONAL_GROUP:
+						count -= 1
+					elif compiled_alternative[k] == _COMPILED_CLOSE_OPTIONAL_GROUP:
+						count += 1
+					k -= 2
+				
+				if k - _RULE_ENTRIES >= 0:
+					brackets_map := self._make_parser_brackets_map(compiled_alternative, k)
+				else:
+					brackets_map := [-2]
 				brackets_map.extend(self._make_parser_brackets_map(compiled_alternative, j - 2))
 				
 				return brackets_map

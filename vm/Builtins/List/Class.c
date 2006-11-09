@@ -66,6 +66,7 @@ Con_Obj *_Con_Builtins_List_Class_iterate_func(Con_Obj *);
 Con_Obj *_Con_Builtins_List_Class_len_func(Con_Obj *);
 Con_Obj *_Con_Builtins_List_Class_pop_func(Con_Obj *);
 Con_Obj *_Con_Builtins_List_Class_set_func(Con_Obj *);
+Con_Obj *_Con_Builtins_List_Class_set_slice_func(Con_Obj *);
 
 
 
@@ -107,6 +108,7 @@ void Con_Builtins_List_Class_bootstrap(Con_Obj *thread)
 	CON_SET_FIELD(list_class, "len", CON_NEW_BOUND_C_FUNC(_Con_Builtins_List_Class_len_func, "len", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), list_class));
 	CON_SET_FIELD(list_class, "pop", CON_NEW_BOUND_C_FUNC(_Con_Builtins_List_Class_pop_func, "pop", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), list_class));
 	CON_SET_FIELD(list_class, "set", CON_NEW_BOUND_C_FUNC(_Con_Builtins_List_Class_set_func, "set", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), list_class));
+	CON_SET_FIELD(list_class, "set_slice", CON_NEW_BOUND_C_FUNC(_Con_Builtins_List_Class_set_slice_func, "set_slice", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), list_class));
 }
 
 
@@ -872,6 +874,49 @@ Con_Obj *_Con_Builtins_List_Class_set_func(Con_Obj *thread)
 	CON_MUTEX_LOCK(&self->mutex);
 	list_atom->entries[Con_Misc_translate_index(thread, &self->mutex, i_val, list_atom->num_entries)] = o;
 	CON_MUTEX_UNLOCK(&self->mutex);
+	
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
+}
+
+
+
+//
+// 'set_slice(i := null, j := null, o)' overwrites the elements between i and j with the elements
+// from the container o.
+//
+
+Con_Obj *_Con_Builtins_List_Class_set_slice_func(Con_Obj *thread)
+{
+	Con_Obj *lower_obj, *o, *self, *upper_obj;
+	CON_UNPACK_ARGS("L;OOO", &self, &lower_obj, &upper_obj, &o);
+	
+	Con_Builtins_List_Atom *self_list_atom = CON_GET_ATOM(self, CON_BUILTIN(CON_BUILTIN_LIST_ATOM_DEF_OBJECT));
+	Con_Builtins_List_Atom *o_list_atom;
+	CON_MUTEX_LOCK(&o->mutex);
+	if (o->virgin && ((o_list_atom = CON_FIND_ATOM(o, CON_BUILTIN(CON_BUILTIN_LIST_ATOM_DEF_OBJECT))) != NULL)) {
+		// The quick case: extending a list with a virgin list.
+		
+		Con_Int o_num_entries = o_list_atom->num_entries;
+		CON_MUTEX_UNLOCK(&o->mutex);
+
+		CON_MUTEX_LOCK(&self->mutex);
+		Con_Int lower, upper;
+		Con_Misc_translate_slice_indices(thread, &self->mutex, lower_obj, upper_obj, &lower, &upper, self_list_atom->num_entries);
+		
+		Con_Memory_make_array_room(thread, (void **) &self_list_atom->entries, &self->mutex, &self_list_atom->num_entries_allocated, &self_list_atom->num_entries, (upper - lower) + o_num_entries, sizeof(Con_Obj *));
+
+		CON_MUTEX_ADD_LOCK(&self->mutex, &o->mutex);
+		if (o_list_atom->num_entries > self_list_atom->num_entries_allocated - self_list_atom->num_entries)
+			// 'o' grew larger...
+			CON_XXX;
+		
+		memmove(self_list_atom->entries + upper + o_num_entries, self_list_atom->entries + upper, (self_list_atom->num_entries - upper) * sizeof(Con_Obj *));
+		memmove(self_list_atom->entries + lower, o_list_atom->entries, o_num_entries * sizeof(Con_Obj *));
+		self_list_atom->num_entries += (upper - lower) + o_num_entries;
+		CON_MUTEXES_UNLOCK(&self->mutex, &o->mutex);
+	}
+	else
+		CON_XXX;
 	
 	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }

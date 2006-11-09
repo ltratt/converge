@@ -870,6 +870,22 @@ class Bytecode_Gen:
 				self.preorder(target.index)
 				self._instructions.append(self._target::Instr_Pull.new(target.src_info, 2))
 				self._instructions.append(self._target::Instr_Apply.new(target.src_info, 2))
+			elif ITree::ISlice.instantiated(target):
+				self.preorder(target.slice_object)
+				self._instructions.append(self._target::Instr_Pre_Apply_Slot_Lookup.new(target.src_info, "set_slice"))
+
+				if target.lower_bound is null:
+					self._instructions.append(self._target::Instr_Builtin_Lookup.new(target.src_info, _BUILTIN_NULL_OBJ))
+				else:
+					self.preorder(target.lower_bound)
+
+				if target.upper_bound is null:
+					self._instructions.append(self._target::Instr_Builtin_Lookup.new(target.src_info, _BUILTIN_NULL_OBJ))
+				else:
+					self.preorder(target.upper_bound)
+
+				self._instructions.append(self._target::Instr_Pull.new(target.src_info, 3))
+				self._instructions.append(self._target::Instr_Apply.new(target.src_info, 3))
 			else:
 				raise "XXX"
 

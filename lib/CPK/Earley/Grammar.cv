@@ -214,7 +214,7 @@ class Grammar:
 						semi_compiled_alternative.extend([_COMPILED_OPEN_KLEENE_STAR_GROUP, -1])
 						i += 1
 						j := i
-						while j < alternative.len() & alternative[j].type != ")*":
+						while j < alternative.len() & not (alternative[j].type == ")*" | alternative[j].type == ")?" | alternative[j].type == ")+"):
 							j += 1
 						if j == alternative.len():
 							self._error("Open group lacks corresponding close.", token)
@@ -500,7 +500,7 @@ class Grammar:
 				if k - _RULE_ENTRIES >= 0:
 					brackets_map := self._make_parser_brackets_map(compiled_alternative, k)
 				else:
-					brackets_map := []
+					brackets_map := [-2]
 				brackets_map.extend(self._make_parser_brackets_map(compiled_alternative, j - 2))
 				
 				return brackets_map

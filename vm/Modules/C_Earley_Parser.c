@@ -548,8 +548,8 @@ parse_func_Alternative_Or_Alternatives _Con_Modules_C_Earley_Parser_Parser_parse
 		
 		j -= 2;
 		while (j >= 0) {
-			assert(lstate >= f);
-			assert(lstate >= 0);
+			assert(lstate >= f && f < parser->num_lstates);
+			assert(lstate >= 0 && lstate < parser->num_lstates);
 			if (_GET_PRODUCTION_INT(p, _COMPILED_PRODUCTION_SYMBOLS + j) == _SYMBOL_RULE_REF) {
 				// This part of the parser is complicated by the fact that we're trying desparately
 				// to optimise for the common case i.e. when there are no ambiguities. The main cost
@@ -644,6 +644,8 @@ parse_func_Alternative_Or_Alternatives _Con_Modules_C_Earley_Parser_Parser_parse
 						
 						definite_alternative = new_alternatives.entry.alternative;
 					}
+					else if (new_alternatives.entry.alternatives.num_entries == 0)
+						goto remove_alternative;
 					else {
 						// We got back multiple alternatives. We straight away see if we can resolve
 						// them down to a single alternative.
@@ -809,7 +811,6 @@ parse_func_Alternative_Or_Alternatives _Con_Modules_C_Earley_Parser_Parser_parse
 					// alternatives.
 
 					lstate -= 1;
-					assert(_GET_PRODUCTION_INT(p, _COMPILED_PRODUCTION_SYMBOLS + j - 2) == _SYMBOL_OPEN_KLEENE_STAR_GROUP || _GET_PRODUCTION_INT(p, _COMPILED_PRODUCTION_SYMBOLS + j - 2) == _SYMBOL_CLOSE_KLEENE_STAR_GROUP);
 					
 					Con_Int *brackets_map = &parser->grammar[parser->grammar[parser->grammar[_COMPILED_OFFSET_TO_PARSER_BRACKETS_MAPS] / sizeof(Con_Int) + _COMPILED_BRACKETS_MAPS_ENTRIES + _GET_PRODUCTION_INT(p, _COMPILED_PRODUCTION_SYMBOLS + j - 2 + 1)] / sizeof(Con_Int)];
 					for (Con_Int y = 1; y < brackets_map[_BRACKET_MAP_NUM_ENTRIES]; y += 1) {

@@ -103,7 +103,7 @@ func split_ext(path):
 	
 
 
-func split_dirs(path):
+func split_names(path):
 
 	return Strings::split(path, DIRECTORY_SEPARATOR)
 

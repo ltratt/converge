@@ -1,4 +1,4 @@
-import Builtins
+import Builtins, Strings
 
 
 
@@ -16,18 +16,55 @@ class Document(Builtins::List):
 
 
 
-class Element(Builtins::List):
+class Attribute:
 
-	func init(name, attr_namespaces):
+	func init(name, value, prefix := "", namespace := ""):
+	
+		if (prefix == "" & namespace != "") | (prefix != "" & namespace == ""):
+			raise "XXX"
 	
 		self.name := name
-		self._attr_namespaces := attr_namespaces
+		self.value := value
+		self.prefix := prefix
+		self.namespace := namespace
+	
+	
+	
+	func hash():
+	
+		return Strings::format("%s:%s", self.prefix, self.name).hash()
+
+
+
+
+class Element(Builtins::List):
+
+	func init(name, attrs, prefix := "", namespace := ""):
+	
+		self.name := name
+		self._attr_namespaces := Dict{}
+		for attr := attrs.iterate():
+			if not (namespace := self._attr_namespaces.find(attr.namespace)):
+				self._attr_namespaces[attr.namespace] := namespace := Dict{}
+			namespace[attr.name] := attr
+		self.prefix := prefix
+		self.namespace := namespace
 
 
 
 	func get_attr(name, namespace := ""):
 	
 		return self._attr_namespaces[namespace][name]
+
+
+
+	func attrs_iterate():
+	
+		for x, attrs := self._attr_namespaces.iterate():
+			for name, attr := attrs.iterate():
+				yield attr
+			
+		return fail
 
 
 

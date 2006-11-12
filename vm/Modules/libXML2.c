@@ -41,6 +41,7 @@
 #include "Builtins/Int/Atom.h"
 #include "Builtins/List/Atom.h"
 #include "Builtins/Module/Atom.h"
+#include "Builtins/Set/Atom.h"
 #include "Builtins/String/Atom.h"
 #include "Builtins/Thread/Atom.h"
 #include "Builtins/VM/Atom.h"
@@ -197,32 +198,38 @@ void _Con_Modules_libXML2_parse_start_element(void *user_data, const xmlChar *lo
 	Con_Obj *current_elem = CON_GET_SLOT_APPLY(state->elements_stack, "get", CON_NEW_INT(-1));
 	
 	Con_Obj *name_obj = Con_Builtins_String_Atom_new_copy(thread, localname, strlen(localname), CON_STR_UTF_8);
+	assert(prefix != NULL || namespaces == NULL);
+	Con_Obj *prefix_obj, *namespace_obj;
+	if (prefix != NULL) {
+		prefix_obj = Con_Builtins_String_Atom_new_copy(thread, prefix, strlen(prefix), CON_STR_UTF_8);
+		namespace_obj = Con_Builtins_String_Atom_new_copy(thread, URI, strlen(URI), CON_STR_UTF_8);
+	}
+	else
+		prefix_obj = namespace_obj = CON_NEW_STRING("");
 	
-	Con_Obj *attribute_namespaces = Con_Builtins_Dict_Class_new(thread);
+	Con_Obj *attributes_obj = Con_Builtins_Set_Atom_new(thread);
 	const xmlChar **current_attr = attributes;
 	for (Con_Int i = 0; i < nb_attributes + nb_defaulted; i += 1) {
 		Con_Obj *attr_name = Con_Builtins_String_Atom_new_copy(thread, current_attr[0], strlen(current_attr[0]), CON_STR_UTF_8);
 		Con_Obj *attr_val = Con_Builtins_String_Atom_new_copy(thread, current_attr[3], current_attr[4] - current_attr[3], CON_STR_UTF_8);
 		
-		Con_Obj *namespace;
-		if (current_attr[2] != NULL)
-			namespace = Con_Builtins_String_Atom_new_copy(thread, current_attr[2], strlen(current_attr[2]), CON_STR_UTF_8);
+		Con_Obj *attr_namespace, *attr_prefix;
+		assert(current_attr[1] != NULL || current_attr[2] == NULL);
+		if (current_attr[1] != NULL) {
+			attr_prefix = Con_Builtins_String_Atom_new_copy(thread, current_attr[1], strlen(current_attr[1]), CON_STR_UTF_8);
+			attr_namespace = Con_Builtins_String_Atom_new_copy(thread, current_attr[2], strlen(current_attr[2]), CON_STR_UTF_8);
+		}
 		else {
-			namespace = CON_NEW_STRING("");
+			attr_namespace = attr_prefix = CON_NEW_STRING("");
 		}
 		
-		Con_Obj *namespace_dict;
-		if ((namespace_dict = CON_GET_SLOT_APPLY_NO_FAIL(attribute_namespaces, "find", namespace)) == NULL) {
-			namespace_dict = Con_Builtins_Dict_Class_new(thread);
-			CON_GET_SLOT_APPLY(attribute_namespaces, "set", namespace, namespace_dict);
-		}
-	
-		CON_GET_SLOT_APPLY(namespace_dict, "set", attr_name, attr_val);
+		Con_Obj *attr = CON_APPLY(CON_GET_SLOT(CON_GET_MODULE_DEF(state->elements_module, "Attribute"), "new"), attr_name, attr_val, attr_prefix, attr_namespace);
+		CON_GET_SLOT_APPLY(attributes_obj, "add", attr);
 		
 		current_attr += 5;
 	}
 	
-	Con_Obj *element = CON_APPLY(CON_GET_SLOT(CON_GET_MODULE_DEF(state->elements_module, "Element"), "new"), name_obj, attribute_namespaces);
+	Con_Obj *element = CON_APPLY(CON_GET_SLOT(CON_GET_MODULE_DEF(state->elements_module, "Element"), "new"), name_obj, attributes_obj, prefix_obj, namespace_obj);
 	
 	CON_GET_SLOT_APPLY(current_elem, "append", element);
 	

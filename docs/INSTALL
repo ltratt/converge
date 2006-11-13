@@ -3,3 +3,20 @@ Converge by executing the following commands:
 
   ./configure
   make -f Makefile.bootstrap
+
+
+
+================================================================================
+
+  Building from a Darcs checkout
+ 
+If you have checked the source out via Darcs (i.e. you have not downloaded a
+tar.gz file), you will first need to create the 'configure' script. This can be
+created with the following command:
+
+  make -f Makefile.bootstrap configure
+
+You then execute the following as with any normal install:
+
+  ./configure
+  make -f Makefile.bootstrap

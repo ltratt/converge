@@ -57,6 +57,7 @@ Con_Obj *_Con_Builtins_String_Class_hash_func(Con_Obj *);
 Con_Obj *_Con_Builtins_String_Class_iterate_func(Con_Obj *);
 Con_Obj *_Con_Builtins_String_Class_len_func(Con_Obj *);
 Con_Obj *_Con_Builtins_String_Class_prefixed_by_func(Con_Obj *);
+Con_Obj *_Con_Builtins_String_Class_replaced_func(Con_Obj *);
 Con_Obj *_Con_Builtins_String_Class_rfind_index_func(Con_Obj *);
 Con_Obj *_Con_Builtins_String_Class_stripped_func(Con_Obj *);
 Con_Obj *_Con_Builtins_String_Class_suffixed_by_func(Con_Obj *);
@@ -99,6 +100,7 @@ void Con_Builtins_String_Class_bootstrap(Con_Obj *thread)
 	CON_SET_FIELD(string_class, "len", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_len_func, "len", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
 	CON_SET_FIELD(string_class, "prefixed_by", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_prefixed_by_func, "prefixed_by", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
 	CON_SET_FIELD(string_class, "rfind_index", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_rfind_index_func, "rfind_index", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
+	CON_SET_FIELD(string_class, "replaced", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_replaced_func, "replaced", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
 	CON_SET_FIELD(string_class, "stripped", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_stripped_func, "stripped", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
 	CON_SET_FIELD(string_class, "suffixed_by", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_suffixed_by_func, "suffixed_by", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
 	CON_SET_FIELD(string_class, "to_lower_case", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_to_lower_case_func, "to_lower_case", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
@@ -480,6 +482,76 @@ Con_Obj *_Con_Builtins_String_Class_rfind_index_func(Con_Obj *thread)
 	}
 	
 	return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
+}
+
+
+
+//
+// 'replaced(old, new)' replaces each non-overlapping occurrence of substring 'old' with 'new'.
+// Although an implementation detail, note that because of strings immutability this function will
+// return 'self' if 'old' is not found within it.
+//
+
+Con_Obj *_Con_Builtins_String_Class_replaced_func(Con_Obj *thread)
+{
+	Con_Obj *old_obj, *new_obj, *self_obj;
+	CON_UNPACK_ARGS("SSS", &self_obj, &old_obj, &new_obj);
+	
+	Con_Builtins_String_Atom *self_string_atom = CON_GET_ATOM(self_obj, CON_BUILTIN(CON_BUILTIN_STRING_ATOM_DEF_OBJECT));
+	Con_Builtins_String_Atom *old_string_atom = CON_GET_ATOM(old_obj, CON_BUILTIN(CON_BUILTIN_STRING_ATOM_DEF_OBJECT));
+	Con_Builtins_String_Atom *new_string_atom = CON_GET_ATOM(new_obj, CON_BUILTIN(CON_BUILTIN_STRING_ATOM_DEF_OBJECT));
+	
+	if (self_string_atom->encoding != CON_STR_UTF_8 || old_string_atom->encoding != CON_STR_UTF_8 || new_string_atom->encoding != CON_STR_UTF_8)
+		CON_XXX;
+
+	// In order to replace substrings we do two passes. First we count how many substrings need to
+	// be replaced.
+
+	Con_Int i = 0;
+	Con_Int matches = 0;
+	while (i <= self_string_atom->size - old_string_atom->size) {
+		if (memcmp(self_string_atom->str + i, old_string_atom->str, old_string_atom->size) == 0) {
+			matches += 1;
+			i += old_string_atom->size;
+		}
+		else
+			i += 1;
+	}
+	
+	if (matches == 0)
+		 // If there are no substrings to be replaced, we return the self string immediately.
+		return self_obj;
+
+	// If there are strings to replace we can now accurately calculate the size of the resulting
+	// string, which we then construct.
+
+	Con_Int new_str_mem_size = self_string_atom->size + matches * (new_string_atom->size - old_string_atom->size);
+	u_char *new_str_mem = new_str_mem = Con_Memory_malloc(thread, new_str_mem_size, CON_MEMORY_CHUNK_OPAQUE);
+	Con_Int new_str_mem_pos = 0;
+	i = 0;
+	Con_Int last_i = 0;
+	while (i <= self_string_atom->size - old_string_atom->size) {
+		if (memcmp(self_string_atom->str + i, old_string_atom->str, old_string_atom->size) == 0) {
+			memmove(new_str_mem + new_str_mem_pos, self_string_atom->str + last_i, i - last_i);
+			new_str_mem_pos += i - last_i;
+			memmove(new_str_mem + new_str_mem_pos, new_string_atom->str, new_string_atom->size);
+			new_str_mem_pos += new_string_atom->size;
+			
+			i += old_string_atom->size;
+			last_i = i;
+		}
+		else
+			i += 1;
+	}
+	if (last_i < i) {
+		memmove(new_str_mem + new_str_mem_pos, self_string_atom->str + last_i, self_string_atom->size - last_i);
+		new_str_mem_pos += self_string_atom->size - last_i;
+	}
+	
+	if (new_str_mem == NULL)
+		return self_obj;
+	else
+		return Con_Builtins_String_Atom_new_no_copy(thread, new_str_mem, new_str_mem_pos, CON_STR_UTF_8);
 }
 
 

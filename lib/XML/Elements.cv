@@ -74,3 +74,15 @@ class Text:
 	func init(str):
 	
 		self.str := str
+
+
+
+	func to_xml():
+	
+		str := self.str.replaced("&", "&amp;")
+		str := str.replaced("<", "&lt;")
+		str := str.replaced(">", "&gt;")
+		str := str.replaced("'", "&apos;")
+		str := str.replaced("\"", "&quot;")
+		
+		return str

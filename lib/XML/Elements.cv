@@ -52,6 +52,15 @@ class Element(Builtins::List):
 
 
 
+	func find_attr(name, namespace := ""):
+	
+		if not (namespace := self._attr_namespaces.find(namespace)):
+			return fail
+		else:
+			return namespace.find(name)
+
+
+
 	func get_attr(name, namespace := ""):
 	
 		return self._attr_namespaces[namespace][name]

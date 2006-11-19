@@ -215,7 +215,7 @@ class Compiler:
 		exhausted:
 			if Compiler_Vars::BUILTIN_MODULES.find(import_name_list[0]):
 				import_full_name := import_name_list[0]
-				import_extras := []
+				import_extras := import_name_list[1 : ]
 			else:
 				return fail
 		

@@ -98,6 +98,7 @@ expr ::= class_def
      ::= func_def
      ::= while
      ::= if
+	 ::= ndif
      ::= for             %precedence 5
 	 ::= try
      ::= number
@@ -135,6 +136,8 @@ expr ::= class_def
 
 if      ::= "IF" expr ":" "INDENT" expr_body "DEDENT" ( if_elif )* if_else
         ::= "IF" expr "{" "INDENT" expr_body "DEDENT" "NEWLINE" "}" ( if_elif )* if_else
+ndif    ::= "NDIF" expr ":" "INDENT" expr_body "DEDENT" ( if_elif )*
+        ::= "NDIF" expr "{" "INDENT" expr_body "DEDENT" "NEWLINE" "}" ( if_elif )*
 if_elif ::= "NEWLINE" "ELIF" expr ":" "INDENT" expr_body "DEDENT"
         ::= "NEWLINE" "ELIF" expr "{" "INDENT" expr_body "DEDENT" "NEWLINE" "}"
 if_else ::= "NEWLINE" "ELSE" ":" "INDENT" expr_body "DEDENT"

@@ -25,7 +25,7 @@ import CEI, ITree
 
 
 
-_EXPRS := [ITree::IClass_Def, ITree::IFunc_Def, ITree::IIf, ITree::IVar, ITree::IImport, ITree::IWhile, ITree::IFor, ITree::IInt, ITree::IString, ITree::ISlot_Lookup, ITree::IModule_Lookup, ITree::IList, ITree::IDict, ITree::ISet, ITree::IApplication, ITree::IGet, ITree::ISlice, ITree::IReturn, ITree::IYield, ITree::IRaise, ITree::IAssert, ITree::IBreak, ITree::IContinue, ITree::IConjunction, ITree::IAlternation, ITree::IAssignment, ITree::INot, ITree::IBinary, ITree::IComparison, ITree::IPass, ITree::IInsert, ITree::IStandard_Quasi_Quotes, ITree::IOriginal_Name]
+_EXPRS := [ITree::IClass_Def, ITree::IFunc_Def, ITree::IIf, ITree::INDIf, ITree::IVar, ITree::IImport, ITree::IWhile, ITree::IFor, ITree::IInt, ITree::IString, ITree::ISlot_Lookup, ITree::IModule_Lookup, ITree::IList, ITree::IDict, ITree::ISet, ITree::IApplication, ITree::IGet, ITree::ISlice, ITree::IReturn, ITree::IYield, ITree::IRaise, ITree::IAssert, ITree::IBreak, ITree::IContinue, ITree::IConjunction, ITree::IAlternation, ITree::IAssignment, ITree::INot, ITree::IBinary, ITree::IComparison, ITree::IPass, ITree::IInsert, ITree::IStandard_Quasi_Quotes, ITree::IOriginal_Name]
 
 
 
@@ -124,6 +124,14 @@ class ITree_TC:
 		
 		if not node.else_body is null:
 			self._check_expr_block(node, "else body", node.else_body)
+
+
+
+	func _t_indif(node):
+
+		for clause := node.clauses.iterate():
+			if not ITree::IClause.instantiated(clause):
+				self._type_error(node, "clause", clause, "IClause")
 
 
 

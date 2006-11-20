@@ -123,6 +123,11 @@ Con_Obj *Con_Modules_Exceptions_init(Con_Obj *thread, Con_Obj *identifier)
 	CON_SET_FIELD(key_exception, "init", CON_NEW_BOUND_C_FUNC(_Con_Modules_Exception_Key_Exception_init_func, "init", exceptions_mod, key_exception));
 	CON_SET_SLOT(exceptions_mod, "Key_Exception", key_exception);
 
+	// class NDIf_Exception
+	
+	Con_Obj *ndif_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("NDIf_Exception"), Con_Builtins_List_Atom_new_va(thread, user_exception, NULL), exceptions_mod);
+	CON_SET_SLOT(exceptions_mod, "NDIf_Exception", ndif_exception);
+
 	// class Number_Exception
 
 	Con_Obj *number_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("Number_Exception"), Con_Builtins_List_Atom_new_va(thread, user_exception, NULL), exceptions_mod);

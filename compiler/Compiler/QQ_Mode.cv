@@ -302,6 +302,16 @@ class QQ_Mode:
 
 
 
+	func _t_indif(node):
+
+		clauses := []
+		for clause := node.clauses.iterate():
+			clauses.append(self._preorder(clause))
+		
+		return self._qq("INDIf", [ITree::IList.new(clauses, node.src_info)], node.src_info)
+
+
+
 	func _t_iclause(node):
 	
 		return self._qq("IClause", [self._preorder(node.condition), self._preorder(node.body)], node.src_info)

@@ -263,6 +263,30 @@ class Bytecode_Gen:
 		closures_offset, var_num := self._get_var_offsets(var_name, src_info)
 		
 		self._instructions.append(self._target::Instr_Lookup_Var.new(src_info, closures_offset, var_num))
+
+
+
+	//
+	// Places the definition in the list 'defn_path' onto the stack. This method may use various
+	// tactics to optimise this.
+	//
+	// 'defn_path' should be the encoding of a module and definition lookups. e.g.
+	// Module::Def1::Def2::... is ["Module", "Def1", "Def2", ...].
+	//	
+
+	func _add_mod_def_lookup(defn_path, src_info):
+	
+		if not import_full_name, import_extras := self._compiler.find_import_location(defn_path):
+			self._compiler.error(Strings::format("Can't find module / package '%s'", Strings::join(defn_path, "::")), src_info)
+
+		if import_num := self._imports.find(import_full_name):
+			self._instructions.append(self._target::Instr_Import.new(src_info, import_num))
+		else:
+			self._imports[import_full_name] := self._imports.len()
+			self._instructions.append(self._target::Instr_Import.new(src_info, self._imports.len() - 1))
+		
+		for import_extra := import_extras.iterate():
+			self._instructions.append(self._target::Instr_Module_Lookup.new(src_info, import_extra))
 		
 
 
@@ -473,6 +497,34 @@ class Bytecode_Gen:
 			self.preorder(node.else_body)
 		
 		self._set_label(end_of_if_label)
+
+
+
+	func _t_indif(node):
+	
+		end_of_ndif_label := self._create_label()
+		for clause := node.clauses.iterate():
+			end_of_clause_label := self._create_label()
+			self._nesting.append([NEST_NORMAL])
+			self._instructions.append(self._target::Instr_Add_Failure_Frame.new(node.src_info, end_of_clause_label))
+			self.preorder(clause.condition)
+			body_label := self._create_label()
+			self._instructions.append(self._target::Instr_Branch_If_Not_Fail.new(node.src_info, body_label))
+			self._instructions.append(self._target::Instr_Remove_Failure_Frame.new(node.src_info))
+			self._nesting.del(-1)
+			self._instructions.append(self._target::Instr_Branch.new(node.src_info, end_of_clause_label))
+			self._set_label(body_label)
+			self._instructions.append(self._target::Instr_Remove_Failure_Frame.new(node.src_info))
+			self.preorder(clause.body)
+			self._instructions.append(self._target::Instr_Branch.new(node.src_info, end_of_ndif_label))
+			self._set_label(end_of_clause_label)
+		
+		self._add_mod_def_lookup(["Exceptions", "NDIf_Exception"], node.src_info)
+		self._instructions.append(self._target::Instr_Pre_Apply_Slot_Lookup.new(node.src_info, "new"))
+		self._instructions.append(self._target::Instr_Apply.new(node.src_info, 0))
+		self._instructions.append(self._target::Instr_Raise.new(node.src_info))
+		
+		self._set_label(end_of_ndif_label)
 
 
 

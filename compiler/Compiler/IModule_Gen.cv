@@ -497,6 +497,28 @@ class IModule_Gen:
 
 
 
+	func _t_ndif(node, extra_src_info):
+	
+		// ndif ::= "NDIF" expr ":" "INDENT" expr_body "DEDENT" ( if_elif )*
+		//      ::= "NDIF" expr "{" "INDENT" expr_body "DEDENT" "NEWLINE" "}" ( if_elif )*
+		
+		clauses := [ITree::IClause.new(self._preorder(node[2], extra_src_info), self._eval_expr_body(node[5]), extra_src_info + node[1].src_info)]
+		if node.len() == 7 | Builtins::List.conformed_by(node[7]):
+			// ndif ::= "NDIF" expr ":" "INDENT" expr_body "DEDENT" ( if_elif )*
+			i := 7
+		else:
+			// ndif ::= "NDIF" expr "{" "INDENT" expr_body "DEDENT" "NEWLINE" "}" ( if_elif )*
+			i := 9
+		while i < node.len() & node[i][0] == "if_elif":
+			// if_elif ::= "NEWLINE" "ELIF" expr ":" "INDENT" expr_body "DEDENT"
+			//         ::= "NEWLINE" "ELIF" expr "{" "INDENT" expr_body "DEDENT" "NEWLINE" "}"
+			clauses.append(ITree::IClause.new(self._preorder(node[i][3], extra_src_info), self._eval_expr_body(node[i][6]), extra_src_info + node[i][2].src_info))
+			i += 1
+
+		return ITree::INDIf.new(clauses, extra_src_info + node[1].src_info)
+
+
+
 	func _t_while(node, extra_src_info):
 	
 		// while ::= "WHILE" expr ":" "INDENT" expr_body "DEDENT" exhausted broken

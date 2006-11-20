@@ -29,7 +29,7 @@ import CEI
 
 // Default set of keywords. Order is insignificant.
 
-KEYWORDS := ["if", "then", "elif", "else", "when", "class", "proto", "func", "while", "yield", "break", "where", "return", "nonlocal", "for", "pass", "import", "try", "catch", "into", "is", "in", "not", "continue", "raise", "exbi", "every", "exhausted", "broken", "as", "assert", "bound_func", "unbound_func", "rename", "metaclass"]
+KEYWORDS := ["if", "ndif", "then", "elif", "else", "when", "class", "proto", "func", "while", "yield", "break", "where", "return", "nonlocal", "for", "pass", "import", "try", "catch", "into", "is", "in", "not", "continue", "raise", "exbi", "every", "exhausted", "broken", "as", "assert", "bound_func", "unbound_func", "rename", "metaclass"]
 
 // Default set of symbols. Order may be significant (e.g. "::" should come before ":").
 

@@ -191,6 +191,26 @@ class IIf:
 
 
 
+class INDIf:
+
+	// 'clauses' is a list of 'IClause's.
+
+	func init(clauses, src_info):
+	
+		self.clauses := clauses
+		self.src_info := src_info
+
+		self.bound_vars := Set{}
+		self.qq_bound_vars := Set{}
+		self.free_vars := Set{}
+		for clause := clauses.iterate():
+			self.bound_vars.extend(clause.bound_vars)
+			self.qq_bound_vars.extend(clause.qq_bound_vars)
+			self.free_vars.extend(clause.free_vars)
+
+
+
+
 class IVar:
 
 	func init(var_name, src_info):

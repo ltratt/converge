@@ -214,9 +214,9 @@ break ::= "BREAK"
 
 continue ::= "CONTINUE"
 
-conjunction ::= expr "&" expr ( "&" expr )*
+conjunction ::= expr ( "&" expr )+
 
-alternation ::= expr "|" expr ( "|" expr )*
+alternation ::= expr ( "|" expr )+
 
 assignment        ::= assignment_target ( "," assignment_target )* assignment_type expr
 assignment_target ::= var_def

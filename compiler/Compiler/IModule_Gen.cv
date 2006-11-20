@@ -805,7 +805,7 @@ class IModule_Gen:
 
 	func _t_conjunction(node, extra_src_info):
 	
-		// conjunction ::= expr "&" expr ( "&" expr )*
+		// conjunction ::= expr ( "&" expr )+
 		
 		exprs := []
 		i := 1
@@ -819,7 +819,7 @@ class IModule_Gen:
 
 	func _t_alternation(node, extra_src_info):
 	
-		// alternation ::= expr "|" expr ( "|" expr )*
+		// alternation ::= expr ( "|" expr )+
 		
 		exprs := []
 		i := 1

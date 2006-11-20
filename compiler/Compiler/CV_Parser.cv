@@ -271,8 +271,6 @@ quasi_quotes_customize ::= "[" "<" expr ">" "|"
 quasi_quotes_customize ::= "[|"
 
 brackets ::= "(" expr ")"
-
-z ::= ( "ID" "ID" )* ( "ID" "ID" )*
 """
 
 

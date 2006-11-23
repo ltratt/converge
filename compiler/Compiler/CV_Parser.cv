@@ -255,9 +255,10 @@ splice_insert ::= splice
               ::= insert
 
 splice        ::= expr_splice
-              ::= block_splice
+              ::= dsl_splice
 expr_splice   ::= "$" "<" expr ">"
-block_splice  ::= "$" "<<" expr ">>" ":" "DSL_BLOCK"
+dsl_splice    ::= "$" "<<" expr ">>" ":" "DSL_BLOCK"
+              ::= "$" "<<" expr ">>" "<<" "DSL_BLOCK" ">>"
 
 insert        ::= "$" "{" expr "}"
 

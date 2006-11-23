@@ -55,6 +55,7 @@ RE_COMMENT := PCRE::compile("//.*?$")
 RE_INDENT := PCRE::compile("\t*")
 RE_INDENT_PLUS_CONTENTS := PCRE::compile(".*?$")
 RE_CHARS_NOT_TO_ESCAPE := PCRE::compile("[a-zA-Z]")
+RE_DSL_PHRASE_END := PCRE::compile("(?:>>|$)")
 
 
 
@@ -313,9 +314,10 @@ class Tokenizer:
 					i += m[0].len()
 					if m[0] == ":" & self.tokens.len() > 2 & self.tokens[-2].type == ">>":
 						// We have just matched the beginning of a DSL block (when tokens
-						// <SYMBOL >>> <SYMBOL :>). The following stream of text in the next
-						// indentation level is slurped in as raw text (with the leading
-						// indentation removed on each line) and put in a single DSL_BLOCK token.
+						// <SYMBOL >>> <SYMBOL :> are found after each other). The following stream
+						// of text in the next indentation level is slurped in as raw text (with the
+						// leading indentation removed on each line) and put in a single DSL_BLOCK
+						// token.
 						//
 						// A DSL block is considered to run from the start of the line after the
 						// <SYMBOL :> token until the final non-blank line with the same level of
@@ -353,6 +355,18 @@ class Tokenizer:
 							// Since a DSL block implictly finishes at the end of a line, we need
 							// to break the outer while loop too.
 							break
+					elif m[0] == "<<" & self.tokens.len() > 2 & self.tokens[-2].type == ">>":
+						// We have just matched the beginning of a DSL phrase (when tokens
+						// <SYMBOL >>> <SYMBOL <<> are found after each other). The following stream
+						// of text until the next << is is found constitute a DSL_BLOCK token token.
+						
+						m := RE_DSL_PHRASE_END.search(self._str, i)
+						if m[0] != ">>":
+							self.error("DSL fragments must begin and end on the same line", i)
+						else:
+							self.tokens.append(Token.new("DSL_BLOCK", self._str[i : m.get_indexes(0)[0]], [[self._src_path, self._src_offset + i]]))
+							self.tokens.append(Token.new(">>", null, [[self._src_path, m.get_indexes(0)[0]]]))
+							i := m.get_indexes(0)[1]
 					continue
 
 				if m := self._re_keywords.match(self._str, i):

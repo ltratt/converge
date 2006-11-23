@@ -960,7 +960,7 @@ class IModule_Gen:
 	func _t_splice(node, extra_src_info):
 	
 		// splice ::= expr_splice
-		//        ::= block_splice
+		//        ::= dsl_splice
 		
 		// This function is unique since it's the "coal face" for compile-time meta-programming.
 		//
@@ -970,7 +970,8 @@ class IModule_Gen:
 			// expr_splice  ::= "$" "<" expr ">"
 			expr := self._preorder(node[1][3], extra_src_info)
 		else:
-			// block_splice ::= "$" "<<" expr ">>" ":" "DSL_BLOCK"
+			// dsl_splice ::= "$" "<<" expr ">>" ":" "DSL_BLOCK"
+			//            ::= "$" "<<" expr ">>" "<<" "DSL_BLOCK" ">>"
 			dsl_block := ITree::IString.new(node[1][6].value, extra_src_info + node[1][6].src_info)
 
 			assert(node[1][1].src_info.len() == 1)			

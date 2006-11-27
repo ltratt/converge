@@ -25,7 +25,7 @@ import CEI, ITree
 
 
 
-_EXPRS := [ITree::IClass_Def, ITree::IFunc_Def, ITree::IIf, ITree::INDIf, ITree::IVar, ITree::IImport, ITree::IWhile, ITree::IFor, ITree::IInt, ITree::IString, ITree::ISlot_Lookup, ITree::IModule_Lookup, ITree::IList, ITree::IDict, ITree::ISet, ITree::IApplication, ITree::IGet, ITree::ISlice, ITree::IReturn, ITree::IYield, ITree::IRaise, ITree::IAssert, ITree::IBreak, ITree::IContinue, ITree::IConjunction, ITree::IAlternation, ITree::IAssignment, ITree::INot, ITree::IBinary, ITree::IComparison, ITree::IPass, ITree::IInsert, ITree::IStandard_Quasi_Quotes, ITree::IOriginal_Name]
+_EXPRS := [ITree::IClass_Def, ITree::IFunc_Def, ITree::IIf, ITree::INDIf, ITree::IVar, ITree::IImport, ITree::IWhile, ITree::IFor, ITree::IInt, ITree::IString, ITree::ISlot_Lookup, ITree::IModule_Lookup, ITree::IList, ITree::IDict, ITree::ISet, ITree::IApplication, ITree::IGet, ITree::ISlice, ITree::IReturn, ITree::IYield, ITree::IRaise, ITree::IAssert, ITree::IBreak, ITree::IContinue, ITree::IConjunction, ITree::IAlternation, ITree::IAssignment, ITree::INot, ITree::IBinary, ITree::IComparison, ITree::IInsert, ITree::IStandard_Quasi_Quotes, ITree::IOriginal_Name]
 
 
 
@@ -66,7 +66,9 @@ class ITree_TC:
 		
 		for i := 0.to(node.exprs.len()):
 			expr := node.exprs[i]
-			self._check_expr(node, Strings::format("exprs[%d]", i), expr)
+			if ITree::IPass.instantiated(expr):
+				continue
+			self._check_expr(node, Strings::format("%s[%d]", part, i), expr)
 
 
 
@@ -78,6 +80,43 @@ class ITree_TC:
 	func _preorder(node):
 	
 		return self.get_slot("_t_" + node.instance_of.name.to_lower_case())(node)
+
+
+
+	func _t_imodule(node):
+
+		if not Builtins::String.instantiated(node.module_name):
+			self._type_error(node, "module_name", node.module_name, "String")
+
+		if not Builtins::List.conformed_by(node.definitions):
+			self._type_error(node, "definitions", node.definitions, "List")
+		
+		for definition := node.definitions.iterate():
+			self._preorder(definition)
+
+
+
+	func _t_iclass_def(node):
+
+		if not Builtins::String.instantiated(node.class_name):
+			self._type_error(node, "class_name", node.class_name, "String")
+
+		if not Builtins::List.conformed_by(node.supers):
+			self._type_error(node, "supers", node.supers, "List")
+		for i := 0.to(node.supers.len()):
+			self._check_expr(node, Strings::format("supers[%d]", i), node.supers[i])
+		
+		if not node.metaclass_ is null:
+			self._check_expr(node, "metaclass", node.metaclass_)
+
+		if not Builtins::List.conformed_by(node.fields):
+			self._type_error(node, "fields", node.fields, "List")
+		for i := 0.to(node.fields.len()):
+			field := node.fields[i]
+			if not (ITree::IAssignment.instantiated(field) | ITree::IFunc_Def.instantiated(field)):
+				self._type_error(node, Strings::format("fields[%d]", i), field, "IAssignment")
+
+
 
 
 	
@@ -141,6 +180,37 @@ class ITree_TC:
 
 
 
+	func _t_iimport(node):
+	
+		if not Builtins::String.instantiated(node.module_path):
+			self._type_error(node, "module_path", node.module_path, "String")
+
+
+
+	func _t_iwhile(node):
+	
+		self._check_expr(node, "condition", node.condition)
+		if not node.body is null:
+			self._check_expr_block(node, "body", node.body)
+		if not node.exhausted_body is null:
+			self._check_expr_block(node, "exhausted_body", node.exhausted_body)
+		if not node.broken_body is null:
+			self._check_expr_block(node, "broken_body", node.broken_body)
+
+
+
+	func _t_ifor(node):
+	
+		self._check_expr(node, "condition", node.condition)
+		if not node.body is null:
+			self._check_expr_block(node, "body", node.body)
+		if not node.exhausted_body is null:
+			self._check_expr_block(node, "exhausted_body", node.exhausted_body)
+		if not node.broken_body is null:
+			self._check_expr_block(node, "broken_body", node.broken_body)
+
+
+
 	func _t_iint(node):
 
 		if not Builtins::Int.instantiated(node.val):
@@ -183,6 +253,27 @@ class ITree_TC:
 
 
 
+	func _t_idict(node):
+	
+		if not Builtins::List.conformed_by(node.elements):
+			self._type_error(node, "elements", node.elements, "List")
+		for i := 0.to(node.elements.len()):
+			key, val := node.elements[i]
+			self._check_expr(node, Strings::format("element[%d] key", i), key)
+			self._check_expr(node, Strings::format("element[%d] val", i), val)
+
+
+
+	func _t_iset(node):
+	
+		if not Builtins::List.conformed_by(node.elements):
+			self._type_error(node, "elements", node.elements, "List")
+		for i := 0.to(node.elements.len()):
+			elem := node.elements[i]
+			self._check_expr(node, Strings::format("elem[%d]", i), elem)
+
+
+
 	func _t_iapplication(node):
 	
 		self._check_expr(node, "func_expr", node.func_expr)
@@ -215,7 +306,8 @@ class ITree_TC:
 
 	func _t_ireturn(node):
 	
-		self._check_expr(node, "return_expr", node.return_expr)
+		if not node.return_expr is null:
+			self._check_expr(node, "return_expr", node.return_expr)
 
 
 
@@ -304,6 +396,16 @@ class ITree_TC:
 		
 		if not node.extra_src_info is null:
 			self._check_expr(node, "extra_src_info", node.extra_src_info)
+
+
+
+	func _t_ioriginal_name(node):
+	
+		if not Builtins::String.instantiated(node.module_id):
+			self._type_error(node, "module_id", node.module_id, "String")
+
+		if not Builtins::String.instantiated(node.def_name):
+			self._type_error(node, "def_name", node.def_name, "String")
 	
 
 	

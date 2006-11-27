@@ -46,7 +46,10 @@ class IModule_Gen:
 		self._compiler := CEI::compiler()
 		self._src_path := self._compiler.src_path
 
-		return self._preorder(parse_tree)
+		itree := self._preorder(parse_tree)
+		ITree_TC::tc(itree)
+
+		return itree
 
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////

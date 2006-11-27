@@ -699,20 +699,18 @@ class IInsert:
 
 class IStandard_Quasi_Quotes:
 
-	func init(exprs, extra_src_info, src_info):
+	func init(body, extra_src_info, src_info):
 	
-		self.exprs := exprs
+		self.body := body
 		self.extra_src_info := extra_src_info
 		self.src_info := src_info
 		
 		self.bound_vars := Set{}
 		self.qq_bound_vars := Set{}
-		self.free_vars := Set{}
-		for expr := exprs.iterate():
-			for var := expr.qq_bound_vars.iterate():
-				self.qq_bound_vars.add(Strings::format(Compiler_Vars::QUASI_QUOTES_NAME, var))
-				self.bound_vars.add(Strings::format(Compiler_Vars::QUASI_QUOTES_NAME, var))
-			self.free_vars.extend(expr.free_vars)
+		self.free_vars := body.free_vars.scopy()
+		for var := body.qq_bound_vars.iterate():
+			self.qq_bound_vars.add(Strings::format(Compiler_Vars::QUASI_QUOTES_NAME, var))
+			self.bound_vars.add(Strings::format(Compiler_Vars::QUASI_QUOTES_NAME, var))
 		
 		if not extra_src_info is null:
 			self.extra_src_info_var_name := CEI::fresh_name()

@@ -264,8 +264,8 @@ insert        ::= "$" "{" expr "}"
 
 quasi_quotes      ::= expr_quasi_quotes
                   ::= defn_quasi_quotes
-expr_quasi_quotes ::= quasi_quotes_customize "INDENT" expr ( "NEWLINE" expr )* "DEDENT" "NEWLINE" "|]"
-                  ::= quasi_quotes_customize expr ( "NEWLINE" expr )* "|]"
+expr_quasi_quotes ::= quasi_quotes_customize "INDENT" expr_body "DEDENT" "NEWLINE" "|]"
+                  ::= quasi_quotes_customize expr "|]"
 defn_quasi_quotes ::= "[D|" definition ( "NEWLINE" definition )* "|]" quasi_quotes_customize
 			      ::= "[D|" "INDENT" definition ( "NEWLINE" definition )* "DEDENT" "NEWLINE" "|]" quasi_quotes_customize
 quasi_quotes_customize ::= "[" "<" expr ">" "|"

@@ -300,11 +300,7 @@ class ITree_TC:
 	
 	func _t_istandard_quasi_quotes(node):
 	
-		if not Builtins::List.conformed_by(node.exprs):
-			self._type_error(node, "exprs", node.exprs, "List")
-		
-		for expr := node.exprs.iterate():
-			self._check_expr(node, "expr", expr)
+		self._check_expr_block(node, "body", node.body)
 		
 		if not node.extra_src_info is null:
 			self._check_expr(node, "extra_src_info", node.extra_src_info)

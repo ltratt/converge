@@ -77,7 +77,7 @@ class QQ_Mode:
 				self._extra_src_info_var := null
 
 			vars := Set{}
-			for var := node.exprs.iterate():
+			for var := node.body.exprs.iterate():
 				vars.extend(var.qq_bound_vars)
 			self._add_vars(vars, [])
 			
@@ -107,7 +107,7 @@ class QQ_Mode:
 				return_exprs.append(ITree::IAssignment.new(ITree::STD_ASSIGN, [qq_bound_var], fresh_name, node.src_info))
 
 			exprs := []
-			for expr := node.exprs.iterate():
+			for expr := node.body.exprs.iterate():
 				exprs.append(self._preorder(expr))
 
 			// We don't strictly need to pop the last lot of variables, but do so for completeness.

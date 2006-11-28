@@ -82,7 +82,7 @@ class Linker:
 				module.deserialize_str(input_file_data)
 				modules[module.get_identifier()] := [input_file_data, module]
 			else:
-				_error(Strings.format("File '%s' is not of a known type.", input_path))
+				_error(Strings::format("File '%s' is not of a known type.", input_path))
 
 		linked_bytecode := Array::Array.new(target_array_type)
 		linked_bytecode.extend_from_string(CV_Exec::EXEC_INIT_STRING)

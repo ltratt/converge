@@ -645,14 +645,14 @@ class IModule_Gen:
 		
 	func _t_module_lookup(node, extra_src_info):
 	
-		// module_lookup ::= expr "." "ID"
-		//               ::= expr "." splice_insert
+		// module_lookup ::= expr "::" "ID"
+		//               ::= expr "::" splice_insert
 		
 		if Builtins::List.conformed_by(node[3]):
-			// module_lookup ::= expr "." splice_insert
+			// module_lookup ::= expr "::" splice_insert
 			return ITree::IModule_Lookup.new(self._preorder(node[1], extra_src_info), self._preorder(node[3], extra_src_info), extra_src_info + node[2].src_info)
 		else:
-			// module_lookup ::= expr "." "ID"
+			// module_lookup ::= expr "::" "ID"
 			return ITree::IModule_Lookup.new(self._preorder(node[1], extra_src_info), node[3].value, extra_src_info + node[2].src_info)
 
 

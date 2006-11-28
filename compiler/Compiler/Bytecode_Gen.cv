@@ -1018,7 +1018,7 @@ class Bytecode_Gen:
 
 	func _t_ioriginal_name(node):
 	
-		if node.module_id := self._src_path:
+		if node.module_id == self._src_path:
 			assert(self.vars[0].find(node.def_name))
 			self._instructions.append(self._target::Instr_Lookup_Var.new(node.src_info, self.vars.len() - 1, self.vars[0][node.def_name]))
 		else:

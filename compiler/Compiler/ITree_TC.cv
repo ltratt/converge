@@ -144,7 +144,7 @@ class ITree_TC:
 		for i := 0.to(node.nonlocals.len()):
 			nonlocal_ := node.nonlocals[i]
 			if not ITree::IVar.instantiated(nonlocal_):
-				self._type_error(node, Strings::format("nonlocal[%s]", i), param, "IVar")
+				self._type_error(node, Strings::format("nonlocal[%s]", i), nonlocal_, "IVar")
 
 		if not Builtins::List.conformed_by(node.renames):
 			self._type_error(node, "renames", node.renames, "List")

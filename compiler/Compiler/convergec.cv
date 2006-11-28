@@ -227,4 +227,6 @@ func main():
 
 	nonlocal compiler
 	compiler := Compiler.new()
+	Compiler_Vars::push_compiler(compiler)
 	compiler.compile()
+	Compiler_Vars::pop_compiler()

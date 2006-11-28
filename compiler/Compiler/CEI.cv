@@ -28,7 +28,7 @@ import Compiler_Vars, convergec, CV_Parser, ITree, ITree_TC, Tokenizer
 
 func compiler():
 
-	return convergec::compiler
+	return Compiler_Vars::peek_compiler()
 
 
 

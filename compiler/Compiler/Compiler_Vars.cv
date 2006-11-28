@@ -67,3 +67,23 @@ func fresh_name(name := null):
 		return Strings::format(UNIQUE_NAME_TEMPLATE, (_fresh_name_counter - 1).to_str())
 	else:
 		return Strings::format(UNIQUE_NAME_EXTRA_TEMPLATE, (_fresh_name_counter - 1).to_str(), name)
+
+
+
+_compilers := []
+
+func push_compiler(compiler):
+
+	_compilers.append(compiler)
+
+
+
+func peek_compiler():
+
+	return _compilers[-1]
+
+
+
+func pop_compiler():
+
+	_compilers.pop()

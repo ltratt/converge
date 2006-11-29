@@ -505,13 +505,15 @@ Con_Obj *_Con_Modules_Exception_backtrace_func(Con_Obj *thread)
 					entry = CON_ADD(entry, CON_GET_SLOT_APPLY(CON_NEW_STRING(" "), "*", CON_NEW_INT(j / 10)));
 				}
 					
-				Con_Obj *file_name = CON_GET_SLOT_APPLY(src_location, "get", CON_NEW_INT(0));
+				Con_Obj *module_id = CON_GET_SLOT_APPLY(src_location, "get", CON_NEW_INT(0));
 				Con_Obj *src_offset = CON_GET_SLOT_APPLY(src_location, "get", CON_NEW_INT(1));
 				
+				Con_Obj *module = Con_Builtins_Module_Atom_import(thread, module_id);
+
 				Con_Int line, column;
-				Con_Builtins_Module_Atom_src_offset_to_line_column(thread, pc.module, Con_Numbers_Number_to_Con_Int(thread, src_offset), &line, &column);
+				Con_Builtins_Module_Atom_src_offset_to_line_column(thread, module, Con_Numbers_Number_to_Con_Int(thread, src_offset), &line, &column);
 				entry = CON_ADD(entry, CON_NEW_STRING("File \""));
-				entry = CON_ADD(entry, file_name);
+				entry = CON_ADD(entry, module_id);
 				entry = CON_ADD(entry, CON_NEW_STRING("\", line "));
 				entry = CON_ADD(entry, CON_GET_SLOT_APPLY(CON_NEW_INT(line), "to_str"));
 				entry = CON_ADD(entry, CON_NEW_STRING(", column "));

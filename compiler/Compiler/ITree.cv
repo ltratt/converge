@@ -20,7 +20,7 @@
 
 
 import Builtins, Strings, Sys
-import CEI, Compiler_Vars
+import Compiler_Vars
 
 
 
@@ -713,7 +713,7 @@ class IStandard_Quasi_Quotes:
 			self.bound_vars.add(Strings::format(Compiler_Vars::QUASI_QUOTES_NAME, var))
 		
 		if not extra_src_info is null:
-			self.extra_src_info_var_name := CEI::fresh_name()
+			self.extra_src_info_var_name := Compiler_Vars::fresh_name()
 			self.bound_vars.add(self.extra_src_info_var_name)
 			self.qq_bound_vars.add(self.extra_src_info_var_name)
 			

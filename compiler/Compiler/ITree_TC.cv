@@ -20,7 +20,7 @@
 
 
 import Builtins, File, Functional, Strings
-import CEI, ITree
+import Compiler_Vars, ITree
 
 
 
@@ -42,7 +42,7 @@ class ITree_TC:
 
 	func _type_error(parent_node, part, node, should_be):
 	
-		CEI::compiler().error(Strings::format("In %s node, got %s type for %s instead of %s.", parent_node.instance_of.name, node.instance_of.name, part, should_be), parent_node.src_info)
+		Compiler_Vars::peek_compiler().error(Strings::format("In %s node, got %s type for %s instead of %s.", parent_node.instance_of.name, node.instance_of.name, part, should_be), parent_node.src_info)
 
 
 

@@ -89,20 +89,22 @@ class Linker:
 		linked_bytecode.append(0)  // Version
 		linked_bytecode.append(-1) // Number of modules
 		
-		module_names_to_include := [File::join_ext(File::split_ext(File::canon_path(extra_args[0]))[0], CV_Module::CV_EXTENSION)]
+		modules_stack := [File::join_ext(File::split_ext(File::canon_path(extra_args[0]))[0], CV_Module::CV_EXTENSION)]
+		assert(modules.find(modules_stack[0]))
 		modules_offsets := []
 		modules_bytecode := Array::Array.new(target_array_type)
 		i := 0
-		while i < module_names_to_include.len():
-			module_name := module_names_to_include[i]
-			if not (module_str, module := modules.find(module_name)):
-				_error(Strings::format("Module '%s' not found in input files.", module_name))
+		while i < modules_stack.len():
+			module_id := modules_stack[i]
 			modules_offsets.append(modules_bytecode.len_bytes())
+			module_str, module := modules[module_id]
 			modules_bytecode.extend_from_string(module_str)
-			for import_ := module.get_imports().iterate():
-				if not Compiler_Vars::BUILTIN_MODULES.find(import_):
-					if not module_names_to_include.find(import_):
-						module_names_to_include.append(import_)
+			for import_module_id := module.get_imports().iterate():
+				if not Compiler_Vars::BUILTIN_MODULES.find(import_module_id):
+					if not modules_stack.find(import_module_id):
+						if not modules.find(import_module_id):
+							_error(Strings::format("Module '%s' referenced in '%s' not found in input files.", import_module_id, module_id))
+						modules_stack.append(import_module_id)
 			i += 1
 
 		linked_bytecode[3] := modules_offsets.len()

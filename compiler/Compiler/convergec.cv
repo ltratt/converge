@@ -69,9 +69,10 @@ class Compiler:
 			self.error(Strings::format("No support yet for target bit size '%s'.", self.target_name))
 		
 		self.src_path := extra[0]
-		
 		if not File::exists(self.src_path):
 			self.error(Strings::format("Source file '%s' not found.", self.src_path))
+
+		self.module_id := File::canon_path(extra[0])
 
 		if (input_file_dir := File::split_leaf(self.src_path)[0]) == "":
 			self.includes.insert(0, ".")
@@ -156,9 +157,8 @@ class Compiler:
 	
 	func _print_msg(pre_msg, msg, src_info := null):
 	
-		canon_src_path := File::canon_path(self.src_path)
 		if not src_info is null:
-			if src_info.len() == 1 & src_info[0][0] := canon_src_path:
+			if src_info.len() == 1 & src_info[0][0] := self.module_id:
 				src_offset := src_info[0][1]
 				newlines := self.tokenizer.newlines
 				i := 0

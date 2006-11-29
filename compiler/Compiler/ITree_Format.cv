@@ -261,7 +261,7 @@ class ITree_Format:
 
 	func _t_ioriginal_name(node):
 	
-		if node.module_id == CEI::compiler().src_path:
+		if node.module_id == CEI::compiler().module_id:
 			return node.def_name // XXX
 		else:
 			raise "XXX"

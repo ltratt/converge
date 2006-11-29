@@ -46,7 +46,7 @@ class QQ_Mode:
 		// These next two slots are purely for convenience.
 
 		self._compiler := CEI::compiler()
-		self._src_path := self._compiler.src_path
+		self._module_id := self._compiler.module_id
 		
 		if ITree::IStandard_Quasi_Quotes.instantiated(node):
 			self._type := _QQ_STANDARD
@@ -192,7 +192,7 @@ class QQ_Mode:
 		if not mode is self:
 			// This variable is outside of the quasi-quotes.
 			if mode.parent_mode is null & i == 0:
-				return self._qq("IOriginal_Name", [ITree::IString.new(self._src_path, node_src_info), ITree::IString.new(renamed_var_name, node_src_info)], node_src_info)
+				return self._qq("IOriginal_Name", [ITree::IString.new(self._module_id, node_src_info), ITree::IString.new(renamed_var_name, node_src_info)], node_src_info)
 			else:
 				raise "XXX"
 		

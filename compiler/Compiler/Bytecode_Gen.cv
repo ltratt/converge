@@ -113,7 +113,7 @@ class Bytecode_Gen:
 		// The next three slots are purely for convenience.
 		
 		self._compiler := CEI::compiler()
-		self._src_path := self._compiler.src_path
+		self._module_id := self._compiler.module_id
 		self._target := self._compiler.target
 		
 		self.preorder(imodule)
@@ -156,13 +156,13 @@ class Bytecode_Gen:
 			
 			src_info := []
 			//Sys::println(instruction.instance_of.name, " ", instruction.src_info)
-			for src_path, src_offset := instruction.src_info.iterate():
-				if src_path == self._compiler.src_path:
+			for module_id, src_offset := instruction.src_info.iterate():
+				if module_id == self._module_id:
 					import_num := -1
 				else:
-					if not (import_num := self._imports.find(src_path)):
+					if not (import_num := self._imports.find(module_id)):
 						import_num := self._imports.len()
-						self._imports[src_path] := import_num
+						self._imports[module_id] := import_num
 				
 				if src_offset is null:
 					src_info.append([import_num, -1])
@@ -188,7 +188,7 @@ class Bytecode_Gen:
 		
 		module := CV_Module::CV_Module.new(self._compiler.target, self._compiler.target_array_type)
 		module.set_name(imodule.module_name)
-		module.set_identifier(File::canon_path(self._compiler.src_path))
+		module.set_identifier(self._module_id)
 		module.set_top_level_vars_map(self._top_level_vars_map)
 		module.set_instructions_bytecode(instructions_bytecode)
 		module.set_imports(module_imports)
@@ -1018,7 +1018,7 @@ class Bytecode_Gen:
 
 	func _t_ioriginal_name(node):
 	
-		if node.module_id == self._src_path:
+		if node.module_id == self._module_id:
 			assert(self.vars[0].find(node.def_name))
 			self._instructions.append(self._target::Instr_Lookup_Var.new(node.src_info, self.vars.len() - 1, self.vars[0][node.def_name]))
 		else:

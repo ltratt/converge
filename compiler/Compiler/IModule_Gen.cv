@@ -44,7 +44,7 @@ class IModule_Gen:
 		// These next two slots are purely for convenience.
 
 		self._compiler := CEI::compiler()
-		self._src_path := self._compiler.src_path
+		self._module_id := self._compiler.module_id
 
 		itree := self._preorder(parse_tree)
 		ITree_TC::tc(itree)
@@ -117,7 +117,7 @@ class IModule_Gen:
 			self._definitions.extend(self._preorder(node[i], extra_src_info))
 			i += 2
 
-		return ITree::IModule.new(self._compiler.src_module_name, self._definitions, extra_src_info + [[self._src_path, null]])
+		return ITree::IModule.new(self._compiler.src_module_name, self._definitions, extra_src_info + [[self._module_id, null]])
 
 
 

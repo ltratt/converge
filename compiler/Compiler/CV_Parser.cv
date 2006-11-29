@@ -296,7 +296,7 @@ func parse(src_data):
 
 	compiler := CEI::compiler()
 
-	compiler.tokenizer.tokenize(src_data, [[compiler.src_path, 0]], [], [])
+	compiler.tokenizer.tokenize(src_data, [[compiler.module_id, 0]], [], [])
 	tokens_map := Tokenizer::tokens_map([], [])
 	grammar, rule_names := Grammar::compile(GRAMMAR, "top_level", tokens_map)
 

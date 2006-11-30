@@ -171,9 +171,8 @@ class Compiler:
 			else:
 				Sys::stderr.writeln(Strings::format("%s:", pre_msg))
 				for i := 0.to(src_info.len()):
-					src_path, src_offset := src_info[i]
-					if src_path != src_path:
-						Sys::println(src_path, self.src_path)
+					module_id, src_offset := src_info[i]
+					if module_id != self.module_id:
 						raise "XXX"
 					newlines := self.tokenizer.newlines
 					i := 0

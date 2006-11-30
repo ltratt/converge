@@ -21,7 +21,7 @@
 
 import Builtins, Exceptions, Strings, Thread
 import CPK::Earley::Grammar
-import Compiler_Vars, convergec, CV_Parser, ITree, ITree_TC, Tokenizer
+import Compiler_Vars, convergec, CV_Parser, Eval, ITree, ITree_TC, Tokenizer
 
 
 
@@ -29,6 +29,12 @@ import Compiler_Vars, convergec, CV_Parser, ITree, ITree_TC, Tokenizer
 func compiler():
 
 	return Compiler_Vars::peek_compiler()
+
+
+
+func eval(str, vars := Dict{}, includes := []):
+
+	return Eval::eval(str, vars, includes)
 
 
 

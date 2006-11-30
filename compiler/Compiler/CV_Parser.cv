@@ -301,3 +301,15 @@ func parse(src_data):
 	grammar, rule_names := Grammar::compile(GRAMMAR, "top_level", tokens_map)
 
 	return CV_Parser.new().parse(grammar, rule_names, tokens_map, compiler.tokenizer.tokens)
+
+
+
+func parse_expr(src_data):
+
+	compiler := CEI::compiler()
+
+	compiler.tokenizer.tokenize(src_data, [[compiler.src_path, 0]], [], [])
+	tokens_map := Tokenizer::tokens_map([], [])
+	grammar, rule_names := Grammar::compile(GRAMMAR, "expr", tokens_map)
+
+	return CV_Parser.new().parse(grammar, rule_names, tokens_map, compiler.tokenizer.tokens)

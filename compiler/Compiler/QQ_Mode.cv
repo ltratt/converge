@@ -194,7 +194,7 @@ class QQ_Mode:
 			if mode.parent_mode is null & i == 0:
 				return self._qq("IOriginal_Name", [ITree::IString.new(self._module_id, node_src_info), ITree::IString.new(renamed_var_name, node_src_info)], node_src_info)
 			else:
-				raise "XXX"
+				self._compiler.error(Strings::format("Trying to reference variable '%s' which is not defined in the outer-most scope.", var_name), node_src_info)
 		
 		assert(var_name == renamed_var_name)
 		

@@ -306,6 +306,13 @@ Con_Obj *Con_Object_get_slot_no_custom(Con_Obj *thread, Con_Obj *obj, const char
 			return val;
 		}
 	}
+
+	if (strncmp(slot_name, "id", 2) == 0) {
+		CON_MUTEX_UNLOCK(&obj->mutex);
+		Con_Obj *id = CON_NEW_INT((Con_Int) obj);
+		CON_MUTEX_LOCK(&obj->mutex);
+		return id;
+	}
 	
 	CON_MUTEX_UNLOCK(&obj->mutex);
 	CON_RAISE_EXCEPTION("Slot_Exception", Con_Builtins_String_Atom_new_copy(thread, slot_name, slot_name_size, CON_STR_UTF_8), obj);

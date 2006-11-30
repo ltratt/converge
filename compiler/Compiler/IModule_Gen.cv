@@ -1025,6 +1025,9 @@ class IModule_Gen:
 		dummy_func := ITree::IFunc_Def.new(0, splice_name, [], null, [], [], ITree::IExpr_Block.new([ITree::IReturn.new(expr, extra_src_info + node[1][1].src_info)], expr.src_info), extra_src_info + node[1][1].src_info)
 		dummy_definitions := definitions + [ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(splice_name, extra_src_info + node[1][1].src_info)], dummy_func, extra_src_info + node[1][1].src_info)]
 		dummy_imodule := ITree::IModule.new(splice_name, dummy_definitions, extra_src_info + node[1][1].src_info)
+
+		ITree_TC::tc(dummy_imodule)
+
 		dummy_module := Bytecode_Gen::Bytecode_Gen.new().generate(dummy_imodule)
 
 		modules_stack := [dummy_module]

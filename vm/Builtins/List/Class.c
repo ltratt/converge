@@ -65,6 +65,7 @@ Con_Obj *_Con_Builtins_List_Class_insert_func(Con_Obj *);
 Con_Obj *_Con_Builtins_List_Class_iterate_func(Con_Obj *);
 Con_Obj *_Con_Builtins_List_Class_len_func(Con_Obj *);
 Con_Obj *_Con_Builtins_List_Class_pop_func(Con_Obj *);
+Con_Obj *_Con_Builtins_List_Class_riterate_func(Con_Obj *);
 Con_Obj *_Con_Builtins_List_Class_set_func(Con_Obj *);
 Con_Obj *_Con_Builtins_List_Class_set_slice_func(Con_Obj *);
 
@@ -107,6 +108,7 @@ void Con_Builtins_List_Class_bootstrap(Con_Obj *thread)
 	CON_SET_FIELD(list_class, "iterate", CON_NEW_BOUND_C_FUNC(_Con_Builtins_List_Class_iterate_func, "iterate", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), list_class));
 	CON_SET_FIELD(list_class, "len", CON_NEW_BOUND_C_FUNC(_Con_Builtins_List_Class_len_func, "len", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), list_class));
 	CON_SET_FIELD(list_class, "pop", CON_NEW_BOUND_C_FUNC(_Con_Builtins_List_Class_pop_func, "pop", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), list_class));
+	CON_SET_FIELD(list_class, "riterate", CON_NEW_BOUND_C_FUNC(_Con_Builtins_List_Class_riterate_func, "riterate", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), list_class));
 	CON_SET_FIELD(list_class, "set", CON_NEW_BOUND_C_FUNC(_Con_Builtins_List_Class_set_func, "set", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), list_class));
 	CON_SET_FIELD(list_class, "set_slice", CON_NEW_BOUND_C_FUNC(_Con_Builtins_List_Class_set_slice_func, "set_slice", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), list_class));
 }
@@ -852,6 +854,41 @@ Con_Obj *_Con_Builtins_List_Class_pop_func(Con_Obj *thread)
 	CON_MUTEX_UNLOCK(&self->mutex);
 	
 	return entry;
+}
+
+
+
+//
+// 'riterate(lower := 0, upper := -1)' is a generator which returns each element of the list in
+// reverse order.
+//
+
+Con_Obj *_Con_Builtins_List_Class_riterate_func(Con_Obj *thread)
+{
+	Con_Obj *lower_obj, *self, *upper_obj;
+	CON_UNPACK_ARGS("L;OO", &self, &lower_obj, &upper_obj);
+	
+	Con_Builtins_List_Atom *list_atom = CON_GET_ATOM(self, CON_BUILTIN(CON_BUILTIN_LIST_ATOM_DEF_OBJECT));
+
+	CON_MUTEX_LOCK(&self->mutex);
+	Con_Int lower, upper;
+	Con_Misc_translate_slice_indices(thread, &self->mutex, lower_obj, upper_obj, &lower, &upper, list_atom->num_entries);
+	
+	for (Con_Int i = upper - 1; i >= lower; i -= 1) {
+		if (i >= list_atom->num_entries) {
+			// The list has shrunk in size since we last unlocked & locked.
+			CON_MUTEX_UNLOCK(&self->mutex);
+			break;
+		}
+
+		Con_Obj *entry = list_atom->entries[i];
+		CON_MUTEX_UNLOCK(&self->mutex);
+		CON_YIELD(entry);
+		CON_MUTEX_LOCK(&self->mutex);
+	}
+	CON_MUTEX_UNLOCK(&self->mutex);
+	
+	return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
 }
 
 

@@ -78,10 +78,18 @@ class Options:
 				i += 1
 				break
 			elif arg.len() > 0 & arg[0] == "-":
-				for option_spec := self._option_specs.iterate():
-					if option_spec.short_option == arg[1 : ]:
-						break
-				exhausted:
+				option_spec := null
+				
+				if arg.len() == 2:
+					for option_spec := self._option_specs.iterate():
+						if option_spec.short_option == arg[1 : ]:
+							break
+				elif arg.len() > 2 & arg[0 : 2] == "--":
+					for option_spec := self._option_specs.iterate():
+						if option_spec.name == arg[2 : ]:
+							break
+
+				if option_spec is null:
 					self._useage_callback(Strings::format("Unknown option '%s'.", arg))
 				
 				if option_spec.optionality == NONE:

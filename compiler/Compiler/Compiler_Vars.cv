@@ -19,7 +19,7 @@
 // IN THE SOFTWARE.
 
 
-import Strings
+import Exceptions, Strings
 
 
 
@@ -51,6 +51,12 @@ BUILTIN_MODULES := Set{"Sys", "Backtrace", "Builtins", "POSIX_File", "Array", "O
 UNIQUE_NAME_TEMPLATE := "$$%s$$"
 UNIQUE_NAME_EXTRA_TEMPLATE := "$$%s$$%s$$"
 QUASI_QUOTES_NAME := "$$qq$$%s$$"
+
+
+
+
+class Compiler_Exception(Exceptions::User_Exception):
+	pass
 
 
 

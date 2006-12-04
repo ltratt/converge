@@ -19,7 +19,7 @@
 // IN THE SOFTWARE.
 
 
-import Bytecode_Gen, CEI, Compiler_Vars, CV_Parser, IModule_Gen, ITree, Targets::Thirty_Two_Bit, Tokenizer, VM
+import Bytecode_Gen, CEI, Compiler_Vars, CV_Parser, IModule_Gen, ITree, Strings, Targets::Thirty_Two_Bit, Tokenizer, VM
 
 
 
@@ -31,8 +31,10 @@ class _Eval_Compiler:
 		self._str := str
 		self._vars := vars
 		
+		self.bootstrap := 0
 		self.includes := includes
 		self.src_path := "<eval>"
+		self.module_id := Strings::format(Compiler_Vars::UNIQUE_EVAL_NAME_TEMPLATE, CEI::fresh_name())
 		self.target := Thirty_Two_Bit
 		self.target_array_type := "i32"
 

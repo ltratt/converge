@@ -1,14 +1,17 @@
-all: libcompiler.cvl convergec convergel convergep id_fix
+all: libcompiler.cvl convergec convergel convergep
 
 OBJECT_FILES = Compiler/CV_Parser.cvb Compiler/Tokenizer.cvb Compiler/init.cvb \
 	Compiler/convergec.cvb Compiler/convergep.cvb Compiler/IModule_Gen.cvb \
 	Compiler/ITree.cvb Compiler/Bytecode_Gen.cvb Compiler/Targets/Thirty_Two_Bit.cvb \
 	Compiler/Targets/init.cvb Compiler/Compiler_Vars.cvb Compiler/CV_Module.cvb \
 	Compiler/QQ_Mode.cvb Compiler/ITree_Format.cvb Compiler/ITree_TC.cvb \
-	Compiler/CEI.cvb Compiler/convergel.cvb Compiler/CV_Library.cvb Compiler/id_fix.cvb \
+	Compiler/CEI.cvb Compiler/convergel.cvb Compiler/CV_Library.cvb \
 	Compiler/CV_Exec.cvb Compiler/Eval.cvb
 
 include @abs_top_srcdir@/Makefile.inc
+
+CONVERGEC_FLAGS += --bootstrap
+
 
 libcompiler.cvl: ${OBJECT_FILES}
 	${CONVERGE_VM} ${CONVERGEL} -l -o libcompiler.cvl ${OBJECT_FILES}
@@ -22,11 +25,8 @@ convergel: ${OBJECT_FILES} ${CONVERGE_LIB}
 convergep: ${OBJECT_FILES} ${CONVERGE_LIB}
 	${CONVERGE_VM} ${CONVERGEL} -o convergep Compiler/convergep.cvb ${OBJECT_FILES} ${CONVERGE_LIB}
 
-id_fix: ${OBJECT_FILES} ${CONVERGE_LIB}
-	${CONVERGE_VM} ${CONVERGEL} -o id_fix Compiler/id_fix.cvb ${OBJECT_FILES} ${CONVERGE_LIB}
-
 clean:
 	rm -f libcompiler.cvl ${OBJECT_FILES}
 
 distclean: clean
-	rm -f Makefile convergec convergel convergep id_fix
+	rm -f Makefile convergec convergel convergep

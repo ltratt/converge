@@ -160,6 +160,10 @@ class Bytecode_Gen:
 				if module_id == self._module_id:
 					import_num := -1
 				else:
+					if self._compiler.bootstrap == 1 & module_id.prefixed_by(self._compiler.original_lc_top_level_path):
+						// In bootstrapping mode we have to make sure that anything we output is
+						// entirely in terms of new module ids.
+						module_id := File::join_names(self._compiler.top_level_path, module_id[self._compiler.original_lc_top_level_path.len() : ])
 					if not (import_num := self._imports.find(module_id)):
 						import_num := self._imports.len()
 						self._imports[module_id] := import_num
@@ -1018,10 +1022,17 @@ class Bytecode_Gen:
 
 	func _t_ioriginal_name(node):
 	
-		if import_num := self._imports.find(node.module_id):
+		if self._compiler.bootstrap == 1 & node.module_id.prefixed_by(self._compiler.original_lc_top_level_path):
+			// In bootstrapping mode we have to make sure that anything we output is entirely in
+			// terms of new module ids.
+			module_id := File::join_names(self._compiler.top_level_path, node.module_id[self._compiler.original_lc_top_level_path.len() : ])
+		else:
+			module_id := node.module_id
+		
+		if import_num := self._imports.find(module_id):
 			self._instructions.append(self._target::Instr_Import.new(node.src_info, import_num))
 		else:
-			self._imports[node.module_id] := self._imports.len()
+			self._imports[module_id] := self._imports.len()
 			self._instructions.append(self._target::Instr_Import.new(node.src_info, self._imports.len() - 1))
 
 		self._instructions.append(self._target::Instr_Module_Lookup.new(node.src_info, node.def_name))

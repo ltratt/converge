@@ -19,7 +19,7 @@
 // IN THE SOFTWARE.
 
 
-import File, Parse_Options, Strings, Sys
+import File, Parse_Options, Strings, Sys, VM
 import Bytecode_Gen, Compiler_Vars, CV_Module, CV_Parser, IModule_Gen, Targets::Thirty_Two_Bit, Tokenizer
 
 
@@ -41,21 +41,23 @@ class Compiler:
 	
 		options := Parse_Options::Options.new(self._useage_callback)
 		options.add(Parse_Options::Option_Spec.new("output", "o", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ONE))
+		options.add(Parse_Options::Option_Spec.new("bootstrap", "b", Parse_Options::NONE, Parse_Options::FREQUENCY_ZERO_OR_ONE))
 		options.add(Parse_Options::Option_Spec.new("includes", "I", Parse_Options::OPTIONAL, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_MORE))
 		options.add(Parse_Options::Option_Spec.new("optimise", "O", Parse_Options::OPTIONAL))
 		options.add(Parse_Options::Option_Spec.new("target", "T", Parse_Options::OPTIONAL, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ONE))
 		
+		self.bootstrap := 0
 		self.target_name := "32"
 		parsed, extra := options.parse()
 		for option_name, option_val := parsed.iterate():
-			if option_name == "output":
+			ndif option_name == "output":
 				self.output_path := option_val
+			elif option_name == "bootstrap":
+				self.bootstrap := 1
 			elif option_name == "includes":
 				self.includes := option_val
 			elif option_name == "target":
 				self.target_name := option_val
-			else:
-				raise "XXX"
 		
 		if extra.len() == 0:
 			self._useage_callback("Not enough arguments.")
@@ -67,7 +69,40 @@ class Compiler:
 			self.target_array_type := "i32"
 		else:
 			self.error(Strings::format("No support yet for target bit size '%s'.", self.target_name))
+
+		if self.bootstrap == 1:
+			// We're in bootstrapping mode. We now have to do some fun stuff with module identifiers.
+			//
+			// The first thing we need to know is that module ids are based on the fully
+			// canonicalised pathname of the corresponding .cv file.
+			//
+			// The basic problem is quite subtle. The bootstrap compiler contains references to "old"
+			// module ids (i.e. old pathnames). Because of e.g. quasi-quotes, some of these old
+			// module ids can "leak" into the new output. This then means that the output of the
+			// compiler contains invalid module ids which can lead to linker or import errors.
+			//
+			// In bootstrapping mode we therefore have to carefully convert (sometimes one way,
+			// sometimes the other) between old and new module ids to ensure that the running
+			// compiler is only dealing with old module ids, but that the output contains only new
+			// module ids.
+			
+			existing_mod_ids := []
+			for mod_id := VM::vm.modules.keys():
+				if not Compiler_Vars::BUILTIN_MODULES.find(mod_id):
+					existing_mod_ids.append(mod_id)
+			
+			self.original_lc_top_level_path := Strings::lcp(existing_mod_ids)
+			if self.original_lc_top_level_path.len() == 0:
+				// Sanity check failed.
+				raise "XXX"
 		
+			self.top_level_path := File::canon_path(File::join_names(File::split_leaf(Sys::program_path)[0], ".."))
+			
+			imodule_cv_path := File::canon_path(File::join_names(self.top_level_path, "compiler", "Compiler", "IModule_Gen.cv"))
+			if not File::exists(imodule_cv_path) | not imodule_cv_path[ : self.top_level_path.len()] == self.top_level_path:
+				// Sanity checks failed.
+				raise "XXX"
+
 		self.src_path := extra[0]
 		if not File::exists(self.src_path):
 			self.error(Strings::format("Source file '%s' not found.", self.src_path))

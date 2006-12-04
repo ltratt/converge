@@ -3,7 +3,7 @@
 
 all: 
 	cd vm && ${MAKE} ${MFLAGS}
-	vm/converge bootstrap/id_fix.bootstrap bootstrap/convergec.bootstrap compiler/convergec
+	cp bootstrap/convergec.bootstrap compiler/convergec
 	cp bootstrap/convergel.bootstrap compiler/convergel
 	gmake
 

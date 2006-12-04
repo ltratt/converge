@@ -350,10 +350,3 @@ if [[ ! -f bootstrap/convergel.bootstrap ]]; then
 else
 	echo "preserving existing bootstrap linker"
 fi
-
-if [[ ! -f bootstrap/id_fix.bootstrap ]]; then
-	echo "copying over bootstrap id_fix"
-	cp $bootstrap_dir/id_fix.bootstrap bootstrap/id_fix.bootstrap
-else
-	echo "preserving existing bootstrap id_fix"
-fi

@@ -1030,17 +1030,31 @@ class IModule_Gen:
 
 		dummy_module := Bytecode_Gen::Bytecode_Gen.new().generate(dummy_imodule)
 
+		if self._compiler.bootstrap == 1:
+			// In bootstrapping mode we have to make sure that anything we inject into the
+			// running VM is entirely in terms of old module ids.
+			new_imports := []
+			for import_ := dummy_module.get_imports().iterate():
+				if import_.prefixed_by(self._compiler.top_level_path):
+					new_imports.append(File::join_names(self._compiler.original_lc_top_level_path, import_[self._compiler.top_level_path.len() : ]))
+				else:
+					new_imports.append(import_)
+			dummy_module.set_imports(new_imports)
+
 		modules_stack := [dummy_module]
 		modules_bytecode := [dummy_module.serialize()]
 		i := 0
-		existing_module_names := Set{}
-		for existing_module_names.add(VM::vm.modules.keys())
-		for existing_module_names.add(Compiler_Vars::BUILTIN_MODULES.iterate())
-		new_module_names := Set{}
+		known_module_names := Set{}
+		for known_module_names.add(VM::vm.modules.keys())
+		for known_module_names.add(Compiler_Vars::BUILTIN_MODULES.iterate())
 		while modules_stack.len() > 0:
 			module := modules_stack.pop()
 			for import_ := module.get_imports().iterate():
-				if not existing_module_names.find(import_):
+				if self._compiler.bootstrap == 1 & import_.prefixed_by(self._compiler.top_level_path):
+					// In bootstrapping mode we have to make sure that anything we inject into the
+					// running VM is entirely in terms of old module ids.
+					import_ := File::join_names(self._compiler.original_lc_top_level_path, import_[self._compiler.top_level_path.len() : ])
+				if not known_module_names.find(import_):
 					new_module_file := File::open(File::join_ext(File::split_ext(import_)[0], CV_Module::CVB_EXTENSION), "r")
 					new_module_data := new_module_file.read()
 					modules_bytecode.append(new_module_data)
@@ -1048,7 +1062,7 @@ class IModule_Gen:
 					new_module.deserialize_str(new_module_data)
 					modules_stack.append(new_module)
 					assert(import_ == new_module.full_name)
-					new_module_names.add(import_)
+					known_module_names.add(import_)
 			i += 1
 
 		// Import all the modules into the VM.

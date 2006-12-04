@@ -49,7 +49,7 @@ func lift(obj, src_info := null):
 	if src_info is null:
 		src_info := Thread::get_continuation_src_info(2)
 	else:
-		src_info += [Thread::get_continuation_src_info(2)]
+		src_info += Thread::get_continuation_src_info(2)
 
 	if obj is null:
 		return ITree::IVar.new("null", src_info)

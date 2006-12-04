@@ -112,7 +112,18 @@ func split_names(path):
 func join_names(*names):
 
 	flattened := []
+	i := 0
 	for name := names.iterate():
+		// When joining names together, we try to avoid unnecessary directory separator characters.
+		// The rules are simple: we always strip directory seperators from the end of each name, and
+		// we strip directory separators off the beginning of all but the first name. This last
+		// condition is important since we need to allow names such as /home/blah where the initial
+		// directory separator is significant.
+		if i == 1:
+			while name.prefixed_by(DIRECTORY_SEPARATOR):
+				name := name[DIRECTORY_SEPARATOR.len() : ]
+		else:
+			i := 1
 		while name.suffixed_by(DIRECTORY_SEPARATOR):
 			name := name[ : name.len() - DIRECTORY_SEPARATOR.len()]
 		flattened.append(name)

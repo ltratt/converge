@@ -122,7 +122,7 @@ Con_Obj *Con_Bootstrap_do(u_char *c_stack_start, int argc, char **argv)
 	bootstrap_vm_atom->builtins[CON_BUILTIN_THREAD_ATOM_DEF_OBJECT] = NEW_ATOM_DEF_OBJECT(sizeof(Con_Builtins_Thread_Class_Unique_Atom));
 #	endif
 	bootstrap_vm_atom->builtins[CON_BUILTIN_FUNC_ATOM_DEF_OBJECT] = NEW_ATOM_DEF_OBJECT(0);
-	bootstrap_vm_atom->builtins[CON_BUILTIN_STRING_ATOM_DEF_OBJECT] = NEW_ATOM_DEF_OBJECT(0);
+	bootstrap_vm_atom->builtins[CON_BUILTIN_STRING_ATOM_DEF_OBJECT] = NEW_ATOM_DEF_OBJECT(sizeof(Con_Builtins_String_Class_Unique_Atom));
 	bootstrap_vm_atom->builtins[CON_BUILTIN_CON_STACK_ATOM_DEF_OBJECT] = NEW_ATOM_DEF_OBJECT(0);
 	bootstrap_vm_atom->builtins[CON_BUILTIN_LIST_ATOM_DEF_OBJECT] = NEW_ATOM_DEF_OBJECT(0);
 	bootstrap_vm_atom->builtins[CON_BUILTIN_DICT_ATOM_DEF_OBJECT] = NEW_ATOM_DEF_OBJECT(0);

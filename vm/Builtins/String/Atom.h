@@ -24,6 +24,20 @@
 
 #include "Core.h"
 
+#include "Builtins/Unique_Atom_Def.h"
+
+
+typedef struct {
+	Con_Int num_users;
+	Con_Obj *str;
+} Con_Builtins_String_Class_Unique_Atom_Cache_Entry;
+
+typedef struct {
+	CON_BUILTINS_UNIQUE_ATOM_HEAD
+	Con_Int num_cache_entries, num_cache_entries_allocated;
+	Con_Builtins_String_Class_Unique_Atom_Cache_Entry *cache;
+} Con_Builtins_String_Class_Unique_Atom;
+
 // Strings and their contents are immutable throughout their lifetimes. You do not need to hold the
 // strings mutex in order to read any of its contents.
 
@@ -43,7 +57,7 @@ void Con_Builtins_String_Atom_bootstrap(Con_Obj *);
 
 Con_Obj *Con_Builtins_String_Atom_new_copy(Con_Obj *, const char *, Con_Int, Con_String_Encoding);
 Con_Obj *Con_Builtins_String_Atom_new_no_copy(Con_Obj *, const char *, Con_Int, Con_String_Encoding);
-void Con_Builtins_String_Atom_init_atom(Con_Obj *, Con_Builtins_String_Atom *, const char *, Con_Int, Con_String_Encoding);
+void Con_Builtins_String_Atom_init_atom(Con_Obj *, Con_Builtins_String_Atom *, const char *, Con_Int, Con_String_Encoding, Con_Int);
 
 char *Con_Builtins_String_Atom_to_c_string(Con_Obj *, Con_Obj *);
 bool Con_Builtins_String_Atom_c_string_eq(Con_Obj *, const char *, Con_Int, Con_Obj *);

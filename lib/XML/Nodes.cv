@@ -77,6 +77,26 @@ class Element(Builtins::List):
 
 
 
+	func iterate_elements():
+
+		for node := self.iterate():
+			if Element.instantiated(node):
+				yield node
+
+		return fail
+
+
+
+	func get_first_element(name, namespace := ""):
+
+		for node := self.iterate():
+			if Element.instantiated(node) & node.name == "name" & node.namespace == namespace:
+				return node
+
+		return fail
+
+
+
 
 class Text:
 

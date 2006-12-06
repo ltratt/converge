@@ -117,18 +117,18 @@ typedef struct {
 	Con_Obj *thread;
 	Con_Obj *libxml2_mod;
 	Con_Obj *elements_stack;
-	Con_Obj *elements_module;
+	Con_Obj *nodes_module;
 } _Con_Modules_libXML2_parse_func_state;
 
 Con_Obj *_Con_Modules_libXML2_parse_func(Con_Obj *thread)
 {
 	Con_Obj *libxml2_mod = Con_Builtins_VM_Atom_get_functions_module(thread);
 
-	// XXX passing in elements_module is a hack, but is needed until we have a sane way to import
+	// XXX passing in nodes_module is a hack, but is needed until we have a sane way to import
 	// user modules from C modules.
 
-	Con_Obj *elements_module, *xml_obj;
-	CON_UNPACK_ARGS("SM", &xml_obj, &elements_module);
+	Con_Obj *nodes_module, *xml_obj;
+	CON_UNPACK_ARGS("SM", &xml_obj, &nodes_module);
 	
 	Con_Builtins_String_Atom *xml_string_atom = CON_FIND_ATOM(xml_obj, CON_BUILTIN(CON_BUILTIN_STRING_ATOM_DEF_OBJECT));	
 
@@ -142,7 +142,7 @@ Con_Obj *_Con_Modules_libXML2_parse_func(Con_Obj *thread)
 	state.thread = thread;
 	Con_Obj *document_elems = Con_Builtins_List_Atom_new(thread);
 	state.elements_stack = Con_Builtins_List_Atom_new_va(thread, document_elems, NULL);
-	state.elements_module = elements_module;
+	state.nodes_module = nodes_module;
 	state.libxml2_mod = libxml2_mod;
 	
 	if (xmlSAXUserParseMemory(&_Con_Modules_libXML2_parse_func_handler, &state, xml_string_atom->str, xml_string_atom->size) < 0)
@@ -151,7 +151,7 @@ Con_Obj *_Con_Modules_libXML2_parse_func(Con_Obj *thread)
 	if (Con_Numbers_Number_to_Con_Int(thread, CON_GET_SLOT_APPLY(state.elements_stack, "len")) != 1)
 		CON_XXX;
 	
-	return CON_GET_SLOT_APPLY(CON_GET_MODULE_DEF(elements_module, "Document"), "new", document_elems);
+	return CON_GET_SLOT_APPLY(CON_GET_MODULE_DEF(nodes_module, "Document"), "new", document_elems);
 }
 
 
@@ -163,7 +163,7 @@ void _Con_Modules_libXML2_parse_func_characters(void *user_data, const xmlChar *
 	Con_Obj *current_elem = CON_GET_SLOT_APPLY(state->elements_stack, "get", CON_NEW_INT(-1));
 	
 	Con_Obj *str = Con_Builtins_String_Atom_new_copy(thread, ch, len, CON_STR_UTF_8);
-	Con_Obj *text_node = CON_APPLY(CON_GET_SLOT(CON_GET_MODULE_DEF(state->elements_module, "Text"), "new"), str);
+	Con_Obj *text_node = CON_APPLY(CON_GET_SLOT(CON_GET_MODULE_DEF(state->nodes_module, "Text"), "new"), str);
 	
 	CON_GET_SLOT_APPLY(current_elem, "append", text_node);
 }
@@ -223,13 +223,13 @@ void _Con_Modules_libXML2_parse_start_element(void *user_data, const xmlChar *lo
 			attr_namespace = attr_prefix = CON_NEW_STRING("");
 		}
 		
-		Con_Obj *attr = CON_APPLY(CON_GET_SLOT(CON_GET_MODULE_DEF(state->elements_module, "Attribute"), "new"), attr_name, attr_val, attr_prefix, attr_namespace);
+		Con_Obj *attr = CON_APPLY(CON_GET_SLOT(CON_GET_MODULE_DEF(state->nodes_module, "Attribute"), "new"), attr_name, attr_val, attr_prefix, attr_namespace);
 		CON_GET_SLOT_APPLY(attributes_obj, "add", attr);
 		
 		current_attr += 5;
 	}
 	
-	Con_Obj *element = CON_APPLY(CON_GET_SLOT(CON_GET_MODULE_DEF(state->elements_module, "Element"), "new"), name_obj, attributes_obj, prefix_obj, namespace_obj);
+	Con_Obj *element = CON_APPLY(CON_GET_SLOT(CON_GET_MODULE_DEF(state->nodes_module, "Element"), "new"), name_obj, attributes_obj, prefix_obj, namespace_obj);
 	
 	CON_GET_SLOT_APPLY(current_elem, "append", element);
 	

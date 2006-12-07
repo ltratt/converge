@@ -48,6 +48,7 @@
 #include "Builtins/List/Class.h"
 #include "Builtins/Module/Atom.h"
 #include "Builtins/Module/Class.h"
+#include "Builtins/Number/Class.h"
 #include "Builtins/Object/Class.h"
 #include "Builtins/Partial_Application/Atom.h"
 #include "Builtins/Partial_Application/Class.h"
@@ -156,6 +157,7 @@ Con_Obj *Con_Bootstrap_do(u_char *c_stack_start, int argc, char **argv)
 	bootstrap_vm_atom->builtins[CON_BUILTIN_PARTIAL_APPLICATION_CLASS] = NEW_ATOM_DEF_SLOT_CLASS_OBJECT(0);
 	bootstrap_vm_atom->builtins[CON_BUILTIN_EXCEPTION_CLASS] = NEW_ATOM_DEF_SLOT_CLASS_OBJECT(0);
 	bootstrap_vm_atom->builtins[CON_BUILTIN_SET_CLASS] = NEW_ATOM_DEF_SLOT_CLASS_OBJECT(0);
+	bootstrap_vm_atom->builtins[CON_BUILTIN_NUMBER_CLASS] = NEW_ATOM_DEF_SLOT_CLASS_OBJECT(0);
 
 #	define NEW_BLANK_OBJECT(b) bootstrap_vm_atom->builtins[b] = Con_Object_new_from_proto(bootstrap_thread, sizeof(Con_Obj) + sizeof(Con_Builtins_Slots_Atom), NULL); \
 		Con_Builtins_Slots_Atom_Def_init_atom(bootstrap_thread, (Con_Builtins_Slots_Atom *) bootstrap_vm_atom->builtins[b]->first_atom); \
@@ -190,6 +192,7 @@ Con_Obj *Con_Bootstrap_do(u_char *c_stack_start, int argc, char **argv)
 	Con_Builtins_Con_Stack_Class_bootstrap(bootstrap_thread);
 	Con_Builtins_List_Class_bootstrap(bootstrap_thread);
 	Con_Builtins_Dict_Class_bootstrap(bootstrap_thread);
+	Con_Builtins_Number_Class_bootstrap(bootstrap_thread); // Needs to be bootstrapped before Int.
 	Con_Builtins_Int_Class_bootstrap(bootstrap_thread);
 	Con_Builtins_Unique_Atom_Def_bootstrap(bootstrap_thread);
 	Con_Builtins_Closure_Class_bootstrap(bootstrap_thread);

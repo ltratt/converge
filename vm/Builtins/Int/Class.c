@@ -77,7 +77,7 @@ void Con_Builtins_Int_Class_bootstrap(Con_Obj *thread)
 	class_atom->next_atom = (Con_Atom *) slots_atom;
 	slots_atom->next_atom = NULL;
 	
-	Con_Builtins_Class_Atom_init_atom(thread, class_atom, CON_NEW_STRING("Int"), CON_NEW_UNBOUND_C_FUNC(_Con_Builtins_Int_Class_new_object, "Class_new", CON_BUILTIN(CON_BUILTIN_NULL_OBJ)), CON_BUILTIN(CON_BUILTIN_OBJECT_CLASS), NULL);
+	Con_Builtins_Class_Atom_init_atom(thread, class_atom, CON_NEW_STRING("Int"), CON_NEW_UNBOUND_C_FUNC(_Con_Builtins_Int_Class_new_object, "Class_new", CON_BUILTIN(CON_BUILTIN_NULL_OBJ)), CON_BUILTIN(CON_BUILTIN_NUMBER_CLASS), NULL);
 	Con_Builtins_Slots_Atom_Def_init_atom(thread, slots_atom);
 	
 	Con_Memory_change_chunk_type(thread, int_class, CON_MEMORY_CHUNK_OBJ);

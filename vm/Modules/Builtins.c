@@ -54,6 +54,7 @@ Con_Obj *Con_Modules_Builtins_init(Con_Obj *thread, Con_Obj *identifier)
 	CON_SET_SLOT(builtins_mod, "Closure", CON_BUILTIN(CON_BUILTIN_CLOSURE_CLASS));
 	CON_SET_SLOT(builtins_mod, "Partial_Application", CON_BUILTIN(CON_BUILTIN_PARTIAL_APPLICATION_CLASS));
 	CON_SET_SLOT(builtins_mod, "Exception", CON_BUILTIN(CON_BUILTIN_EXCEPTION_CLASS));
+	CON_SET_SLOT(builtins_mod, "Number", CON_BUILTIN(CON_BUILTIN_NUMBER_CLASS));
 	
 	return builtins_mod;
 }

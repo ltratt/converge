@@ -23,6 +23,7 @@ OBJECT_FILES = 	@CON_THREAD_ATOM_OBJ@ @CON_THREAD_CLASS_OBJ@ @CON_THREAD_MODULE_
 	Builtins/Set/Atom.o Builtins/Set/Class.o \
 	Builtins/Slots_Atom_Def.o Builtins/String/Atom.o Builtins/String/Class.o \
 	Builtins/Unique_Atom_Def.o Builtins/VM/Atom.o Builtins/VM/Class.o Bytecode.o \
+	Builtins/Number/Class.o \
 	Hash.o Memory.o Misc.o Modules/Array.o Modules/Builtins.o Modules/C_Earley_Parser.o \
 	Modules/C_Strings.o Modules/VM.o \
 	Modules/Exceptions.o Modules/PCRE.o Modules/Sys.o Numbers.o Object.o \

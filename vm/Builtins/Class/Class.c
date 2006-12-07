@@ -345,7 +345,7 @@ Con_Obj *_Con_Builtins_Class_Class_conformed_by_func(Con_Obj *thread)
 
 
 //
-// 'instantiated(obj)' returns null if this class (or one of its superclasses) instantiated 'obj', or
+// 'instantiated(obj)' returns null if this class (or one of its subclasses) instantiated 'obj', or
 // fails otherwise.
 //
 
@@ -360,17 +360,17 @@ Con_Obj *_Con_Builtins_Class_Class_instantiated_func(Con_Obj *thread)
 		return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 	}
 	else {
-		// What we do now is to put 'self' onto a stack; if the current class on the stack does
-		// not match 'instance_of', we push all the class's superclasses onto the stack.
+		// What we do now is to put 'instance_of' onto a stack; if the current class on the stack
+		// does not match 'self', we push all the class's superclasses onto the stack.
 		//
 		// If we run off the end of the stack then there is no match.
 		
 		Con_Obj *stack = Con_Builtins_List_Atom_new(thread);
-		CON_GET_SLOT_APPLY(stack, "append", self);
+		CON_GET_SLOT_APPLY(stack, "append", instance_of);
 		Con_Int i = 0;
 		while (i < Con_Numbers_Number_to_Con_Int(thread, CON_GET_SLOT_APPLY(stack, "len"))) {
 			Con_Obj *cnd = CON_GET_SLOT_APPLY(stack, "get", CON_NEW_INT(i));
-			if (instance_of == self)
+			if (cnd == self)
 				return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 			
 			Con_Builtins_Class_Atom *cnd_class_atom = CON_GET_ATOM(cnd, CON_BUILTIN(CON_BUILTIN_CLASS_ATOM_DEF_OBJECT));

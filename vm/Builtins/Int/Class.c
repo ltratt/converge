@@ -77,7 +77,7 @@ void Con_Builtins_Int_Class_bootstrap(Con_Obj *thread)
 	class_atom->next_atom = (Con_Atom *) slots_atom;
 	slots_atom->next_atom = NULL;
 	
-	Con_Builtins_Class_Atom_init_atom(thread, class_atom, CON_NEW_STRING("Int"), CON_NEW_UNBOUND_C_FUNC(_Con_Builtins_Int_Class_new_object, "Class_new", CON_BUILTIN(CON_BUILTIN_NULL_OBJ)), CON_BUILTIN(CON_BUILTIN_NUMBER_CLASS), NULL);
+	Con_Builtins_Class_Atom_init_atom(thread, class_atom, CON_NEW_STRING("Int"), CON_NEW_UNBOUND_C_FUNC(_Con_Builtins_Int_Class_new_object, "Int_new", CON_BUILTIN(CON_BUILTIN_NULL_OBJ)), CON_BUILTIN(CON_BUILTIN_NUMBER_CLASS), NULL);
 	Con_Builtins_Slots_Atom_Def_init_atom(thread, slots_atom);
 	
 	Con_Memory_change_chunk_type(thread, int_class, CON_MEMORY_CHUNK_OBJ);
@@ -151,7 +151,7 @@ Con_Obj *_Con_Builtins_Int_Class_to_str_func(Con_Obj *thread)
 
 	char str[MAX_INTEGER_SIZE_AS_STRING];
 	if (snprintf(str, MAX_INTEGER_SIZE_AS_STRING, "%d", self_int_atom->val) >= MAX_INTEGER_SIZE_AS_STRING)
-		CON_FATAL_ERROR("Unable to convert numbe rto string");
+		CON_FATAL_ERROR("Unable to convert number to string");
 	
 	return Con_Builtins_String_Atom_new_copy(thread, str, strlen(str), CON_STR_UTF_8);
 }

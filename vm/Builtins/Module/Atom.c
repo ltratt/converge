@@ -56,9 +56,9 @@ void _Con_Builtins_Module_Class_gc_scan_func(Con_Obj *, Con_Obj *, Con_Atom *);
 
 void Con_Builtins_Module_Atom_bootstrap(Con_Obj *thread)
 {
-	Con_Obj *module_class = CON_BUILTIN(CON_BUILTIN_MODULE_ATOM_DEF_OBJECT);
+	Con_Obj *module_atom_def = CON_BUILTIN(CON_BUILTIN_MODULE_ATOM_DEF_OBJECT);
 	
-	Con_Builtins_Atom_Def_Atom *atom_def_atom = (Con_Builtins_Atom_Def_Atom *) module_class->first_atom;
+	Con_Builtins_Atom_Def_Atom *atom_def_atom = (Con_Builtins_Atom_Def_Atom *) module_atom_def->first_atom;
 	Con_Builtins_Slots_Atom *slots_atom = (Con_Builtins_Slots_Atom *) (atom_def_atom + 1);
 
 	atom_def_atom->next_atom = (Con_Atom *) slots_atom;
@@ -67,7 +67,7 @@ void Con_Builtins_Module_Atom_bootstrap(Con_Obj *thread)
 	Con_Builtins_Atom_Def_Atom_init_atom(thread, atom_def_atom, _Con_Builtins_Module_Class_gc_scan_func, NULL);
 	Con_Builtins_Slots_Atom_Def_init_atom(thread, slots_atom);
 	
-	Con_Memory_change_chunk_type(thread, module_class, CON_MEMORY_CHUNK_OBJ);
+	Con_Memory_change_chunk_type(thread, module_atom_def, CON_MEMORY_CHUNK_OBJ);
 }
 
 

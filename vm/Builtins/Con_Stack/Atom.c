@@ -1345,7 +1345,10 @@ void Con_Builtins_Con_Stack_Atom_unpack_args(Con_Obj *thread, Con_Obj *con_stack
 				args += 1;
 				break;
 			case 'N':
-				CONFORMS_TO(CON_BUILTIN_INT_ATOM_DEF_OBJECT, CON_BUILTIN_INT_CLASS)
+				if (!(CON_FIND_ATOM(obj, CON_BUILTIN(CON_BUILTIN_INT_ATOM_DEF_OBJECT)) != NULL || CON_FIND_ATOM(obj, CON_BUILTIN(CON_BUILTIN_FLOAT_ATOM_DEF_OBJECT)))) {
+					Con_Obj *msg = CON_ADD(CON_NEW_STRING("arg "), CON_GET_SLOT_APPLY(CON_NEW_INT(args_processed + 1), "to_str"));
+					CON_RAISE_EXCEPTION("Type_Exception", CON_BUILTIN(CON_BUILTIN_NUMBER_CLASS), obj, msg);
+				}
 				args_processed += 1;
 				args += 1;
 				break;
@@ -1396,6 +1399,11 @@ void Con_Builtins_Con_Stack_Atom_unpack_args(Con_Obj *thread, Con_Obj *con_stack
 				break;
 			case 'C':
 				CONFORMS_TO(CON_BUILTIN_CLASS_ATOM_DEF_OBJECT, CON_BUILTIN_CLASS_CLASS)
+				args_processed += 1;
+				args += 1;
+				break;
+			case 'R':
+				CONFORMS_TO(CON_BUILTIN_FLOAT_ATOM_DEF_OBJECT, CON_BUILTIN_CLASS_CLASS)
 				args_processed += 1;
 				args += 1;
 				break;

@@ -33,7 +33,7 @@
 // Builtins
 //
 
-#define CON_NUMBER_OF_BUILTINS 38
+#define CON_NUMBER_OF_BUILTINS 40
 
 #define CON_BUILTIN_NULL_OBJ 0
 #define CON_BUILTIN_FAIL_OBJ 1
@@ -81,6 +81,11 @@
 #define CON_BUILTIN_EXCEPTIONS_MODULE 36
 #define CON_BUILTIN_SYS_MODULE 37
 
+// Floats
+
+#define CON_BUILTIN_FLOAT_ATOM_DEF_OBJECT 38
+#define CON_BUILTIN_FLOAT_CLASS 39
+
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -88,6 +93,7 @@
 //
 
 typedef CON_INT Con_Int;
+typedef double Con_Float;
 
 typedef unsigned long Con_Hash;
 

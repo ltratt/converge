@@ -40,6 +40,8 @@
 #include "Builtins/Dict/Class.h"
 #include "Builtins/Exception/Atom.h"
 #include "Builtins/Exception/Class.h"
+#include "Builtins/Float/Atom.h"
+#include "Builtins/Float/Class.h"
 #include "Builtins/Func/Atom.h"
 #include "Builtins/Func/Class.h"
 #include "Builtins/Int/Atom.h"
@@ -133,6 +135,7 @@ Con_Obj *Con_Bootstrap_do(u_char *c_stack_start, int argc, char **argv)
 	bootstrap_vm_atom->builtins[CON_BUILTIN_PARTIAL_APPLICATION_ATOM_DEF_OBJECT] = NEW_ATOM_DEF_OBJECT(0);
 	bootstrap_vm_atom->builtins[CON_BUILTIN_EXCEPTION_ATOM_DEF_OBJECT] = NEW_ATOM_DEF_OBJECT(0);
 	bootstrap_vm_atom->builtins[CON_BUILTIN_SET_ATOM_DEF_OBJECT] = NEW_ATOM_DEF_OBJECT(0);
+	bootstrap_vm_atom->builtins[CON_BUILTIN_FLOAT_ATOM_DEF_OBJECT] = NEW_ATOM_DEF_OBJECT(0);
 
 #	define NEW_ATOM_DEF_SLOT_CLASS_OBJECT(extra_size) Con_Object_new_from_proto(bootstrap_thread, sizeof(Con_Obj) + sizeof(Con_Builtins_Atom_Def_Atom) + sizeof(Con_Builtins_Slots_Atom) + sizeof(Con_Builtins_Class_Atom) + extra_size, NULL);
 
@@ -158,6 +161,7 @@ Con_Obj *Con_Bootstrap_do(u_char *c_stack_start, int argc, char **argv)
 	bootstrap_vm_atom->builtins[CON_BUILTIN_EXCEPTION_CLASS] = NEW_ATOM_DEF_SLOT_CLASS_OBJECT(0);
 	bootstrap_vm_atom->builtins[CON_BUILTIN_SET_CLASS] = NEW_ATOM_DEF_SLOT_CLASS_OBJECT(0);
 	bootstrap_vm_atom->builtins[CON_BUILTIN_NUMBER_CLASS] = NEW_ATOM_DEF_SLOT_CLASS_OBJECT(0);
+	bootstrap_vm_atom->builtins[CON_BUILTIN_FLOAT_CLASS] = NEW_ATOM_DEF_SLOT_CLASS_OBJECT(0);
 
 #	define NEW_BLANK_OBJECT(b) bootstrap_vm_atom->builtins[b] = Con_Object_new_from_proto(bootstrap_thread, sizeof(Con_Obj) + sizeof(Con_Builtins_Slots_Atom), NULL); \
 		Con_Builtins_Slots_Atom_Def_init_atom(bootstrap_thread, (Con_Builtins_Slots_Atom *) bootstrap_vm_atom->builtins[b]->first_atom); \
@@ -182,6 +186,7 @@ Con_Obj *Con_Bootstrap_do(u_char *c_stack_start, int argc, char **argv)
 	Con_Builtins_Partial_Application_Atom_bootstrap(bootstrap_thread);
 	Con_Builtins_Exception_Atom_bootstrap(bootstrap_thread);
 	Con_Builtins_Set_Atom_bootstrap(bootstrap_thread);
+	Con_Builtins_Float_Atom_bootstrap(bootstrap_thread);
 
 	Con_Builtins_Object_Class_bootstrap(bootstrap_thread);
 	Con_Builtins_Class_Class_bootstrap(bootstrap_thread);	
@@ -200,6 +205,7 @@ Con_Obj *Con_Bootstrap_do(u_char *c_stack_start, int argc, char **argv)
 	Con_Builtins_Partial_Application_Class_bootstrap(bootstrap_thread);
 	Con_Builtins_Exception_Class_bootstrap(bootstrap_thread);
 	Con_Builtins_Set_Class_bootstrap(bootstrap_thread);
+	Con_Builtins_Float_Class_bootstrap(bootstrap_thread);
 
 	// Create the real VM and root thread objects.
 

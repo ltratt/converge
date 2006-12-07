@@ -19,12 +19,23 @@
 // IN THE SOFTWARE.
 
 
-#ifndef _CON_NUMBERS_H
-#define _CON_NUMBERS_H
+#ifndef _CON_ATOMS_BUILTINS_FLOAT_ATOM_H
+#define _CON_ATOMS_BUILTINS_FLOAT_ATOM_H
 
-Con_Int Con_Numbers_Number_to_Con_Int(Con_Obj *, Con_Obj *);
-Con_Float Con_Numbers_Number_to_Con_Float(Con_Obj *, Con_Obj *);
-int Con_Numbers_Number_to_c_Int(Con_Obj *, Con_Obj *);
-int Con_Numbers_Con_Int_to_c_int(Con_Obj *, Con_Int);
+#include "Core.h"
+
+// Float atoms are immutable.
+
+typedef struct {
+	CON_ATOM_HEAD
+	Con_Float val;
+} Con_Builtins_Float_Atom;
+
+
+void Con_Builtins_Float_Atom_bootstrap(Con_Obj *);
+
+Con_Obj *Con_Builtins_Float_Atom_new(Con_Obj *, Con_Float);
+void Con_Builtins_Float_Atom_init_atom(Con_Obj *, Con_Builtins_Float_Atom *, Con_Float);
+Con_Float Con_Builtins_Int_Atom_get_float(Con_Obj *, Con_Obj *);
 
 #endif

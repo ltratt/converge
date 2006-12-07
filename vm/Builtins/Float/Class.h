@@ -19,12 +19,11 @@
 // IN THE SOFTWARE.
 
 
-#ifndef _CON_NUMBERS_H
-#define _CON_NUMBERS_H
+#ifndef _CON_ATOMS_BUILTINS_FLOAT_CLASS_H
+#define _CON_ATOMS_BUILTINS_FLOAT_CLASS_H
 
-Con_Int Con_Numbers_Number_to_Con_Int(Con_Obj *, Con_Obj *);
-Con_Float Con_Numbers_Number_to_Con_Float(Con_Obj *, Con_Obj *);
-int Con_Numbers_Number_to_c_Int(Con_Obj *, Con_Obj *);
-int Con_Numbers_Con_Int_to_c_int(Con_Obj *, Con_Int);
+#include "Core.h"
+
+void Con_Builtins_Float_Class_bootstrap(Con_Obj *);
 
 #endif

@@ -460,6 +460,8 @@ Con_Obj *Con_Builtins_Module_Atom_import(Con_Obj *thread, Con_Obj *identifier)
 		}
 #		endif
 		else {
+			CON_PRINTLN(modules);
+			printf("%.*s\n", ((Con_Builtins_String_Atom *) identifier->first_atom)->size, ((Con_Builtins_String_Atom *) identifier->first_atom)->str);
 			CON_RAISE_EXCEPTION("Import_Exception", identifier);
 		}
 		Con_Builtins_Module_Atom *module_atom = CON_GET_ATOM(module, CON_BUILTIN(CON_BUILTIN_MODULE_ATOM_DEF_OBJECT));

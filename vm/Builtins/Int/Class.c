@@ -55,6 +55,7 @@ Con_Obj *_Con_Builtins_Int_Class_add_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Int_Class_subtract_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Int_Class_and_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Int_Class_div_func(Con_Obj *);
+Con_Obj *_Con_Builtins_Int_Class_idiv_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Int_Class_modulo_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Int_Class_mul_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Int_Class_lsl_func(Con_Obj *);
@@ -89,6 +90,7 @@ void Con_Builtins_Int_Class_bootstrap(Con_Obj *thread)
 	CON_SET_FIELD(int_class, "+", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Int_Class_add_func, "+", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), int_class));
 	CON_SET_FIELD(int_class, "-", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Int_Class_subtract_func, "-", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), int_class));
 	CON_SET_FIELD(int_class, "/", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Int_Class_div_func, "/", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), int_class));
+	CON_SET_FIELD(int_class, "idiv", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Int_Class_idiv_func, "idiv", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), int_class));
 	CON_SET_FIELD(int_class, "%", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Int_Class_modulo_func, "%", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), int_class));
 	CON_SET_FIELD(int_class, "*", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Int_Class_mul_func, "*", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), int_class));
 	CON_SET_FIELD(int_class, "and", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Int_Class_and_func, "and", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), int_class));
@@ -267,6 +269,32 @@ Con_Obj *_Con_Builtins_Int_Class_div_func(Con_Obj *thread)
 			return CON_NEW_INT(self_int_atom->val / o);
 		else
 			return Con_Builtins_Float_Atom_new(thread, ((Con_Float) self_int_atom->val) / ((Con_Float) o));
+	}
+}
+
+
+
+//
+// 'idiv(o)'.
+//
+
+Con_Obj *_Con_Builtins_Int_Class_idiv_func(Con_Obj *thread)
+{
+	Con_Obj *self, *o_obj;
+	CON_UNPACK_ARGS("IN", &self, &o_obj);
+
+	Con_Builtins_Int_Atom *self_int_atom = CON_GET_ATOM(self, CON_BUILTIN(CON_BUILTIN_INT_ATOM_DEF_OBJECT));
+	Con_Builtins_Int_Atom *o_int_atom = CON_FIND_ATOM(o_obj, CON_BUILTIN(CON_BUILTIN_INT_ATOM_DEF_OBJECT));
+
+	if (o_int_atom == NULL) {
+		CON_XXX;
+	}
+	else {
+		Con_Int o = o_int_atom->val;
+		if (o == 0)
+			CON_XXX;
+
+		return CON_NEW_INT(self_int_atom->val / o);
 	}
 }
 

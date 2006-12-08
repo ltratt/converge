@@ -44,7 +44,7 @@ func heapsort(list, comparison := func (x, y) {
 	//
 	//   http://en.wikipedia.org/wiki/Heapsort
 
-	start := list.len() / 2 - 1
+	start := list.len().idiv(2) - 1
 	while start >= 0:
 		_heapsort_sift(list, comparison, start, list.len())
 		start := start - 1

@@ -65,6 +65,7 @@ Con_Obj *Con_Modules_POSIX_File_Module_init(Con_Obj *thread, Con_Obj *);
 Con_Obj *_Con_Modules_POSIX_File_Module_File_new_func(Con_Obj *);
 
 Con_Obj *_Con_Modules_POSIX_File_Module_File_Class_close_func(Con_Obj *);
+Con_Obj *_Con_Modules_POSIX_File_Module_File_Class_flush_func(Con_Obj *);
 Con_Obj *_Con_Modules_POSIX_File_Module_File_Class_read_func(Con_Obj *);
 Con_Obj *_Con_Modules_POSIX_File_Module_File_Class_write_func(Con_Obj *);
 Con_Obj *_Con_Modules_POSIX_File_Module_File_Class_writeln_func(Con_Obj *);
@@ -90,6 +91,7 @@ Con_Obj *Con_Modules_POSIX_File_Module_init(Con_Obj *thread, Con_Obj *identifier
 	CON_SET_SLOT(posix_file_mod, "File", file_class);
 	
 	CON_SET_FIELD(file_class, "close", CON_NEW_BOUND_C_FUNC(_Con_Modules_POSIX_File_Module_File_Class_close_func, "close", posix_file_mod, file_class));
+	CON_SET_FIELD(file_class, "flush", CON_NEW_BOUND_C_FUNC(_Con_Modules_POSIX_File_Module_File_Class_flush_func, "flush", posix_file_mod, file_class));
 	CON_SET_FIELD(file_class, "read", CON_NEW_BOUND_C_FUNC(_Con_Modules_POSIX_File_Module_File_Class_read_func, "read", posix_file_mod, file_class));
 	CON_SET_FIELD(file_class, "write", CON_NEW_BOUND_C_FUNC(_Con_Modules_POSIX_File_Module_File_Class_write_func, "write", posix_file_mod, file_class));
 	CON_SET_FIELD(file_class, "writeln", CON_NEW_BOUND_C_FUNC(_Con_Modules_POSIX_File_Module_File_Class_writeln_func, "writeln", posix_file_mod, file_class));
@@ -210,6 +212,32 @@ Con_Obj *_Con_Modules_POSIX_File_Module_File_Class_close_func(Con_Obj *thread)
 	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }
 
+
+
+//
+// 'flush()' attempts to flush this file.
+//
+
+Con_Obj *_Con_Modules_POSIX_File_Module_File_Class_flush_func(Con_Obj *thread)
+{
+	Con_Obj *file_atom_def = CON_GET_MODULE_DEF(Con_Builtins_VM_Atom_get_functions_module(thread), "File_Atom_Def");
+
+	Con_Obj *self_obj;
+	CON_UNPACK_ARGS("U", file_atom_def, &self_obj);
+
+	Con_Modules_POSIX_File_Module_File_Atom *file_atom = CON_GET_ATOM(self_obj, file_atom_def);
+
+	if (file_atom->file == NULL)
+		CON_XXX;
+
+	int rtn = fflush(file_atom->file);
+	if (rtn != 0) {
+		Con_Obj *msg = CON_ADD(Con_Builtins_Exception_Atom_strerror(thread, errno), CON_NEW_STRING("."));
+		CON_RAISE_EXCEPTION("File_Exception", msg);
+	}
+
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
+}
 
 
 

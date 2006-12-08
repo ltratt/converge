@@ -49,6 +49,7 @@
 
 
 
+Con_Obj *_Con_Modules_Random_pluck_func(Con_Obj *);
 Con_Obj *_Con_Modules_Random_random_func(Con_Obj *);
 Con_Obj *_Con_Modules_Random_shuffle_func(Con_Obj *);
 
@@ -58,6 +59,7 @@ Con_Obj *Con_Modules_Random_init(Con_Obj *thread, Con_Obj *identifier)
 {
 	Con_Obj *random_mod = Con_Builtins_Module_Atom_new_c(thread, identifier, CON_NEW_STRING("Random"), CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
 	
+	CON_SET_SLOT(random_mod, "pluck", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_Random_pluck_func, "pluck", random_mod));
 	CON_SET_SLOT(random_mod, "random", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_Random_random_func, "random", random_mod));
 	CON_SET_SLOT(random_mod, "shuffle", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_Random_shuffle_func, "shuffle", random_mod));
 
@@ -69,6 +71,30 @@ Con_Obj *Con_Modules_Random_init(Con_Obj *thread, Con_Obj *identifier)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Functions in Random module
 //
+
+//
+// 'pluck(c)' returns a random element from 'c'.
+//
+
+Con_Obj *_Con_Modules_Random_pluck_func(Con_Obj *thread)
+{
+	Con_Obj *collection;
+
+	CON_UNPACK_ARGS("O", &collection);
+
+	// This algorithm is based on that found in Python's random.sort function.
+
+	Con_Int num_elems = Con_Numbers_Number_to_Con_Int(thread, CON_GET_SLOT_APPLY(collection, "len"));
+
+	if (num_elems == 0)
+		CON_RAISE_EXCEPTION("Bounds_Exception", CON_NEW_INT(0), CON_NEW_INT(0));
+
+	Con_Int i = random() % num_elems;
+
+	return CON_GET_SLOT_APPLY(collection, "get", CON_NEW_INT(i));
+}
+
+
 
 //
 // Return a random number between 0 and the maximum size of an integer.

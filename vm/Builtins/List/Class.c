@@ -65,6 +65,7 @@ Con_Obj *_Con_Builtins_List_Class_insert_func(Con_Obj *);
 Con_Obj *_Con_Builtins_List_Class_iterate_func(Con_Obj *);
 Con_Obj *_Con_Builtins_List_Class_len_func(Con_Obj *);
 Con_Obj *_Con_Builtins_List_Class_pop_func(Con_Obj *);
+Con_Obj *_Con_Builtins_List_Class_remove_func(Con_Obj *);
 Con_Obj *_Con_Builtins_List_Class_riterate_func(Con_Obj *);
 Con_Obj *_Con_Builtins_List_Class_set_func(Con_Obj *);
 Con_Obj *_Con_Builtins_List_Class_set_slice_func(Con_Obj *);
@@ -108,6 +109,7 @@ void Con_Builtins_List_Class_bootstrap(Con_Obj *thread)
 	CON_SET_FIELD(list_class, "iterate", CON_NEW_BOUND_C_FUNC(_Con_Builtins_List_Class_iterate_func, "iterate", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), list_class));
 	CON_SET_FIELD(list_class, "len", CON_NEW_BOUND_C_FUNC(_Con_Builtins_List_Class_len_func, "len", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), list_class));
 	CON_SET_FIELD(list_class, "pop", CON_NEW_BOUND_C_FUNC(_Con_Builtins_List_Class_pop_func, "pop", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), list_class));
+	CON_SET_FIELD(list_class, "remove", CON_NEW_BOUND_C_FUNC(_Con_Builtins_List_Class_remove_func, "remove", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), list_class));
 	CON_SET_FIELD(list_class, "riterate", CON_NEW_BOUND_C_FUNC(_Con_Builtins_List_Class_riterate_func, "riterate", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), list_class));
 	CON_SET_FIELD(list_class, "set", CON_NEW_BOUND_C_FUNC(_Con_Builtins_List_Class_set_func, "set", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), list_class));
 	CON_SET_FIELD(list_class, "set_slice", CON_NEW_BOUND_C_FUNC(_Con_Builtins_List_Class_set_slice_func, "set_slice", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), list_class));
@@ -854,6 +856,25 @@ Con_Obj *_Con_Builtins_List_Class_pop_func(Con_Obj *thread)
 	CON_MUTEX_UNLOCK(&self->mutex);
 	
 	return entry;
+}
+
+
+
+//
+// 'remove(o)' deletes the first element which equals 'o'.
+//
+
+Con_Obj *_Con_Builtins_List_Class_remove_func(Con_Obj *thread)
+{
+	Con_Obj *self, *o_obj;
+	CON_UNPACK_ARGS("Lo", &self, &o_obj);
+
+	Con_Obj *index = CON_GET_SLOT_APPLY_NO_FAIL(self, "find_index", o_obj);
+	if (index == NULL)
+		CON_XXX;
+	CON_GET_SLOT_APPLY(self, "del", index);
+
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }
 
 

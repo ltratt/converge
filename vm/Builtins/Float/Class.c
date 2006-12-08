@@ -22,6 +22,7 @@
 #include "Config.h"
 
 #include <errno.h>
+#include <math.h>
 #include <stdarg.h>
 #include <string.h>
 
@@ -56,6 +57,7 @@ Con_Obj *_Con_Builtins_Float_Class_subtract_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Float_Class_and_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Float_Class_div_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Float_Class_mul_func(Con_Obj *);
+Con_Obj *_Con_Builtins_Float_Class_sqrt_func(Con_Obj *);
 
 
 
@@ -85,6 +87,7 @@ void Con_Builtins_Float_Class_bootstrap(Con_Obj *thread)
 	CON_SET_FIELD(float_class, "-", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Float_Class_subtract_func, "-", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), float_class));
 	CON_SET_FIELD(float_class, "/", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Float_Class_div_func, "/", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), float_class));
 	CON_SET_FIELD(float_class, "*", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Float_Class_mul_func, "*", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), float_class));
+	CON_SET_FIELD(float_class, "sqrt", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Float_Class_sqrt_func, "sqrt", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), float_class));
 }
 
 
@@ -251,4 +254,20 @@ Con_Obj *_Con_Builtins_Float_Class_mul_func(Con_Obj *thread)
 	Con_Float o = Con_Numbers_Number_to_Con_Float(thread, o_obj);
 
 	return Con_Builtins_Float_Atom_new(thread, float_atom->val * o);
+}
+
+
+
+//
+// 'sqrt()'.
+//
+
+Con_Obj *_Con_Builtins_Float_Class_sqrt_func(Con_Obj *thread)
+{
+	Con_Obj *self;
+	CON_UNPACK_ARGS("R", &self);
+
+	Con_Builtins_Float_Atom *float_atom = CON_GET_ATOM(self, CON_BUILTIN(CON_BUILTIN_FLOAT_ATOM_DEF_OBJECT));
+
+	return Con_Builtins_Float_Atom_new(thread, sqrt(float_atom->val));
 }

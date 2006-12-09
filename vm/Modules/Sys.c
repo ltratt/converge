@@ -124,33 +124,22 @@ Con_Obj *_Con_Modules_Sys_exit_func(Con_Obj *thread)
 
 Con_Obj *_Con_Modules_Sys_print_func(Con_Obj *thread)
 {
+	Con_Obj *sys_mod = Con_Builtins_VM_Atom_get_functions_module(thread);
+
 	Con_Obj *var_args;
 	CON_UNPACK_ARGS("v", &var_args);
 
+	Con_Obj *write_func = CON_GET_SLOT(CON_GET_MODULE_DEF(sys_mod, "stdout"), "write");
+
 	CON_PRE_GET_SLOT_APPLY_PUMP(var_args, "iterate");
 	while (1) {
-		Con_Obj *val = CON_APPLY_PUMP();
-		if (val == NULL)
+		Con_Obj *str = CON_APPLY_PUMP();
+		if (str == NULL)
 			break;
-		Con_Builtins_String_Atom *val_string_atom = CON_FIND_ATOM(val, CON_BUILTIN(CON_BUILTIN_STRING_ATOM_DEF_OBJECT));
-		if (val_string_atom == NULL) {
-			val_string_atom = CON_GET_ATOM(CON_GET_SLOT_APPLY(val, "to_str"), CON_BUILTIN(CON_BUILTIN_STRING_ATOM_DEF_OBJECT));
-		}
-		Con_Int i = 0;
-		while (i < val_string_atom->size) {
-			Con_Int j = i;
-			while ((j < val_string_atom->size) && (*(val_string_atom->str + j) != '\0'))
-				j += 1;
-				
-			printf("%.*s", j - i, val_string_atom->str + i);
-			if (j == val_string_atom->size)
-				break;
-			else {
-				// We've hit a NUL.
-				printf("\\0");
-				i = j + 1;
-			}
-		}
+
+		if (CON_GET_SLOT_APPLY_NO_FAIL(CON_BUILTIN(CON_BUILTIN_STRING_CLASS), "instantiated", str) == NULL)
+			str = CON_GET_SLOT_APPLY(str, "to_str");
+		CON_APPLY(write_func, str);
 	}
 
 	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
@@ -161,35 +150,24 @@ Con_Obj *_Con_Modules_Sys_print_func(Con_Obj *thread)
 
 Con_Obj *_Con_Modules_Sys_println_func(Con_Obj *thread)
 {
+	Con_Obj *sys_mod = Con_Builtins_VM_Atom_get_functions_module(thread);
+
 	Con_Obj *var_args;
 	CON_UNPACK_ARGS("v", &var_args);
 
+	Con_Obj *write_func = CON_GET_SLOT(CON_GET_MODULE_DEF(sys_mod, "stdout"), "write");
+
 	CON_PRE_GET_SLOT_APPLY_PUMP(var_args, "iterate");
 	while (1) {
-		Con_Obj *val = CON_APPLY_PUMP();
-		if (val == NULL)
+		Con_Obj *str = CON_APPLY_PUMP();
+		if (str == NULL)
 			break;
-		Con_Builtins_String_Atom *val_string_atom = CON_FIND_ATOM(val, CON_BUILTIN(CON_BUILTIN_STRING_ATOM_DEF_OBJECT));
-		if (val_string_atom == NULL) {
-			val_string_atom = CON_GET_ATOM(CON_GET_SLOT_APPLY(val, "to_str"), CON_BUILTIN(CON_BUILTIN_STRING_ATOM_DEF_OBJECT));
-		}
-		Con_Int i = 0;
-		while (i < val_string_atom->size) {
-			Con_Int j = i;
-			while ((j < val_string_atom->size) && (*(val_string_atom->str + j) != '\0'))
-				j += 1;
-				
-			printf("%.*s", j - i, val_string_atom->str + i);
-			if (j == val_string_atom->size)
-				break;
-			else {
-				// We've hit a NUL.
-				printf("\\0");
-				i = j + 1;
-			}
-		}
+
+		if (CON_GET_SLOT_APPLY_NO_FAIL(CON_BUILTIN(CON_BUILTIN_STRING_CLASS), "instantiated", str) == NULL)
+			str = CON_GET_SLOT_APPLY(str, "to_str");
+		CON_APPLY(write_func, str);
 	}
-	printf("\n");
+	CON_APPLY(write_func, CON_NEW_STRING("\n"));
 
 	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }

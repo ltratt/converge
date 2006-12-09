@@ -158,7 +158,7 @@ Con_Obj *_Con_Builtins_Float_Class_eq_func(Con_Obj *thread)
 	Con_Obj *self, *o_obj;
 	CON_UNPACK_ARGS("RN", &self, &o_obj);
 
-	Con_Builtins_Int_Atom *self_float_atom = CON_GET_ATOM(self, CON_BUILTIN(CON_BUILTIN_FLOAT_ATOM_DEF_OBJECT));
+	Con_Builtins_Float_Atom *self_float_atom = CON_GET_ATOM(self, CON_BUILTIN(CON_BUILTIN_FLOAT_ATOM_DEF_OBJECT));
 	Con_Float o = Con_Numbers_Number_to_Con_Float(thread, o_obj);
 
 	if (self_float_atom->val == o)
@@ -178,7 +178,7 @@ Con_Obj *_Con_Builtins_Float_Class_greater_than_equals_func(Con_Obj *thread)
 	Con_Obj *self, *o_obj;
 	CON_UNPACK_ARGS("RN", &self, &o_obj);
 
-	Con_Builtins_Int_Atom *self_float_atom = CON_GET_ATOM(self, CON_BUILTIN(CON_BUILTIN_FLOAT_ATOM_DEF_OBJECT));
+	Con_Builtins_Float_Atom *self_float_atom = CON_GET_ATOM(self, CON_BUILTIN(CON_BUILTIN_FLOAT_ATOM_DEF_OBJECT));
 	Con_Float o = Con_Numbers_Number_to_Con_Float(thread, o_obj);
 
 	if (self_float_atom->val >= o)
@@ -198,7 +198,7 @@ Con_Obj *_Con_Builtins_Float_Class_less_than_func(Con_Obj *thread)
 	Con_Obj *self, *o_obj;
 	CON_UNPACK_ARGS("RN", &self, &o_obj);
 
-	Con_Builtins_Int_Atom *self_float_atom = CON_GET_ATOM(self, CON_BUILTIN(CON_BUILTIN_FLOAT_ATOM_DEF_OBJECT));
+	Con_Builtins_Float_Atom *self_float_atom = CON_GET_ATOM(self, CON_BUILTIN(CON_BUILTIN_FLOAT_ATOM_DEF_OBJECT));
 	Con_Float o = Con_Numbers_Number_to_Con_Float(thread, o_obj);
 
 	if (self_float_atom->val < o)

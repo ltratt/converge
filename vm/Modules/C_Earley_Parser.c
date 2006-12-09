@@ -622,11 +622,11 @@ parse_func_Alternative_Or_Alternatives _Con_Modules_C_Earley_Parser_Parser_parse
 				if (!found_possible_alternative)
 					goto remove_alternative;
 				
-				Con_Memory_make_array_room(thread, (void **) &states_in_processing->states, NULL, &states_in_processing->num_states_allocated, &states_in_processing->num_states, 1, sizeof(parse_func_State));
+				Con_Memory_make_array_room(thread, (void **) &states_in_processing->states, NULL, &states_in_processing->num_states_allocated, &states_in_processing->num_states, 1, sizeof(parse_func_State_In_Processing));
 				states_in_processing->states[states_in_processing->num_states].lstate = start_lstate;
-				states_in_processing->states[states_in_processing->num_states].lstate = start_p;
-				states_in_processing->states[states_in_processing->num_states].lstate = start_j;
-				states_in_processing->states[states_in_processing->num_states].lstate = start_f;
+				states_in_processing->states[states_in_processing->num_states].p = start_p;
+				states_in_processing->states[states_in_processing->num_states].j = start_j;
+				states_in_processing->states[states_in_processing->num_states].f = start_f;
 				states_in_processing->num_states += 1;
 				
 				parse_func_parse_Tree_Alternatives *definite_alternatives = NULL;

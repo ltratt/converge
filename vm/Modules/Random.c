@@ -27,6 +27,10 @@
 #include <string.h>
 #include <unistd.h>
 
+#ifndef CON_HAVE_SRANDOMDEV
+#include <sys/time.h>
+#endif
+
 #include <libxml/parser.h>
 
 #include "Core.h"
@@ -62,6 +66,15 @@ Con_Obj *Con_Modules_Random_init(Con_Obj *thread, Con_Obj *identifier)
 	CON_SET_SLOT(random_mod, "pluck", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_Random_pluck_func, "pluck", random_mod));
 	CON_SET_SLOT(random_mod, "random", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_Random_random_func, "random", random_mod));
 	CON_SET_SLOT(random_mod, "shuffle", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_Random_shuffle_func, "shuffle", random_mod));
+
+#	ifdef CON_HAVE_SRANDOMDEV
+	srandomdev();
+#	else
+    struct timeval tv;
+
+    gettimeofday(&tv, NULL);
+    srandom(tv.tv_sec ^ tv.tv_usec);
+#	endif
 
 	return random_mod;
 }

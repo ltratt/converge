@@ -323,6 +323,14 @@ AC_CHECK_MEMBER(struct stat.st_mtimespec,
 AC_FUNC_STRERROR_R
 
 
+# srandomdev
+
+AH_TEMPLATE(CON_HAVE_SRANDOMDEV,
+  [Define if your platform has the srandomdev function.])
+
+AC_CHECK_FUNC(srandomdev, [AC_DEFINE(CON_HAVE_SRANDOMDEV)])
+
+
 ####################################################################################################
 # Misc
 #

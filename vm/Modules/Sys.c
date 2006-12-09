@@ -55,9 +55,9 @@ Con_Obj *Con_Modules_Sys_init(Con_Obj *thread, Con_Obj *identifier)
 {
 	Con_Obj *sys_mod = Con_Builtins_Module_Atom_new_c(thread, identifier, CON_NEW_STRING("Sys"), CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
 	
-	CON_SET_SLOT(sys_mod, "exit", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_Sys_exit_func, "exit", CON_BUILTIN(CON_BUILTIN_NULL_OBJ)));
-	CON_SET_SLOT(sys_mod, "print", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_Sys_print_func, "print", CON_BUILTIN(CON_BUILTIN_NULL_OBJ)));
-	CON_SET_SLOT(sys_mod, "println", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_Sys_println_func, "println", CON_BUILTIN(CON_BUILTIN_NULL_OBJ)));
+	CON_SET_SLOT(sys_mod, "exit", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_Sys_exit_func, "exit", sys_mod));
+	CON_SET_SLOT(sys_mod, "print", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_Sys_print_func, "print", sys_mod));
+	CON_SET_SLOT(sys_mod, "println", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_Sys_println_func, "println", sys_mod));
 	
 	// Setup stdin, stdout, and stderr.
 	

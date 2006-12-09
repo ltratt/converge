@@ -50,7 +50,7 @@ Con_Obj *Con_Modules_C_Strings_init(Con_Obj *thread, Con_Obj *identifier)
 {
 	Con_Obj *c_strings_mod = Con_Builtins_Module_Atom_new_c(thread, identifier, CON_NEW_STRING("C_Strings"), CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
 	
-	CON_SET_SLOT(c_strings_mod, "join", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_C_Strings_join_func, "join", CON_BUILTIN(CON_BUILTIN_NULL_OBJ)));
+	CON_SET_SLOT(c_strings_mod, "join", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_C_Strings_join_func, "join", c_strings_mod));
 	
 	return c_strings_mod;
 }

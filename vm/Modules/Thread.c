@@ -48,7 +48,7 @@ Con_Obj *Con_Modules_Thread_init(Con_Obj *thread, Con_Obj *identifier)
 {
 	Con_Obj *thread_mod = Con_Builtins_Module_Atom_new_c(thread, identifier, CON_NEW_STRING("Thread"), CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
 	
-	CON_SET_SLOT(thread_mod, "get_continuation_src_info", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_Thread_get_continuation_src_info_func, "get_continuation_src_info", CON_BUILTIN(CON_BUILTIN_NULL_OBJ)));
+	CON_SET_SLOT(thread_mod, "get_continuation_src_info", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_Thread_get_continuation_src_info_func, "get_continuation_src_info", thread_mod));
 	
 	return thread_mod;
 }

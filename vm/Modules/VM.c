@@ -48,8 +48,8 @@ Con_Obj *Con_Modules_VM_init(Con_Obj *thread, Con_Obj *identifier)
 {
 	Con_Obj *vm_mod = Con_Builtins_Module_Atom_new_c(thread, identifier, CON_NEW_STRING("VM"), CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
 	
-	CON_SET_SLOT(vm_mod, "add_modules", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_VM_add_modules_func, "add_modules", CON_BUILTIN(CON_BUILTIN_NULL_OBJ)));
-	CON_SET_SLOT(vm_mod, "import_module", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_VM_import_module_func, "import_module", CON_BUILTIN(CON_BUILTIN_NULL_OBJ)));
+	CON_SET_SLOT(vm_mod, "add_modules", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_VM_add_modules_func, "add_modules", vm_mod));
+	CON_SET_SLOT(vm_mod, "import_module", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_VM_import_module_func, "import_module", vm_mod));
 	
 	CON_SET_SLOT(vm_mod, "vm", Con_Builtins_Thread_Atom_get_vm(thread));
 	

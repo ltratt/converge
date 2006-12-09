@@ -98,10 +98,10 @@ Con_Obj *Con_Modules_POSIX_File_Module_init(Con_Obj *thread, Con_Obj *identifier
 	
 	// Module-level functions
 	
-	CON_SET_SLOT(posix_file_mod, "canon_path", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_POSIX_File_Module_canon_path_func, "canon_path", CON_BUILTIN(CON_BUILTIN_NULL_OBJ)));
-	CON_SET_SLOT(posix_file_mod, "exists", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_POSIX_File_Module_exists_func, "exists", CON_BUILTIN(CON_BUILTIN_NULL_OBJ)));
-	CON_SET_SLOT(posix_file_mod, "is_dir", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_POSIX_File_Module_is_dir_func, "is_dir", CON_BUILTIN(CON_BUILTIN_NULL_OBJ)));
-	CON_SET_SLOT(posix_file_mod, "is_file", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_POSIX_File_Module_is_file_func, "is_file", CON_BUILTIN(CON_BUILTIN_NULL_OBJ)));
+	CON_SET_SLOT(posix_file_mod, "canon_path", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_POSIX_File_Module_canon_path_func, "canon_path", posix_file_mod));
+	CON_SET_SLOT(posix_file_mod, "exists", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_POSIX_File_Module_exists_func, "exists", posix_file_mod));
+	CON_SET_SLOT(posix_file_mod, "is_dir", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_POSIX_File_Module_is_dir_func, "is_dir", posix_file_mod));
+	CON_SET_SLOT(posix_file_mod, "is_file", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_POSIX_File_Module_is_file_func, "is_file", posix_file_mod));
 	
 	return posix_file_mod;
 }

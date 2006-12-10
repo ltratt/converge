@@ -322,7 +322,7 @@ Con_Obj *_Con_Modules_POSIX_File_Module_File_Class_writeln_func(Con_Obj *thread)
 	if (fwrite(s_string_atom->str, s_string_atom->size, 1, file_atom->file) < 1)
 		CON_XXX;
 
-	if (fwrite("\n", sizeof("\n"), 1, file_atom->file) < 1)
+	if (fwrite("\n", 1, 1, file_atom->file) < 1)
 		CON_XXX;
 
 	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);

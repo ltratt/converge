@@ -286,7 +286,11 @@ class IModule_Gen:
 
 	func _t_func_def(node, extra_src_info):
 
-		// func_def ::= func_type func_name "(" func_params ")" ":" "INDENT" func_defs expr_body "DEDENT"
+		// func_def ::= func_type func_name "(" func_params ")" ":" "INDENT" func_defs expr_body
+		//              "DEDENT"
+		//          ::= func_type func_name "(" func_params ")" "{" "INDENT" func_decls expr_body
+		//              "DEDENT" "NEWLINE" "}"
+		//          ::= func_type func_name "(" func_params ")" "{" expr "}"
 
 		if node[1][1].type == "FUNC":
 			// func_type ::= "FUNC"
@@ -371,28 +375,32 @@ class IModule_Gen:
 
 		nonlocals_ := []
 		renames := []
-		i := 1
-		while i < node[8].len():
-			// func_decls ::= func_decl { "NEWLINE" func_decl }*
-			// func_decl  ::= func_decl_nonlocals
-			//            ::= func_decl_rename
 
-			if node[8][i][1][0] == "func_decl_nonlocals":
-				// func_decl_nonlocals ::= "NONLOCAL" "ID" ( "," "ID" )* "NEWLINE"
-				j := 2
-				while j < node[8][i][1].len():
-					nonlocals_.append(ITree::IVar.new(node[8][i][1][j].value, extra_src_info + node[8][i][1][j].src_info))
-					j += 2
-			else:
-				// func_decl_rename ::= "RENAME" "ID" "AS" "ID" ( "," "RENAME" "ID" "AS" "ID" )* "NEWLINE"
-				j := 2
-				while j < node[8][i][1].len():
-					renames.append([ITree::IVar.new(node[8][i][1][j].value, extra_src_info + node[8][i][1][j].src_info), ITree::IVar.new(node[8][i][1][j + 2].value, extra_src_info + node[8][i][1][j + 2].src_info)])
-					j += 5
-			
-			i += 2
+		if node.len() == 9:
+			body := ITree::IExpr_Block.new([self._preorder(node[7])], extra_src_info + node[6].src_info)
+		else:
+			i := 1
+			while i < node[8].len():
+				// func_decls ::= func_decl { "NEWLINE" func_decl }*
+				// func_decl  ::= func_decl_nonlocals
+				//            ::= func_decl_rename
 
-		body := self._eval_expr_body(node[9])
+				if node[8][i][1][0] == "func_decl_nonlocals":
+					// func_decl_nonlocals ::= "NONLOCAL" "ID" ( "," "ID" )* "NEWLINE"
+					j := 2
+					while j < node[8][i][1].len():
+						nonlocals_.append(ITree::IVar.new(node[8][i][1][j].value, extra_src_info + node[8][i][1][j].src_info))
+						j += 2
+				else:
+					// func_decl_rename ::= "RENAME" "ID" "AS" "ID" ( "," "RENAME" "ID" "AS" "ID" )* "NEWLINE"
+					j := 2
+					while j < node[8][i][1].len():
+						renames.append([ITree::IVar.new(node[8][i][1][j].value, extra_src_info + node[8][i][1][j].src_info), ITree::IVar.new(node[8][i][1][j + 2].value, extra_src_info + node[8][i][1][j + 2].src_info)])
+						j += 5
+
+				i += 2
+
+			body := self._eval_expr_body(node[9])
 
 		self._nesting.del(-1)
 		

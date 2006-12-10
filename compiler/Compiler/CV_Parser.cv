@@ -59,6 +59,7 @@ class_field     ::= class_def
 
 func_def            ::= func_type func_name "(" func_params ")" ":" "INDENT" func_decls expr_body "DEDENT"
                     ::= func_type func_name "(" func_params ")" "{" "INDENT" func_decls expr_body "DEDENT" "NEWLINE" "}"
+                    ::= func_type func_name "(" func_params ")" "{" expr "}"
 func_type           ::= "FUNC"
                     ::= "BOUND_FUNC"
                     ::= "UNBOUND_FUNC"

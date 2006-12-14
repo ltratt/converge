@@ -141,7 +141,7 @@ Con_Int Con_Builtins_Dict_Class_find_entry(Con_Obj *thread, Con_Mutex *mutex, Co
 				return i;
 		}
 				
-		i = (i + 1) % hash % num_entries_allocated;
+		i = (i + 1) % num_entries_allocated;
 	}
 }
 

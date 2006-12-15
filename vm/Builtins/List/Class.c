@@ -869,12 +869,23 @@ Con_Obj *_Con_Builtins_List_Class_remove_func(Con_Obj *thread)
 	Con_Obj *self, *o_obj;
 	CON_UNPACK_ARGS("Lo", &self, &o_obj);
 
-	Con_Obj *index = CON_GET_SLOT_APPLY_NO_FAIL(self, "find_index", o_obj);
-	if (index == NULL)
-		CON_XXX;
-	CON_GET_SLOT_APPLY(self, "del", index);
+	Con_Builtins_List_Atom *list_atom = CON_GET_ATOM(self, CON_BUILTIN(CON_BUILTIN_LIST_ATOM_DEF_OBJECT));
 
-	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
+	CON_MUTEX_LOCK(&self->mutex);
+	for (int i = 0; i < list_atom->num_entries; ) {
+		Con_Obj *entry = list_atom->entries[i];
+		CON_MUTEX_UNLOCK(&self->mutex);
+		if (Con_Object_eq(thread, o_obj, entry)) {
+			CON_GET_SLOT_APPLY(self, "del", CON_NEW_INT(i));
+			CON_YIELD(entry);
+		}
+		else
+			i += 1;
+		CON_MUTEX_LOCK(&self->mutex);
+	}
+	CON_MUTEX_UNLOCK(&self->mutex);
+
+	return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
 }
 
 

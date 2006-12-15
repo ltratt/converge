@@ -41,9 +41,9 @@ typedef struct {
 
 void Con_Builtins_Dict_Atom_bootstrap(Con_Obj *);
 
-Con_Obj *Con_Builtins_Dict_Class_new(Con_Obj *);
-void Con_Builtins_Dict_Class_init_atom(Con_Obj *, Con_Builtins_Dict_Atom *);
+Con_Obj *Con_Builtins_Dict_Atom_new(Con_Obj *);
+void Con_Builtins_Dict_Atom_init_atom(Con_Obj *, Con_Builtins_Dict_Atom *);
 
-Con_Int Con_Builtins_Dict_Class_find_entry(Con_Obj *, Con_Mutex *, Con_Builtins_Dict_Class_Hash_Entry *, Con_Int, Con_Obj *, Con_Hash);
+Con_Int Con_Builtins_Dict_Atom_find_entry(Con_Obj *, Con_Mutex *, Con_Builtins_Dict_Class_Hash_Entry *, Con_Int, Con_Obj *, Con_Hash);
 
 #endif

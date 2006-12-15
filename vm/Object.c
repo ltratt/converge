@@ -62,7 +62,7 @@
 //   dict_atom->next_atom = (Con_Atom *) slots_atom;
 //   slots_atom->next_atom = NULL;
 //	
-//   Con_Builtins_Dict_Class_init_atom(thread, dict_atom);
+//   Con_Builtins_Dict_Atom_init_atom(thread, dict_atom);
 //   Con_Builtins_Slots_Atom_Def_init_atom(thread, slots_atom);
 //	
 //   Con_Memory_change_chunk_type(thread, new_dict, CON_MEMORY_CHUNK_OBJ);

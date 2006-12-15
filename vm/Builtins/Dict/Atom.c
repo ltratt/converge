@@ -41,7 +41,7 @@
 
 
 
-void _Con_Builtins_Dict_Class_gc_scan_func(Con_Obj *, Con_Obj *, Con_Atom *);
+void _Con_Builtins_Dict_Atom_gc_scan_func(Con_Obj *, Con_Obj *, Con_Atom *);
 
 
 
@@ -59,7 +59,7 @@ void Con_Builtins_Dict_Atom_bootstrap(Con_Obj *thread)
 	atom_def_atom->next_atom = (Con_Atom *) slots_atom;
 	slots_atom->next_atom = NULL;
 	
-	Con_Builtins_Atom_Def_Atom_init_atom(thread, atom_def_atom, _Con_Builtins_Dict_Class_gc_scan_func, NULL);
+	Con_Builtins_Atom_Def_Atom_init_atom(thread, atom_def_atom, _Con_Builtins_Dict_Atom_gc_scan_func, NULL);
 	Con_Builtins_Slots_Atom_Def_init_atom(thread, slots_atom);
 	
 	Con_Memory_change_chunk_type(thread, dict_class, CON_MEMORY_CHUNK_OBJ);
@@ -71,7 +71,7 @@ void Con_Builtins_Dict_Atom_bootstrap(Con_Obj *thread)
 // Dictionary creation functions
 //
 
-Con_Obj *Con_Builtins_Dict_Class_new(Con_Obj *thread)
+Con_Obj *Con_Builtins_Dict_Atom_new(Con_Obj *thread)
 {
 	Con_Obj *new_dict = Con_Object_new_from_class(thread, sizeof(Con_Obj) + sizeof(Con_Builtins_Dict_Atom) + sizeof(Con_Builtins_Slots_Atom), CON_BUILTIN(CON_BUILTIN_DICT_CLASS));
 	Con_Builtins_Dict_Atom *dict_atom = (Con_Builtins_Dict_Atom *) new_dict->first_atom;
@@ -79,7 +79,7 @@ Con_Obj *Con_Builtins_Dict_Class_new(Con_Obj *thread)
 	dict_atom->next_atom = (Con_Atom *) slots_atom;
 	slots_atom->next_atom = NULL;
 	
-	Con_Builtins_Dict_Class_init_atom(thread, dict_atom);
+	Con_Builtins_Dict_Atom_init_atom(thread, dict_atom);
 	Con_Builtins_Slots_Atom_Def_init_atom(thread, slots_atom);
 	
 	Con_Memory_change_chunk_type(thread, new_dict, CON_MEMORY_CHUNK_OBJ);
@@ -89,7 +89,7 @@ Con_Obj *Con_Builtins_Dict_Class_new(Con_Obj *thread)
 
 
 
-void Con_Builtins_Dict_Class_init_atom(Con_Obj *thread, Con_Builtins_Dict_Atom *dict_atom)
+void Con_Builtins_Dict_Atom_init_atom(Con_Obj *thread, Con_Builtins_Dict_Atom *dict_atom)
 {
 	dict_atom->atom_type = CON_BUILTIN(CON_BUILTIN_DICT_ATOM_DEF_OBJECT);
 	
@@ -116,7 +116,7 @@ void Con_Builtins_Dict_Class_init_atom(Con_Obj *thread, Con_Builtins_Dict_Atom *
 // should always have at least 1 free entry.
 //
 
-Con_Int Con_Builtins_Dict_Class_find_entry(Con_Obj *thread, Con_Mutex *mutex, Con_Builtins_Dict_Class_Hash_Entry *entries, Con_Int num_entries_allocated, Con_Obj *key, Con_Hash hash)
+Con_Int Con_Builtins_Dict_Atom_find_entry(Con_Obj *thread, Con_Mutex *mutex, Con_Builtins_Dict_Class_Hash_Entry *entries, Con_Int num_entries_allocated, Con_Obj *key, Con_Hash hash)
 {
 	CON_ASSERT_MUTEX_LOCKED(mutex);
 
@@ -134,7 +134,8 @@ Con_Int Con_Builtins_Dict_Class_find_entry(Con_Obj *thread, Con_Mutex *mutex, Co
 			bool keys_equals = Con_Object_eq(thread, key, entries[i].key);
 			CON_MUTEX_LOCK(mutex);
 			if ((i < num_entries_allocated) && (entries[i].key != key_orig_val)) {
-				// The dictionaries contents have shuffled too much when we were checking object equality.
+				// The dictionaries contents have shuffled too much when we were checking object
+				// equality.
 				CON_XXX;
 			}
 			if (keys_equals)
@@ -151,7 +152,7 @@ Con_Int Con_Builtins_Dict_Class_find_entry(Con_Obj *thread, Con_Mutex *mutex, Co
 // Garbage collection
 //
 
-void _Con_Builtins_Dict_Class_gc_scan_func(Con_Obj *thread, Con_Obj *obj, Con_Atom *atom)
+void _Con_Builtins_Dict_Atom_gc_scan_func(Con_Obj *thread, Con_Obj *obj, Con_Atom *atom)
 {
 	Con_Builtins_Dict_Atom *dict_atom = (Con_Builtins_Dict_Atom *) atom;
 

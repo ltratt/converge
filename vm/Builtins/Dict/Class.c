@@ -205,7 +205,7 @@ Con_Obj *_Con_Builtins_Dict_Class_find_func(Con_Obj *thread)
 
 	Con_Hash hash = Con_Hash_get(thread, key);
 	CON_MUTEX_LOCK(&self->mutex);
-	Con_Int i = Con_Builtins_Dict_Class_find_entry(thread, &self->mutex, dict_atom->entries, dict_atom->num_entries_allocated, key, hash);
+	Con_Int i = Con_Builtins_Dict_Atom_find_entry(thread, &self->mutex, dict_atom->entries, dict_atom->num_entries_allocated, key, hash);
 	Con_Obj *val = NULL;
 	if (dict_atom->entries[i].key != NULL)
 		val = dict_atom->entries[i].val;
@@ -236,7 +236,7 @@ Con_Obj *_Con_Builtins_Dict_Class_get_func(Con_Obj *thread)
 
 	Con_Hash hash = Con_Hash_get(thread, key);
 	CON_MUTEX_LOCK(&self->mutex);
-	Con_Int i = Con_Builtins_Dict_Class_find_entry(thread, &self->mutex, dict_atom->entries, dict_atom->num_entries_allocated, key, hash);
+	Con_Int i = Con_Builtins_Dict_Atom_find_entry(thread, &self->mutex, dict_atom->entries, dict_atom->num_entries_allocated, key, hash);
 	Con_Obj *val = NULL;
 	if (dict_atom->entries[i].key != NULL)
 		val = dict_atom->entries[i].val;
@@ -348,7 +348,7 @@ Con_Obj *_Con_Builtins_Dict_Class_set_func(Con_Obj *thread)
 	Con_Hash hash = Con_Hash_get(thread, key);
 
 	CON_MUTEX_LOCK(&self->mutex);
-	Con_Int pos = Con_Builtins_Dict_Class_find_entry(thread, &self->mutex, dict_atom->entries, dict_atom->num_entries_allocated, key, hash);
+	Con_Int pos = Con_Builtins_Dict_Atom_find_entry(thread, &self->mutex, dict_atom->entries, dict_atom->num_entries_allocated, key, hash);
 	if (dict_atom->entries[pos].key == NULL) {
 		if (dict_atom->num_entries + (dict_atom->num_entries / 4) + 1 >= dict_atom->num_entries_allocated) {
 			Con_Int new_num_entries_allocated = dict_atom->num_entries + (dict_atom->num_entries / 2) + 2;
@@ -363,13 +363,13 @@ Con_Obj *_Con_Builtins_Dict_Class_set_func(Con_Obj *thread)
 				if (dict_atom->entries[i].key == NULL)
 					continue;
 				
-				Con_Int new_pos = Con_Builtins_Dict_Class_find_entry(thread, &self->mutex, new_entries, new_num_entries_allocated, dict_atom->entries[i].key, dict_atom->entries[i].hash);
+				Con_Int new_pos = Con_Builtins_Dict_Atom_find_entry(thread, &self->mutex, new_entries, new_num_entries_allocated, dict_atom->entries[i].key, dict_atom->entries[i].hash);
 				new_entries[new_pos] = dict_atom->entries[i];
 			}
 			
 			dict_atom->entries = new_entries;
 			dict_atom->num_entries_allocated = new_num_entries_allocated;
-			pos = Con_Builtins_Dict_Class_find_entry(thread, &self->mutex, dict_atom->entries, dict_atom->num_entries_allocated, key, hash);
+			pos = Con_Builtins_Dict_Atom_find_entry(thread, &self->mutex, dict_atom->entries, dict_atom->num_entries_allocated, key, hash);
 		}
 		dict_atom->num_entries += 1;
 	}

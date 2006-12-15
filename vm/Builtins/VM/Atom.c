@@ -124,7 +124,7 @@ Con_Obj *Con_Builtins_VM_Atom_new(Con_Obj *thread, Con_Memory_Store *mem_store, 
 	
 	Con_Memory_change_chunk_type(thread, vm, CON_MEMORY_CHUNK_OBJ);
 	
-	CON_SET_SLOT(vm, "modules", Con_Builtins_Dict_Class_new(thread));
+	CON_SET_SLOT(vm, "modules", Con_Builtins_Dict_Atom_new(thread));
 	
 	// XXX: this is ropey, but it's not clear where best to put it.
 	
@@ -1197,7 +1197,7 @@ Con_Obj *_Con_Builtins_VM_Atom_execute(Con_Obj *thread)
 				case CON_INSTR_DICT: {
 					CON_MUTEX_UNLOCK(&con_stack->mutex);
 					Con_Int num_entries = CON_INSTR_DECODE_DICT_NUM_ENTRIES(instruction);
-					Con_Obj *dict = Con_Builtins_Dict_Class_new(thread);
+					Con_Obj *dict = Con_Builtins_Dict_Atom_new(thread);
 					for (int i = num_entries - 1; i >= 0; i -= 1) {
 						CON_MUTEX_LOCK(&con_stack->mutex);
 						Con_Obj *val = Con_Builtins_Con_Stack_Atom_pop_object(thread, con_stack);

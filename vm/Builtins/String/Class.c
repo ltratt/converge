@@ -186,17 +186,16 @@ Con_Obj *_Con_Builtins_String_Class_less_than_func(Con_Obj *thread)
 	Con_Builtins_String_Atom *o_string_atom = CON_FIND_ATOM(o, CON_BUILTIN(CON_BUILTIN_STRING_ATOM_DEF_OBJECT));
 	
 	if (o_string_atom != NULL) {
-		if (self_string_atom->hash == o_string_atom->hash && self_string_atom->size == o_string_atom->size && self_string_atom->encoding == o_string_atom->encoding)
+		if (self_string_atom->hash == o_string_atom->hash && self_string_atom->size == o_string_atom->size && self_string_atom->encoding == o_string_atom->encoding && memcmp(self_string_atom->str, o_string_atom->str, self_string_atom->size) == 0)
 			return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
 		else {
 			if (self_string_atom->encoding != o_string_atom->encoding)
 				CON_XXX;
 
-			Con_Int i;
-			for (i = 0; i < self_string_atom->size && i < o_string_atom->size; i += 1) {
+			for (Con_Int i = 0; i < self_string_atom->size && i < o_string_atom->size; i += 1) {
 				if (self_string_atom->str[i] < o_string_atom->str[i])
 					return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
-				else if (!(self_string_atom->str[i] < o_string_atom->str[i]))
+				else if (self_string_atom->str[i] != o_string_atom->str[i])
 					return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
 			}
 

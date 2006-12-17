@@ -1,0 +1,10 @@
+<module name="Random">
+<function name="random">
+Returns a random integer between 0 and the maximum integer size of the machine.
+</function>
+
+<function name="shuffle">
+<argument name="c" />
+Shuffles <code>c</code>'s elements into a pseudo-random order. Note that since the number of permutations for most lists is larger than the period of most random number generators, many possible <q>random</q> permutations can never be generated using this function.
+</function>
+</module>

@@ -1,0 +1,291 @@
+<module name="Builtins">
+
+This module provides access to the builtin Converge types.
+
+<class name="Class">
+The standard class <code>Class</code>.
+
+<function name="conformed_by">
+<argument name="o" type="Object" />
+Succeeds if <code>o</code> contains correspondingly named slots as each field in this class and its superclasses. Note that <code>o</code> may also contain other slots beyond this.
+</function>
+
+<function name="instantiated">
+<argument name="o" type="Object" />
+Succeeds if this class (or one of its subclasses) instantiated <code>o</code>.
+</function>
+
+<function name="get_field">
+<argument name="name" type="String" />
+Returns the field <code>name</code> in the class, raising an exception if it does not exist.
+</function>
+
+<function name="set_field">
+<argument name="name" type="String" />
+<argument name="o" type="Object" />
+Sets the value of field <code>name</code> to <code>o</code>, creating <code>name</code> if it did not previously exist.
+</function>
+</class>
+
+
+
+<class name="Dict">
+The standard class <code>Dict</code>.
+
+<function name="find">
+<argument name="o" type="Object" />
+<argument name="default" type="Object">fail</argument>
+Returns the value of <code>key</code>. If 'key' is not found, 'default' is returned or, if no default value is specified, it fails. Note that unlike many other fuctions named <code>find</code>, this only returns a single value.
+</function>
+
+<function name="get">
+<argument name="o" type="Object" />
+<argument name="default" type="Object">fail</argument>
+Returns the value of <code>key</code>. If 'key' is not found, 'default' is returned or, if no default value is specified, an exception is raised.
+</function>
+
+<function name="iterate">
+Successively generates each <code>[key, val]</code> pair in this dictionary.
+</function>
+
+<function name="keys">
+Successively generates each key in this dictionary.
+</function>
+
+<function name="len">
+Returns the number of keys in this dictionary.
+</function>
+
+<function name="set">
+<argument name="key" type="Object" />
+<argument name="val" type="Object" />
+Sets the value of <code>key</code> to <code>val</code>. If <code>key</code> was previously associated with a value, <code>val</code> overwrites the previous association. Returns null.
+</function>
+
+<function name="vals">
+Successively generates each value in this dictionary.
+</function>
+</class>
+
+
+
+<class name="Int">
+Implements all the standard <ref name="Number" /> functions with the following addition:
+<function name="idiv">
+<argument name="n" type="Number" />
+Returns the integer value of dividing this integer by <code>n</code>.
+</function>
+</class>
+
+
+
+<class name="List">
+The standard class <code>List</code>.
+
+<function name="append">
+<argument name="o" type="Object" />
+Adds <code>o</code> to the end of the list.
+</function>
+
+<function name="del">
+<argument name="i" type="Number" />
+Deletes the element at position <code>i</code>, raising an exception if <code>i</code> is out of bounds.
+</function>
+
+<function name="extend">
+<argument name="c" type="Object" />
+Appends each element returned by <code>c.iterate()</code>.
+</function>
+
+<function name="find">
+<argument name="o" type="Object" />
+Successively generates each element in the list which compares equal to <code>o</code>.
+</function>
+
+<function name="find_index">
+<argument name="o" type="Object" />
+Successively generates the index of each element in the list which compares equal to <code>o</code>.
+</function>
+
+<function name="flattened">
+Returns a copy of this list with each sub-list recursively flattened. e.g. <code>flattened([1, 2, [3, [4, 5]], 6])</code> returns <code>[1, 2, 3, 4, 5, 6]</code>.
+</function>
+
+<function name="get">
+<argument name="i" type="Number" />
+Returns the element at position <code>i</code>, raising an exception if <code>i</code> is out of bounds.
+</function>
+
+<function name="get_slice">
+<argument name="lower" type="Number">0</argument>
+<argument name="upper" type="Number">self.len()</argument>
+Returns a sub-list of the elements from position <code>lower</code> (inclusive) to <code>upper</code> (exclusive). An exception is raised if either index is out of bounds.
+</function>
+
+<function name="insert">
+<argument name="i" type="Number" />
+<argument name="o" type="Object" />
+Inserts <code>o</code> at position <code>i</code>, causing the original values of position <code>i</code> (inclusive) to <code>self.len()</code> (exclusive) to be shuffled up by one position. An exception is raised if <code>i</code> is out of bounds.
+</function>
+
+<function name="iterate">
+<argument name="lower" type="Number">0</argument>
+<argument name="upper" type="Number">self.len()</argument>
+Successively generates, in order, each value in the list.
+</function>
+
+<function name="len">
+Returns the number of entries in the list.
+</function>
+
+<function name="pop">
+Deletes the last position in the list, returning that positions value.
+</function>
+
+<function name="remove">
+<argument name="o" type="Object" />
+Successively deletes, in order, each element which equals <code>o</code>. Returns the value of that entry on each successful deletion, failing when no elements remain to be deleted.
+</function>
+
+<function name="riterate">
+Successively generates, in reverse order, each value in the list.
+</function>
+
+<function name="set">
+<argument name="i" type="Number" />
+<argument name="o" type="Object" />
+Sets the value at position <code>i</code> to <code>o</code>. Raises an exception if <code>i</code> is out of bounds.
+</function>
+
+<function name="set_slice">
+<argument name="lower" type="Number">0</argument>
+<argument name="upper" type="Number">self.len()</argument>
+<argument name="c" type="Object" />
+Effectively deletes the elements from position <code>lower</code> (inclusive) to <code>upper</code> (exclusive) and then successively inserts each element returned by <code>c.iterate()</code> at position <code>lower + <em>position in c</em></code>. An exception is raised if either index is out of bounds.
+</function>
+</class>
+
+
+
+<class name="Number">
+The standard class <code>Number</code>.
+</class>
+
+
+
+<class name="Object">
+The standard class <code>Object</code>.
+
+<function name="init">
+The standard object initialisation function; effectively a no-op.
+</function>
+
+<function name="find_slot">
+<argument name="name" />
+Returns the value of the slot <code>name</code>, or fails if no such slot exists.
+</function>
+
+<function name="get_slot">
+<argument name="name" />
+Returns the value of the slot <code>name</code>, raising an exception if no such slot exists.
+</function>
+</class>
+
+
+
+<class name="Set">
+The standard class <code>Set</code>. Note that Converge's sets are mutable.
+
+<function name="add">
+<argument name="o" />
+Adds <code>o</code> to the set, overwriting the previous object which compared equal to <code>o</code> if it existed.
+</function>
+
+<function name="complement">
+<argument name="s" />
+Returns a new set which contains every element of <code>self</code> which is not in <code>o</code>.
+</function>
+
+<function name="extend">
+<argument name="c" />
+Successively <ref name="Set#add" />'s each element returned by <code>c.iterate()</code>.
+</function>
+
+<function name="find">
+<argument name="o" type="Object" />
+<argument name="default" type="Object">fail</argument>
+Returns the object which compares equal to <code>o</code>. If no such object is not found, 'default' is returned or, if no default value is specified, it fails. Note that unlike many other fuctions named <code>find</code>, this only returns a single value.
+</function>
+
+<function name="iterate">
+Successively generates each value in the set.
+</function>
+
+<function name="len">
+Returns the number of entries in the set.
+</function>
+</class>
+
+
+
+<class name="String">
+The standard class <code>String</code>. Note that Converge's strings are immutable, and the API is designed with this in mind.
+
+<function name="find">
+<argument name="s" type="Object" />
+Successively generates each substring which matches <code>s</code> (in practice this means that 's' itself will be returned for each match, but is defined this way for consistency with other <code>find</code> functions).
+</function>
+
+<function name="find_index">
+<argument name="s" type="Object" />
+Successively generates, in order, the starting index of each substring which matches <code>s</code>.
+</function>
+
+<function name="get">
+<argument name="i" type="Number" />
+Returns the character at position <code>i</code>, raising an exception if <code>i</code> is out of bounds.
+</function>
+
+<function name="hash">
+Returns this strings hash value.
+</function>
+
+<function name="get_slice">
+<argument name="lower" type="Number">0</argument>
+<argument name="upper" type="Number">self.len()</argument>
+Returns a sub-string of the characters from position <code>lower</code> (inclusive) to <code>upper</code> (exclusive). An exception is raised if either index is out of bounds.
+</function>
+
+<function name="iterate">
+<argument name="lower" type="Number">0</argument>
+<argument name="upper" type="Number">self.len()</argument>
+Successively generates, in order, each character in the string.
+</function>
+
+<function name="len">
+Returns the number of characters in the string.
+</function>
+
+<function name="prefixed_by">
+<argument name="s" />
+Succeeds if the string begins with <code>s</code> in its entirety.
+</function>
+
+<function name="rfind_index">
+<argument name="s" type="Object" />
+Successively generates, in reverse order, the starting index of each substring which matches <code>s</code>.
+</function>
+
+<function name="suffixed_by">
+<argument name="s" />
+Succeeds if the string begins with <code>s</code> in its entirety.
+</function>
+
+<function name="replaced">
+<argument name="old" />
+<argument name="new" />
+Returns a new string with each substring matching <code>old</code> replaced with <code>new</code>.
+</function>
+</class>
+
+</module>

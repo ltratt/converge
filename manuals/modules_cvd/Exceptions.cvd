@@ -1,0 +1,58 @@
+<module name="Exceptions">
+<h3>Main Exception classes</h3>
+
+<class name="User_Exception">
+</class>
+
+<class name="Internal_Exception">
+</class>
+
+
+<h3>User exceptions</h3>
+
+<class name="Apply_Exception">
+</class>
+
+<class name="Bounds_Exception">
+</class>
+
+<class name="Import_Exception">
+</class>
+
+<class name="Indices_Exception">
+</class>
+
+<class name="Key_Exception">
+</class>
+
+<class name="Number_Exception">
+</class>
+
+<class name="Slot_Exception">
+</class>
+
+<class name="Type_Exception">
+</class>
+
+<class name="Unpack_Exception">
+</class>
+
+
+<h3>Internal exceptions</h3>
+
+These are exceptions which should not ever be explicitly considered by users. They are either the result of an internal problem with the Converge VM, or relate to an internal implementation detail which may be subject to change.
+
+<class name="System_Exit_Exception">
+</class>
+
+<class name="VM_Exception">
+</class>
+
+
+<h3>Module functions</h3>
+
+<function name="backtrace">
+<argument name="e" type="Exception" />
+Returns a string of the backtrace encoded in the exception <code>e</code>. <code>e</code> itself should be an exception that has been <code>raise</code>d i.e. it does not make sense to represent a backtrace from an exception object unless it has actually been raised.
+</function>
+</module>

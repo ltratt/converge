@@ -1,0 +1,26 @@
+<module name="Strings">
+
+<function name="format">
+<argument name="format" type="String" />
+<vararg name="args" type="List(Object)" />
+Returns a string based on the format string <code>format</code> which is <code>printf</code>-esque in nature and consumes arguments from <code>args</code>. Valid specifiers are <code>%s</code> for strings and <code>%d</code> for numbers.
+</function>
+
+<function name="join">
+<argument name="list" type="List(String)" />
+<argument name="separator" type="String" />
+Concatenates <code>list</code> into a string inserting <code>separator</code> between each item in list.
+</function>
+
+<function name="split">
+<argument name="str" type="String" />
+<argument name="separator" type="String" />
+Splits the string <code>str</code> at each instance of the string <code>separator</code>, returning a list of the split string.
+</function>
+
+<function name="lcp">
+<argument name="strings" type="List(String)" />
+Returns the longest common prefix of the strings in <code>strings</code>. e.g. <code>lcp(["aab", "aca", "a"])</code> will return <code>"a"</code> while <code>lcp(["aab", "aca", "b"])</code> will return <code>""</code>.
+</function>
+
+</module>

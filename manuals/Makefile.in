@@ -1,0 +1,15 @@
+all: cvd_to_html
+	${CONVERGE_VM} cvd_to_html -o modules_html modules_cvd/Array.cvd modules_cvd/Builtins.cvd modules_cvd/Exceptions.cvd modules_cvd/File.cvd modules_cvd/Functional.cvd modules_cvd/Maths.cvd modules_cvd/PCRE.cvd modules_cvd/Random.cvd modules_cvd/Sort.cvd modules_cvd/Sys.cvd modules_cvd/Strings.cvd modules_cvd/VM.cvd modules_cvd/XML.Nodes.cvd modules_cvd/XML.XDM.cvd
+
+
+include @abs_top_srcdir@/Makefile.inc
+
+cvd_to_html: cvd_to_html.cvb ${CONVERGE_LIB}
+	${CONVERGE_VM} ${CONVERGEL} -o cvd_to_html cvd_to_html.cvb ${CONVERGE_LIB}
+
+
+clean:
+	rm -f cvd_to_html cvd_to_html.cvb modules_html/*.html
+
+distclean: clean
+	rm -f Makefile

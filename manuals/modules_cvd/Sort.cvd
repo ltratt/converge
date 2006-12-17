@@ -1,0 +1,16 @@
+<module name="Sort">
+This module provides various sorting mechanisms.
+
+<function name="sort">
+<argument name="list" type="List" />
+<argument name="comparison" type="Func">func (x, y) { return x &lt; y }</argument>
+Sort <code>list</code> in place into the order determined by the <code>comparison</code> function using the quickest available sorting algorithm. Note that the sort is not guaranteed to be stable.
+</function>
+
+<function name="heapsort">
+<argument name="list" type="List" />
+<argument name="comparison" type="Func">func (x, y) { return x &lt; y }</argument>
+Sort <code>list</code> in place into the order determined by the <code>comparison</code> function using the non-stable heapsort algorithm.
+</function>
+
+</module>

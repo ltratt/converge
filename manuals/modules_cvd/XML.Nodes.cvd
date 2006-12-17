@@ -1,0 +1,26 @@
+<module name="XML::Nodes">
+
+The XML tree defined in this file is loosely inspired by the <a href="http://www.xom.nu/">XOM API</a>.
+
+<class name="Document" supers="List">
+</class>
+
+
+
+
+<class name="Attribute">
+</class>
+
+
+
+
+<class name="Element" supers="List">
+</class>
+
+
+
+
+<class name="Text" supers="List">
+</class>
+
+</module>

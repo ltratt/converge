@@ -1,0 +1,49 @@
+<module name="PCRE">
+
+This module provides regular expression functions. See the <a href="http://www.pcre.org/pcre.txt">PCRE</a> documentation for the syntax and options that PCRE provides.
+
+<p>Important functions and classes in the <code>PCRE</code> module are as follows:</p>
+
+<function name="compile">
+<argument name="pattern" type="String" />
+Compiles the string <code>pattern</code> and returns a regular expression object.
+</function>
+
+
+<h3>Regular expression objects</h3>
+
+<p>Regular expression objects have the following slots:</p>
+
+<function name="match">
+<argument name="s" type="String" />
+<argument name="i" type="Int">0</argument>
+Attempts to match the regular expression against string <code>s</code>. <code>match</code> anchors its match to a particular position <code>i</code> which defaults to <code>0</code>. In other words, if the regular expression does not match at that position, it does not search through the string looking for another position to match at.
+
+<p>If the match succeeds, a match object is returned; otherwise the function fails.</p>
+</function>
+
+<function name="search">
+<argument name="s" type="String" />
+<argument name="i" type="Int">0</argument>
+Successively generates all match objects where the regular expression matches against the string <code>s</code>. The search starts at position <code>i</code>, which defaults to <code>0</code>.
+
+<p>For each successful search, a match object is generated; when no more matches are found, the function fails.</p>
+</function>
+
+
+<h3>Match objects</h3>
+
+<p>Match objects have the following slots:</p>
+
+<function name="get">
+<argument name="group_num" type="String" />
+Returns the slice of the string matched by the group numbered <code>group_num</code>. Groups are specified within a regular expression by use of parentheses, and are numbered starting from 1. There is an implicit group 0 which returns the entire string matched by the regular expression.
+
+<p>Note that this effect can also be achieved via the slice notation i.e. <code>match.get(<em>X</em>)</code> is equivalent to <code>match[<em>X</em>]</code>.</p>
+</function>
+
+<function name="get_indexes">
+<argument name="group_num" type="String" />
+Returns the start and end indices as a list <code>[start, end]</code> of the string matched by the group numbered <code>group_num</code>. Groups are specified within a regular expression by use of parentheses, and are numbered starting from 1. There is an implicit group 0 which returns the start and end indices of the entire string matched by the regular expression.
+</function>
+</module>

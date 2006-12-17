@@ -1,0 +1,98 @@
+<module name="File">
+<h3>File objects</h3>
+
+<class name="File">
+File objects are created by calling the following function on the <code>File</code> class object:
+
+<function name="File.new">
+<argument name="path" type="String" />
+<argument name="mode" type="String" />
+Opens the file at <code>path</code> for reading or writing. <code>mode</code> can take the following values:
+<table>
+<tr><td><code>r</code></td><td>Open for reading.</td></tr>
+<tr><td><code>r+</code></td><td>Open for reading and writing.</td></tr>
+<tr><td><code>w</code></td><td>Open for writing; truncates file if it already exists, or creates a new file if none currently exists.</td></tr>
+<tr><td><code>w+</code></td><td>Open for reading and writing; truncates file if it already exists, or creates a new file if none currently exists.</td></tr>
+<tr><td><code>a</code></td><td>Open for writing; does not truncate file if it already exists, but does create a new file if none currently exists.</td></tr>
+<tr><td><code>a+</code></td><td>Open for reading and writing; does not truncate file if it already exists, but does create a new file if none currently exists.</td></tr>
+</table>
+</function>
+
+File objects support the following functions:
+
+<function name="File#close">
+Closes the file. Note that although the file will be closed when the file object is garbage collected, it is often good manners (and the release of a burden on the OS) to close files once they are finished with.
+</function>
+
+<function name="File#read">
+<argument name="size" type="Int">null</argument>
+Reads <code>size</code> bytes from the file. If <code>size</code> is <code>null</code>, the full contents of the file are returned.
+</function>
+
+<function name="File#readln">
+Returns the next line of text from the file.
+</function>
+
+<function name="File#write">
+<argument name="s" type="String" />
+Writes <code>s</code> to the file.
+</function>
+
+<function name="File#writeln">
+<argument name="s" type="String" />
+Writes <code>s</code> to the file plus the platform appropriate newline character(s).
+</function>
+</class>
+
+
+<h3>File name manipulation</h3>
+
+These functions should be used to ensure that file name manipulation is done in a platform independent manner:
+
+<function name="canon_path">
+<argument name="path" type="String" />
+Returns the fully canonicalized version of <code>path</code>. The exact effects are platform dependent.
+</function>
+
+<function name="dir_entries">
+<argument name="path" type="String" />
+Returns a list of leaf names for all entries in the directory <code>path</code>.
+</function>
+
+<function name="exists">
+<argument name="path" type="String" />
+Succeeds if <code>path</code> exists.
+</function>
+
+<function name="is_dir">
+<argument name="path" type="String" />
+Succeeds if <code>path</code> is a directory. Notice that mere failure - as opposed to an exception being generated - does not necessarily imply that <code>path</code> exists but is not a directory [this behaviour is platform dependent].
+</function>
+
+<function name="join_names">
+<vararg name="names" />
+Concatenates the entries of <code>names</code> into a path. This thus reverses the effects of <code>split_names</code> or <code>split_leaf</code>.
+</function>
+
+<function name="join_ext">
+<argument name="path" type="String" />
+<argument name="ext" type="String" />
+Joins filename extension <code>ext</code> to the path <code>path</code>. If <code>ext</code> is empty, <code>path</code> is returned. This reverses the effect of <code>split_ext</code>.
+</function>
+
+<function name="split_ext">
+<argument name="path" type="String" />
+Returns a list of length two <code>[<em>&lt;path's directory plus leaf name&gt;</em>, <em>&lt;path's file extension&gt;</em>]</code>. The file name extension separator is not present in either component. e.g. <code>split_ext("/a/b/c.d")</code> returns <code>["/a/b/c", "d"]</code>.
+</function>
+
+<function name="split_leaf">
+<argument name="path" type="String" />
+Returns a list of length two <code>[<em>&lt;path's directory&gt;</em>, <em>&lt;path's leaf name&gt;</em>]</code>. The file name extension separator is not present in either component. e.g. <code>split_leaf("/a/b/c.d")</code> returns <code>["/a/b", "c.d"]</code>.
+</function>
+
+<function name="split_names">
+<argument name="path" type="String" />
+Returns a list representing all the directories and the leaf name of <code>path</code>. The separator between the directories and leaf name is not present in the output. e.g. <code>split_names("/a/b/c.d")</code> returns <code>["a", "b", "c.d"]</code>.
+</function>
+
+</module>

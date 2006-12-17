@@ -58,3 +58,5 @@ examples/compile_time/printf$
 bootstrap/convergec.bootstrap$
 bootstrap/convergel.bootstrap$
 bootstrap/id_fix.bootstrap$
+manuals/cvd_to_html
+manuals/modules_html/.*.html

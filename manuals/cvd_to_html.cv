@@ -1,0 +1,311 @@
+// Copyright (c) 2006 Laurence Tratt
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to
+// deal in the Software without restriction, including without limitation the
+// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+// sell copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+// IN THE SOFTWARE.
+
+
+import File, Functional, Parse_Options, PCRE, Sort, Strings, Sys, XML::Nodes, XML::XDM
+
+
+
+_NUM_MODULES_COLUMNS := 4
+_HTML_EXTENSION := "html"
+
+_RE_NAME_SEPARATOR := PCRE::compile("[#.]")
+
+
+
+
+class CVD_To_HTML:
+
+	func init():
+
+		options := Parse_Options::Options.new(self._useage_callback)
+		options.add(Parse_Options::Option_Spec.new("output", "o", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ONE))
+
+		parsed, extra := options.parse()
+		for option_name, option_val := parsed.iterate():
+			ndif option_name == "output":
+				self._output_path := option_val
+
+		if extra.len() == 0:
+			self._useage_callback("Not enough arguments.")
+
+		modules := []
+		for manual := extra.iterate():
+			Sys::println("Processing ", File::split_ext(File::split_leaf(manual)[1])[0])
+
+			html_path := File::join_names(self._output_path, File::join_ext(File::split_ext(File::split_leaf(manual)[1])[0], _HTML_EXTENSION))
+
+			file := File::File.new(manual, "r")
+			xml := file.read()
+			file.close()
+
+			doc := XDM::parse(xml)
+			modules.append([html_path, doc.get_root_elem().get_attr("name").value])
+
+			output := self._preorder_elem(doc.get_root_elem())
+
+			output_file := File::File.new(html_path, "w")
+			output_file.write(output)
+			output_file.close()
+
+		Sys::println("Creating module index")
+
+		Sort::sort(modules, func (x, y) {
+			return x[1].to_lower_case() < y[1].to_lower_case()
+		})
+
+		modules_table := []
+		if modules.len() % _NUM_MODULES_COLUMNS == 0:
+			num_rows := modules.len() / _NUM_MODULES_COLUMNS
+		else:
+			num_rows := modules.len().idiv(_NUM_MODULES_COLUMNS) + 1
+
+		column_width := 100.idiv(_NUM_MODULES_COLUMNS)
+		for row := 0.to(num_rows):
+			modules_table.append("<tr>")
+			for column := 0.to(_NUM_MODULES_COLUMNS):
+				i := row + column * num_rows
+				if i >= modules.len():
+					break
+
+				module := modules[i]
+				modules_table.append(Strings::format("""<td width="%d%%"><a href="%s">%s</a>""", column_width, File::split_leaf(module[0])[1], module[1]))
+
+		modules_file := File::File.new(File::join_names(self._output_path, File::join_ext("modsindex", _HTML_EXTENSION)), "w")
+		modules_file.write(Strings::format("""<html>
+<head><title>Modules index</title>
+<body>
+<h1 align="center">Modules index</h1>
+<hr>
+<table width="100%%">
+%s
+</table>
+<hr>
+<p align="right">cvd_to_html &copy;2006 <A HRef = "http://tratt.net/laurie/">Laurence Tratt</A></p>
+</body>
+</html>""", Strings::join(modules_table, "")))
+
+
+
+	func _useage_callback(msg):
+
+		Sys::stderr.writeln(Strings::format("Error: %s", msg))
+		Sys::stderr.writeln("Usage: cvd_to_html -o <output> <input>")
+		Sys::exit(1)
+
+
+
+	func _process_local_name(node):
+
+		i := 0
+		assert(not node.find("::"))
+
+		name := node.get_attr("name").value
+		ref := []
+		i := 0
+		while 1:
+			if not m := _RE_NAME_SEPARATOR.search(name, i):
+				ref.append(name[i : ])
+				break
+
+			ref.append(name[i : m.get_indexes(0)[0]])
+
+			ndif m[0] == "#":
+				ref.append("$")
+			elif m[0] == ".":
+				ref.append("$$")
+
+			i := m.get_indexes(0)[1]
+
+		return [Strings::join(ref, ""), ref[-1]]
+
+
+
+	func _process_ref_name(node):
+
+		i := 0
+		name := node.get_attr("name").value
+		mod_path := Strings::split(name, "::")
+		if mod_path.len() == 1:
+			mod_path := []
+			rest_name := name
+		else:
+			rest_name := mod_path[-1]
+			mod_path := mod_path[ : -1]
+
+		if rest_name.find("#"):
+			before, leaf := Strings::split(rest_name, "#")
+			mod_path.append(before)
+			rest_name := "$" + leaf
+		elif rest_name.find("."):
+			before, leaf := Strings::split(rest_name, ".")
+			mod_path.append(before)
+			rest_name := "$$" + leaf
+		elif mod_path.len() > 1:
+			leaf := mod_path[0]
+		else:
+			leaf := rest_name
+
+		if mod_path.len() == 0:
+			return [Strings::format("#%s", rest_name), leaf]
+		else:
+			return [Strings::format("%s.%s#%s", Strings::join(mod_path, "."), _HTML_EXTENSION, rest_name), leaf]
+
+
+
+	func _preorder_children(children):
+
+		s := []
+		for child := children.iterate():
+			ndif Nodes::Element.instantiated(child):
+				s.append(self._preorder_elem(child))
+			elif Nodes::Text.instantiated(child):
+				s.append(child.to_xml())
+
+		return Strings::join(s, "")
+
+
+
+	func _preorder_elem(node):
+
+		if f := self.find_slot("_e_" + node.name.to_lower_case()):
+			return f(node)
+		else:
+			// We assume this is a raw HTML tag.
+
+			if node.prefix != "":
+				raise "XXX"
+			else:
+				name := node.name
+
+			attrs_text := []
+			for attr := node.attrs_iterate():
+				if not attr.namespace == "":
+					raise "XXX"
+
+				if attr.value == "":
+					raise "XXX"
+				else:
+					attrs_text.append(Strings::format("""%s="%s"""", attr.name, attr.value))
+
+			if attrs_text.len() == 0:
+				attrs_text := ""
+			else:
+				attrs_text := " " + Strings::join(attrs_text, " ")
+
+			if (children_text := self._preorder_children(node)) == "":
+				return Strings::format("<%s%s />", name, attrs_text)
+			else:
+				return Strings::format("<%s%s>%s</%s>", name, attrs_text, children_text, name)
+
+
+
+	func _e_module(node):
+
+		body_text := []
+		i := 0
+		for child := node.iterate():
+			if Nodes::Text.instantiated(child):
+				body_text.append(child.str)
+			else:
+				body_text.append(self._preorder_elem(child))
+
+		body_text := Strings::join(body_text, "")
+
+		return Strings::format("""<html>
+<head><title>%s</title>
+<body>
+<p align="right"><a href="modsindex.html">Modules index</a>
+<hr>
+
+<h1 align="center">%s</h1>
+%s
+
+<hr>
+<p align="right">cvd_to_html &copy;2006 <A HRef = "http://tratt.net/laurie/">Laurence Tratt</A></p>
+</body>
+</html>""", node.get_attr("name").value, node.get_attr("name").value, body_text)
+
+
+
+	func _e_assignment(node):
+
+		return Strings::format("""<div style="padding-left: 2em"><p style="text-indent: -1em" /><code>%s</code>\n%s</div>""", node.get_attr("name").value, self._preorder_children(node))
+
+
+
+	func _e_class(node):
+
+		anchor, leaf := self._process_local_name(node)
+
+		return Strings::format("""<div style="padding-left: 2em"><p style="text-indent: -1em" /><a name="%s"><code>class %s</code></a>:<br>\n%s</div>""", anchor, leaf, self._preorder_children(node))
+
+
+
+	func _e_function(node):
+
+		i := 0
+		args_text := []
+		while i < node.len():
+			child := node[i]
+
+			// Skip blank text assuming that it's simply padding before an <argument> element.
+			if Nodes::Text.instantiated(child) & child.str.stripped() == "":
+				i += 1
+				continue
+
+			if not (Nodes::Element.instantiated(child) & child.name == "argument"):
+				break
+			arg_name := child.get_attr("name").value
+			arg_default := self._preorder_children(child)
+			if arg_default == "":
+				args_text.append(arg_name)
+			else:
+				args_text.append(Strings::format("%s := %s", arg_name, arg_default))
+			i += 1
+
+		if Nodes::Element.instantiated(child) & child.name == "vararg":
+			args_text.append(Strings::format("*%s", child.get_attr("name").value))
+			i += 1
+
+		args_text := Strings::join(args_text, ", ")
+
+		anchor, leaf := self._process_local_name(node)
+
+		return Strings::format("""<div style="padding-left: 2em"><p style="text-indent: -1em" /><a name="%s"><code>func %s(%s):</code></a>\n%s</div>""", anchor, leaf, args_text, self._preorder_children(node[i : ]))
+
+
+
+	func _e_ref(node):
+
+		if attr := node.find_attr("name"):
+			link, name := self._process_ref_name(node)
+			if node.len() == 0:
+				return Strings::format("""<code><a href="%s">%s</a></code>""", link, name)
+			else:
+				return Strings::format("""<code><a href="%s">%s</a></code>""", link, self._preorder_children(node))
+		else:
+			return Strings::format("<code>%s</code>", self._preorder_children(node))
+
+
+
+func main():
+
+	CVD_To_HTML.new()

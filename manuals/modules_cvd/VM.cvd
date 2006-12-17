@@ -1,0 +1,15 @@
+<module name="VM">
+Important functions and classes in this module are as follows:
+
+<function name="add_modules">
+<argument name="modules" type="List(String)" />
+Adds or replaces modules in the running VM. <code>modules</code> should be a list of strings, each string being a modules' bytecode. A list of identifiers (one for each module in 'modules') will be returned.
+
+Note that this function does not import module objects: it merely adds them into the VM so that they can then be imported e.g. by <ref name="import_module" />.
+</function>
+
+<function name="import_module">
+<argument name="id" type="String" />
+Imports the module with identifier <code>id</code>. Raises an exception if no such module is in the VM.
+</function>
+</module>

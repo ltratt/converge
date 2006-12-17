@@ -1,0 +1,47 @@
+<module name="Array">
+This module provides an efficient mechanism for storing and manipulating large number of primitive machine types.
+
+<class name="Array">
+Array objects are created by calling the following function on the <code>Array</code> class object:
+
+<function name="Array.new">
+<argument name="type" type="String" />
+<argument name="d" type="String">null</argument>
+Creates an array of the type specified by <code>type</code>:
+<table>
+<tr><td><code>i</code></td><td>Array of integers (size determined by architecture / OS).</td></tr>
+<tr><td><code>i32</code></td><td>Array of 32-bit integers.</td></tr>
+</table>
+If <code>d</code> is not <code>null</code>, it is taken to be a string representing the underlying data and which is added to the array via <ref name="Array#extend_from_string" />.
+</function>
+
+Array objects support the following functions:
+
+<function name="Array#append">
+<argument name="o" type="Object" />
+Adds <code>o</code> to the end of the array. <code>o</code> must be of an appropriate type and value for this array.
+</function>
+
+<function name="Array#extend">
+<argument name="c" type="Object" />
+Appends each element returned by <code>c.iterate()</code>.
+</function>
+
+<function name="Array#extend_from_string">
+<argument name="s" type="String" />
+Extends this array with data from string which is assumed to be a raw representation of this arrays' data type. <code>s.len()</code> must be a multiple of this arrays' data type.
+</function>
+
+<function name="Array#get">
+<argument name="i" type="Number" />
+Returns the element at position <code>i</code>, raising an exception if <code>i</code> is out of bounds.
+</function>
+
+<function name="Array#get_slice">
+<argument name="lower" type="Number">0</argument>
+<argument name="upper" type="Number">self.len()</argument>
+Returns a sub-array of the elements from position <code>lower</code> (inclusive) to <code>upper</code> (exclusive). An exception is raised if either index is out of bounds.
+</function>
+</class>
+
+</module>

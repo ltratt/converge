@@ -1,0 +1,38 @@
+<module name="Sys">
+This module defines a number of important values:
+
+<assignment name="argv">
+A list containing the command line arguments passed to the Converge program.
+</assignment>
+
+<assignment name="stdin">
+A <ref name="File::File" /> object representing standard input.
+</assignment>
+
+<assignment name="stdout">
+A <ref name="File::File" /> object representing standard input.
+</assignment>
+
+Important functions and classes in this module are as follows:
+
+<function name="exit">
+<argument name="code" type="Int" />
+Exits the program with exit code <code>code</code> which must be an integer.
+
+<p>More correctly this raises a <ref name="Exceptions::System_Exit_Exception">System_Exit_Exception</ref> which is caught as a special case by outer Converge program.</p>
+</function>
+
+<function name="print">
+<vararg name="s" />
+Prints all arguments passed to it to standard out. Strings are printed as is; all other objects have their <code>to_str</code> function called.
+</function>
+
+<function name="println">
+<vararg name="s" />
+Prints all arguments passed to it to standard out, and then prints a trailing newline. Strings are printed as is; all other objects have their <code>to_str</code> function called.
+</function>
+
+<assignment name="program_path">
+A string containing the path of the current program. NB: This may be set to null (e.g. if the program was loaded from memory), and if present may not be a fully canonicalized path.
+</assignment>
+</module>

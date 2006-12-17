@@ -1,0 +1,21 @@
+<module name="Functional">
+This module provides means for programming in a functional style.
+
+<function name="map">
+<argument name="func_" type="Func" />
+<argument name="c" type="List" />
+Create a new list with the results of successively applying <code>func_</code> to each element in <code>c</code>.
+</function>
+
+<function name="foldl">
+<argument name="func_" type="Func" />
+<argument name="c" type="List" />
+<argument name="initializer" type="Object">null</argument>
+Uses <code>func_</code> to reduce <code>c</code> to a single value. <code>func_</code> must take two arguments and return a single value.
+
+If initializer is <code>null</code>, first applies <code>func_(c[0], c[1])</code> using the return value <code>a</code> to apply <code>func_(a, c[2])</code> and so on.
+
+If initializer is not <code>null</code>, first applies <code>func_(a, c[0])</code> using the return value <code>a'</code> to apply <code>func_(a', c[1])</code> and so on.
+</function>
+
+</module>

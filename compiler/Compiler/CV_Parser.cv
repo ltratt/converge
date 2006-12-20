@@ -288,7 +288,7 @@ class CV_Parser(Parser::Parser):
 		else:
 			token_print := token.value
 		
-		CEI::compiler().error(Strings::format("Parsing error at or near `%s' token.", token_print), token.src_info)
+		CEI::compiler().error(Strings::format("Parsing error at or near `%s' token.", token_print), token.src_infos)
 
 
 

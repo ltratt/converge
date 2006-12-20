@@ -27,11 +27,11 @@ import Builtins, Strings
 class Token:
 
 
-	func init(type, value, src_info):
+	func init(type, value, src_infos):
 	
 		self.type := type
 		self.value := value
-		self.src_info := src_info
+		self.src_infos := src_infos
 
 
 

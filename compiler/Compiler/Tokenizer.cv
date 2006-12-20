@@ -70,13 +70,13 @@ class Tokenizer:
 	// via the extra_keywords and extra_symbols paramters respectively.
 	//
 
-	func tokenize(str, src_info, extra_keywords, extra_symbols):
+	func tokenize(str, src_infos, extra_keywords, extra_symbols):
 
 		self._str := str
-		if src_info.len() != 1:
+		if src_infos.len() != 1:
 			raise "XXX"
-		self._src_path := src_info[0][0]
-		self._src_offset := src_info[0][1]
+		self._src_path := src_infos[0][0]
+		self._src_offset := src_infos[0][1]
 		self._re_keywords := PCRE::compile(Strings::format("(?:%s)\\b", Strings::join(KEYWORDS + extra_keywords, "|")))
 		escaped_symbols := []
 		nonescaped_symbols := SYMBOLS + extra_symbols

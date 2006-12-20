@@ -54,11 +54,11 @@ ALL_COMPARISONS := [IS_COMPARISON, EQ_COMPARISON, NEQ_COMPARISON, LEQ_COMPARISON
 
 class IModule:
 	
-	func init(module_name, definitions, src_info):
+	func init(module_name, definitions, src_infos):
 	
 		self.module_name := module_name
 		self.definitions := definitions
-		self.src_info := src_info
+		self.src_infos := src_infos
 
 		self.bound_vars := Compiler_Vars::DEFAULT_VARS.scopy()
 		for definition := definitions.iterate():
@@ -73,13 +73,13 @@ class IModule:
 
 class IClass_Def:
 
-	func init(class_name, supers, metaclass_, fields, src_info):
+	func init(class_name, supers, metaclass_, fields, src_infos):
 
 		self.class_name := class_name
 		self.supers := supers
 		self.metaclass_ := metaclass_
 		self.fields := fields
-		self.src_info := src_info
+		self.src_infos := src_infos
 		
 		self.bound_vars := Set{}
 		self.qq_bound_vars := Set{}
@@ -106,7 +106,7 @@ class IClass_Def:
 
 class IFunc_Def:
 
-	func init(is_bound, func_name, params, var_arg, nonlocals, renames, body, src_info):
+	func init(is_bound, func_name, params, var_arg, nonlocals, renames, body, src_infos):
 
 		self.is_bound := is_bound
 		self.func_name := func_name
@@ -115,7 +115,7 @@ class IFunc_Def:
 		self.nonlocals := nonlocals
 		self.renames := renames
 		self.body := body
-		self.src_info := src_info
+		self.src_infos := src_infos
 
 		self.bound_vars := Set{}
 
@@ -170,11 +170,11 @@ class IIf:
 	// 'clauses' is a list of 'IClause's.
 	// 'else_body' can be null.
 
-	func init(clauses, else_body, src_info):
+	func init(clauses, else_body, src_infos):
 	
 		self.clauses := clauses
 		self.else_body := else_body
-		self.src_info := src_info
+		self.src_infos := src_infos
 
 		self.bound_vars := Set{}
 		self.qq_bound_vars := Set{}
@@ -195,10 +195,10 @@ class INDIf:
 
 	// 'clauses' is a list of 'IClause's.
 
-	func init(clauses, src_info):
+	func init(clauses, src_infos):
 	
 		self.clauses := clauses
-		self.src_info := src_info
+		self.src_infos := src_infos
 
 		self.bound_vars := Set{}
 		self.qq_bound_vars := Set{}
@@ -213,10 +213,10 @@ class INDIf:
 
 class IVar:
 
-	func init(var_name, src_info):
+	func init(var_name, src_infos):
 	
 		self.var_name := var_name
-		self.src_info := src_info
+		self.src_infos := src_infos
 
 		self.bound_vars := Set{}
 		self.qq_bound_vars := Set{}
@@ -227,10 +227,10 @@ class IVar:
 
 class IImport:
 
-	func init(module_path, src_info):
+	func init(module_path, src_infos):
 
 		self.module_path := module_path
-		self.src_info := src_info
+		self.src_infos := src_infos
 
 		self.bound_vars := Set{}
 		self.qq_bound_vars := Set{}
@@ -241,13 +241,13 @@ class IImport:
 
 class IWhile:
 
-	func init(condition, body, exhausted_body, broken_body, src_info):
+	func init(condition, body, exhausted_body, broken_body, src_infos):
 	
 		self.condition := condition
 		self.body := body
 		self.exhausted_body := exhausted_body
 		self.broken_body := broken_body
-		self.src_info := src_info
+		self.src_infos := src_infos
 
 		self.bound_vars := condition.bound_vars.scopy()
 		self.qq_bound_vars := condition.qq_bound_vars.scopy()
@@ -270,13 +270,13 @@ class IWhile:
 
 class IFor:
 
-	func init(condition, body, exhausted_body, broken_body, src_info):
+	func init(condition, body, exhausted_body, broken_body, src_infos):
 	
 		self.condition := condition
 		self.body := body
 		self.exhausted_body := exhausted_body
 		self.broken_body := broken_body
-		self.src_info := src_info
+		self.src_infos := src_infos
 
 		self.bound_vars := condition.bound_vars.scopy()
 		self.qq_bound_vars := condition.qq_bound_vars.scopy()
@@ -299,10 +299,10 @@ class IFor:
 
 class IInt:
 
-	func init(val, src_info):
+	func init(val, src_infos):
 
 		self.val := val
-		self.src_info := src_info
+		self.src_infos := src_infos
 
 		self.bound_vars := Set{}
 		self.qq_bound_vars := Set{}
@@ -313,10 +313,10 @@ class IInt:
 
 class IString:
 
-	func init(string, src_info):
+	func init(string, src_infos):
 
 		self.string := string
-		self.src_info := src_info
+		self.src_infos := src_infos
 
 		self.bound_vars := Set{}
 		self.qq_bound_vars := Set{}
@@ -327,11 +327,11 @@ class IString:
 
 class ISlot_Lookup:
 
-	func init(object_expr, slot_name, src_info):
+	func init(object_expr, slot_name, src_infos):
 	
 		self.object_expr := object_expr
 		self.slot_name := slot_name
-		self.src_info := src_info
+		self.src_infos := src_infos
 
 		self.bound_vars := self.object_expr.bound_vars
 		self.qq_bound_vars := self.object_expr.qq_bound_vars
@@ -342,11 +342,11 @@ class ISlot_Lookup:
 
 class IModule_Lookup:
 
-	func init(object_expr, def_name, src_info):
+	func init(object_expr, def_name, src_infos):
 	
 		self.object_expr := object_expr
 		self.def_name := def_name
-		self.src_info := src_info
+		self.src_infos := src_infos
 
 		self.bound_vars := self.object_expr.bound_vars
 		self.qq_bound_vars := self.object_expr.qq_bound_vars
@@ -357,10 +357,10 @@ class IModule_Lookup:
 
 class IList:
 
-	func init(elements, src_info):
+	func init(elements, src_infos):
 	
 		self.elements := elements
-		self.src_info := src_info
+		self.src_infos := src_infos
 
 		self.bound_vars := Set{}
 		self.qq_bound_vars := Set{}
@@ -375,10 +375,10 @@ class IList:
 
 class IDict:
 
-	func init(elements, src_info):
+	func init(elements, src_infos):
 	
 		self.elements := elements
-		self.src_info := src_info
+		self.src_infos := src_infos
 
 		self.bound_vars := Set{}
 		self.qq_bound_vars := Set{}
@@ -396,10 +396,10 @@ class IDict:
 
 class ISet:
 
-	func init(elements, src_info):
+	func init(elements, src_infos):
 	
 		self.elements := elements
-		self.src_info := src_info
+		self.src_infos := src_infos
 
 		self.bound_vars := Set{}
 		self.qq_bound_vars := Set{}
@@ -414,11 +414,11 @@ class ISet:
 
 class IApplication:
 
-	func init(func_expr, args, src_info):
+	func init(func_expr, args, src_infos):
 	
 		self.func_expr := func_expr
 		self.args := args
-		self.src_info := src_info
+		self.src_infos := src_infos
 
 		self.bound_vars := func_expr.bound_vars.scopy()
 		for self.bound_vars.extend(args.iterate().bound_vars)
@@ -434,11 +434,11 @@ class IApplication:
 
 class IGet:
 
-	func init(get_object, index, src_info):
+	func init(get_object, index, src_infos):
 	
 		self.get_object := get_object
 		self.index := index
-		self.src_info := src_info
+		self.src_infos := src_infos
 
 		self.bound_vars := get_object.bound_vars + index.bound_vars
 		self.qq_bound_vars := get_object.qq_bound_vars + index.qq_bound_vars
@@ -449,12 +449,12 @@ class IGet:
 
 class ISlice:
 
-	func init(slice_object, lower_bound, upper_bound, src_info):
+	func init(slice_object, lower_bound, upper_bound, src_infos):
 	
 		self.slice_object := slice_object
 		self.lower_bound := lower_bound
 		self.upper_bound := upper_bound
-		self.src_info := src_info
+		self.src_infos := src_infos
 
 		self.bound_vars := slice_object.bound_vars.scopy()
 		self.qq_bound_vars := slice_object.qq_bound_vars.scopy()
@@ -475,10 +475,10 @@ class IReturn:
 
 	// return_expr can be null.
 
-	func init(return_expr, src_info):
+	func init(return_expr, src_infos):
 	
 		self.return_expr := return_expr
-		self.src_info := src_info
+		self.src_infos := src_infos
 
 		if self.return_expr is null:
 			self.bound_vars := Set{}
@@ -494,10 +494,10 @@ class IReturn:
 
 class IYield:
 
-	func init(yield_expr, src_info):
+	func init(yield_expr, src_infos):
 	
 		self.yield_expr := yield_expr
-		self.src_info := src_info
+		self.src_infos := src_infos
 		
 		self.bound_vars := yield_expr.bound_vars
 		self.qq_bound_vars := yield_expr.qq_bound_vars
@@ -508,10 +508,10 @@ class IYield:
 
 class IRaise:
 
-	func init(raise_expr, src_info):
+	func init(raise_expr, src_infos):
 	
 		self.raise_expr := raise_expr
-		self.src_info := src_info
+		self.src_infos := src_infos
 		
 		self.bound_vars := raise_expr.bound_vars
 		self.qq_bound_vars := raise_expr.qq_bound_vars
@@ -522,10 +522,10 @@ class IRaise:
 
 class IAssert:
 
-	func init(assert_expr, src_info):
+	func init(assert_expr, src_infos):
 	
 		self.assert_expr := assert_expr
-		self.src_info := src_info
+		self.src_infos := src_infos
 		
 		self.bound_vars := assert_expr.bound_vars
 		self.qq_bound_vars := assert_expr.qq_bound_vars
@@ -536,9 +536,9 @@ class IAssert:
 
 class IBreak:
 
-	func init(src_info):
+	func init(src_infos):
 	
-		self.src_info := src_info
+		self.src_infos := src_infos
 		
 		self.bound_vars := Set{}
 		self.qq_bound_vars := Set{}
@@ -549,9 +549,9 @@ class IBreak:
 
 class IContinue:
 
-	func init(src_info):
+	func init(src_infos):
 	
-		self.src_info := src_info
+		self.src_infos := src_infos
 		
 		self.bound_vars := Set{}
 		self.qq_bound_vars := Set{}
@@ -562,10 +562,10 @@ class IContinue:
 
 class IConjunction:
 
-	func init(exprs, src_info):
+	func init(exprs, src_infos):
 	
 		self.exprs := exprs
-		self.src_info := src_info
+		self.src_infos := src_infos
 		
 		self.bound_vars := Set{}
 		self.qq_bound_vars := Set{}
@@ -580,10 +580,10 @@ class IConjunction:
 
 class IAlternation:
 
-	func init(exprs, src_info):
+	func init(exprs, src_infos):
 	
 		self.exprs := exprs
-		self.src_info := src_info
+		self.src_infos := src_infos
 		
 		self.bound_vars := Set{}
 		self.qq_bound_vars := Set{}
@@ -598,12 +598,12 @@ class IAlternation:
 
 class IAssignment:
 
-	func init(type, targets, expr, src_info):
+	func init(type, targets, expr, src_infos):
 		
 		self.type := type
 		self.targets := targets
 		self.expr := expr
-		self.src_info := src_info
+		self.src_infos := src_infos
 
 		self.bound_vars := Set{}
 		self.qq_bound_vars := Set{}
@@ -625,10 +625,10 @@ class IAssignment:
 
 class INot:
 
-	func init(expr, src_info):
+	func init(expr, src_infos):
 	
 		self.expr := expr
-		self.src_info := src_info
+		self.src_infos := src_infos
 		
 		self.bound_vars := expr.bound_vars
 		self.qq_bound_vars := expr.qq_bound_vars
@@ -639,12 +639,12 @@ class INot:
 
 class IBinary:
 
-	func init(type, lhs, rhs, src_info):
+	func init(type, lhs, rhs, src_infos):
 		
 		self.type := type
 		self.lhs := lhs
 		self.rhs := rhs
-		self.src_info := src_info
+		self.src_infos := src_infos
 
 		self.bound_vars := lhs.bound_vars + rhs.bound_vars
 		self.qq_bound_vars := lhs.qq_bound_vars + rhs.qq_bound_vars
@@ -656,12 +656,12 @@ class IBinary:
 
 class IComparison:
 
-	func init(type, lhs, rhs, src_info):
+	func init(type, lhs, rhs, src_infos):
 		
 		self.type := type
 		self.lhs := lhs
 		self.rhs := rhs
-		self.src_info := src_info
+		self.src_infos := src_infos
 
 		self.bound_vars := lhs.bound_vars + rhs.bound_vars
 		self.qq_bound_vars := lhs.qq_bound_vars + rhs.qq_bound_vars
@@ -672,9 +672,9 @@ class IComparison:
 
 class IPass:
 
-	func init(src_info):
+	func init(src_infos):
 	
-		self.src_info := src_info
+		self.src_infos := src_infos
 		
 		self.bound_vars := Set{}
 		self.qq_bound_vars := Set{}
@@ -685,10 +685,10 @@ class IPass:
 
 class IInsert:
 
-	func init(expr, src_info):
+	func init(expr, src_infos):
 	
 		self.expr := expr
-		self.src_info := src_info
+		self.src_infos := src_infos
 		
 		self.bound_vars := expr.bound_vars
 		self.qq_bound_vars := expr.bound_vars
@@ -699,11 +699,11 @@ class IInsert:
 
 class IStandard_Quasi_Quotes:
 
-	func init(body, extra_src_info, src_info):
+	func init(body, extra_src_infos, src_infos):
 	
 		self.body := body
-		self.extra_src_info := extra_src_info
-		self.src_info := src_info
+		self.extra_src_infos := extra_src_infos
+		self.src_infos := src_infos
 		
 		self.bound_vars := Set{}
 		self.qq_bound_vars := Set{}
@@ -712,25 +712,25 @@ class IStandard_Quasi_Quotes:
 			self.qq_bound_vars.add(Strings::format(Compiler_Vars::QUASI_QUOTES_NAME, var))
 			self.bound_vars.add(Strings::format(Compiler_Vars::QUASI_QUOTES_NAME, var))
 		
-		if not extra_src_info is null:
-			self.extra_src_info_var_name := Compiler_Vars::fresh_name()
-			self.bound_vars.add(self.extra_src_info_var_name)
-			self.qq_bound_vars.add(self.extra_src_info_var_name)
+		if not extra_src_infos is null:
+			self.extra_src_infos_var_name := Compiler_Vars::fresh_name()
+			self.bound_vars.add(self.extra_src_infos_var_name)
+			self.qq_bound_vars.add(self.extra_src_infos_var_name)
 			
-			self.bound_vars.extend(extra_src_info.bound_vars)
-			self.qq_bound_vars.extend(extra_src_info.qq_bound_vars)
-			self.free_vars.extend(extra_src_info.free_vars)
+			self.bound_vars.extend(extra_src_infos.bound_vars)
+			self.qq_bound_vars.extend(extra_src_infos.qq_bound_vars)
+			self.free_vars.extend(extra_src_infos.free_vars)
 
 
 
 
 class IOriginal_Name:
 
-	func init(module_id, def_name, src_info):
+	func init(module_id, def_name, src_infos):
 	
 		self.module_id := module_id
 		self.def_name := def_name
-		self.src_info := src_info
+		self.src_infos := src_infos
 		
 		self.bound_vars := Set{}
 		self.qq_bound_vars := Set{}
@@ -746,10 +746,10 @@ class IOriginal_Name:
 
 class IExpr_Block:
 
-	func init(exprs, src_info):
+	func init(exprs, src_infos):
 	
 		self.exprs := exprs
-		self.src_info := src_info
+		self.src_infos := src_infos
 
 		self.bound_vars := Set{}
 		self.qq_bound_vars := Set{}
@@ -771,11 +771,11 @@ class IExpr_Block:
 
 class IParam:
 
-	func init(var, default, src_info):
+	func init(var, default, src_infos):
 	
 		self.var := var
 		self.default := default
-		self.src_info := src_info
+		self.src_infos := src_infos
 		
 		self.bound_vars := Set{var.var_name}
 		self.qq_bound_vars := Set{var.var_name}
@@ -793,11 +793,11 @@ class IParam:
 
 class IClause:
 
-	func init(condition, body, src_info):
+	func init(condition, body, src_infos):
 	
 		self.condition := condition
 		self.body := body
-		self.src_info := src_info
+		self.src_infos := src_infos
 
 		self.bound_vars := condition.bound_vars + body.bound_vars
 		self.qq_bound_vars := condition.qq_bound_vars + body.qq_bound_vars

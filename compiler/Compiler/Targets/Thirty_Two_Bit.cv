@@ -87,9 +87,9 @@ INSTR_MODULE_LOOKUP := 51          // bits 0-7 := 51, bits 8-31 := size of slot 
 
 class Instruction:
 
-	func init(src_info):
+	func init(src_infos):
 
-		self.src_info := src_info
+		self.src_infos := src_infos
 
 
 
@@ -102,9 +102,9 @@ class Instruction:
 
 class Instr_Lookup_Var(Instruction):
 
-	func init(src_info, closures_offset, var_number):
+	func init(src_infos, closures_offset, var_number):
 	
-		self.src_info := src_info
+		self.src_infos := src_infos
 		self.closures_offset := closures_offset
 		self.var_number := var_number
 
@@ -119,9 +119,9 @@ class Instr_Lookup_Var(Instruction):
 
 class Instr_Assign_Var(Instruction):
 
-	func init(src_info, closures_offset, var_number):
+	func init(src_infos, closures_offset, var_number):
 	
-		self.src_info := src_info
+		self.src_infos := src_infos
 		self.closures_offset := closures_offset
 		self.var_number := var_number
 
@@ -136,9 +136,9 @@ class Instr_Assign_Var(Instruction):
 
 class Instr_Int(Instruction):
 
-	func init(src_info, val):
+	func init(src_infos, val):
 	
-		self.src_info := src_info
+		self.src_infos := src_infos
 		self.val := val
 
 
@@ -159,9 +159,9 @@ class Instr_Int(Instruction):
 
 class Instr_Add_Failure_Frame(Instruction):
 
-	func init(src_info, pc_offset):
+	func init(src_infos, pc_offset):
 	
-		self.src_info := src_info
+		self.src_infos := src_infos
 		self.pc_offset := pc_offset
 
 
@@ -193,9 +193,9 @@ class Instr_Remove_Failure_Frame(Instruction):
 
 class Instr_Is_Assigned(Instruction):
 
-	func init(src_info, closures_offset, var_number, pc_offset):
+	func init(src_infos, closures_offset, var_number, pc_offset):
 	
-		self.src_info := src_info
+		self.src_infos := src_infos
 		self.closures_offset := closures_offset
 		self.var_number := var_number
 		self.pc_offset := pc_offset
@@ -236,9 +236,9 @@ class Instr_Pop(Instruction):
 
 class Instr_List(Instruction):
 
-	func init(src_info, num_elements):
+	func init(src_infos, num_elements):
 		
-		self.src_info := src_info
+		self.src_infos := src_infos
 		self.num_elements := num_elements
 
 
@@ -253,9 +253,9 @@ class Instr_List(Instruction):
 class Instr_Slot_Lookup(Instruction):
 
 
-	func init(src_info, slot_name):
+	func init(src_infos, slot_name):
 
-		self.src_info := src_info	
+		self.src_infos := src_infos	
 		self.slot_name := slot_name
 
 
@@ -276,9 +276,9 @@ class Instr_Slot_Lookup(Instruction):
 
 class Instr_Apply(Instruction):
 
-	func init(src_info, num_args):
+	func init(src_infos, num_args):
 		
-		self.src_info := src_info
+		self.src_infos := src_infos
 		self.num_args := num_args
 
 
@@ -292,9 +292,9 @@ class Instr_Apply(Instruction):
 
 class Instr_Func_Def(Instruction):
 
-	func init(src_info, is_bound):
+	func init(src_infos, is_bound):
 		
-		self.src_info := src_info
+		self.src_infos := src_infos
 		self.is_bound := is_bound
 
 
@@ -317,9 +317,9 @@ class Instr_Return(Instruction):
 
 class Instr_Branch(Instruction):
 
-	func init(src_info, pc_offset):
+	func init(src_infos, pc_offset):
 		
-		self.src_info := src_info
+		self.src_infos := src_infos
 		self.pc_offset := pc_offset
 
 
@@ -342,9 +342,9 @@ class Instr_Yield(Instruction):
 
 class Instr_Import(Instruction):
 
-	func init(src_info, import_num):
+	func init(src_infos, import_num):
 		
-		self.src_info := src_info
+		self.src_infos := src_infos
 		self.import_num := import_num
 
 
@@ -358,9 +358,9 @@ class Instr_Import(Instruction):
 
 class Instr_Dict(Instruction):
 
-	func init(src_info, num_elements):
+	func init(src_infos, num_elements):
 		
-		self.src_info := src_info
+		self.src_infos := src_infos
 		self.num_elements := num_elements
 
 
@@ -383,9 +383,9 @@ class Instr_Dup(Instruction):
 
 class Instr_Pull(Instruction):
 
-	func init(src_info, num_entries):
+	func init(src_infos, num_entries):
 
-		self.src_info := src_info	
+		self.src_infos := src_infos	
 		self.num_entries := num_entries
 
 
@@ -399,9 +399,9 @@ class Instr_Pull(Instruction):
 
 class Instr_String(Instruction):
 
-	func init(src_info, string):
+	func init(src_infos, string):
 
-		self.src_info := src_info	
+		self.src_infos := src_infos	
 		self.string := string
 	
 
@@ -421,9 +421,9 @@ class Instr_String(Instruction):
 
 class Instr_Builtin_Lookup(Instruction):
 
-	func init(src_info, builtin):
+	func init(src_infos, builtin):
 		
-		self.src_info := src_info
+		self.src_infos := src_infos
 		self.builtin := builtin
 
 
@@ -447,9 +447,9 @@ class Instr_EYield(Instruction):
 class Instr_Assign_Slot(Instruction):
 
 
-	func init(src_info, slot_name):
+	func init(src_infos, slot_name):
 
-		self.src_info := src_info	
+		self.src_infos := src_infos	
 		self.slot_name := slot_name 
 
 
@@ -478,9 +478,9 @@ class Instr_Raise(Instruction):
 
 class Instr_Unpack_Args(Instruction):
 
-	func init(src_info, params_info, has_var_args):
+	func init(src_infos, params_info, has_var_args):
 		
-		self.src_info := src_info
+		self.src_infos := src_infos
 		self.params_info := params_info
 		self.has_var_args := has_var_args
 
@@ -510,9 +510,9 @@ class Instr_Unpack_Args(Instruction):
 
 class Instr_Set(Instruction):
 
-	func init(src_info, num_elements):
+	func init(src_infos, num_elements):
 		
-		self.src_info := src_info
+		self.src_infos := src_infos
 		self.num_elements := num_elements
 
 
@@ -526,9 +526,9 @@ class Instr_Set(Instruction):
 
 class Instr_Branch_If_Not_Fail(Instruction):
 
-	func init(src_info, pc_offset):
+	func init(src_infos, pc_offset):
 	
-		self.src_info := src_info
+		self.src_infos := src_infos
 		self.pc_offset := pc_offset
 
 
@@ -542,9 +542,9 @@ class Instr_Branch_If_Not_Fail(Instruction):
 
 class Instr_Branch_If_Fail(Instruction):
 
-	func init(src_info, pc_offset):
+	func init(src_infos, pc_offset):
 	
-		self.src_info := src_info
+		self.src_infos := src_infos
 		self.pc_offset := pc_offset
 
 
@@ -558,9 +558,9 @@ class Instr_Branch_If_Fail(Instruction):
 
 class Instr_Constant_Get(Instruction):
 
-	func init(src_info, constant_num):
+	func init(src_infos, constant_num):
 	
-		self.src_info := src_info
+		self.src_infos := src_infos
 		self.constant_num := constant_num
 
 
@@ -574,9 +574,9 @@ class Instr_Constant_Get(Instruction):
 
 class Instr_Constant_Set(Instruction):
 
-	func init(src_info, constant_num):
+	func init(src_infos, constant_num):
 	
-		self.src_info := src_info
+		self.src_infos := src_infos
 		self.constant_num := constant_num
 
 
@@ -590,9 +590,9 @@ class Instr_Constant_Set(Instruction):
 
 class Instr_Pre_Apply_Slot_Lookup(Instruction):
 
-	func init(src_info, slot_name):
+	func init(src_infos, slot_name):
 	
-		self.src_info := src_info
+		self.src_infos := src_infos
 		self.slot_name := slot_name
 
 
@@ -621,9 +621,9 @@ class Instr_Is(Instruction):
 
 class Instr_Unpack_Assign(Instruction):
 
-	func init(src_info, num_elements):
+	func init(src_infos, num_elements):
 	
-		self.src_info := src_info
+		self.src_infos := src_infos
 		self.num_elements := num_elements
 
 
@@ -710,9 +710,9 @@ class Instr_GE(Instruction):
 class Instr_Module_Lookup(Instruction):
 
 
-	func init(src_info, slot_name):
+	func init(src_infos, slot_name):
 
-		self.src_info := src_info	
+		self.src_infos := src_infos	
 		self.slot_name := slot_name
 
 
@@ -737,9 +737,9 @@ class Instr_Module_Lookup(Instruction):
 func encode_src_infos(src_infos):
 
 	src_infos_array := Array::Array.new("i32")
-	for num_instructions, src_info := src_infos.iterate():
-		src_infos_array.append(num_instructions.or(src_info.len().lsl(16)))
-		for import_num, src_offset := src_info.iterate():
+	for num_instructions, src_infos := src_infos.iterate():
+		src_infos_array.append(num_instructions.or(src_infos.len().lsl(16)))
+		for import_num, src_offset := src_infos.iterate():
 			if import_num == -1:
 				src_infos_array.append(4095.or(src_offset.lsl(12)))
 			else:
@@ -754,18 +754,18 @@ func decode_src_infos(src_infos_array):
 	src_infos := []
 	i := 0
 	while i < src_infos_array.len():
-		src_info := []
+		src_infos := []
 		num_instructions := src_infos_array[i].and(65535)
-		num_src_info := src_infos_array[i].lsr(16)
+		num_src_infos := src_infos_array[i].lsr(16)
 		i += 1
-		for j := 0.to(num_src_info):
+		for j := 0.to(num_src_infos):
 			import_num := src_infos_array[i].and(4095)
 			if import_num == 4095:
 				import_num := -1
 			src_offset := src_infos_array[i].lsr(12)
-			src_info.append([import_num, src_offset])
+			src_infos.append([import_num, src_offset])
 			i += 1
-		src_infos.append([num_instructions, src_info])
+		src_infos.append([num_instructions, src_infos])
 	
 	return src_infos
 

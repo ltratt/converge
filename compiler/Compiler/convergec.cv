@@ -176,25 +176,25 @@ class Compiler:
 
 
 
-	func error(msg, src_info := null):
+	func error(msg, src_infos := null):
 	
-		self._print_msg("Error", msg, src_info)
+		self._print_msg("Error", msg, src_infos)
 		Sys::exit(1)
 
 
 
-	func warning(msg, src_info := null):
+	func warning(msg, src_infos := null):
 	
-		self._print_msg("Warning", msg, src_info)
+		self._print_msg("Warning", msg, src_infos)
 		Sys::exit(1)
 	
 	
 	
-	func _print_msg(pre_msg, msg, src_info := null):
+	func _print_msg(pre_msg, msg, src_infos := null):
 	
-		if not src_info is null:
-			if src_info.len() == 1 & src_info[0][0] := self.module_id:
-				src_offset := src_info[0][1]
+		if not src_infos is null:
+			if src_infos.len() == 1 & src_infos[0][0] := self.module_id:
+				src_offset := src_infos[0][1]
 				newlines := self.tokenizer.newlines
 				i := 0
 				while i < newlines.len():
@@ -205,8 +205,8 @@ class Compiler:
 				Sys::stderr.writeln(Strings::format("%s: Line %d, column %d: %s", pre_msg, i, col, msg))
 			else:
 				Sys::stderr.writeln(Strings::format("%s:", pre_msg))
-				for i := 0.to(src_info.len()):
-					module_id, src_offset := src_info[i]
+				for i := 0.to(src_infos.len()):
+					module_id, src_offset := src_infos[i]
 					if module_id != self.module_id:
 						raise "XXX"
 					newlines := self.tokenizer.newlines

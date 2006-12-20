@@ -44,38 +44,38 @@ func fresh_name(name := null):
 
 
 
-func lift(obj, src_info := null):
+func lift(obj, src_infos := null):
 
-	if src_info is null:
-		src_info := Thread::get_continuation_src_info(2)
+	if src_infos is null:
+		src_infos := Thread::get_continuation_src_infos(2)
 	else:
-		src_info += Thread::get_continuation_src_info(2)
+		src_infos += Thread::get_continuation_src_infos(2)
 
 	if obj is null:
-		return ITree::IVar.new("null", src_info)
+		return ITree::IVar.new("null", src_infos)
 	elif Builtins::String.conformed_by(obj):
-		return ITree::IString.new(obj, src_info)
+		return ITree::IString.new(obj, src_infos)
 	elif Builtins::Int.conformed_by(obj):
-		return ITree::IInt.new(obj, src_info)
+		return ITree::IInt.new(obj, src_infos)
 	elif Builtins::List.conformed_by(obj):
 		elems := []
 		for e := obj.iterate():
-			elems.append(lift(e, src_info))
-		return ITree::IList.new(elems, src_info)
+			elems.append(lift(e, src_infos))
+		return ITree::IList.new(elems, src_infos)
 	elif Builtins::Set.conformed_by(obj):
 		elems := []
 		for e := obj.iterate():
-			elems.append(lift(e, src_info))
-		return ITree::ISet.new(elems, src_info)
+			elems.append(lift(e, src_infos))
+		return ITree::ISet.new(elems, src_infos)
 	else:
 		raise Exceptions::Exception.new(Strings::format("Don't know how to lift instance of '%s': '%s'.", obj.instance_of.name, obj.to_str()))
 
 
 
-func dsl_parse(dsl_block, src_info, extra_keywords, extra_symbols, grammar, start_rule):
+func dsl_parse(dsl_block, src_infos, extra_keywords, extra_symbols, grammar, start_rule):
 
 	tokenizer := Tokenizer::Tokenizer.new()
-	tokenizer.tokenize(dsl_block, src_info, extra_keywords, extra_symbols)
+	tokenizer.tokenize(dsl_block, src_infos, extra_keywords, extra_symbols)
 	
 	tokens_map := Tokenizer::tokens_map(extra_symbols, extra_keywords)
 	grammar, rule_names := Grammar::compile(grammar, start_rule, tokens_map)
@@ -103,9 +103,9 @@ func _ibuilder():
 				// Add src info from the calling function.
 
 				if args.len() == ${num_params} - 1:
-					args := args[ : -1] + [(args[-1] + Thread::get_continuation_src_info(2))]
+					args := args[ : -1] + [(args[-1] + Thread::get_continuation_src_infos(2))]
 				else:
-					args := args + [Thread::get_continuation_src_info(2)]
+					args := args + [Thread::get_continuation_src_infos(2)]
 
 				// Create the element and immediately type check it.
 

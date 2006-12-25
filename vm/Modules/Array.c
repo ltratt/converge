@@ -191,8 +191,18 @@ Con_Obj *_Con_Modules_Array_Array_new(Con_Obj *thread)
 
 			Con_Memory_change_chunk_type(thread, new_array, CON_MEMORY_CHUNK_OBJ);
 		}
-		else
-			CON_XXX;
+		else {
+			Con_Int num_entries_allocated = Con_Numbers_Number_to_Con_Int(thread, CON_GET_SLOT_APPLY(initial_data, "len"));
+			array_atom->entries = (u_char *) Con_Memory_malloc(thread, array_atom->entry_size * num_entries_allocated, CON_MEMORY_CHUNK_OPAQUE);
+			array_atom->num_entries = 0;
+			array_atom->num_entries_allocated = num_entries_allocated;
+
+			Con_Builtins_Slots_Atom_Def_init_atom(thread, slots_atom);
+
+			Con_Memory_change_chunk_type(thread, new_array, CON_MEMORY_CHUNK_OBJ);
+
+			CON_GET_SLOT_APPLY(new_array, "extend", initial_data);
+		}
 	}
 	else {
 		Con_Int num_entries_allocated = CON_DEFAULT_ARRAY_NUM_ENTRIES_ALLOCATED;

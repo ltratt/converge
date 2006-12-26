@@ -1,4 +1,4 @@
 clean:
 
 distclean:
-	rm -f Makefile convergec.bootstrap convergel.bootstrap id_fix.bootstrap
+	rm -f Makefile convergec.bootstrap convergel.bootstrap

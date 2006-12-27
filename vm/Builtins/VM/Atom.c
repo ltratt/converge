@@ -1175,7 +1175,7 @@ Con_Obj *_Con_Builtins_VM_Atom_execute(Con_Obj *thread)
 				}
 				case CON_INSTR_RETURN: {
 					Con_Obj *rtn_obj = Con_Builtins_Con_Stack_Atom_pop_object(thread, con_stack);
-					pc.pc.bytecode_offset += CON_INSTR_DECODE_BRANCH_OFFSET(instruction);
+					pc.pc.bytecode_offset += sizeof(Con_Int);
 					Con_Builtins_Con_Stack_Atom_update_continuation_frame_pc(thread, con_stack, pc);
 					CON_MUTEX_UNLOCK(&con_stack->mutex);
 					return rtn_obj;
@@ -1189,10 +1189,11 @@ Con_Obj *_Con_Builtins_VM_Atom_execute(Con_Obj *thread)
 					break;
 				case CON_INSTR_YIELD: {
 					Con_Obj *yield_obj = Con_Builtins_Con_Stack_Atom_pop_object(thread, con_stack);
-					pc.pc.bytecode_offset += CON_INSTR_DECODE_BRANCH_OFFSET(instruction);
+					pc.pc.bytecode_offset += sizeof(Con_Int);
 					Con_Builtins_Con_Stack_Atom_update_continuation_frame_pc(thread, con_stack, pc);
 					CON_MUTEX_UNLOCK(&con_stack->mutex);
 					CON_YIELD(yield_obj);
+					break;
 				}
 				case CON_INSTR_DICT: {
 					CON_MUTEX_UNLOCK(&con_stack->mutex);

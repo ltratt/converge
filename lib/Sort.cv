@@ -24,9 +24,7 @@
 // sorting algorithm. Note that the sort is not guaranteed to be stable.
 //
 
-func sort(list, comparison := func (x, y) {
-	return x < y
-}):
+func sort(list, comparison := func (x, y) { return x < y }):
 
 	heapsort(list, comparison)
 
@@ -36,9 +34,7 @@ func sort(list, comparison := func (x, y) {
 // Sort 'list' in place into the order determined by 'comparison' using the heapsort algorithm.
 //
 
-func heapsort(list, comparison := func (x, y) {
-	return x < y
-}):
+func heapsort(list, comparison := func (x, y) { return x < y }):
 
 	// This implementation of heapsort is as described at:
 	//

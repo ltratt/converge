@@ -12,7 +12,7 @@ LIBS=@LIBS@
 
 
 OBJECT_FILES = 	@CON_THREAD_ATOM_OBJ@ @CON_THREAD_CLASS_OBJ@ @CON_THREAD_MODULE_OBJ@ \
-	Bootstrap.o Builtins/Atom_Def_Atom.o Builtins/Class/Atom.o \
+	Bootstrap.o Instructions.o Builtins/Atom_Def_Atom.o Builtins/Class/Atom.o \
 	Builtins/Class/Class.o Builtins/Closure/Atom.o Builtins/Closure/Class.o \
 	Builtins/Con_Stack/Atom.o Builtins/Con_Stack/Class.o Builtins/Dict/Atom.o \
 	Builtins/Dict/Class.o Builtins/Exception/Atom.o Builtins/Exception/Class.o \

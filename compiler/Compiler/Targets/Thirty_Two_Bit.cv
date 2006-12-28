@@ -59,7 +59,7 @@ INSTR_INSTANCE_OF := 31            // bits 0-7 := 31
 INSTR_REMOVE_EXCEPTION_FRAME := 32 // bits 0-7 := 32
 INSTR_RAISE := 33                  // bits 0-7 := 33
 INSTR_SET_ITEM := 34
-INSTR_UNPACK_ARGS := 35            // bits 0-7 := 40, bits 8-15 := num args, bit 16 := is bound
+INSTR_UNPACK_ARGS := 35            // bits 0-7 := 40, bits 8-15 := num args, bit 16 := has var args
 // each variable is then a subsequent word:
 //   word 1: 0-11 := var number, bit 12 := is mandatory arg
 INSTR_SET := 36                    // bits 0-7 := 36, bits 8-31 := number of list elements

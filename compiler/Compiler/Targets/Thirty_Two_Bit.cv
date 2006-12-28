@@ -27,7 +27,6 @@ import Array, Exceptions
 WORDSIZE := 4
 
 
-//INSTR_ASSIGN := 1                  // bits 0-7 := 1
 INSTR_LOOKUP_VAR := 2              // bits 0-7 := 2, bits 8-19 := continuation offset, bits 20-31 := var number
 INSTR_ASSIGN_VAR := 3              // bits 0-7 := 3, bits 8-19 := closures offset, bits 20-31 := var number
 INSTR_INT := 4                     // bits 0-7 := 4, bits 8-30 := integer value, bit 31 := sign
@@ -41,12 +40,11 @@ INSTR_FAIL_NOW := 10               // bits 0-7 := 10
 INSTR_POP := 11                    // bits 0-7 := 11
 INSTR_LIST := 12                   // bits 0-7 := 12, bits 8-31 := number of list elements
 INSTR_SLOT_LOOKUP := 13            // bits 0-7 := 13, bits 8-31 := size of slot name, bits 32-.. := slot name
-INSTR_APPLY := 14                  // bits 0-7 := 14, bits 8-15 := number of args
+INSTR_APPLY := 14                  // bits 0-7 := 14, bits 8-31 := number of args
 INSTR_FUNC_DEF := 15               // bits 0-7 := 15, bits 8-15 := is_bound, bit 16 := is bound
 INSTR_RETURN := 16                 // bits 0-7 := 16
 INSTR_BRANCH := 17                 // bits 0-7 := 17, bits 8-30 := pc offset, bit 31 := offset sign
 INSTR_YIELD := 18                  // bits 0-7 := 18
-INSTR_PUSH_FAIL := 19              // bits 0-7 := 19
 INSTR_IMPORT := 20                 // bits 0-7 := 20, bits 8-31 := module name
 INSTR_DICT := 21                   // bits 0-7 := 21, bits 8-31 := number of dictionary elements
 INSTR_DUP := 22                    // bits 0-7 := 22
@@ -56,8 +54,7 @@ INSTR_STRING := 25                 // bits 0-7 := 25, bits 8-31 := size of strin
 INSTR_BUILTIN_LOOKUP := 26         // bits 0-7 := 26, bits 8-15 := builtin number
 INSTR_ASSIGN_SLOT := 27            // bits 0-7 := 27, bits 8-31 := size of slot name, bits 32-.. := slot name
 INSTR_EYIELD := 28                 // bits 0-7 := 28
-INSTR_ADD_EXCEPTION_FRAME := 29    // bits 0-7 := 5, bits 8-30 := pc offset, bit 31 := offset sign
-INSTR_PUSH_EXCEPTION := 30         // bits 0-7 := 30
+INSTR_ADD_EXCEPTION_FRAME := 29    // bits 0-7 := 29, bits 8-30 := pc offset, bit 31 := offset sign
 INSTR_INSTANCE_OF := 31            // bits 0-7 := 31
 INSTR_REMOVE_EXCEPTION_FRAME := 32 // bits 0-7 := 32
 INSTR_RAISE := 33                  // bits 0-7 := 33
@@ -65,12 +62,12 @@ INSTR_SET_ITEM := 34
 INSTR_UNPACK_ARGS := 35            // bits 0-7 := 40, bits 8-15 := num args, bit 16 := is bound
 // each variable is then a subsequent word:
 //   word 1: 0-11 := var number, bit 12 := is mandatory arg
-INSTR_SET := 36
-INSTR_BRANCH_IF_NOT_FAIL := 37     // bits 0-7 := 48, bits 8-30 := pc offset, bit 31 := offset sign
-INSTR_BRANCH_IF_FAIL := 38         // bits 0-7 := 49, bits 8-30 := pc offset, bit 31 := offset sign
-INSTR_CONSTANT_GET := 39           // bits 0-7 := 50, bits 8-30 := constant number
-INSTR_CONSTANT_SET := 40           // bits 0-7 := 51, bits 8-30 := constant number
-INSTR_PRE_APPLY_SLOT_LOOKUP := 41  // bits 0-7 := 52, bits 8-31 := size of slot name, bits 32-.. := slot name
+INSTR_SET := 36                    // bits 0-7 := 36, bits 8-31 := number of list elements
+INSTR_BRANCH_IF_NOT_FAIL := 37     // bits 0-7 := 37, bits 8-30 := pc offset, bit 31 := offset sign
+INSTR_BRANCH_IF_FAIL := 38         // bits 0-7 := 38, bits 8-30 := pc offset, bit 31 := offset sign
+INSTR_CONSTANT_GET := 39           // bits 0-7 := 39, bits 8-30 := constant number
+INSTR_CONSTANT_SET := 40           // bits 0-7 := 40, bits 8-30 := constant number
+INSTR_PRE_APPLY_SLOT_LOOKUP := 41  // bits 0-7 := 41, bits 8-31 := size of slot name, bits 32-.. := slot name
 INSTR_UNPACK_ASSIGN := 42          // bits 0-7 := 42, bits 8-31 := number of elements to be unpacked
 INSTR_EQ := 43				       // bits 0-7 := 43
 INSTR_LE := 44				       // bits 0-7 := 44
@@ -245,7 +242,7 @@ class Instr_List(Instruction):
 
 	func to_bytecode():
 	
-		return b_8_8(INSTR_LIST, self.num_elements)
+		return b_8_24(INSTR_LIST, self.num_elements)
 
 
 
@@ -268,7 +265,7 @@ class Instr_Slot_Lookup(Instruction):
 
 	func to_bytecode():
 	
-		return [b_8_8(INSTR_SLOT_LOOKUP, self.slot_name.len())] + b_aligned_string(self.slot_name)
+		return [b_8_24(INSTR_SLOT_LOOKUP, self.slot_name.len())] + b_aligned_string(self.slot_name)
 
 
 
@@ -285,7 +282,7 @@ class Instr_Apply(Instruction):
 
 	func to_bytecode():
 	
-		return b_8_8(INSTR_APPLY, self.num_args)
+		return b_8_24(INSTR_APPLY, self.num_args)
 
 
 
@@ -462,7 +459,7 @@ class Instr_Assign_Slot(Instruction):
 	
 	func to_bytecode():
 	
-		return [b_8_8(INSTR_ASSIGN_SLOT, self.slot_name.len())] + b_aligned_string(self.slot_name)
+		return [b_8_24(INSTR_ASSIGN_SLOT, self.slot_name.len())] + b_aligned_string(self.slot_name)
 
 
 
@@ -605,7 +602,7 @@ class Instr_Pre_Apply_Slot_Lookup(Instruction):
 
 	func to_bytecode():
 	
-		return [b_8_8(INSTR_PRE_APPLY_SLOT_LOOKUP, self.slot_name.len())] + b_aligned_string(self.slot_name)
+		return [b_8_24(INSTR_PRE_APPLY_SLOT_LOOKUP, self.slot_name.len())] + b_aligned_string(self.slot_name)
 
 
 
@@ -725,7 +722,7 @@ class Instr_Module_Lookup(Instruction):
 
 	func to_bytecode():
 	
-		return [b_8_8(INSTR_MODULE_LOOKUP, self.slot_name.len())] + b_aligned_string(self.slot_name)
+		return [b_8_24(INSTR_MODULE_LOOKUP, self.slot_name.len())] + b_aligned_string(self.slot_name)
 
 
 

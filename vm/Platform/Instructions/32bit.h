@@ -21,7 +21,6 @@
 
 // 32-bit little endian instructions
 
-#define CON_INSTR_ASSIGN 1  				// bits 0-7 1
 #define CON_INSTR_VAR_LOOKUP 2  			// bits 0-7 2, bits 8-19 closures offset, bits 20-31 var number
 #define CON_INSTR_VAR_ASSIGN 3  			// bits 0-7 3, bits 8-19 closures offset, bits 20-31 var number
 #define CON_INSTR_INT 4 					// bits 0-7 4, bits 8-30 integer value, bit 31 sign (0 = positive, 1 = negative)
@@ -35,12 +34,11 @@
 #define CON_INSTR_POP 11					// bits 0-7 11
 #define CON_INSTR_LIST 12					// bits 0-7 12, bits 8-31 number of list elements
 #define CON_INSTR_SLOT_LOOKUP 13			// bits 0-7 13, bits 8-31 size of slot name, bits 32-.. slot name
-#define CON_INSTR_APPLY 14  				// bits 0-7 14, bits 8-15 number of args
+#define CON_INSTR_APPLY 14  				// bits 0-7 14, bits 8-31 number of args
 #define CON_INSTR_FUNC_DEF 15				// bits 0-7 15, bits 8-9 is_bound
 #define CON_INSTR_RETURN 16 				// bits 0-7 16
 #define CON_INSTR_BRANCH 17 				// bits 0-7 17, bits 8-30 pc offset, bit 31 offset sign (0 = positive, 1 = negative)
 #define CON_INSTR_YIELD 18  				// bits 0-7 18
-#define CON_INSTR_PUSH_FAIL 19  			// bits 0-7 19
 #define CON_INSTR_IMPORT 20 				// bits 0-7 20, bits 8-31 module number
 #define CON_INSTR_DICT 21					// bits 0-7 21, bits 8-31 number of dictionary elements
 #define CON_INSTR_DUP 22					// bits 0-7 22
@@ -51,7 +49,6 @@
 #define CON_INSTR_ASSIGN_SLOT 27			// bits 0-7 13, bits 8-31 size of slot name, bits 32-.. slot name
 #define CON_INSTR_EYIELD 28 				// bits 0-7 28
 #define CON_INSTR_ADD_EXCEPTION_FRAME 29	// bits 0-7 5, bits 8-30 pc offset, bit 31 offset sign
-#define CON_INSTR_PUSH_EXCEPTION 30 		// bits 0-7 30
 #define CON_INSTR_INSTANCE_OF 31			// bits 0-7 31
 #define CON_INSTR_REMOVE_EXCEPTION_FRAME 32 // bits 0-7 32
 #define CON_INSTR_RAISE 33  				// bits 0-7 33
@@ -90,7 +87,7 @@
 
 #define CON_INSTR_DECODE_SLOT_LOOKUP_SIZE(instruction) ((instruction & 0xFFFFFF00) >> 8)
 
-#define CON_INSTR_DECODE_APPLY_NUM_ARGS(instruction) ((instruction & 0x0000FF00) >> 8)
+#define CON_INSTR_DECODE_APPLY_NUM_ARGS(instruction) ((instruction & 0xFFFFFF00) >> 8)
 
 #define CON_INSTR_DECODE_ADD_FAILURE_FRAME_OFFSET(instruction) ((instruction & 0x7FFFFF00) >> 8)
 #define CON_INSTR_DECODE_ADD_FAILURE_FRAME_SIGN(instruction) ((instruction & 0x80000000) >> 8)

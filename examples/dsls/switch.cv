@@ -110,7 +110,7 @@ func f():
 				Sys::println("c1")
 
 			case 2:
-				Sys::lprintln("c2")
+				Sys::println("c2")
 
 			default:
 				Sys::println("default")

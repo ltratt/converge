@@ -153,12 +153,17 @@ class Bytecode_Gen:
 		// At the same time we also populate the src_infos array.
 		
 		instructions_bytecode := Array::Array.new(self._compiler.target_array_type)
-		src_infos := []
+		all_src_infos := []
+		last_src_infos := null
+		src_infos_count := 0
 		for instruction := self._instructions.iterate():
 			instruction_bytecode := instruction.to_bytecode()
+			if Builtins::List.conformed_by(instruction_bytecode):
+				instructions_bytecode.extend(instruction_bytecode)
+			else:
+				instructions_bytecode.append(instruction_bytecode)
 			
-			local_src_infos := []
-			//Sys::println(instruction.instance_of.name, " ", instruction.src_infos)
+			src_infos := []
 			for module_id, src_offset := instruction.src_infos.iterate():
 				if module_id == self._module_id:
 					import_num := -1
@@ -172,16 +177,22 @@ class Bytecode_Gen:
 						self._imports[module_id] := import_num
 				
 				if src_offset is null:
-					local_src_infos.append([import_num, -1])
+					src_infos.append([import_num, -1])
 				else:
-					local_src_infos.append([import_num, src_offset])
+					src_infos.append([import_num, src_offset])
 			
-			if Builtins::List.conformed_by(instruction_bytecode):
-				src_infos.append([instruction_bytecode.len(), local_src_infos])
-				instructions_bytecode.extend(instruction_bytecode)
+			if last_src_infos is null:
+				last_src_infos := src_infos
+				src_infos_count := 1
+			elif last_src_infos == src_infos:
+				src_infos_count += 1
 			else:
-				src_infos.append([1, local_src_infos])
-				instructions_bytecode.append(instruction_bytecode)
+				all_src_infos.append([src_infos_count, last_src_infos])
+				src_infos_count := 1
+				last_src_infos := src_infos
+
+		if src_infos_count > 0:
+			all_src_infos.append([src_infos_count, last_src_infos])
 
 		// Calculate the imports that we'll populate the module with. Note that we calculate
 
@@ -199,7 +210,7 @@ class Bytecode_Gen:
 		module.set_top_level_vars_map(self._top_level_vars_map)
 		module.set_instructions_bytecode(instructions_bytecode)
 		module.set_imports(module_imports)
-		module.set_src_infos(src_infos)
+		module.set_src_infos(all_src_infos)
 		module.set_newlines(self._compiler.tokenizer.newlines)
 		module.set_constants_offsets(constants_offsets)
 		

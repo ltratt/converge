@@ -19,7 +19,7 @@
 // IN THE SOFTWARE.
 
 
-import Array, Exceptions
+import Array, Exceptions, Maths
 
 
 
@@ -728,19 +728,34 @@ class Instr_Module_Lookup(Instruction):
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-//
+// Src infos
 //
 
-func encode_src_infos(src_infos):
+// These are encoded as follows:
+//   bits 0-2  : num of instructions covered
+//   bit  3    : if set, the next src info covers this instruction
+//   bits 4-13 : import num
+//   bits 14-32: src byte offset
+
+func encode_src_infos(all_src_infos):
 
 	src_infos_array := Array::Array.new("i32")
-	for num_instructions, src_infos := src_infos.iterate():
-		src_infos_array.append(num_instructions.or(src_infos.len().lsl(16)))
-		for import_num, src_offset := src_infos.iterate():
-			if import_num == -1:
-				src_infos_array.append(4095.or(src_offset.lsl(12)))
-			else:
-				src_infos_array.append(import_num.or(src_offset.lsl(12)))
+	for num_instructions, src_infos := all_src_infos.iterate():
+		i := 0
+		while i < num_instructions:
+			repeat := Maths::min(num_instructions - i, 7)
+			for j := 0.to(src_infos.len()):
+				import_num, src_offset := src_infos[j]
+				if import_num == -1:
+					encoded_src_info := repeat.or(16368).or(src_offset.lsl(14))
+				else:
+					encoded_src_info := repeat.or(import_num.lsl(4)).or(src_offset.lsl(14))
+
+				if j + 1 < src_infos.len():
+					encoded_src_info := encoded_src_info.or(8)
+
+				src_infos_array.append(encoded_src_info)
+			i += 7
 	
 	return src_infos_array
 
@@ -748,23 +763,7 @@ func encode_src_infos(src_infos):
 
 func decode_src_infos(src_infos_array):
 
-	src_infos := []
-	i := 0
-	while i < src_infos_array.len():
-		src_infos := []
-		num_instructions := src_infos_array[i].and(65535)
-		num_src_infos := src_infos_array[i].lsr(16)
-		i += 1
-		for j := 0.to(num_src_infos):
-			import_num := src_infos_array[i].and(4095)
-			if import_num == 4095:
-				import_num := -1
-			src_offset := src_infos_array[i].lsr(12)
-			src_infos.append([import_num, src_offset])
-			i += 1
-		src_infos.append([num_instructions, src_infos])
-	
-	return src_infos
+	raise "XXX"
 
 
 

@@ -129,7 +129,8 @@ void _Con_Modules_Array_Module_Array_Atom_gc_scan(Con_Obj *thread, Con_Obj *obj,
 // 'Array_new(class_, type, initial_data := null)' initializes a new array of type 'type'.
 //
 // type must be one of the following:
-//   'i' : array of integers (size determined by architecture / OS)
+//   'i' : array of integers (native size, as determined by host platform)
+//   'i32' : array of 32-bit integers
 //
 
 Con_Obj *_Con_Modules_Array_Array_new(Con_Obj *thread)
@@ -151,19 +152,14 @@ Con_Obj *_Con_Modules_Array_Array_new(Con_Obj *thread)
 		// Native integer size this architecture / OS.
 #		if SIZEOF_CON_INT == 4
 		array_atom->type = _CON_MODULES_ARRAY_TYPE_INT32;
-		array_atom->entry_size = sizeof(Con_Int);
+		array_atom->entry_size = sizeof(int32_t);
 #		else
-		CON_XXX
+		CON_XXX;
 #		endif
 	}
 	else if (CON_C_STRING_EQ("i32", type)) {
-#		if SIZEOF_CON_INT == 4
-		// This is the native integer size of this architecture / OS anyway.
 		array_atom->type = _CON_MODULES_ARRAY_TYPE_INT32;
-		array_atom->entry_size = sizeof(Con_Int);
-#		else
-		CON_XXX
-#		endif
+		array_atom->entry_size = sizeof(int32_t);
 	}
 	else
 		CON_XXX;
@@ -242,14 +238,14 @@ Con_Obj *_Con_Modules_Array_Array_append_func(Con_Obj *thread)
 	
 	if (array_atom->type == _CON_MODULES_ARRAY_TYPE_INT32) {
 #		if SIZEOF_CON_INT == 4
-		Con_Int val = Con_Numbers_Number_to_Con_Int(thread, o);
+		int32_t val = Con_Numbers_Number_to_Con_Int(thread, o);
+#		else
+		CON_XXX;
+#		endif
 		CON_MUTEX_LOCK(&self->mutex);
 		Con_Memory_make_array_room(thread, (void **) &array_atom->entries, &self->mutex, &array_atom->num_entries_allocated, &array_atom->num_entries, 1, array_atom->entry_size);
-		((Con_Int *) array_atom->entries)[array_atom->num_entries++] = val;
+		((int32_t *) array_atom->entries)[array_atom->num_entries++] = val;
 		CON_MUTEX_UNLOCK(&self->mutex);
-#		else
-		CON_XXX
-#		endif
 	}
 	else
 		CON_XXX;
@@ -361,14 +357,14 @@ Con_Obj *_Con_Modules_Array_Array_get_func(Con_Obj *thread)
 	
 	Con_Obj *rtn;
 	if (array_atom->type == _CON_MODULES_ARRAY_TYPE_INT32) {
-#		if SIZEOF_CON_INT == 4
 		CON_MUTEX_LOCK(&self->mutex);
-		Con_Int val = ((Con_Int *) array_atom->entries)[Con_Misc_translate_index(thread, &self->mutex, i_val, array_atom->num_entries)];
+#		if SIZEOF_CON_INT == 4
+		Con_Int val = ((int32_t *) array_atom->entries)[Con_Misc_translate_index(thread, &self->mutex, i_val, array_atom->num_entries)];
+#		else
+		CON_XXX;
+#		endif
 		CON_MUTEX_UNLOCK(&self->mutex);
 		rtn = CON_NEW_INT(val);
-#		else
-		CON_XXX
-#		endif
 	}
 	else
 		CON_XXX;
@@ -456,12 +452,12 @@ Con_Obj *_Con_Modules_Array_Array_iterate_func(Con_Obj *thread)
 		Con_Obj *entry;
 		if (array_atom->type == _CON_MODULES_ARRAY_TYPE_INT32) {
 #			if SIZEOF_CON_INT == 4
-			Con_Int val = ((Con_Int *) array_atom->entries)[i];
-			CON_MUTEX_UNLOCK(&self->mutex);
-			entry = CON_NEW_INT(val);
+			Con_Int val = ((int32_t *) array_atom->entries)[i];
 #			else
 			CON_XXX
 #			endif
+			CON_MUTEX_UNLOCK(&self->mutex);
+			entry = CON_NEW_INT(val);
 		}
 		else
 			CON_XXX;
@@ -562,13 +558,13 @@ Con_Obj *_Con_Modules_Array_Array_set_func(Con_Obj *thread)
 	
 	if (array_atom->type == _CON_MODULES_ARRAY_TYPE_INT32) {
 #		if SIZEOF_CON_INT == 4
-		Con_Int val = Con_Numbers_Number_to_Con_Int(thread, o);
-		CON_MUTEX_LOCK(&self->mutex);
-		((Con_Int *) array_atom->entries)[Con_Misc_translate_index(thread, &self->mutex, i_val, array_atom->num_entries)] = val;
-		CON_MUTEX_UNLOCK(&self->mutex);
+		int32_t val = Con_Numbers_Number_to_Con_Int(thread, o);
 #		else
 		CON_XXX
 #		endif
+		CON_MUTEX_LOCK(&self->mutex);
+		((int32_t *) array_atom->entries)[Con_Misc_translate_index(thread, &self->mutex, i_val, array_atom->num_entries)] = val;
+		CON_MUTEX_UNLOCK(&self->mutex);
 	}
 	else
 		CON_XXX;

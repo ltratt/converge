@@ -25,14 +25,6 @@ import Bytecode_Gen, Compiler_Vars, CV_Module, CV_Parser, IModule_Gen, Targets::
 
 
 
-// This is a global variable (and no, it's not a bad thing in this case) which tracks the single
-// instance of the Compiler class. This is mostly used by the 'CEI::compiler' function.
-
-compiler := null
-
-
-
-
 class Compiler:
 
 	func compile():
@@ -259,7 +251,6 @@ class Compiler:
 
 func main():
 
-	nonlocal compiler
 	compiler := Compiler.new()
 	Compiler_Vars::push_compiler(compiler)
 	compiler.compile()

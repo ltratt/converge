@@ -1066,7 +1066,7 @@ class IModule_Gen:
 					new_module_file := File::open(File::join_ext(File::split_ext(import_)[0], CV_Module::CVB_EXTENSION), "r")
 					new_module_data := new_module_file.read()
 					modules_bytecode.append(new_module_data)
-					new_module := CV_Module::CV_Module.new(self._compiler.target, self._compiler.target_array_type)
+					new_module := CV_Module::CV_Module.new(self._compiler.target)
 					new_module.deserialize_str(new_module_data)
 					modules_stack.append(new_module)
 					assert(import_ == new_module.full_name)

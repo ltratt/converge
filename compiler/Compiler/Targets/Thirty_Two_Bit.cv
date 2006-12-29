@@ -25,6 +25,7 @@ import Array, Exceptions, Maths
 
 
 WORDSIZE := 4
+ARRAY_TYPE := "i32"
 
 
 INSTR_LOOKUP_VAR := 2              // bits 0-7 := 2, bits 8-19 := continuation offset, bits 20-31 := var number

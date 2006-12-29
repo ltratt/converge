@@ -58,7 +58,6 @@ class Compiler:
 
 		if self.target_name == "32":
 			self.target := Thirty_Two_Bit
-			self.target_array_type := "i32"
 		else:
 			self.error(Strings::format("No support yet for target bit size '%s'.", self.target_name))
 

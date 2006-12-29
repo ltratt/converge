@@ -152,7 +152,7 @@ class Bytecode_Gen:
 		//
 		// At the same time we also populate the src_infos array.
 		
-		instructions_bytecode := Array::Array.new(self._compiler.target_array_type)
+		instructions_bytecode := Array::Array.new(self._compiler.target::ARRAY_TYPE)
 		all_src_infos := []
 		last_src_infos := null
 		src_infos_count := 0
@@ -204,7 +204,7 @@ class Bytecode_Gen:
 		for label := self._constants_labels.iterate():
 			constants_offsets.append(bytecode_offsets[self._labels[label]])
 		
-		module := CV_Module::CV_Module.new(self._compiler.target, self._compiler.target_array_type)
+		module := CV_Module::CV_Module.new(self._compiler.target)
 		module.set_name(imodule.module_name)
 		module.set_identifier(self._module_id)
 		module.set_top_level_vars_map(self._top_level_vars_map)

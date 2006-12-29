@@ -72,16 +72,15 @@ BYTECODE_TOP_LEVEL_VAR_NAME := 2
 
 class CV_Module:
 
-	func init(target, target_array_type):
+	func init(target):
 	
 		self._target := target
-		self._target_array_type := target_array_type
 
 
 
 	func deserialize_str(module_str):
 	
-		self.deserialize_array(Array::Array.new(self._target_array_type, module_str))
+		self.deserialize_array(Array::Array.new(self._target::ARRAY_TYPE, module_str))
 	
 	
 	
@@ -162,7 +161,7 @@ class CV_Module:
 
 	func set_imports(imports):
 
-		self._imports := Array::Array.new(self._target_array_type)
+		self._imports := Array::Array.new(self._target::ARRAY_TYPE)
 		for import_ := imports.iterate():
 			self._imports.append(import_.len())
 			self._imports.extend(self._target::b_aligned_string(import_))
@@ -211,7 +210,7 @@ class CV_Module:
 
 	func set_top_level_vars_map(top_level_vars_map):
 
-		self._top_level_vars_map := Array::Array.new(self._target_array_type)
+		self._top_level_vars_map := Array::Array.new(self._target::ARRAY_TYPE)
 		for var_name, var_num := top_level_vars_map.iterate():
 			self._top_level_vars_map.append(var_num)
 			self._top_level_vars_map.append(var_name.len())
@@ -234,7 +233,7 @@ class CV_Module:
 
 	func serialize():
 	
-		module := Array::Array.new(self._target_array_type)
+		module := Array::Array.new(self._target::ARRAY_TYPE)
 		module.extend_from_string(MODULE_INIT_STRING)
 		module.append(MODULE_VERSION)
 

@@ -36,7 +36,6 @@ class _Eval_Compiler:
 		self.src_path := "<eval>"
 		self.module_id := Strings::format(Compiler_Vars::UNIQUE_EVAL_NAME_TEMPLATE, CEI::fresh_name())
 		self.target := Thirty_Two_Bit
-		self.target_array_type := "i32"
 
 
 

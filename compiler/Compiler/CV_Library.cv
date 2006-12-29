@@ -47,21 +47,20 @@ LIBRARY_BYTECODE_MODULE_OFFSETS := 4
 
 class CV_Library:
 
-	func init(target, target_array_type):
+	func init(target):
 	
 		self._target := target
-		self._target_array_type := target_array_type
 
 
 
 	func deserialize(module_str):
 	
-		library := Array::Array.new(self._target_array_type, module_str)
+		library := Array::Array.new(self._target::ARRAY_TYPE, module_str)
 	
 		self.modules := []
 		modules_and_str := []
 		for i := 0.to(library[LIBRARY_BYTECODE_NUM_MODULES]):
-			module := CV_Module::CV_Module.new(self._target, self._target_array_type)
+			module := CV_Module::CV_Module.new(self._target)
 			module_offset := library[LIBRARY_BYTECODE_MODULE_OFFSETS + i] / self._target::WORDSIZE
 			to := module_offset + library[module_offset + CV_Module::MODULE_BYTECODE_SIZE] / self._target::WORDSIZE
 			module.deserialize_array(library[module_offset : to])
@@ -74,7 +73,7 @@ class CV_Library:
 
 	func serialize():
 	
-		library := Array::Array.new(self._target_array_type)
+		library := Array::Array.new(self._target::ARRAY_TYPE)
 		library.extend_from_string(LIBRARY_INIT_STRING)
 		library.append(LIBRARY_VERSION)
 
@@ -83,7 +82,7 @@ class CV_Library:
 		
 		library[LIBRARY_BYTECODE_MODULE_OFFSETS] := library.len_bytes()
 		
-		serialized_modules := Array::Array.new(self._target_array_type)
+		serialized_modules := Array::Array.new(self._target::ARRAY_TYPE)
 		for module := self.modules.iterate():
 			library.append(library.len_bytes() + serialized_modules.len_bytes())
 			serialized_modules.extend_from_string(module.serialize())

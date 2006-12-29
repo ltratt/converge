@@ -63,7 +63,6 @@ class Linker:
 
 		// XXX!!
 		target := Thirty_Two_Bit
-		target_array_type := "i32"
 
 		modules := Dict{}
 		for input_path := extra_args.iterate():
@@ -74,17 +73,17 @@ class Linker:
 			file_type := input_file_data[ : CV_Library::LIBRARY_INIT_STRING.len()]
 			
 			if file_type == CV_Library::LIBRARY_INIT_STRING:
-				library := CV_Library::CV_Library.new(target, target_array_type)
+				library := CV_Library::CV_Library.new(target)
 				for module_str, module := library.deserialize(input_file_data).iterate():
 					modules[module.get_identifier()] := [module_str, module]
 			elif file_type == CV_Module::MODULE_INIT_STRING:
-				module := CV_Module::CV_Module.new(target, target_array_type)
+				module := CV_Module::CV_Module.new(target)
 				module.deserialize_str(input_file_data)
 				modules[module.get_identifier()] := [input_file_data, module]
 			else:
 				_error(Strings::format("File '%s' is not of a known type.", input_path))
 
-		linked_bytecode := Array::Array.new(target_array_type)
+		linked_bytecode := Array::Array.new(target::ARRAY_TYPE)
 		linked_bytecode.extend_from_string(CV_Exec::EXEC_INIT_STRING)
 		linked_bytecode.append(0)  // Version
 		linked_bytecode.append(-1) // Number of modules
@@ -92,7 +91,7 @@ class Linker:
 		modules_stack := [File::join_ext(File::split_ext(File::canon_path(extra_args[0]))[0], CV_Module::CV_EXTENSION)]
 		assert(modules.find(modules_stack[0]))
 		modules_offsets := []
-		modules_bytecode := Array::Array.new(target_array_type)
+		modules_bytecode := Array::Array.new(target::ARRAY_TYPE)
 		i := 0
 		while i < modules_stack.len():
 			module_id := modules_stack[i]
@@ -147,7 +146,6 @@ class Library_Linker:
 
 		// XXX!!
 		target := Thirty_Two_Bit
-		target_array_type := "i32"
 
 		modules := []
 		for input_path := extra_args.iterate():
@@ -158,7 +156,7 @@ class Library_Linker:
 			file_type := input_file_data[ : CV_Library::LIBRARY_INIT_STRING.len()]
 			
 			if file_type == CV_Library::LIBRARY_INIT_STRING:
-				library := CV_Library::CV_Library.new(target, target_array_type)
+				library := CV_Library::CV_Library.new(target)
 				for module_str, module := library.deserialize(input_file_data).iterate():
 					modules.append(module_str)
 			elif file_type == CV_Module::MODULE_INIT_STRING:
@@ -167,14 +165,14 @@ class Library_Linker:
 		// In one sense, the following should belong in CV_Library::CV_Library.serialize. But by
 		// doing it here we can forego the pointless string -> array -> string conversion.
 
-		library := Array::Array.new(target_array_type)
+		library := Array::Array.new(target::ARRAY_TYPE)
 		library.extend_from_string(CV_Library::LIBRARY_INIT_STRING)
 		library.append(CV_Library::LIBRARY_VERSION)
 
 		library.append(modules.len())
 		
-		offsets := Array::Array.new(target_array_type)
-		serialized_modules := Array::Array.new(target_array_type)
+		offsets := Array::Array.new(target::ARRAY_TYPE)
+		serialized_modules := Array::Array.new(target::ARRAY_TYPE)
 		for module := modules.iterate():
 			offsets.append((library.len() + modules.len() + serialized_modules.len()) * target::WORDSIZE)
 			serialized_modules.extend_from_string(module)

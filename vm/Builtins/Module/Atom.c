@@ -481,6 +481,7 @@ extern Con_Obj *Con_Modules_VM_init(Con_Obj *, Con_Obj*);
 extern Con_Obj *Con_Modules_Thread_init(Con_Obj *, Con_Obj*);
 extern Con_Obj *Con_Modules_libXML2_init(Con_Obj *, Con_Obj*);
 extern Con_Obj *Con_Modules_Random_init(Con_Obj *, Con_Obj*);
+extern Con_Obj *Con_Modules_Platform_init(Con_Obj *, Con_Obj*);
 
 Con_Obj *Con_Builtins_Module_Atom_import(Con_Obj *thread, Con_Obj *identifier)
 {
@@ -535,6 +536,10 @@ Con_Obj *Con_Builtins_Module_Atom_import(Con_Obj *thread, Con_Obj *identifier)
 		else if (CON_C_STRING_EQ("Random", identifier)) {
 			module = Con_Modules_Random_init(thread, CON_NEW_STRING("Random"));
 			CON_GET_SLOT_APPLY(modules, "set", CON_NEW_STRING("Random"), module);
+		}
+		else if (CON_C_STRING_EQ("Platform", identifier)) {
+			module = Con_Modules_Platform_init(thread, CON_NEW_STRING("Platform"));
+			CON_GET_SLOT_APPLY(modules, "set", CON_NEW_STRING("Platform"), module);
 		}
 #		ifdef CON_THREADS_PTHREADS
 		else if (CON_C_STRING_EQ("PThreads", identifier)) {

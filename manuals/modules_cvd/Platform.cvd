@@ -1,0 +1,17 @@
+<module name="Platform">
+This module provides information about the underlying platform (OS, architecture etc.) that Converge is running on. The following attributes are defined:
+
+<assignment name="BIG_ENDIAN">
+</assignment>
+
+<assignment name="LITTLE_ENDIAN">
+</assignment>
+
+<assignment name="endianness">
+Currently set to either <ref name="BIG_ENDIAN" /> or <ref name="LITTLE_ENDIAN" /> as appropriate.
+</assignment>
+
+<assignment name="word_bits">
+Integer value of the number of bits in a machine word.
+</assignment>
+</module>

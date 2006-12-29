@@ -34,9 +34,9 @@ class Compiler:
 		options := Parse_Options::Options.new(self._useage_callback)
 		options.add(Parse_Options::Option_Spec.new("output", "o", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ONE))
 		options.add(Parse_Options::Option_Spec.new("bootstrap", "b", Parse_Options::NONE, Parse_Options::FREQUENCY_ZERO_OR_ONE))
-		options.add(Parse_Options::Option_Spec.new("includes", "I", Parse_Options::OPTIONAL, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_MORE))
-		options.add(Parse_Options::Option_Spec.new("optimise", "O", Parse_Options::OPTIONAL))
-		options.add(Parse_Options::Option_Spec.new("target", "T", Parse_Options::OPTIONAL, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ONE))
+		options.add(Parse_Options::Option_Spec.new("includes", "I", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_MORE))
+		options.add(Parse_Options::Option_Spec.new("optimise", "O", Parse_Options::NONE))
+		options.add(Parse_Options::Option_Spec.new("target", "T", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_ONE))
 		
 		self.bootstrap := 0
 		self.target_name := "32"

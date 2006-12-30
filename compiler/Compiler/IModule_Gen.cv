@@ -19,7 +19,7 @@
 // IN THE SOFTWARE.
 
 
-import Array, Builtins, Exceptions, File, Strings, Sys, VM
+import Builtins, Exceptions, File, Strings, Sys, VM
 import Bytecode_Gen, CEI, Compiler_Vars, CV_Module, ITree, ITree_TC
 
 

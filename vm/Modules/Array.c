@@ -280,7 +280,7 @@ Con_Obj *_Con_Modules_Array_Array_extend_func(Con_Obj *thread)
 			CON_MUTEX_ADD_LOCK(&self->mutex, &container->mutex);
 			if (container_array_atom->num_entries > container_num_entries)
 				CON_XXX;
-			memmove(self_array_atom->entries + self_array_atom->num_entries * sizeof(self_array_atom->entry_size), container_array_atom->entries, container_array_atom->num_entries * container_array_atom->entry_size);
+			memmove(self_array_atom->entries + self_array_atom->num_entries * self_array_atom->entry_size, container_array_atom->entries, container_array_atom->num_entries * container_array_atom->entry_size);
 			self_array_atom->num_entries += container_array_atom->num_entries;
 			CON_MUTEXES_UNLOCK(&self->mutex, &container->mutex);
 			

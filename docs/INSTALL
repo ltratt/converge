@@ -16,7 +16,22 @@ created with the following command:
 
   make -f Makefile.bootstrap configure
 
+Converge only keeps a bootstrap compiler for 64-bit machines in version control.
+If you are running another type of machine, you will need to download a recent
+snapshot and extract the appropriate bootstrap compiler and linker. e.g.:
+
+  cp <snapshot>/bootstrap/<your machine type>/convergec.bootstrap bootstrap/convergec
+  cp <snapshot>/bootstrap/<your machine type>/convergel.bootstrap bootstrap/convergel
+
 You then execute the following as with any normal install:
 
   ./configure
   make -f Makefile.bootstrap
+
+It is then recommended that you rebuild once more to check that the newly
+compiled compiler functions correctly:
+
+  make clean
+  make
+
+After this you're done - please feel free to contribute patches!

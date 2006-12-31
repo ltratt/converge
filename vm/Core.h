@@ -23,6 +23,7 @@
 #define _CON_CORE_H
 
 #include <assert.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>

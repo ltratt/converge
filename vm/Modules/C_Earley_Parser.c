@@ -522,6 +522,13 @@ parse_func_Alternative_Or_Alternatives _Con_Modules_C_Earley_Parser_Parser_parse
 	parse_func_parse_Tree_Alternatives *malloc_alternatives = NULL;
 	parse_func_parse_Tree_Alternatives *alternatives = stack_alternatives;
 
+	// XXX: This variable should be local to several parts of below code. Unfortunately doing so
+	// appears to trigger a bug in GCC 3.3.5 on x86_64; using this variable here, once, appears to
+	// fix the problem and whilst ugly is safe. One day maybe it can move back to those places where
+	// it came from.
+
+	parse_func_parse_Tree_Entry new_entry;
+
 	if (start_j > 0 && (_GET_PRODUCTION_INT(start_p, _COMPILED_PRODUCTION_SYMBOLS + start_j - 2) == _SYMBOL_CLOSE_KLEENE_STAR_GROUP || _GET_PRODUCTION_INT(start_p, _COMPILED_PRODUCTION_SYMBOLS + start_j - 2) == _SYMBOL_CLOSE_OPTIONAL_GROUP)) {
 		// If start_j points to a close grouping (by definition 'start_j' can't point to an open
 		// grouping) then we have to immediately start with multiple alternatives.
@@ -707,7 +714,6 @@ parse_func_Alternative_Or_Alternatives _Con_Modules_C_Earley_Parser_Parser_parse
 						// where B is either a terminal or non-terminal.
 						
 						lstate = definite_alternative.lstate;
-						parse_func_parse_Tree_Entry new_entry;
 						new_entry.type = PARSE_TREE_TREE;
 						new_entry.entry.tree = definite_alternative.tree;
 						_Con_Modules_C_Earley_Parser_Parser_parse_func_add_tree_element(thread, parser, tree, &new_entry);
@@ -722,14 +728,12 @@ parse_func_Alternative_Or_Alternatives _Con_Modules_C_Earley_Parser_Parser_parse
 						Con_Int *brackets_map = &parser->grammar[parser->grammar[parser->grammar[_COMPILED_OFFSET_TO_PARSER_BRACKETS_MAPS] / sizeof(Con_Int) + _COMPILED_BRACKETS_MAPS_ENTRIES + _GET_PRODUCTION_INT(p, _COMPILED_PRODUCTION_SYMBOLS + j - 2 + 1)] / sizeof(Con_Int)];
 						for (Con_Int y = 1; y < brackets_map[_BRACKET_MAP_NUM_ENTRIES]; y += 1) {
 							parse_func_parse_Tree *new_tree = _Con_Modules_C_Earley_Parser_Parser_parse_func_scopy_tree(thread, parser, tree);
-							parse_func_parse_Tree_Entry new_entry;
 							new_entry.type = PARSE_TREE_TREE;
 							new_entry.entry.tree = definite_alternative.tree;
 							_Con_Modules_C_Earley_Parser_Parser_parse_func_add_tree_element(thread, parser, new_tree, &new_entry);
 							_Con_Modules_C_Earley_Parser_Parser_parse_func_add_alternative(thread, parser, &alternatives, &stack_alternatives, &malloc_alternatives, lstate, p, brackets_map[_BRACKET_MAP_ENTRIES + y] + 2, f, new_tree);
 						}
 						
-						parse_func_parse_Tree_Entry new_entry;
 						new_entry.type = PARSE_TREE_TREE;
 						new_entry.entry.tree = definite_alternative.tree;
 						_Con_Modules_C_Earley_Parser_Parser_parse_func_add_tree_element(thread, parser, tree, &new_entry);
@@ -757,7 +761,6 @@ parse_func_Alternative_Or_Alternatives _Con_Modules_C_Earley_Parser_Parser_parse
 						
 						for (Con_Int y = 1; y < definite_alternatives->num_entries; y += 1) {
 							parse_func_parse_Tree *new_tree = _Con_Modules_C_Earley_Parser_Parser_parse_func_scopy_tree(thread, parser, alternatives->entries[x].tree);
-							parse_func_parse_Tree_Entry new_entry;
 							new_entry.type = PARSE_TREE_TREE;
 							new_entry.entry.tree = definite_alternatives->entries[y].tree;
 							_Con_Modules_C_Earley_Parser_Parser_parse_func_add_tree_element(thread, parser, new_tree, &new_entry);
@@ -765,7 +768,6 @@ parse_func_Alternative_Or_Alternatives _Con_Modules_C_Earley_Parser_Parser_parse
 						}
 
 						lstate = definite_alternatives->entries[0].lstate;
-						parse_func_parse_Tree_Entry new_entry;
 						new_entry.type = PARSE_TREE_TREE;
 						new_entry.entry.tree = definite_alternatives->entries[0].tree;
 						_Con_Modules_C_Earley_Parser_Parser_parse_func_add_tree_element(thread, parser, tree, &new_entry);
@@ -790,7 +792,6 @@ parse_func_Alternative_Or_Alternatives _Con_Modules_C_Earley_Parser_Parser_parse
 
 						for (Con_Int y = 1; y < brackets_map[_BRACKET_MAP_NUM_ENTRIES]; y += 1) {
 							parse_func_parse_Tree *new_tree = _Con_Modules_C_Earley_Parser_Parser_parse_func_scopy_tree(thread, parser, tree);
-							parse_func_parse_Tree_Entry new_entry;
 							new_entry.type = PARSE_TREE_TREE;
 							new_entry.entry.tree = definite_alternatives->entries[0].tree;
 							_Con_Modules_C_Earley_Parser_Parser_parse_func_add_tree_element(thread, parser, new_tree, &new_entry);
@@ -803,7 +804,6 @@ parse_func_Alternative_Or_Alternatives _Con_Modules_C_Earley_Parser_Parser_parse
 						for (Con_Int y = 1; y < definite_alternatives->num_entries; y += 1) {
 							for (Con_Int z = 0; z < brackets_map[_BRACKET_MAP_NUM_ENTRIES]; z += 1) {
 								parse_func_parse_Tree *new_tree = _Con_Modules_C_Earley_Parser_Parser_parse_func_scopy_tree(thread, parser, tree);
-								parse_func_parse_Tree_Entry new_entry;
 								new_entry.type = PARSE_TREE_TREE;
 								new_entry.entry.tree = definite_alternatives->entries[y].tree;
 								_Con_Modules_C_Earley_Parser_Parser_parse_func_add_tree_element(thread, parser, new_tree, &new_entry);
@@ -814,7 +814,6 @@ parse_func_Alternative_Or_Alternatives _Con_Modules_C_Earley_Parser_Parser_parse
 						// Update the current working alternative.
 
 						lstate = definite_alternatives->entries[0].lstate;
-						parse_func_parse_Tree_Entry new_entry;
 						new_entry.type = PARSE_TREE_TREE;
 						new_entry.entry.tree = definite_alternatives->entries[0].tree;
 						_Con_Modules_C_Earley_Parser_Parser_parse_func_add_tree_element(thread, parser, tree, &new_entry);
@@ -843,7 +842,6 @@ parse_func_Alternative_Or_Alternatives _Con_Modules_C_Earley_Parser_Parser_parse
 					if (_Con_Modules_C_Earley_Parser_Parser_parse_func_find_state(thread, parser, lstate, p, j, f) == -1)
 						goto remove_alternative;
 					
-					parse_func_parse_Tree_Entry new_entry;
 					new_entry.type = PARSE_TREE_TOKEN;
 					new_entry.entry.token = parser->tokens[lstate].token;
 					_Con_Modules_C_Earley_Parser_Parser_parse_func_add_tree_element(thread, parser, tree, &new_entry);
@@ -860,14 +858,12 @@ parse_func_Alternative_Or_Alternatives _Con_Modules_C_Earley_Parser_Parser_parse
 					Con_Int *brackets_map = &parser->grammar[parser->grammar[parser->grammar[_COMPILED_OFFSET_TO_PARSER_BRACKETS_MAPS] / sizeof(Con_Int) + _COMPILED_BRACKETS_MAPS_ENTRIES + _GET_PRODUCTION_INT(p, _COMPILED_PRODUCTION_SYMBOLS + j - 2 + 1)] / sizeof(Con_Int)];
 					for (Con_Int y = 1; y < brackets_map[_BRACKET_MAP_NUM_ENTRIES]; y += 1) {
 						parse_func_parse_Tree *new_tree = _Con_Modules_C_Earley_Parser_Parser_parse_func_scopy_tree(thread, parser, tree);
-						parse_func_parse_Tree_Entry new_entry;
 						new_entry.type = PARSE_TREE_TOKEN;
 						new_entry.entry.token = parser->tokens[lstate].token;
 						_Con_Modules_C_Earley_Parser_Parser_parse_func_add_tree_element(thread, parser, new_tree, &new_entry);
 						_Con_Modules_C_Earley_Parser_Parser_parse_func_add_alternative(thread, parser, &alternatives, &stack_alternatives, &malloc_alternatives, lstate, p, brackets_map[_BRACKET_MAP_ENTRIES + y] + 2, f, new_tree);
 					}
 					
-					parse_func_parse_Tree_Entry new_entry;
 					new_entry.type = PARSE_TREE_TOKEN;
 					new_entry.entry.token = parser->tokens[lstate].token;
 					_Con_Modules_C_Earley_Parser_Parser_parse_func_add_tree_element(thread, parser, tree, &new_entry);

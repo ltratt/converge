@@ -1071,7 +1071,7 @@ Con_Obj *Con_Builtins_Con_Stack_Atom_pop_n_object(Con_Obj *thread, Con_Obj *con_
 		if (type == CON_BUILTINS_CON_STACK_CLASS_OBJECT)
 			obj_stackp -= sizeof(Con_Obj *) + sizeof(Con_Builtins_Con_Stack_Class_Type);
 		else
-			obj_stackp -= sizeof(Con_Obj *) + sizeof(Con_Builtins_Con_Stack_Class_Slot_Lookup_Apply);
+			obj_stackp -= sizeof(Con_Builtins_Con_Stack_Class_Slot_Lookup_Apply) + sizeof(Con_Builtins_Con_Stack_Class_Type);
 	}
 	assert(obj_stackp >= 0);
 

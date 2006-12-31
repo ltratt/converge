@@ -52,7 +52,7 @@ class _Eval_Compiler:
 		dummy_definitions := [ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(eval_name, [])], dummy_func, [])]
 		dummy_imodule := ITree::IModule.new(eval_name, dummy_definitions, [])
 		
-		bytecode := Bytecode_Gen::Bytecode_Gen.new().generate(dummy_imodule).serialize()
+		bytecode := Bytecode_Gen::Bytecode_Gen.new().generate(dummy_imodule, self.target).serialize()
 		
 		module_identifiers := VM::add_modules([bytecode])
 		module := VM::import_module(module_identifiers[0])

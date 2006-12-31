@@ -96,18 +96,24 @@ extra_libs="-L/usr/local/lib"
 machine_type=`uname -m`
 
 AH_TEMPLATE(CON_ARCH, [Define to your system architecture.])
-AC_DEFINE_UNQUOTED(CON_ARCH, [$machine_type])
 
 AH_TEMPLATE(CON_C_STACK_GROWS_DOWN, [Define if the stack grows down from a particular word. Undefine if the stack grows upwards.])
 
+AC_MSG_CHECKING([machine type])
 case $machine_type in
 	amd64 )
-		AC_SUBST(CON_ARCH, "amd64")
+		AC_MSG_RESULT(x86_64)
+		AC_DEFINE(CON_ARCH_X86_64, [], [Define if running on x86_64])
+		AC_SUBST(CON_ARCH, "x86_64")
 		AC_DEFINE(CON_C_STACK_GROWS_DOWN);;
 	i386 | i686 )
+		AC_MSG_RESULT(i386)
+		AC_DEFINE(CON_ARCH_I386, [], [Define if running on i386])
 		AC_SUBST(CON_ARCH, "i386")
 		AC_DEFINE(CON_C_STACK_GROWS_DOWN);;
 	sun4u) 
+		AC_MSG_RESULT(sun4u)
+		AC_DEFINE(CON_ARCH_SUN4U, [], [Define if running on sun4u])
 		AC_SUBST(CON_ARCH, "sun4u")
 		AC_DEFINE(CON_C_STACK_GROWS_DOWN);;
 	*) AC_MSG_ERROR([Unknown machine type "$machine_type"]);;
@@ -172,6 +178,13 @@ int main()
 
 AC_CHECK_SIZEOF(CON_INT)
 
+AC_MSG_CHECKING([for architecture specific memmove])
+if [[ -f vm/Platform/Arch/$CON_ARCH/memmove.S ]]; then
+	AC_MSG_RESULT(Platform/Arch/$CON_ARCH/memmove.S)
+	AC_SUBST(CON_MEMMOVE, "Platform/Arch/$CON_ARCH/memmove.o")
+else
+	AC_MSG_RESULT(none found)
+fi
 
 
 ####################################################################################################
@@ -188,6 +201,7 @@ esac
 
 case $ac_cv_sizeof_CON_INT in
 	4 ) AC_C_BIGENDIAN([bootstrap_dir="bootstrap/32bit_big_endian"], [bootstrap_dir="bootstrap/32bit_little_endian"]);;
+	8 ) AC_C_BIGENDIAN([bootstrap_dir="bootstrap/64bit_big_endian"], [bootstrap_dir="bootstrap/64bit_little_endian"]);;
 	* ) AC_MSG_ERROR([Unknown word size "$ac_cv_sizeof_CON_INT"]);;
 esac
 

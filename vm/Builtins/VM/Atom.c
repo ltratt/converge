@@ -44,10 +44,10 @@ void *alloca (size_t);
 
 #include "Arch.h"
 #include "Core.h"
-#include "Instructions.h"
 #include "Numbers.h"
 #include "Object.h"
 #include "Shortcuts.h"
+#include "Target.h"
 
 #include "Builtins/Atom_Def_Atom.h"
 #include "Builtins/Class/Atom.h"
@@ -988,6 +988,7 @@ Con_Obj *_Con_Builtins_VM_Atom_execute(Con_Obj *thread)
 				case CON_INSTR_INT: {
 					CON_MUTEX_UNLOCK(&con_stack->mutex);
 					Con_Int int_val;
+					//printf("%p %p\n", instruction >> 8, CON_INSTR_DECODE_INT_SIGN(instruction));
 					if (CON_INSTR_DECODE_INT_SIGN(instruction))
 						int_val = -((Con_Int) CON_INSTR_DECODE_INT_VAL(instruction));
 					else
@@ -1078,7 +1079,7 @@ Con_Obj *_Con_Builtins_VM_Atom_execute(Con_Obj *thread)
 					CON_MUTEX_UNLOCK(&con_stack->mutex);
 					Con_Int slot_name_size = CON_INSTR_DECODE_SLOT_LOOKUP_SIZE(instruction);
 					char slot_name[slot_name_size];
-					Con_Builtins_Module_Atom_read_bytes(thread, pc.module, pc.pc.bytecode_offset + sizeof(Con_Int), slot_name, slot_name_size);
+					Con_Builtins_Module_Atom_read_bytes(thread, pc.module, pc.pc.bytecode_offset + CON_INSTR_DECODE_SLOT_LOOKUP_START(instruction), slot_name, slot_name_size);
 					
 					CON_MUTEX_LOCK(&con_stack->mutex);
 					Con_Obj *obj = Con_Builtins_Con_Stack_Atom_pop_object(thread, con_stack);
@@ -1086,7 +1087,7 @@ Con_Obj *_Con_Builtins_VM_Atom_execute(Con_Obj *thread)
 					Con_Obj *val = Con_Object_get_slot(thread, obj, NULL, slot_name, slot_name_size);
 					CON_MUTEX_LOCK(&con_stack->mutex);
 					Con_Builtins_Con_Stack_Atom_push_object(thread, con_stack, val);
-					pc.pc.bytecode_offset += sizeof(Con_Int) + Con_Arch_align(thread, slot_name_size);
+					pc.pc.bytecode_offset += Con_Arch_align(thread, CON_INSTR_DECODE_SLOT_LOOKUP_START(instruction) + slot_name_size);
 					Con_Builtins_Con_Stack_Atom_update_continuation_frame_pc(thread, con_stack, pc);
 					break;
 				}
@@ -1228,10 +1229,10 @@ Con_Obj *_Con_Builtins_VM_Atom_execute(Con_Obj *thread)
 				case CON_INSTR_STRING: {
 					CON_MUTEX_UNLOCK(&con_stack->mutex);
 					Con_Int size = CON_INSTR_DECODE_STRING_SIZE(instruction);
-					Con_Obj *str = Con_Builtins_Module_Atom_get_string(thread, pc.module, pc.pc.bytecode_offset + sizeof(Con_Int), size);
+					Con_Obj *str = Con_Builtins_Module_Atom_get_string(thread, pc.module, pc.pc.bytecode_offset + CON_INSTR_DECODE_STRING_START(instruction), size);
 					CON_MUTEX_LOCK(&con_stack->mutex);
 					Con_Builtins_Con_Stack_Atom_push_object(thread, con_stack, str);
-					pc.pc.bytecode_offset += sizeof(Con_Int) + Con_Arch_align(thread, size);
+					pc.pc.bytecode_offset += Con_Arch_align(thread, CON_INSTR_DECODE_STRING_START(instruction) + size);
 					Con_Builtins_Con_Stack_Atom_update_continuation_frame_pc(thread, con_stack, pc);
 					break;
 				}
@@ -1247,13 +1248,12 @@ Con_Obj *_Con_Builtins_VM_Atom_execute(Con_Obj *thread)
 					
 					Con_Int slot_name_size = CON_INSTR_DECODE_SLOT_LOOKUP_SIZE(instruction);
 					char slot_name[slot_name_size];
-					Con_Builtins_Module_Atom_read_bytes(thread, pc.module, pc.pc.bytecode_offset + sizeof(Con_Int), slot_name, CON_INSTR_DECODE_SLOT_LOOKUP_SIZE(instruction));
-					Con_Builtins_Module_Atom_read_bytes(thread, pc.module, pc.pc.bytecode_offset + sizeof(Con_Int), slot_name, slot_name_size);
+					Con_Builtins_Module_Atom_read_bytes(thread, pc.module, pc.pc.bytecode_offset + CON_INSTR_DECODE_ASSIGN_SLOT_START(instruction), slot_name, CON_INSTR_DECODE_SLOT_LOOKUP_SIZE(instruction));
 					Con_Object_set_slot(thread, assignee_obj, NULL, slot_name, slot_name_size, val);
 					
 					CON_MUTEX_LOCK(&con_stack->mutex);
 					Con_Builtins_Con_Stack_Atom_push_object(thread, con_stack, val);
-					pc.pc.bytecode_offset += sizeof(Con_Int) + Con_Arch_align(thread, slot_name_size);
+					pc.pc.bytecode_offset += Con_Arch_align(thread, CON_INSTR_DECODE_ASSIGN_SLOT_START(instruction) + slot_name_size);
 					Con_Builtins_Con_Stack_Atom_update_continuation_frame_pc(thread, con_stack, pc);
 					break;
 				}
@@ -1412,9 +1412,9 @@ Con_Obj *_Con_Builtins_VM_Atom_execute(Con_Obj *thread)
 				}
 				case CON_INSTR_PRE_SLOT_LOOKUP_APPLY: {
 					CON_MUTEX_UNLOCK(&con_stack->mutex);
-					Con_Int slot_name_size = CON_INSTR_DECODE_SLOT_LOOKUP_SIZE(instruction);
+					Con_Int slot_name_size = CON_INSTR_DECODE_PRE_SLOT_LOOKUP_SIZE(instruction);
 					char slot_name[slot_name_size];
-					Con_Builtins_Module_Atom_read_bytes(thread, pc.module, pc.pc.bytecode_offset + sizeof(Con_Int), slot_name, slot_name_size);
+					Con_Builtins_Module_Atom_read_bytes(thread, pc.module, pc.pc.bytecode_offset + CON_INSTR_DECODE_PRE_SLOT_LOOKUP_START(instruction), slot_name, slot_name_size);
 					
 					CON_MUTEX_LOCK(&con_stack->mutex);
 					Con_Obj *obj = Con_Builtins_Con_Stack_Atom_pop_object(thread, con_stack);
@@ -1430,7 +1430,7 @@ Con_Obj *_Con_Builtins_VM_Atom_execute(Con_Obj *thread)
 						Con_Builtins_Con_Stack_Atom_push_object(thread, con_stack, val);
 					else
 						Con_Builtins_Con_Stack_Atom_push_slot_lookup_apply(thread, con_stack, obj, val);
-					pc.pc.bytecode_offset += sizeof(Con_Int) + Con_Arch_align(thread, slot_name_size);
+					pc.pc.bytecode_offset += Con_Arch_align(thread, CON_INSTR_DECODE_PRE_SLOT_LOOKUP_START(instruction) + slot_name_size);
 					Con_Builtins_Con_Stack_Atom_update_continuation_frame_pc(thread, con_stack, pc);
 					break;
 				}
@@ -1548,7 +1548,7 @@ Con_Obj *_Con_Builtins_VM_Atom_execute(Con_Obj *thread)
 					CON_MUTEX_UNLOCK(&con_stack->mutex);
 					Con_Int definition_name_size = CON_INSTR_DECODE_MODULE_LOOKUP_SIZE(instruction);
 					char definition_name[definition_name_size];
-					Con_Builtins_Module_Atom_read_bytes(thread, pc.module, pc.pc.bytecode_offset + sizeof(Con_Int), definition_name, definition_name_size);
+					Con_Builtins_Module_Atom_read_bytes(thread, pc.module, pc.pc.bytecode_offset + CON_INSTR_DECODE_MODULE_LOOKUP_START(instruction), definition_name, definition_name_size);
 					
 					CON_MUTEX_LOCK(&con_stack->mutex);
 					Con_Obj *module = Con_Builtins_Con_Stack_Atom_pop_object(thread, con_stack);
@@ -1556,7 +1556,7 @@ Con_Obj *_Con_Builtins_VM_Atom_execute(Con_Obj *thread)
 					Con_Obj *val = Con_Builtins_Module_Atom_get_definition(thread, module, definition_name, definition_name_size);
 					CON_MUTEX_LOCK(&con_stack->mutex);
 					Con_Builtins_Con_Stack_Atom_push_object(thread, con_stack, val);
-					pc.pc.bytecode_offset += sizeof(Con_Int) + Con_Arch_align(thread, definition_name_size);
+					pc.pc.bytecode_offset += Con_Arch_align(thread, CON_INSTR_DECODE_MODULE_LOOKUP_START(instruction) + definition_name_size);
 					Con_Builtins_Con_Stack_Atom_update_continuation_frame_pc(thread, con_stack, pc);
 					break;
 				}

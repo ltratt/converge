@@ -26,13 +26,15 @@ CONVERGE_LIB=${CONVERGE_LIB_DIR}/libconverge.cvl
 # Converge
 #
 
-.SUFFIXES: .cv .cvb
-
 CONVERGEC_FLAGS?=
 
-.cv.cvb:
+%.cvb: %.cv
 	${CONVERGE_VM} ${CONVERGEC} ${CONVERGEC_FLAGS} -o $@ $<
 
+ifdef TARGET
+%.${TARGET}.cvb: %.cv
+	${CONVERGE_VM} ${CONVERGEC} ${CONVERGEC_FLAGS} -T ${TARGET} -o $@ $<
+endif
 
 depend::
 	${CONVERGE_VM} ${CONVERGED} -o .depend ${OBJECT_FILES}

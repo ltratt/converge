@@ -600,6 +600,7 @@ void Con_Builtins_Con_Stack_Atom_prepare_generator_frame_reexecution(Con_Obj *th
 	assert(con_stack_atom->gfp > -1);
 	assert(*(((Con_Builtins_Con_Stack_Class_Type *) (con_stack_atom->stack + con_stack_atom->gfp)) - 1) == CON_BUILTINS_CON_STACK_CLASS_GENERATOR_FRAME);
 	Con_Builtins_Con_Stack_Class_Generator_Frame *generator_frame = (Con_Builtins_Con_Stack_Class_Generator_Frame *) (con_stack_atom->stack + con_stack_atom->gfp - sizeof(Con_Builtins_Con_Stack_Class_Generator_Frame) - sizeof(Con_Builtins_Con_Stack_Class_Type));
+	assert(*(((Con_Builtins_Con_Stack_Class_Type *) (con_stack_atom->stack + con_stack_atom->gfp)) - 1) == CON_BUILTINS_CON_STACK_CLASS_GENERATOR_FRAME);
 
 	// At this point, the stack looks like:
 	//   [..., <gen obj 1>, ..., <gen obj n>, <generator frame>, <gen obj 1>, ..., <gen obj n>]
@@ -1436,5 +1437,5 @@ void _Con_Builtins_Con_Stack_Class_gc_scan_func(Con_Obj *thread, Con_Obj *obj, C
 
 	Con_Memory_gc_push(thread, con_stack_atom->stack);
 	// Conservative scanning is pure laziness, but is easy.
-	Con_Memory_gc_scan_conservative(thread, con_stack_atom->stack, con_stack_atom->stackp);
+	Con_Memory_gc_scan_conservative(thread, con_stack_atom->stack, con_stack_atom->stackp+8);
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2003-2006 King's College London, created by Laurence Tratt
+// Copyright (c) 2006 King's College London, created by Laurence Tratt
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to
@@ -19,11 +19,48 @@
 // IN THE SOFTWARE.
 
 
+#define CON_BYTECODE_HEADER 0 * sizeof(Con_Int)
+#define CON_BYTECODE_VERSION 1 * sizeof(Con_Int)
+#define CON_BYTECODE_NUMBER_OF_MODULES 2 * sizeof(Con_Int)
+#define CON_BYTECODE_MODULES 3 * sizeof(Con_Int)
+
+#define CON_BYTECODE_MODULE_HEADER 0 * sizeof(Con_Int)
+#define CON_BYTECODE_MODULE_VERSION 1 * sizeof(Con_Int)
+#define CON_BYTECODE_MODULE_NAME 2 * sizeof(Con_Int)
+#define CON_BYTECODE_MODULE_NAME_SIZE 3 * sizeof(Con_Int)
+#define CON_BYTECODE_MODULE_IDENTIFIER 4 * sizeof(Con_Int)
+#define CON_BYTECODE_MODULE_IDENTIFIER_SIZE 5 * sizeof(Con_Int)
+#define CON_BYTECODE_MODULE_INSTRUCTIONS 6 * sizeof(Con_Int)
+#define CON_BYTECODE_MODULE_INSTRUCTIONS_SIZE 7 * sizeof(Con_Int)
+#define CON_BYTECODE_MODULE_IMPORTS 8 * sizeof(Con_Int)
+#define CON_BYTECODE_MODULE_IMPORTS_SIZE 9 * sizeof(Con_Int)
+#define CON_BYTECODE_MODULE_NUM_IMPORTS 10 * sizeof(Con_Int)
+#define CON_BYTECODE_MODULE_SRC_POSITIONS 11 * sizeof(Con_Int)
+#define CON_BYTECODE_MODULE_SRC_POSITIONS_SIZE 12 * sizeof(Con_Int)
+#define CON_BYTECODE_MODULE_NEWLINES 13 * sizeof(Con_Int)
+#define CON_BYTECODE_MODULE_NUM_NEWLINES 14 * sizeof(Con_Int)
+#define CON_BYTECODE_MODULE_TOP_LEVEL_VARS_MAP 15 * sizeof(Con_Int)
+#define CON_BYTECODE_MODULE_TOP_LEVEL_VARS_MAP_SIZE 16 * sizeof(Con_Int)
+#define CON_BYTECODE_MODULE_NUM_TOP_LEVEL_VARS 17 * sizeof(Con_Int)
+#define CON_BYTECODE_MODULE_NUM_CONSTANTS 18 * sizeof(Con_Int)
+#define CON_BYTECODE_MODULE_CONSTANTS_CREATE_OFFSETS 19 * sizeof(Con_Int)
+#define CON_BYTECODE_MODULE_SIZE 20 * sizeof(Con_Int)
+
+#define CON_BYTECODE_IMPORT_IDENTIFIER_SIZE 0 * sizeof(Con_Int)
+#define CON_BYTECODE_IMPORT_IDENTIFIER 1 * sizeof(Con_Int)
+
+#define CON_BYTECODE_TOP_LEVEL_VAR_NUM 0 * sizeof(Con_Int)
+#define CON_BYTECODE_TOP_LEVEL_VAR_NAME_SIZE 1 * sizeof(Con_Int)
+#define CON_BYTECODE_TOP_LEVEL_VAR_NAME 2 * sizeof(Con_Int)
+
+#define CON_BYTECODE_IMPORT_TYPE_BUILTIN 0
+#define CON_BYTECODE_IMPORT_TYPE_USER_MOD 1
+
 // 32-bit little endian instructions
 
 #define CON_INSTR_VAR_LOOKUP 2  			// bits 0-7 2, bits 8-19 closures offset, bits 20-31 var number
 #define CON_INSTR_VAR_ASSIGN 3  			// bits 0-7 3, bits 8-19 closures offset, bits 20-31 var number
-#define CON_INSTR_INT 4 					// bits 0-7 4, bits 8-30 integer value, bit 31 sign (0 = positive, 1 = negative)
+#define CON_INSTR_INT 4 					// bits 0-7 4, bits 8-62 integer value, bit 63 sign (0 = positive, 1 = negative)
 #define CON_INSTR_ADD_FAILURE_FRAME 5		// bits 0-7 5, bits 8-30 pc offset, bit 31 offset sign
 #define CON_INSTR_ADD_FAIL_UP_FRAME 6		// bits 0-7 6
 #define CON_INSTR_REMOVE_FAILURE_FRAME 7	// bits 0-7 7
@@ -80,12 +117,13 @@
 #define CON_INSTR_DECODE_VAR_LOOKUP_CLOSURES_OFFSET(instruction) ((instruction & 0x000FFF00) >> 8)
 #define CON_INSTR_DECODE_VAR_LOOKUP_VAR_NUM(instruction) ((instruction & 0xFFF00000) >> 20)
 
-#define CON_INSTR_DECODE_INT_VAL(instruction) ((instruction & 0x7FFFFF00) >> 8)
-#define CON_INSTR_DECODE_INT_SIGN(instruction) ((instruction & 0x80000000) >> 8)
+#define CON_INSTR_DECODE_INT_VAL(instruction) ((instruction & 0x7FFFFFFFFFFFFF00) >> 8)
+#define CON_INSTR_DECODE_INT_SIGN(instruction) ((instruction & 0x8000000000000000) >> 8)
 
 #define CON_INSTR_DECODE_LIST_NUM_ENTRIES(instruction) ((instruction & 0xFFFFFF00) >> 8)
 
 #define CON_INSTR_DECODE_SLOT_LOOKUP_SIZE(instruction) ((instruction & 0xFFFFFF00) >> 8)
+#define CON_INSTR_DECODE_SLOT_LOOKUP_START(instruction) 4
 
 #define CON_INSTR_DECODE_APPLY_NUM_ARGS(instruction) ((instruction & 0xFFFFFF00) >> 8)
 
@@ -101,7 +139,8 @@
 
 #define CON_INSTR_DECODE_IMPORT_BUILTIN_LOOKUP(instruction) ((instruction & 0xFFFFFF00) >> 8)
 
-#define CON_INSTR_DECODE_SLOT_ASSIGN_SIZE(instruction) ((instruction & 0xFFFFFF00) >> 8)
+#define CON_INSTR_DECODE_ASSIGN_SLOT_SIZE(instruction) ((instruction & 0xFFFFFF00) >> 8)
+#define CON_INSTR_DECODE_ASSIGN_SLOT_START(instruction) sizeof(uint32_t)
 
 #define CON_INSTR_DECODE_DICT_NUM_ENTRIES(instruction) ((instruction & 0xFFFFFF00) >> 8)
 
@@ -113,6 +152,7 @@
 #define CON_INSTR_DECODE_FUNC_DEF_IS_BOUND(instruction) ((instruction & 0x00000100) >> 8)
 
 #define CON_INSTR_DECODE_STRING_SIZE(instruction) ((instruction & 0xFFFFFF00) >> 8)
+#define CON_INSTR_DECODE_STRING_START(instruction) sizeof(uint32_t)
 
 #define CON_INSTR_DECODE_ASSIGN_SLOT_SIZE(instruction) ((instruction & 0xFFFFFF00) >> 8)
 
@@ -131,8 +171,12 @@
 
 #define CON_INSTR_DECODE_CONSTANT_SET_NUM(instruction) ((instruction & 0xFFFFFF00) >> 8)
 
+#define CON_INSTR_DECODE_PRE_SLOT_LOOKUP_SIZE(instruction) ((instruction & 0xFFFFFF00) >> 8)
+#define CON_INSTR_DECODE_PRE_SLOT_LOOKUP_START(instruction) sizeof(uint32_t)
+
 #define CON_INSTR_DECODE_UNPACK_ASSIGN_NUM_ELEMENTS(instruction) ((instruction & 0xFFFFFF00) >> 8)
 
 #define CON_INSTR_DECODE_SET_CLASS_FIELD_SIZE(instruction) ((instruction & 0xFFFFFF00) >> 8)
 
 #define CON_INSTR_DECODE_MODULE_LOOKUP_SIZE(instruction) ((instruction & 0xFFFFFF00) >> 8)
+#define CON_INSTR_DECODE_MODULE_LOOKUP_START(instruction) sizeof(uint32_t)

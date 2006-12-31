@@ -19,8 +19,8 @@
 // IN THE SOFTWARE.
 
 
-import Array, File, Maths, Parse_Options, Strings, Sys
-import Compiler_Vars, CV_Exec, CV_Module, CV_Library, Targets::Thirty_Two_Bit
+import Array, File, Maths, Parse_Options, Platform, Strings, Sys
+import Compiler_Vars, CV_Exec, CV_Module, CV_Library, Targets::Available
 
 
 
@@ -36,7 +36,6 @@ func _useage(msg):
 func _error(msg):
 	
 	Sys::stderr.writeln(Strings::format("Error: %s", msg))
-	Sys::stderr.writeln("Usage: convergel [-l] -o <output> <input> [... <input>]")
 	Sys::exit(1)
 		
 
@@ -50,21 +49,25 @@ class Linker:
 	
 		options := Parse_Options::Options.new(_useage)
 		options.add(Parse_Options::Option_Spec.new("output", "o", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ONE))
+		options.add(Parse_Options::Option_Spec.new("target", "T", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_ONE))
 		
+		target_name := Strings::format("%dbit", Platform::word_bits)
 		parsed_args, extra_args := options.parse()
 		for option_name, option_val := parsed_args.iterate():
 			if option_name == "output":
 				output_path := option_val
+			elif option_name == "target":
+				target_name := option_val
 			else:
 				raise "XXX"
 		
 		if extra_args.len() == 0:
 			_useage("Not enough arguments.")
 
-		// XXX!!
-		target := Thirty_Two_Bit
+		target := _target_name_to_target(target_name)
 
 		modules := Dict{}
+		first_module_id := null
 		for input_path := extra_args.iterate():
 			input_path := File::canon_path(input_path)
 			input_file := File::open(input_path, "r")
@@ -73,6 +76,8 @@ class Linker:
 			file_type := input_file_data[ : CV_Library::LIBRARY_INIT_STRING.len()]
 			
 			if file_type == CV_Library::LIBRARY_INIT_STRING:
+				if first_module_id is null:
+					raise "XXX"
 				library := CV_Library::CV_Library.new(target)
 				for module_str, module := library.deserialize(input_file_data).iterate():
 					modules[module.get_identifier()] := [module_str, module]
@@ -80,6 +85,8 @@ class Linker:
 				module := CV_Module::CV_Module.new(target)
 				module.deserialize_str(input_file_data)
 				modules[module.get_identifier()] := [input_file_data, module]
+				if first_module_id is null:
+					first_module_id := module.get_identifier()
 			else:
 				_error(Strings::format("File '%s' is not of a known type.", input_path))
 
@@ -88,7 +95,7 @@ class Linker:
 		linked_bytecode.append(0)  // Version
 		linked_bytecode.append(-1) // Number of modules
 		
-		modules_stack := [File::join_ext(File::split_ext(File::canon_path(extra_args[0]))[0], CV_Module::CV_EXTENSION)]
+		modules_stack := [first_module_id]
 		assert(modules.find(modules_stack[0]))
 		modules_offsets := []
 		modules_bytecode := Array::Array.new(target::ARRAY_TYPE)
@@ -106,7 +113,7 @@ class Linker:
 						modules_stack.append(import_module_id)
 			i += 1
 
-		linked_bytecode[3] := modules_offsets.len()
+		linked_bytecode[target::LIBRARY_BYTECODE_NUM_MODULES] := modules_offsets.len()
 		
 		preamble_length := (linked_bytecode.len() + modules_offsets.len()) * target::WORDSIZE
 		for module_offset := modules_offsets.iterate():
@@ -131,21 +138,24 @@ class Library_Linker:
 		options := Parse_Options::Options.new(_useage)
 		options.add(Parse_Options::Option_Spec.new("library_mode", "l", Parse_Options::NONE, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ONE))
 		options.add(Parse_Options::Option_Spec.new("output", "o", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ONE))
+		options.add(Parse_Options::Option_Spec.new("target", "T", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_ONE))
 		
+		target_name := Strings::format("%dbit", Platform::word_bits)
 		parsed_args, extra_args := options.parse()
 		for option_name, option_val := parsed_args.iterate():
 			if option_name == "library_mode":
 				pass
 			elif option_name == "output":
 				output_path := option_val
+			elif option_name == "target":
+				target_name := option_val
 			else:
 				raise "XXX"
 		
 		if extra_args.len() == 0:
 			_useage("Not enough arguments.")
 
-		// XXX!!
-		target := Thirty_Two_Bit
+		target := _target_name_to_target(target_name)
 
 		modules := []
 		for input_path := extra_args.iterate():
@@ -182,6 +192,16 @@ class Library_Linker:
 		
 		output_file := File::File.new(output_path, "w")
 		output_file.write(library.serialize())
+
+
+
+
+func _target_name_to_target(target_name):
+
+	if not Available::TARGETS.find(target_name):
+		_error(Strings::format("No support yet for target '%s'.", target_name))
+
+	return Available::TARGETS[target_name]
 
 
 

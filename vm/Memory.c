@@ -581,7 +581,7 @@ void Con_Memory_gc_force(Con_Obj *thread)
 				Con_Slots_gc_scan_slots(thread, slots);
 			}
 			else
-				CON_FATAL_ERROR("Unknown memory type (probable mecory corruption).");
+				CON_FATAL_ERROR("Unknown memory type (probable memory corruption).");
 		}
 		
 		if (!mem_store->gc_stack_overflow)
@@ -646,10 +646,13 @@ void Con_Memory_gc_force(Con_Obj *thread)
 			else {
 				Con_Int j;
 				for (j = 0; j < CON_NUMBER_OF_BUILTINS; j += 1) {
-					if (atom->atom_type == CON_BUILTIN(j))
+					if (atom->atom_type == CON_BUILTIN(j)) {
+						printf(" %d", j);
 						break;
+					}
 				}
-				printf(" %d", j);
+				if (j == CON_NUMBER_OF_BUILTINS)
+					printf(" unknown");
 			}
 		}
 #		endif

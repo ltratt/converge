@@ -1,4 +1,4 @@
-// Copyright (c) 2003-2006 King's College London, created by Laurence Tratt
+// Copyright (c) 2006 King's College London, created by Laurence Tratt
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to
@@ -19,12 +19,18 @@
 // IN THE SOFTWARE.
 
 
-#ifndef _CON_BYTECODE_H
-#define _CON_BYTECODE_H
+#include "Config.h"
 
 #include "Core.h"
 
-Con_Obj *Con_Bytecode_add_executable(Con_Obj *, u_char *);
-Con_Obj *Con_Bytecode_add_module(Con_Obj *, u_char *);
+#include "Platform/Arch/x86_64/Arch.h"
 
-#endif
+
+
+Con_Int Con_Arch_align(Con_Obj *thread, Con_Int addr)
+{
+	if (addr % sizeof(void *) == 0)
+		return addr;
+	else
+		return (addr - (addr % sizeof(void *))) + sizeof(void *);
+}

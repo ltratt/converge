@@ -15,6 +15,16 @@ clean:
 	cd manuals && ${MAKE} ${MFLAGS} clean
 	cd tests && ${MAKE} ${MFLAGS} clean
 
+ifdef TARGET
+cross: all
+	cd lib && ${MAKE} ${MFLAGS} cross
+	cd compiler && ${MAKE} ${MFLAGS} cross
+
+cross-clean:
+	cd lib && ${MAKE} ${MFLAGS} cross-clean
+	cd compiler && ${MAKE} ${MFLAGS} cross-clean
+endif
+
 distclean:
 	cd bootstrap && ${MAKE} ${MFLAGS} distclean
 	cd vm && ${MAKE} ${MFLAGS} distclean

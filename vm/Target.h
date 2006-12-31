@@ -19,12 +19,17 @@
 // IN THE SOFTWARE.
 
 
-#ifndef _CON_BYTECODE_H
-#define _CON_BYTECODE_H
+#ifndef _CON_TARGET_H
+#define _CON_TARGET_H
 
-#include "Core.h"
+extern const char *Con_Instructions_names[52];
 
-Con_Obj *Con_Bytecode_add_executable(Con_Obj *, u_char *);
-Con_Obj *Con_Bytecode_add_module(Con_Obj *, u_char *);
+#if (SIZEOF_CON_INT == 4)
+#	include "Platform/Targets/32bit.h"
+#elif (SIZEOF_CON_INT == 8)
+#	include "Platform/Targets/64bit.h"
+#else
+#	error "Unknown word size"
+#endif
 
 #endif

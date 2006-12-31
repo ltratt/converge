@@ -1,4 +1,4 @@
-// Copyright (c) 2003-2006 King's College London, created by Laurence Tratt
+// Copyright (c) 2006 King's College London, created by Laurence Tratt
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to
@@ -24,9 +24,8 @@ import Array, Exceptions, Maths
 
 
 
-WORDSIZE := 4
-ARRAY_TYPE := "i32"
-
+WORDSIZE := 8
+ARRAY_TYPE := "i64"
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -36,26 +35,26 @@ ARRAY_TYPE := "i32"
 // The following offsets are all in words.
 
 MODULE_BYTECODE_HEADER := 0
-MODULE_BYTECODE_VERSION := 2
-MODULE_BYTECODE_NAME := 3
-MODULE_BYTECODE_NAME_SIZE := 4
-MODULE_BYTECODE_ID := 5
-MODULE_BYTECODE_ID_SIZE := 6
-MODULE_BYTECODE_INSTRUCTIONS := 7
-MODULE_BYTECODE_INSTRUCTIONS_SIZE := 8
-MODULE_BYTECODE_IMPORTS := 9
-MODULE_BYTECODE_IMPORTS_SIZE := 10
-MODULE_BYTECODE_NUM_IMPORTS := 11
-MODULE_BYTECODE_SRC_INFOS := 12
-MODULE_BYTECODE_SRC_INFOS_SIZE := 13
-MODULE_BYTECODE_NEWLINES := 14
-MODULE_BYTECODE_NUM_NEWLINES := 15
-MODULE_BYTECODE_TOP_LEVEL_VARS_MAP := 16
-MODULE_BYTECODE_TOP_LEVEL_VARS_MAP_SIZE := 17
-MODULE_BYTECODE_NUM_TOP_LEVEL_VARS := 18
-MODULE_BYTECODE_NUM_CONSTANTS := 19
-MODULE_BYTECODE_CONSTANTS_OFFSETS := 20
-MODULE_BYTECODE_SIZE := 21
+MODULE_BYTECODE_VERSION := 1
+MODULE_BYTECODE_NAME := 2
+MODULE_BYTECODE_NAME_SIZE := 3
+MODULE_BYTECODE_ID := 4
+MODULE_BYTECODE_ID_SIZE := 5
+MODULE_BYTECODE_INSTRUCTIONS := 6
+MODULE_BYTECODE_INSTRUCTIONS_SIZE := 7
+MODULE_BYTECODE_IMPORTS := 8
+MODULE_BYTECODE_IMPORTS_SIZE := 9
+MODULE_BYTECODE_NUM_IMPORTS := 10
+MODULE_BYTECODE_SRC_INFOS := 11
+MODULE_BYTECODE_SRC_INFOS_SIZE := 12
+MODULE_BYTECODE_NEWLINES := 13
+MODULE_BYTECODE_NUM_NEWLINES := 14
+MODULE_BYTECODE_TOP_LEVEL_VARS_MAP := 15
+MODULE_BYTECODE_TOP_LEVEL_VARS_MAP_SIZE := 16
+MODULE_BYTECODE_NUM_TOP_LEVEL_VARS := 17
+MODULE_BYTECODE_NUM_CONSTANTS := 18
+MODULE_BYTECODE_CONSTANTS_OFFSETS := 19
+MODULE_BYTECODE_SIZE := 20
 
 MODULE_BYTECODE_MODULE_IMPORT_FULL_NAME_SIZE := 0
 MODULE_BYTECODE_MODULE_IMPORT_FULL_NAME := 1
@@ -73,9 +72,9 @@ BYTECODE_TOP_LEVEL_VAR_NAME := 2
 // The following offsets are all in words.
 
 LIBRARY_BYTECODE_HEADER := 0
-LIBRARY_BYTECODE_FORMAT_VERSION := 2
-LIBRARY_BYTECODE_NUM_MODULES := 3
-LIBRARY_BYTECODE_MODULE_OFFSETS := 4
+LIBRARY_BYTECODE_FORMAT_VERSION := 1
+LIBRARY_BYTECODE_NUM_MODULES := 2
+LIBRARY_BYTECODE_MODULE_OFFSETS := 3
 
 
 
@@ -197,15 +196,8 @@ class Instr_Int(Instruction):
 
 
 	func to_bytecode():
-	
-		if self.val < 0:
-			int_val := (0 - self.val).or(1.lsl(23))
-		else:
-			int_val := self.val
-		if int_val.and(0x000000FF.lsl(24)) != 0:
-			raise Exceptions::Exception("Unable to squeeze int into 24 bits")
-		else:
-			return b_8_s24(INSTR_INT, int_val)
+
+		return b_8_s56(INSTR_INT, self.val)
 
 
 
@@ -315,13 +307,13 @@ class Instr_Slot_Lookup(Instruction):
 
 	func bytecode_len_bytes():
 	
-		return WORDSIZE + align(self.slot_name.len())
+		return align(4 + self.slot_name.len())
 
 
 
 	func to_bytecode():
 	
-		return [b_8_24(INSTR_SLOT_LOOKUP, self.slot_name.len())] + b_aligned_string(self.slot_name)
+		return Array::Array.new(ARRAY_TYPE, b_aligned_string(Array::Array.new("i32", [b_8_24(INSTR_SLOT_LOOKUP, self.slot_name.len())]).serialize() + self.slot_name))
 
 
 
@@ -461,13 +453,13 @@ class Instr_String(Instruction):
 
 	func bytecode_len_bytes():
 	
-		return WORDSIZE + align(self.string.len())
+		return align(4 + self.string.len())
 
 	
 	
 	func to_bytecode():
 	
-		return [b_8_24(INSTR_STRING, self.string.len())] + b_aligned_string(self.string)
+		return Array::Array.new(ARRAY_TYPE, b_aligned_string(Array::Array.new("i32", [b_8_24(INSTR_STRING, self.string.len())]).serialize() + self.string))
 
 
 
@@ -509,14 +501,13 @@ class Instr_Assign_Slot(Instruction):
 
 	func bytecode_len_bytes():
 	
-		return WORDSIZE + align(self.slot_name.len())
+		return align(4 + self.slot_name.len())
 
 	
 	
 	func to_bytecode():
 	
-		return [b_8_24(INSTR_ASSIGN_SLOT, self.slot_name.len())] + b_aligned_string(self.slot_name)
-
+		return Array::Array.new(ARRAY_TYPE, b_aligned_string(Array::Array.new("i32", [b_8_24(INSTR_ASSIGN_SLOT, self.slot_name.len())]).serialize() + self.slot_name))
 
 
 
@@ -652,14 +643,13 @@ class Instr_Pre_Apply_Slot_Lookup(Instruction):
 
 	func bytecode_len_bytes():
 	
-		return WORDSIZE + align(self.slot_name.len())
+		return align(4 + self.slot_name.len())
 
 
 
 	func to_bytecode():
 	
-		return [b_8_24(INSTR_PRE_APPLY_SLOT_LOOKUP, self.slot_name.len())] + b_aligned_string(self.slot_name)
-
+		return Array::Array.new(ARRAY_TYPE, b_aligned_string(Array::Array.new("i32", [b_8_24(INSTR_PRE_APPLY_SLOT_LOOKUP, self.slot_name.len())]).serialize() + self.slot_name))
 
 
 
@@ -772,13 +762,13 @@ class Instr_Module_Lookup(Instruction):
 
 	func bytecode_len_bytes():
 	
-		return WORDSIZE + align(self.slot_name.len())
+		return align(4 + self.slot_name.len())
 
 
 
 	func to_bytecode():
 	
-		return [b_8_24(INSTR_MODULE_LOOKUP, self.slot_name.len())] + b_aligned_string(self.slot_name)
+		return Array::Array.new(ARRAY_TYPE, b_aligned_string(Array::Array.new("i32", [b_8_24(INSTR_MODULE_LOOKUP, self.slot_name.len())]).serialize() + self.slot_name))
 
 
 
@@ -813,7 +803,9 @@ func encode_src_infos(all_src_infos):
 				src_infos_array.append(encoded_src_info)
 			i += 7
 	
-	return src_infos_array.serialize()
+	serialized := src_infos_array.serialize()
+	
+	return serialized + "\0" * (align(serialized.len()) - serialized.len())
 
 
 
@@ -887,6 +879,20 @@ func b_8_s24(b_8, bs_24):
 
 
 
+func b_8_s56(b_8, bs_56):
+
+	if bs_56 < 0:
+		b_56 := 0 - bs_56
+	else:
+		b_56 := bs_56
+
+	if bs_56 < 0:
+		return b_8.or(b_56.lsl(8)).or(1.lsl(63))
+	else:
+		return b_8.or(b_56.lsl(8))
+
+
+
 func b_8_12_12(b_8, b1_12, b2_12):
 
 	return b_8.or(b1_12.lsl(8)).or(b2_12.lsl(20))
@@ -895,8 +901,6 @@ func b_8_12_12(b_8, b1_12, b2_12):
 
 func b_aligned_string(s):
 
-	aligned_str := Array::Array.new("i32", s + ("\0" * (align(s.len()) - s.len())))
-	
-	assert(aligned_str.len() * WORDSIZE == align(s.len()))
+	aligned_str := Array::Array.new(ARRAY_TYPE, s + ("\0" * (align(s.len()) - s.len())))
 	
 	return aligned_str

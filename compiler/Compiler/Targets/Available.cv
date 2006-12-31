@@ -18,13 +18,14 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 
+//
+// This file contains a dictionary of available targets. On some platforms it may not be possible to
+// use certain targets, hence this list.
+//
 
-#ifndef _CON_BYTECODE_H
-#define _CON_BYTECODE_H
+import Thirty_Two_Bit, Sixty_Four_Bit
 
-#include "Core.h"
 
-Con_Obj *Con_Bytecode_add_executable(Con_Obj *, u_char *);
-Con_Obj *Con_Bytecode_add_module(Con_Obj *, u_char *);
 
-#endif
+
+TARGETS := Dict{"32bit" : Thirty_Two_Bit, "64bit" : Sixty_Four_Bit}

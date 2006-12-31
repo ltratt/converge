@@ -27,10 +27,10 @@
 #include "Bytecode.h"
 #include "Core.h"
 #include "Hash.h"
-#include "Instructions.h"
 #include "Numbers.h"
 #include "Object.h"
 #include "Shortcuts.h"
+#include "Target.h"
 
 #include "Builtins/Atom_Def_Atom.h"
 #include "Builtins/Class/Atom.h"
@@ -285,13 +285,13 @@ Con_Obj *Con_Builtins_Module_Atom_pc_to_src_locations(Con_Obj *thread, Con_PC pc
 				current_pc += sizeof(Con_Int) + sizeof(Con_Int);
 				break;
 			case CON_INSTR_SLOT_LOOKUP:
-				current_pc += sizeof(Con_Int) + Con_Arch_align(thread, CON_INSTR_DECODE_SLOT_LOOKUP_SIZE(instruction));
+				current_pc += Con_Arch_align(thread, CON_INSTR_DECODE_SLOT_LOOKUP_START(instruction) + CON_INSTR_DECODE_SLOT_LOOKUP_SIZE(instruction));
 				break;
 			case CON_INSTR_STRING:
-				current_pc += sizeof(Con_Int) + Con_Arch_align(thread, CON_INSTR_DECODE_STRING_SIZE(instruction));
+				current_pc += Con_Arch_align(thread, CON_INSTR_DECODE_STRING_START(instruction) + CON_INSTR_DECODE_STRING_SIZE(instruction));
 				break;
 			case CON_INSTR_ASSIGN_SLOT:
-				current_pc += sizeof(Con_Int) + Con_Arch_align(thread, CON_INSTR_DECODE_SLOT_LOOKUP_SIZE(instruction));
+				current_pc += Con_Arch_align(thread, CON_INSTR_DECODE_ASSIGN_SLOT_START(instruction) + + CON_INSTR_DECODE_ASSIGN_SLOT_SIZE(instruction));
 				break;
 			case CON_INSTR_UNPACK_ARGS:
 				if (CON_INSTR_DECODE_UNPACK_ARGS_HAS_VAR_ARGS(instruction))
@@ -300,10 +300,10 @@ Con_Obj *Con_Builtins_Module_Atom_pc_to_src_locations(Con_Obj *thread, Con_PC pc
 					current_pc += sizeof(Con_Int) + CON_INSTR_DECODE_UNPACK_ARGS_NUM_NORMAL_ARGS(instruction) * sizeof(Con_Int);
 				break;
 			case CON_INSTR_PRE_SLOT_LOOKUP_APPLY:
-				current_pc += sizeof(Con_Int) + Con_Arch_align(thread, CON_INSTR_DECODE_SLOT_LOOKUP_SIZE(instruction));
+				current_pc += Con_Arch_align(thread, CON_INSTR_DECODE_PRE_SLOT_LOOKUP_START(instruction) + + CON_INSTR_DECODE_PRE_SLOT_LOOKUP_SIZE(instruction));
 				break;
 			case CON_INSTR_MODULE_LOOKUP:
-				current_pc += sizeof(Con_Int) + Con_Arch_align(thread, CON_INSTR_DECODE_MODULE_LOOKUP_SIZE(instruction));
+				current_pc += Con_Arch_align(thread, CON_INSTR_DECODE_MODULE_LOOKUP_START(instruction) + CON_INSTR_DECODE_MODULE_LOOKUP_SIZE(instruction));
 				break;
 			case CON_INSTR_VAR_LOOKUP:
 			case CON_INSTR_VAR_ASSIGN:
@@ -352,15 +352,17 @@ Con_Obj *Con_Builtins_Module_Atom_pc_to_src_locations(Con_Obj *thread, Con_PC pc
 
 	assert(current_pc == pc.pc.bytecode_offset);
 
+#	define MODULE_GET_32BIT(x) (*(uint32_t*) (module_atom->module_bytecode + (x)))
+
 	Con_Int src_info_pos = 0;
 	Con_Int src_info_num = 0;
 	while (src_info_num < instruction_num) {
-		Con_Int src_info = MODULE_GET_WORD(MODULE_GET_WORD(CON_BYTECODE_MODULE_SRC_POSITIONS) + src_info_pos * sizeof(Con_Int));
+		Con_Int src_info = MODULE_GET_32BIT(MODULE_GET_WORD(CON_BYTECODE_MODULE_SRC_POSITIONS) + src_info_pos * sizeof(uint32_t));
 		src_info_num += src_info & 0x000007;
 
 		while (src_info & (1 << 3)) {
 			src_info_pos += 1;
-			src_info = MODULE_GET_WORD(MODULE_GET_WORD(CON_BYTECODE_MODULE_SRC_POSITIONS) + src_info_pos * sizeof(Con_Int));
+			src_info = MODULE_GET_32BIT(MODULE_GET_WORD(CON_BYTECODE_MODULE_SRC_POSITIONS) + src_info_pos * sizeof(uint32_t));
 		}
 		src_info_pos += 1;
 	}
@@ -368,7 +370,7 @@ Con_Obj *Con_Builtins_Module_Atom_pc_to_src_locations(Con_Obj *thread, Con_PC pc
 	Con_Obj *imports = module_atom->imports;
 	Con_Obj *self_file_name = module_atom->identifier;
 	while (1) {
-		Con_Int src_info = MODULE_GET_WORD(MODULE_GET_WORD(CON_BYTECODE_MODULE_SRC_POSITIONS) + src_info_pos * sizeof(Con_Int));
+		uint32_t src_info = MODULE_GET_32BIT(MODULE_GET_WORD(CON_BYTECODE_MODULE_SRC_POSITIONS) + src_info_pos * sizeof(uint32_t));
 		CON_MUTEX_UNLOCK(&module->mutex);
 		Con_Obj *entry = Con_Builtins_List_Atom_new_sized(thread, 2);
 

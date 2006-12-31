@@ -1,4 +1,4 @@
-// Copyright (c) 2003-2006 King's College London, created by Laurence Tratt
+// Copyright (c) 2006 King's College London, created by Laurence Tratt
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to
@@ -19,11 +19,15 @@
 // IN THE SOFTWARE.
 
 
-#include "Config.h"
+#ifndef _CON_PLATFORM_X86_64_ARCH_H
+#define _CON_PLATFORM_X86_64_ARCH_H
 
-#include "Instructions.h"
+#include <stddef.h>
 
+#include "Core.h"
 
+#define CON_ARCH_GET_STACKP(var) __asm__("movq %%rsp,%0" : "=r" (var))
 
+Con_Int Con_Arch_align(Con_Obj *, Con_Int);
 
-const char *Con_Instructions_names[52] = {"**unused**", "ASSIGN", "VAR_LOOKUP", "VAR_ASSIGN", "INT", "ADD_FAILURE_FRAME", "ADD_FAIL_UP_FRAME", "REMOVE_FAILURE_FRAME", "IS_ASSIGNED", "IS", "FAIL_NOW", "POP", "LIST", "SLOT_LOOKUP", "APPLY", "FUNC_DEF", "RETURN", "BRANCH", "YIELD", "**unused**", "IMPORT", "DICT", "DUP", "PULL", "CHANGE_FAIL_POINT", "STRING", "BUILTIN_LOOKUP", "ASSIGN_SLOT", "EYIELD", "ADD_EXCEPTION_FRAME", "**unused**", "INSTANCE_OF", "REMOVE_EXCEPTION_FRAME", "RAISE", "SET_ITEM", "UNPACK_ARGS", "SET", "BRANCH_IF_NOT_FAIL", "BRANCH_IF_FAIL", "CONSTANT_GET", "CONSTANT_SET", "PRE_SLOT_LOOKUP_APPLY", "UNPACK_ASSIGN", "EQ", "LE", "ADD", "SUBTRACT", "NEQ", "LE_EQ", "GR_EQ", "GT", "MODULE_LOOKUP"};
+#endif

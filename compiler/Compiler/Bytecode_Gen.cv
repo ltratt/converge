@@ -84,7 +84,7 @@ NEST_FUNC := 4   // [NEST_FUNC, <bound = 1> | <unbound = 0>]
 
 class Bytecode_Gen:
 
-	func generate(imodule):
+	func generate(imodule, target):
 	
 		// 'vars' and 'renames' are two lists which shadow each other, recording the variables and
 		// renames at each level of nesting. At all times, the length of each list is identical. Each
@@ -117,7 +117,7 @@ class Bytecode_Gen:
 		
 		self._compiler := CEI::compiler()
 		self._module_id := self._compiler.module_id
-		self._target := self._compiler.target
+		self._target := target
 		
 		self.preorder(imodule)
 		
@@ -152,13 +152,13 @@ class Bytecode_Gen:
 		//
 		// At the same time we also populate the src_infos array.
 		
-		instructions_bytecode := Array::Array.new(self._compiler.target::ARRAY_TYPE)
+		instructions_bytecode := Array::Array.new(self._target::ARRAY_TYPE)
 		all_src_infos := []
 		last_src_infos := null
 		src_infos_count := 0
 		for instruction := self._instructions.iterate():
 			instruction_bytecode := instruction.to_bytecode()
-			if Builtins::List.conformed_by(instruction_bytecode):
+			if Builtins::List.conformed_by(instruction_bytecode) | Array::Array.conformed_by(instruction_bytecode):
 				instructions_bytecode.extend(instruction_bytecode)
 			else:
 				instructions_bytecode.append(instruction_bytecode)
@@ -204,7 +204,7 @@ class Bytecode_Gen:
 		for label := self._constants_labels.iterate():
 			constants_offsets.append(bytecode_offsets[self._labels[label]])
 		
-		module := CV_Module::CV_Module.new(self._compiler.target)
+		module := CV_Module::CV_Module.new(self._target)
 		module.set_name(imodule.module_name)
 		module.set_identifier(self._module_id)
 		module.set_top_level_vars_map(self._top_level_vars_map)

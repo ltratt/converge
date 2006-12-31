@@ -50,6 +50,7 @@ typedef struct {
 	CON_ATOM_HEAD
 
 	_Con_Modules_Array_Type type; // Immutable.
+	Con_Obj *type_name; // A pretty-printable name representing the type.
 	size_t entry_size; // Immutable.
 	u_char *entries;
 	Con_Int num_entries, num_entries_allocated;
@@ -74,11 +75,29 @@ Con_Obj *_Con_Modules_Array_Array_serialize_func(Con_Obj *);
 Con_Obj *_Con_Modules_Array_Array_set_func(Con_Obj *);
 Con_Obj *_Con_Modules_Array_Array_to_str_func(Con_Obj *);
 
+#define _ALIGNMENT_EXCEPTION(l, array_atom) do { \
+		Con_Obj *msg = CON_NEW_STRING("Data of len "); \
+		msg = CON_ADD(msg, CON_GET_SLOT_APPLY(CON_NEW_INT(l), "to_str")); \
+		msg = CON_ADD(msg, CON_NEW_STRING(" not aligned to a multiple of ")); \
+		msg = CON_ADD(msg, CON_GET_SLOT_APPLY(CON_NEW_INT(array_atom->entry_size), "to_str")); \
+		msg = CON_ADD(msg, CON_NEW_STRING(" for type ")); \
+		msg = CON_ADD(msg, array_atom->type_name); \
+		msg = CON_ADD(msg, CON_NEW_STRING(".")); \
+		Con_Obj *exception = CON_GET_SLOT_APPLY(CON_GET_MODULE_DEF(array_mod, "Array_Exception"), "new", msg); \
+		Con_Builtins_VM_Atom_raise(thread, exception); \
+	} while (0);
+
 
 
 Con_Obj *Con_Modules_Array_init(Con_Obj *thread, Con_Obj *identifier)
 {
 	Con_Obj *array_mod = Con_Builtins_Module_Atom_new_c(thread, identifier, CON_NEW_STRING("Array"), CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+
+	// Array_Exception
+
+	Con_Obj *user_exception = CON_GET_MODULE_DEF(CON_BUILTIN(CON_BUILTIN_EXCEPTIONS_MODULE), "User_Exception");
+	Con_Obj *array_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("Array_Exception"), Con_Builtins_List_Atom_new_va(thread, user_exception, NULL), array_mod);
+	CON_SET_SLOT(array_mod, "Array_Exception", array_exception);
 
 	// Array_Atom_Def
 	
@@ -116,6 +135,7 @@ void _Con_Modules_Array_Module_Array_Atom_gc_scan(Con_Obj *thread, Con_Obj *obj,
 {
 	Con_Modules_Array_Array_Atom *array_atom = (Con_Modules_Array_Array_Atom *) atom;
 
+	Con_Memory_gc_push(thread, array_atom->type_name);
 	Con_Memory_gc_push(thread, array_atom->entries);
 }
 
@@ -131,6 +151,7 @@ void _Con_Modules_Array_Module_Array_Atom_gc_scan(Con_Obj *thread, Con_Obj *obj,
 // type must be one of the following:
 //   'i' : array of integers (native size, as determined by host platform)
 //   'i32' : array of 32-bit integers
+//   'i64' : array of 32-bit integers
 //
 
 Con_Obj *_Con_Modules_Array_Array_new(Con_Obj *thread)
@@ -147,12 +168,16 @@ Con_Obj *_Con_Modules_Array_Array_new(Con_Obj *thread)
 	slots_atom->next_atom = NULL;
 
 	array_atom->atom_type = CON_GET_MODULE_DEF(array_mod, "Array_Atom_Def");
+	array_atom->type_name = type;
 
 	if (CON_C_STRING_EQ("i", type)) {
 		// Native integer size this architecture / OS.
 #		if SIZEOF_CON_INT == 4
 		array_atom->type = _CON_MODULES_ARRAY_TYPE_INT32;
 		array_atom->entry_size = sizeof(int32_t);
+#		elif SIZEOF_CON_INT == 8
+		array_atom->type = _CON_MODULES_ARRAY_TYPE_INT64;
+		array_atom->entry_size = sizeof(int64_t);
 #		else
 		CON_XXX;
 #		endif
@@ -161,9 +186,12 @@ Con_Obj *_Con_Modules_Array_Array_new(Con_Obj *thread)
 		array_atom->type = _CON_MODULES_ARRAY_TYPE_INT32;
 		array_atom->entry_size = sizeof(int32_t);
 	}
+	else if (CON_C_STRING_EQ("i64", type)) {
+		array_atom->type = _CON_MODULES_ARRAY_TYPE_INT64;
+		array_atom->entry_size = sizeof(int64_t);
+	}
 	else
 		CON_XXX;
-	
 
 	if (initial_data != NULL) {
 		CON_MUTEX_LOCK(&initial_data->mutex);
@@ -175,7 +203,7 @@ Con_Obj *_Con_Modules_Array_Array_new(Con_Obj *thread)
 				CON_XXX;
 
 			if (string_atom->size % array_atom->entry_size != 0)
-				CON_XXX;
+				_ALIGNMENT_EXCEPTION(string_atom->size, array_atom);
 			
 			Con_Int num_entries_allocated = string_atom->size / array_atom->entry_size;
 			array_atom->entries = (u_char *) Con_Memory_malloc(thread, string_atom->size, CON_MEMORY_CHUNK_OPAQUE);
@@ -213,7 +241,7 @@ Con_Obj *_Con_Modules_Array_Array_new(Con_Obj *thread)
 		if (initial_data != NULL)
 			CON_GET_SLOT_APPLY(new_array, "extend", initial_data);
 	}
-	
+
 	return new_array;
 }
 
@@ -237,14 +265,17 @@ Con_Obj *_Con_Modules_Array_Array_append_func(Con_Obj *thread)
 	Con_Modules_Array_Array_Atom *array_atom = CON_GET_ATOM(self, array_atom_def);
 	
 	if (array_atom->type == _CON_MODULES_ARRAY_TYPE_INT32) {
-#		if SIZEOF_CON_INT == 4
 		int32_t val = Con_Numbers_Number_to_Con_Int(thread, o);
-#		else
-		CON_XXX;
-#		endif
 		CON_MUTEX_LOCK(&self->mutex);
 		Con_Memory_make_array_room(thread, (void **) &array_atom->entries, &self->mutex, &array_atom->num_entries_allocated, &array_atom->num_entries, 1, array_atom->entry_size);
 		((int32_t *) array_atom->entries)[array_atom->num_entries++] = val;
+		CON_MUTEX_UNLOCK(&self->mutex);
+	}
+	else if (array_atom->type == _CON_MODULES_ARRAY_TYPE_INT64) {
+		int64_t val = Con_Numbers_Number_to_Con_Int(thread, o);
+		CON_MUTEX_LOCK(&self->mutex);
+		Con_Memory_make_array_room(thread, (void **) &array_atom->entries, &self->mutex, &array_atom->num_entries_allocated, &array_atom->num_entries, 1, array_atom->entry_size);
+		((int64_t *) array_atom->entries)[array_atom->num_entries++] = val;
 		CON_MUTEX_UNLOCK(&self->mutex);
 	}
 	else
@@ -270,7 +301,7 @@ Con_Obj *_Con_Modules_Array_Array_extend_func(Con_Obj *thread)
 	if (container->virgin && container->first_atom->atom_type == array_atom_def) {
 		Con_Modules_Array_Array_Atom *self_array_atom = CON_GET_ATOM(self, array_atom_def);
 		Con_Modules_Array_Array_Atom *container_array_atom = (Con_Modules_Array_Array_Atom *) container->first_atom;
-		
+
 		if (self_array_atom->type == container_array_atom->type) {
 			Con_Int container_num_entries = container_array_atom->num_entries;
 			CON_MUTEX_UNLOCK(&container->mutex);
@@ -310,7 +341,8 @@ Con_Obj *_Con_Modules_Array_Array_extend_func(Con_Obj *thread)
 
 Con_Obj *_Con_Modules_Array_Array_extend_from_string_func(Con_Obj *thread)
 {
-	Con_Obj *array_atom_def = CON_GET_MODULE_DEF(Con_Builtins_VM_Atom_get_functions_module(thread), "Array_Atom_Def");
+	Con_Obj *array_mod = Con_Builtins_VM_Atom_get_functions_module(thread);
+	Con_Obj *array_atom_def = CON_GET_MODULE_DEF(array_mod, "Array_Atom_Def");
 
 	Con_Obj *str_obj, *self;
 	CON_UNPACK_ARGS("US", array_atom_def, &self, &str_obj);
@@ -323,7 +355,7 @@ Con_Obj *_Con_Modules_Array_Array_extend_from_string_func(Con_Obj *thread)
 		CON_MUTEX_UNLOCK(&str_obj->mutex);
 		
 		if (str_atom->size % self_array_atom->entry_size != 0)
-			CON_XXX;
+			_ALIGNMENT_EXCEPTION(str_atom->size, self_array_atom);
 		
 		CON_MUTEX_LOCK(&self->mutex);
 		Con_Int new_num_entries = str_atom->size / self_array_atom->entry_size;
@@ -358,8 +390,21 @@ Con_Obj *_Con_Modules_Array_Array_get_func(Con_Obj *thread)
 	Con_Obj *rtn;
 	if (array_atom->type == _CON_MODULES_ARRAY_TYPE_INT32) {
 		CON_MUTEX_LOCK(&self->mutex);
-#		if SIZEOF_CON_INT == 4
 		Con_Int val = ((int32_t *) array_atom->entries)[Con_Misc_translate_index(thread, &self->mutex, i_val, array_atom->num_entries)];
+		CON_MUTEX_UNLOCK(&self->mutex);
+		rtn = CON_NEW_INT(val);
+	}
+	else if (array_atom->type == _CON_MODULES_ARRAY_TYPE_INT64) {
+		CON_MUTEX_LOCK(&self->mutex);
+#		if SIZEOF_CON_INT == 4
+		int64_t val64 = ((int64_t *) array_atom->entries)[Con_Misc_translate_index(thread, &self->mutex, i_val, array_atom->num_entries)];
+		if ((val64 & 0xFFFFFFFF00000000) != 0) {
+			printf("eek\n");
+			//CON_XXX;
+		}
+		Con_Int val = (Con_Int) val64;
+#		elif SIZEOF_CON_INT == 8
+		Con_Int val = ((int64_t *) array_atom->entries)[Con_Misc_translate_index(thread, &self->mutex, i_val, array_atom->num_entries)];
 #		else
 		CON_XXX;
 #		endif
@@ -401,6 +446,7 @@ Con_Obj *_Con_Modules_Array_Array_get_slice_func(Con_Obj *thread)
 	new_slots_atom->next_atom = NULL;
 
 	new_array_atom->type = self_array_atom->type;
+	new_array_atom->type_name = self_array_atom->type_name;
 	new_array_atom->entry_size = self_array_atom->entry_size;
 
 	Con_Int num_entries_allocated = upper - lower;
@@ -451,10 +497,22 @@ Con_Obj *_Con_Modules_Array_Array_iterate_func(Con_Obj *thread)
 
 		Con_Obj *entry;
 		if (array_atom->type == _CON_MODULES_ARRAY_TYPE_INT32) {
-#			if SIZEOF_CON_INT == 4
 			Con_Int val = ((int32_t *) array_atom->entries)[i];
+			CON_MUTEX_UNLOCK(&self->mutex);
+			entry = CON_NEW_INT(val);
+		}
+		else if (array_atom->type == _CON_MODULES_ARRAY_TYPE_INT64) {
+#			if SIZEOF_CON_INT == 4
+			int64_t val64 = ((int64_t *) array_atom->entries)[i];
+			if ((val64 & 0xFFFFFFFF00000000) != 0) {
+				printf("eek\n");
+				//CON_XXX;
+			}
+			Con_Int val = (Con_Int) val64;
+#			elif SIZEOF_CON_INT == 8
+			Con_Int val = ((int64_t *) array_atom->entries)[i];
 #			else
-			CON_XXX
+			CON_XXX;
 #			endif
 			CON_MUTEX_UNLOCK(&self->mutex);
 			entry = CON_NEW_INT(val);
@@ -557,13 +615,15 @@ Con_Obj *_Con_Modules_Array_Array_set_func(Con_Obj *thread)
 	Con_Int i_val = Con_Numbers_Number_to_Con_Int(thread, i_obj);
 	
 	if (array_atom->type == _CON_MODULES_ARRAY_TYPE_INT32) {
-#		if SIZEOF_CON_INT == 4
 		int32_t val = Con_Numbers_Number_to_Con_Int(thread, o);
-#		else
-		CON_XXX
-#		endif
 		CON_MUTEX_LOCK(&self->mutex);
 		((int32_t *) array_atom->entries)[Con_Misc_translate_index(thread, &self->mutex, i_val, array_atom->num_entries)] = val;
+		CON_MUTEX_UNLOCK(&self->mutex);
+	}
+	else if (array_atom->type == _CON_MODULES_ARRAY_TYPE_INT64) {
+		int64_t val = Con_Numbers_Number_to_Con_Int(thread, o);
+		CON_MUTEX_LOCK(&self->mutex);
+		((int64_t *) array_atom->entries)[Con_Misc_translate_index(thread, &self->mutex, i_val, array_atom->num_entries)] = val;
 		CON_MUTEX_UNLOCK(&self->mutex);
 	}
 	else

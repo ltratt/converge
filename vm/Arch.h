@@ -19,8 +19,10 @@
 // IN THE SOFTWARE.
 
 
-#if CON_ARCH == i386
+#if defined(CON_ARCH_I386)
 #	include "Platform/Arch/i386/Arch.h"
+#elif defined(CON_ARCH_X86_64)
+#	include "Platform/Arch/x86_64/Arch.h"
 #else
 #	error "Unknown architecture"
 #endif

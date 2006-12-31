@@ -120,7 +120,9 @@ int Con_Numbers_Con_Int_to_c_int(Con_Obj *thread, Con_Int val)
 	// if sizeof(int) == sizeof(Con_Int) then the two types are equivalent and there is no need to
 	// check for overflow etc.
 	return val;
-#	else
-	CON_XXX;
+#	elif SIZEOF_INT == 4 && SIZEOF_CON_INT == 8
+	if ((val & 0xFFFFFFFF00000000) != 0)
+		CON_XXX;
+	return val;
 #	endif
 }

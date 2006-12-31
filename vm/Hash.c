@@ -68,7 +68,7 @@ Con_Int Con_Hash_calc_string_hash(Con_Obj *thread, const char *str, int str_size
 Con_Int Con_Hash_calc_con_int_hash(Con_Obj *thread, Con_Int val)
 {
 #	if SIZEOF_CON_INT == 4
-	// This is based on Robert Jenkin's 32-bit hash function, reported at:
+	// This is based on Robert Jenkin's and Thomas Wang's 32-bit hash function, reported at:
 	//   http://www.concentric.net/~Ttwang/tech/inthash.htm
 
 	val += val << 12;
@@ -81,6 +81,21 @@ Con_Int Con_Hash_calc_con_int_hash(Con_Obj *thread, Con_Int val)
 	val ^= val >> 12;
 
 	return val;
+#	elif SIZEOF_CON_INT == 8
+	// This is based on Thomas Wang's 64-bit hash function, reported at:
+	//   http://www.concentric.net/~Ttwang/tech/inthash.htm
+
+	uint64_t key = val;
+
+	key = (~key) + (key << 21);
+	key = key ^ (key >> 24);
+	key = (key + (key << 3)) + (key << 8);
+	key = key ^ (key >> 14);
+	key = (key + (key << 2)) + (key << 4);
+	key = key ^ (key >> 28);
+	key = key + (key << 31);
+
+	return key;
 #	else
 	CON_XXX;
 #	endif

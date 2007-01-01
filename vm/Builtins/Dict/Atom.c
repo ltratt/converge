@@ -121,10 +121,10 @@ Con_Int Con_Builtins_Dict_Atom_find_entry(Con_Obj *thread, Con_Mutex *mutex, Con
 	CON_ASSERT_MUTEX_LOCKED(mutex);
 
 	Con_Int i = hash % num_entries_allocated;
+	// Since hash can be a negative number, i may be less than 0.
+	if (i < 0)
+		i = -i;
 	while (1) {
-		// Since hash can be a negative number, i may be less than 0.
-		if (i < 0)
-			i = -i;
 		if (entries[i].key == NULL)
 			return i;
 	

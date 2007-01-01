@@ -173,11 +173,10 @@ void Con_Builtins_String_Atom_init_atom(Con_Obj *thread, Con_Builtins_String_Ato
 Con_Int _Con_Builtins_String_Atom_find_cached_pos(Con_Obj *thread, Con_Builtins_String_Class_Unique_Atom *unique_atom, const char *str, Con_Int size, Con_String_Encoding enc, Con_Int hash)
 {
 	Con_Int i = hash % unique_atom->num_cache_entries_allocated;
+	// Since hash can be a negative number, i may be less than 0.
+	if (i < 0)
+		i = -i;
 	while (1) {
-		// Since hash can be a negative number, i may be less than 0.
-		if (i < 0)
-			i = -i;
-		
 		if (unique_atom->cache[i].str == NULL)
 			return i;
 		

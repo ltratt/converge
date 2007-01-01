@@ -72,10 +72,10 @@ Con_Int _Con_Slots_find_pos(Con_Obj *thread, Con_Slots_Hash_Entry *hash_entries,
 {
 	Con_Int hash = Con_Hash_calc_string_hash(thread, slot_name, slot_name_size);
 	Con_Int i = hash % num_hash_entries_allocated;
+	// Since hash can be a negative number, i may be less than 0.
+	if (i < 0)
+		i = -i;
 	while (1) {
-		// Since hash can be a negative number, i may be less than 0.
-		if (i < 0)
-			i = -i;
 		if (hash_entries[i].full_entry_offset == -1)
 			return i;
 		

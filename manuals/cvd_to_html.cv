@@ -67,9 +67,7 @@ class CVD_To_HTML:
 
 		Sys::println("Creating module index")
 
-		Sort::sort(modules, func (x, y) {
-			return x[1].to_lower_case() < y[1].to_lower_case()
-		})
+		Sort::sort(modules, func (x, y) { return x[1].to_lower_case() < y[1].to_lower_case() })
 
 		modules_table := []
 		if modules.len() % _NUM_MODULES_COLUMNS == 0:

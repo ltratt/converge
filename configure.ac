@@ -187,6 +187,7 @@ else
 fi
 
 
+
 ####################################################################################################
 # Platform check
 #
@@ -343,6 +344,33 @@ AH_TEMPLATE(CON_HAVE_SRANDOMDEV,
   [Define if your platform has the srandomdev function.])
 
 AC_CHECK_FUNC(srandomdev, [AC_DEFINE(CON_HAVE_SRANDOMDEV)])
+
+
+# sigsetjmp
+
+AC_MSG_CHECKING([for sigsetjmp])
+
+AH_TEMPLATE(_POSIX_C_SOURCE,
+  [Define if your platform needs _POSIX_C_SOURCE for sigsetjmp to be defined.])
+
+CFLAGS="-std=c99"
+AC_TRY_RUN([
+#include <setjmp.h>
+
+int main()
+{
+	sigjmp_buf return_env;
+	sigsetjmp(return_env, 0);
+}], [AC_MSG_RESULT(yes)], [CFLAGS="-std=c99 -D_POSIX_C_SOURCE"
+	AC_TRY_RUN([
+#include <setjmp.h>
+
+int main()
+{
+	sigjmp_buf return_env;
+	sigsetjmp(return_env, 0);
+}], [AC_MSG_RESULT(-D_POSIX_C_SOURCE)
+	extra_cflags="$extra_cflags -D_POSIX_C_SOURCE"], [AC_MSG_ERROR(unable to find sigsetjmp)])])
 
 
 ####################################################################################################

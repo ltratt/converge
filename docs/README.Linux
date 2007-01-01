@@ -1,23 +1,5 @@
 ================================================================================
 
-Converge currently fails to compile on Linux out of the box as, for reasons I
-don't understand, sigsetjmp is not included properly from /usr/include/setjmp.h.
-You can hack around this by putting these two lines at the top of Config.h
-after running ./configure:
-
-  typedef struct __jmp_buf_tag sigjmp_buf[1];
-  # define sigsetjmp(env, savemask)       __sigsetjmp (env, savemask)
-
-I'd be grateful if someone more familiar with the mess that is your average
-Linux /usr/include could provide a proper patch (perhaps to configure.ac?) to
-fix this.
-
-Similarly, compiling the POSIX_File C module throws errors up about fdopen and
-fileno not being defined, despite <stdio.h> being included. Again, patches
-appreciated.
-
-================================================================================
-
 Converge can be run under Valgrind. At a minimum you will probably want the
 following suppression file:
 

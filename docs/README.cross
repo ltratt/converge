@@ -1,0 +1,22 @@
+Cross-compiling for Converge means creating convergec and convergel binaries that
+can run on a target platform other than the one being used to create them. For
+example on a 64 bit system one can cross-compile to create 32 bit binaries by
+building the host Converge system as normal and then executing:
+
+  make cross TARGET=32bit
+
+When this has finished the following two cross-compiled binaries will have been
+created:
+
+  compiler/convergec.32bit
+  compiler/convergel.32bit
+
+To clean the files created by cross-compilation one must execute:
+
+  make cross-clean TARGET=32bit
+
+These files are not cleaned by the normal "make clean" target.
+
+Available targets are documented in compiler/Compiler/Targets/Available.cv. Note
+that some platforms are not capable of cross-compiling to other targets (e.g.
+currently the 32bit platform can not currently cross-compile the 64bit compiler).

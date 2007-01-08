@@ -1,0 +1,3 @@
+To compile Converge in a standard Cygwin installation you will need to
+install at least the pcre, pcre-devel, libxml2, libxml2-devel, and gmake
+packages.

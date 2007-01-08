@@ -524,7 +524,7 @@ void _Con_Builtins_VM_Atom_apply_pump_restore_c_stack(Con_Obj *thread, u_char *c
 	
 	memmove(c_stack_bottom, suspended_c_stack, suspended_c_stack_size);
 
-#ifndef __CYGWIN__
+#ifdef __CYGWIN__
 	// XXX
 	//
 	// For reasons that are far from clear to me, the following line:

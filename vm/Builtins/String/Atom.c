@@ -186,8 +186,6 @@ Con_Int _Con_Builtins_String_Atom_find_cached_pos(Con_Obj *thread, Con_Builtins_
 		
 		i = (i + 1) % unique_atom->num_cache_entries_allocated;
 	}
-	
-	return NULL;
 }
 
 

@@ -374,12 +374,26 @@ int main()
 
 
 ####################################################################################################
-# Misc
+# C compiler
 #
 
-# C flags
+if [[ "$GCC" = "yes" ]]; then
+	CFLAGS="-std=c99 -g -DNDEBUG -Wall -Wstrict-prototypes -Wmissing-prototypes -Wwrite-strings -Wpointer-arith -Wbad-function-cast -Wsign-compare $extra_cflags"
 
-CFLAGS="-g -DNDEBUG -O2 -Wall -Wstrict-prototypes -Wmissing-prototypes -Wwrite-strings -Wpointer-arith -Wbad-function-cast -Wsign-compare $extra_cflags"
+	# We only enable optimisation on GCC 3.3 - on later versions it seems to cause problems.
+	$CC -v 2>&1 /dev/null | grep "gcc version 3\.3" > /dev/null
+	if [[ $? -eq 0 ]]; then
+		CFLAGS="$CFLAGS -O2"
+	fi
+else
+	CFLAGS="-DNDEBUG"
+fi
+
+
+####################################################################################################
+# Output
+#
+
 LIBS="$extra_libs"
 
 AC_CONFIG_FILES([Makefile Makefile.inc compiler/Makefile vm/Version.h vm/Makefile lib/Makefile
@@ -389,16 +403,16 @@ AC_CONFIG_FILES([Makefile Makefile.inc compiler/Makefile vm/Version.h vm/Makefil
 AC_OUTPUT
 
 
-if [[ ! -f bootstrap/convergec.bootstrap ]]; then
+if [[ ! -f compiler/convergec ]]; then
 	echo "copying over bootstrap compiler"
-	cp $bootstrap_dir/convergec.bootstrap bootstrap
+	cp $bootstrap_dir/convergec.bootstrap compiler/convergec
 else
 	echo "preserving existing bootstrap compiler"
 fi
 
-if [[ ! -f bootstrap/convergel.bootstrap ]]; then
+if [[ ! -f compiler/convergel ]]; then
 	echo "copying over bootstrap linker"
-	cp $bootstrap_dir/convergel.bootstrap bootstrap
+	cp $bootstrap_dir/convergel.bootstrap compiler/convergel
 else
 	echo "preserving existing bootstrap linker"
 fi

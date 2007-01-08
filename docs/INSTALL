@@ -2,8 +2,7 @@ Subject to platform specific notes in README.<platform> one can normally compile
 Converge by executing the following commands:
 
   ./configure
-  make -f Makefile.bootstrap
-
+  make
 
 
 ================================================================================
@@ -26,7 +25,7 @@ snapshot and extract the appropriate bootstrap compiler and linker. e.g.:
 You then execute the following as with any normal install:
 
   ./configure
-  make -f Makefile.bootstrap
+  make
 
 It is then recommended that you rebuild once more to check that the newly
 compiled compiler functions correctly:

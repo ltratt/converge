@@ -871,8 +871,6 @@ void Con_Builtins_Con_Stack_Atom_read_failure_frame(Con_Obj *thread, Con_Obj *co
 
 	Con_Builtins_Con_Stack_Atom *con_stack_atom = CON_GET_ATOM(con_stack, CON_BUILTIN(CON_BUILTIN_CON_STACK_ATOM_DEF_OBJECT));
 
-	if (con_stack_atom->ffp == -1)
-		CON_RAISE_EXCEPTION("Parameters_Exception", CON_NEW_STRING("Not enough parameters."));
 	assert(con_stack_atom->ffp > -1);
 	assert(*(((Con_Builtins_Con_Stack_Class_Type *) (con_stack_atom->stack + con_stack_atom->ffp)) - 1) == CON_BUILTINS_CON_STACK_CLASS_FAILURE_FRAME);
 	Con_Builtins_Con_Stack_Class_Failure_Frame *failure_frame = (Con_Builtins_Con_Stack_Class_Failure_Frame *) (con_stack_atom->stack + con_stack_atom->ffp - sizeof(Con_Builtins_Con_Stack_Class_Failure_Frame) - sizeof(Con_Builtins_Con_Stack_Class_Type));

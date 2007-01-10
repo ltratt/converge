@@ -187,7 +187,7 @@ Con_Obj *_Con_Modules_PCRE_Pattern_new(Con_Obj *thread)
 	const char *errptr;
 	int erroffset;
 	if ((pattern_atom->compiled_re = pcre_compile(Con_Builtins_String_Atom_to_c_string(thread, pattern), PCRE_DOTALL | PCRE_MULTILINE, &errptr, &erroffset, NULL)) == NULL) {
-		Con_Obj *msg = Con_Builtins_String_Atom_new_no_copy(thread, errptr, strlen(errptr), CON_STR_UTF_8);
+		Con_Obj *msg = Con_Builtins_String_Atom_new_no_copy(thread, (const u_char *) errptr, strlen(errptr), CON_STR_UTF_8);
 		msg = CON_ADD(msg, CON_NEW_STRING(" at pattern position "));
 		msg = CON_ADD(msg, CON_GET_SLOT_APPLY(CON_NEW_INT(erroffset), "to_str"));
 		msg = CON_ADD(msg, CON_NEW_STRING("."));
@@ -242,7 +242,7 @@ Con_Obj *_Con_Modules_PCRE_Pattern_match_func(Con_Obj *thread)
 	// enough memory for 1 + num_captures.
 	int ovector_size = (1 + pattern_atom->num_captures) * 3;
 	int *ovector = Con_Memory_malloc(thread, ovector_size * sizeof(int), CON_MEMORY_CHUNK_OPAQUE);
-	if ((err = pcre_exec(pattern_atom->compiled_re, NULL, string_atom->str, string_atom->size, start_pos, PCRE_ANCHORED, ovector, ovector_size)) < 0) {
+	if ((err = pcre_exec(pattern_atom->compiled_re, NULL, (char *) string_atom->str, string_atom->size, start_pos, PCRE_ANCHORED, ovector, ovector_size)) < 0) {
 		if (err == PCRE_ERROR_NOMATCH)
 			return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
 		else
@@ -297,7 +297,7 @@ Con_Obj *_Con_Modules_PCRE_Pattern_search_func(Con_Obj *thread)
 	// enough memory for 1 + num_captures.
 	int ovector_size = (1 + pattern_atom->num_captures) * 3;
 	int *ovector = Con_Memory_malloc(thread, ovector_size * sizeof(int), CON_MEMORY_CHUNK_OPAQUE);
-	if ((err = pcre_exec(pattern_atom->compiled_re, NULL, string_atom->str, string_atom->size, start_pos, 0, ovector, ovector_size)) < 0) {
+	if ((err = pcre_exec(pattern_atom->compiled_re, NULL, (char *) string_atom->str, string_atom->size, start_pos, 0, ovector, ovector_size)) < 0) {
 		if (err == PCRE_ERROR_NOMATCH)
 			return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
 		else

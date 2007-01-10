@@ -145,7 +145,7 @@ Con_Obj *_Con_Modules_libXML2_parse_func(Con_Obj *thread)
 	state.nodes_module = nodes_module;
 	state.libxml2_mod = libxml2_mod;
 	
-	if (xmlSAXUserParseMemory(&_Con_Modules_libXML2_parse_func_handler, &state, xml_string_atom->str, xml_string_atom->size) < 0)
+	if (xmlSAXUserParseMemory(&_Con_Modules_libXML2_parse_func_handler, &state, (char *) xml_string_atom->str, xml_string_atom->size) < 0)
 		CON_XXX;
 	
 	if (Con_Numbers_Number_to_Con_Int(thread, CON_GET_SLOT_APPLY(state.elements_stack, "len")) != 1)
@@ -185,7 +185,7 @@ void _Con_Modules_libXML2_parse_error(void *user_data, const char *msg, ...)
 		CON_XXX;
 	va_end(args);
 	
-	Con_Obj *exception = CON_GET_SLOT_APPLY(CON_GET_MODULE_DEF(state->libxml2_mod, "XML_Exception"), "new", Con_Builtins_String_Atom_new_no_copy(thread, buf, strlen(buf), CON_STR_UTF_8));
+	Con_Obj *exception = CON_GET_SLOT_APPLY(CON_GET_MODULE_DEF(state->libxml2_mod, "XML_Exception"), "new", Con_Builtins_String_Atom_new_no_copy(thread, (u_char *) buf, strlen(buf), CON_STR_UTF_8));
 	Con_Builtins_VM_Atom_raise(thread, exception);
 }
 
@@ -197,12 +197,12 @@ void _Con_Modules_libXML2_parse_start_element(void *user_data, const xmlChar *lo
 	Con_Obj *thread = state->thread;
 	Con_Obj *current_elem = CON_GET_SLOT_APPLY(state->elements_stack, "get", CON_NEW_INT(-1));
 	
-	Con_Obj *name_obj = Con_Builtins_String_Atom_new_copy(thread, localname, strlen(localname), CON_STR_UTF_8);
+	Con_Obj *name_obj = Con_Builtins_String_Atom_new_copy(thread, localname, strlen((char *) localname), CON_STR_UTF_8);
 	assert(prefix != NULL || namespaces == NULL);
 	Con_Obj *prefix_obj, *namespace_obj;
 	if (prefix != NULL) {
-		prefix_obj = Con_Builtins_String_Atom_new_copy(thread, prefix, strlen(prefix), CON_STR_UTF_8);
-		namespace_obj = Con_Builtins_String_Atom_new_copy(thread, URI, strlen(URI), CON_STR_UTF_8);
+		prefix_obj = Con_Builtins_String_Atom_new_copy(thread, prefix, strlen((char *) prefix), CON_STR_UTF_8);
+		namespace_obj = Con_Builtins_String_Atom_new_copy(thread, URI, strlen((char *) URI), CON_STR_UTF_8);
 	}
 	else
 		prefix_obj = namespace_obj = CON_NEW_STRING("");
@@ -210,14 +210,14 @@ void _Con_Modules_libXML2_parse_start_element(void *user_data, const xmlChar *lo
 	Con_Obj *attributes_obj = Con_Builtins_Set_Atom_new(thread);
 	const xmlChar **current_attr = attributes;
 	for (Con_Int i = 0; i < nb_attributes + nb_defaulted; i += 1) {
-		Con_Obj *attr_name = Con_Builtins_String_Atom_new_copy(thread, current_attr[0], strlen(current_attr[0]), CON_STR_UTF_8);
+		Con_Obj *attr_name = Con_Builtins_String_Atom_new_copy(thread, current_attr[0], strlen((char *) current_attr[0]), CON_STR_UTF_8);
 		Con_Obj *attr_val = Con_Builtins_String_Atom_new_copy(thread, current_attr[3], current_attr[4] - current_attr[3], CON_STR_UTF_8);
 		
 		Con_Obj *attr_namespace, *attr_prefix;
 		assert(current_attr[1] != NULL || current_attr[2] == NULL);
 		if (current_attr[1] != NULL) {
-			attr_prefix = Con_Builtins_String_Atom_new_copy(thread, current_attr[1], strlen(current_attr[1]), CON_STR_UTF_8);
-			attr_namespace = Con_Builtins_String_Atom_new_copy(thread, current_attr[2], strlen(current_attr[2]), CON_STR_UTF_8);
+			attr_prefix = Con_Builtins_String_Atom_new_copy(thread, current_attr[1], strlen((char *) current_attr[1]), CON_STR_UTF_8);
+			attr_namespace = Con_Builtins_String_Atom_new_copy(thread, current_attr[2], strlen((char *) current_attr[2]), CON_STR_UTF_8);
 		}
 		else {
 			attr_namespace = attr_prefix = CON_NEW_STRING("");

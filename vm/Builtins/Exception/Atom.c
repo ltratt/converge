@@ -93,7 +93,7 @@ Con_Obj *Con_Builtins_Exception_Atom_strerror(Con_Obj *thread, int errnum)
 		CON_XXX;
 #	endif
 	
-	return Con_Builtins_String_Atom_new_copy(thread, strerrbuf, strlen(strerrbuf), CON_STR_UTF_8);
+	return Con_Builtins_String_Atom_new_copy(thread, (u_char *) strerrbuf, strlen(strerrbuf), CON_STR_UTF_8);
 }
 
 

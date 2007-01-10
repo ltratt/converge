@@ -23,7 +23,7 @@
 #define _CON_HASH_H
 
 Con_Int Con_Hash_get(Con_Obj *, Con_Obj *);
-Con_Int Con_Hash_calc_string_hash(Con_Obj *, const char *, int);
+Con_Int Con_Hash_calc_string_hash(Con_Obj *, const u_char *, int);
 Con_Int Con_Hash_calc_con_int_hash(Con_Obj *, Con_Int);
 
 #endif

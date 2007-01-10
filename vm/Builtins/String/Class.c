@@ -228,7 +228,7 @@ Con_Obj *_Con_Builtins_String_Class_add_func(Con_Obj *thread)
 	memmove(str_mem, self_string_atom->str, self_string_atom->size);
 	memmove(str_mem + self_string_atom->size, obj_string_atom->str, obj_string_atom->size);
 	
-	return Con_Builtins_String_Atom_new_no_copy(thread, (const char *) str_mem, self_string_atom->size + obj_string_atom->size, CON_STR_UTF_8);
+	return Con_Builtins_String_Atom_new_no_copy(thread, str_mem, self_string_atom->size + obj_string_atom->size, CON_STR_UTF_8);
 }
 
 
@@ -256,7 +256,7 @@ Con_Obj *_Con_Builtins_String_Class_mul_func(Con_Obj *thread)
 		memmove(str_mem + j * self_string_atom->size, self_string_atom->str, self_string_atom->size);
 	}
 	
-	return Con_Builtins_String_Atom_new_no_copy(thread, (const char *) str_mem, self_string_atom->size * i, CON_STR_UTF_8);
+	return Con_Builtins_String_Atom_new_no_copy(thread, str_mem, self_string_atom->size * i, CON_STR_UTF_8);
 }
 
 

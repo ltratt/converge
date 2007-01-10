@@ -148,7 +148,7 @@ Con_Obj *_Con_Builtins_Float_Class_to_str_func(Con_Obj *thread)
 	if (snprintf(str, MAX_FLOAT_SIZE_AS_STRING, "%.20lg", float_atom->val) >= MAX_FLOAT_SIZE_AS_STRING)
 		CON_FATAL_ERROR("Unable to convert number to string");
 
-	return Con_Builtins_String_Atom_new_copy(thread, str, strlen(str), CON_STR_UTF_8);
+	return Con_Builtins_String_Atom_new_copy(thread, (u_char *) str, strlen(str), CON_STR_UTF_8);
 }
 
 

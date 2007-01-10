@@ -422,7 +422,7 @@ void Con_Builtins_Module_Atom_src_offset_to_line_column(Con_Obj *thread, Con_Obj
 
 
 
-Con_Obj	*Con_Builtins_Module_Atom_get_definition(Con_Obj *thread, Con_Obj *module, const char *definition_name, Con_Int definition_name_size)
+Con_Obj	*Con_Builtins_Module_Atom_get_definition(Con_Obj *thread, Con_Obj *module, const u_char *definition_name, Con_Int definition_name_size)
 {
 	// This routine is somewhat temporary.
 

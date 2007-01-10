@@ -195,5 +195,5 @@ Con_Obj *_Con_Builtins_Object_Class_to_str_func(Con_Obj *thread)
 
 	size_t str_size = strlen(str);
 
-	return Con_Builtins_String_Atom_new_copy(thread, str, str_size, CON_STR_UTF_8);
+	return Con_Builtins_String_Atom_new_copy(thread, (u_char *) str, str_size, CON_STR_UTF_8);
 }

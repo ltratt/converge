@@ -52,7 +52,7 @@ Con_Int Con_Hash_get(Con_Obj *thread, Con_Obj *obj)
 
 
 
-Con_Int Con_Hash_calc_string_hash(Con_Obj *thread, const char *str, int str_size)
+Con_Int Con_Hash_calc_string_hash(Con_Obj *thread, const u_char *str, int str_size)
 {
 	Con_Hash hash = 5381;
 	int i;

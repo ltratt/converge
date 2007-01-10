@@ -112,24 +112,24 @@
 #define CON_BUILTIN(builtin_no) (((Con_Builtins_VM_Atom *) ((Con_Builtins_Thread_Atom *) \
 	thread->first_atom)->vm->first_atom)->builtins[builtin_no])
 
-#define CON_GET_SLOT(obj, slot_name) Con_Object_get_slot(thread, obj, NULL, slot_name, sizeof(slot_name) - 1)
-#define CON_GET_SLOT_STR(obj, slot_name) Con_Object_get_slot(thread, obj, slot_name, NULL, 0)
-#define CON_SET_SLOT(obj, slot_name, val) Con_Object_set_slot(thread, obj, NULL, slot_name, sizeof(slot_name) - 1, val)
+#define CON_GET_SLOT(obj, slot_name) Con_Object_get_slot(thread, obj, NULL, (u_char *) slot_name, sizeof(slot_name) - 1)
+#define CON_GET_SLOT_STR(obj, slot_name) Con_Object_get_slot(thread, obj, (u_char *) slot_name, NULL, 0)
+#define CON_SET_SLOT(obj, slot_name, val) Con_Object_set_slot(thread, obj, NULL, (u_char *) slot_name, sizeof(slot_name) - 1, val)
 
-#define CON_GET_MODULE_DEF(obj, definition_name) Con_Builtins_Module_Atom_get_definition(thread, obj,  definition_name, sizeof(definition_name) - 1)
+#define CON_GET_MODULE_DEF(obj, definition_name) Con_Builtins_Module_Atom_get_definition(thread, obj, (u_char *) definition_name, sizeof(definition_name) - 1)
 
-#define CON_SET_FIELD(_class, field_name, val) Con_Builtins_Class_Atom_set_field(thread, _class, field_name, sizeof(field_name) - 1, val)
+#define CON_SET_FIELD(_class, field_name, val) Con_Builtins_Class_Atom_set_field(thread, _class, (u_char *) field_name, sizeof(field_name) - 1, val)
 
 #ifdef __GNUC__
 #	define CON_APPLY(func, ...) Con_Builtins_VM_Atom_apply(thread, func, false, ## __VA_ARGS__, NULL)
 
 #	define CON_GET_SLOT_APPLY(obj, slot_name, ...) \
-		Con_Builtins_VM_Atom_get_slot_apply(thread, obj, slot_name, sizeof(slot_name) - 1, false, ## __VA_ARGS__, NULL)
+		Con_Builtins_VM_Atom_get_slot_apply(thread, obj, (u_char *) slot_name, sizeof(slot_name) - 1, false, ## __VA_ARGS__, NULL)
 #	define CON_GET_SLOT_APPLY_NO_FAIL(obj, slot_name, ...) \
-		Con_Builtins_VM_Atom_get_slot_apply(thread, obj, slot_name, sizeof(slot_name) - 1, true, ## __VA_ARGS__, NULL)
+		Con_Builtins_VM_Atom_get_slot_apply(thread, obj, (u_char *) slot_name, sizeof(slot_name) - 1, true, ## __VA_ARGS__, NULL)
 
 #	define CON_PRE_GET_SLOT_APPLY_PUMP(obj, slot_name, ...) \
-		Con_Builtins_VM_Atom_pre_get_slot_apply_pump(thread, obj, slot_name, sizeof(slot_name) - 1, ## __VA_ARGS__, NULL)
+		Con_Builtins_VM_Atom_pre_get_slot_apply_pump(thread, obj, (u_char *) slot_name, sizeof(slot_name) - 1, ## __VA_ARGS__, NULL)
 #	define CON_APPLY_PUMP() Con_Builtins_VM_Atom_apply_pump(thread, false)
 
 #	define CON_UNPACK_ARGS(args, ...) \
@@ -138,7 +138,7 @@
 #	define CON_RAISE_EXCEPTION(name, ...) { \
 		Con_Builtins_VM_Atom_ensure_no_current_exception(thread); \
 		Con_Builtins_VM_Atom_raise(thread, \
-			CON_GET_SLOT_APPLY(Con_Builtins_Module_Atom_get_definition(thread, CON_BUILTIN(CON_BUILTIN_EXCEPTIONS_MODULE), name, sizeof(name) - 1), \
+			CON_GET_SLOT_APPLY(Con_Builtins_Module_Atom_get_definition(thread, CON_BUILTIN(CON_BUILTIN_EXCEPTIONS_MODULE), (u_char *) name, sizeof(name) - 1), \
 			"new", ## __VA_ARGS__, NULL)); \
 		abort(); \
 	}
@@ -164,16 +164,16 @@
 	} while (0)
 
 #define CON_EXBI(_class, slot_name, self) \
-	Con_Builtins_VM_Atom_exbi(thread, _class, NULL, slot_name, sizeof(slot_name) - 1, self)
+	Con_Builtins_VM_Atom_exbi(thread, _class, NULL, (u_char *) slot_name, sizeof(slot_name) - 1, self)
 
 
 #define CON_NEW_BOUND_C_FUNC(f, n, module, container) Con_Builtins_Func_Atom_new(thread, true, Con_Builtins_Func_Atom_make_con_pc_c_function(thread, module, f), -1, 0, NULL, CON_NEW_STRING(n), container)
 #define CON_NEW_UNBOUND_C_FUNC(f, n, module) Con_Builtins_Func_Atom_new(thread, false, Con_Builtins_Func_Atom_make_con_pc_c_function(thread, module, f), -1, 0, NULL, CON_NEW_STRING(n), module)
 
-#define CON_NEW_STRING(s) Con_Builtins_String_Atom_new_no_copy(thread, s, sizeof(s) - 1, CON_STR_UTF_8)
+#define CON_NEW_STRING(s) Con_Builtins_String_Atom_new_no_copy(thread, (u_char *) s, sizeof(s) - 1, CON_STR_UTF_8)
 #define CON_NEW_INT(i) Con_Builtins_Int_Atom_new(thread, i)
 
 #define CON_ADD(x, y) CON_GET_SLOT_APPLY((x), "+", (y))
 #define CON_SUBTRACT(x, y) CON_GET_SLOT_APPLY((x), "-", (y))
 
-#define CON_C_STRING_EQ(c_string, string_obj) Con_Builtins_String_Atom_c_string_eq(thread, c_string, sizeof(c_string) - 1, string_obj)
+#define CON_C_STRING_EQ(c_string, string_obj) Con_Builtins_String_Atom_c_string_eq(thread, (u_char *) c_string, sizeof(c_string) - 1, string_obj)

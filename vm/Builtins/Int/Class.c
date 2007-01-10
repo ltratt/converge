@@ -156,7 +156,7 @@ Con_Obj *_Con_Builtins_Int_Class_to_str_func(Con_Obj *thread)
 	if (snprintf(str, MAX_INTEGER_SIZE_AS_STRING, "%d", self_int_atom->val) >= MAX_INTEGER_SIZE_AS_STRING)
 		CON_FATAL_ERROR("Unable to convert number to string");
 	
-	return Con_Builtins_String_Atom_new_copy(thread, str, strlen(str), CON_STR_UTF_8);
+	return Con_Builtins_String_Atom_new_copy(thread, (u_char *) str, strlen(str), CON_STR_UTF_8);
 }
 
 

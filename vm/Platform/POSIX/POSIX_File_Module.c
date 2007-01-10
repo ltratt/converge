@@ -265,7 +265,7 @@ Con_Obj *_Con_Modules_POSIX_File_Module_File_Class_read_func(Con_Obj *thread)
 	else
 		data_size = file_stat.st_size - ftell(file_atom->file);
 
-	char *data = Con_Memory_malloc(thread, data_size, CON_MEMORY_CHUNK_OPAQUE);
+	u_char *data = Con_Memory_malloc(thread, data_size, CON_MEMORY_CHUNK_OPAQUE);
 	size_t amount_read;
 	if ((amount_read = fread(data, 1, data_size, file_atom->file)) != data_size) {
 		if (ferror(file_atom->file))
@@ -351,7 +351,7 @@ Con_Obj *_Con_Modules_POSIX_File_Module_canon_path_func(Con_Obj *thread)
 	if (realpath(Con_Builtins_String_Atom_to_c_string(thread, path), resolved) == NULL)
 		_Con_Modules_POSIX_File_Module_error(thread, path, errno);
 
-	return Con_Builtins_String_Atom_new_copy(thread, resolved, strlen(resolved), CON_STR_UTF_8);
+	return Con_Builtins_String_Atom_new_copy(thread, (u_char *) resolved, strlen(resolved), CON_STR_UTF_8);
 }
 
 

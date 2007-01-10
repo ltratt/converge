@@ -208,7 +208,7 @@ void *Con_Object_get_atom(Con_Obj *thread, Con_Obj *obj, Con_Obj *atom_type)
 // behaviour will occur.
 //
 
-Con_Obj *Con_Object_get_slot(Con_Obj *thread, Con_Obj *obj, Con_Obj *slot_name_obj, const char *slot_name, Con_Int slot_name_size)
+Con_Obj *Con_Object_get_slot(Con_Obj *thread, Con_Obj *obj, Con_Obj *slot_name_obj, const u_char *slot_name, Con_Int slot_name_size)
 {
 	bool custom_get_slot;
 
@@ -246,7 +246,7 @@ Con_Obj *Con_Object_get_slot(Con_Obj *thread, Con_Obj *obj, Con_Obj *slot_name_o
 // function calling semantics being subverted.
 //
 
-Con_Obj *Con_Object_get_slot_no_binding(Con_Obj *thread, Con_Obj *obj, Con_Obj *slot_name_obj, const char *slot_name, Con_Int slot_name_size, bool *custom_get_slot)
+Con_Obj *Con_Object_get_slot_no_binding(Con_Obj *thread, Con_Obj *obj, Con_Obj *slot_name_obj, const u_char *slot_name, Con_Int slot_name_size, bool *custom_get_slot)
 {
 	assert(((slot_name_obj != NULL) || (slot_name != NULL)) && !((slot_name_obj != NULL) && (slot_name != NULL)));
 
@@ -257,7 +257,7 @@ Con_Obj *Con_Object_get_slot_no_binding(Con_Obj *thread, Con_Obj *obj, Con_Obj *
 		// The object defines a custom get slot. We now need to call 'obj.get_slot(slot_name,
 		// caller)'.
 	
-		Con_Obj *get_slot_func = Con_Object_get_slot_no_custom(thread, obj, "get_slot", sizeof("get_slot") - 1);
+		Con_Obj *get_slot_func = Con_Object_get_slot_no_custom(thread, obj, (u_char *) "get_slot", sizeof("get_slot") - 1);
 		CON_MUTEX_UNLOCK(&obj->mutex);
 		
 		if (slot_name_obj != NULL)
@@ -290,7 +290,7 @@ Con_Obj *Con_Object_get_slot_no_binding(Con_Obj *thread, Con_Obj *obj, Con_Obj *
 // This function is intended for internal use and by Object.get_slot.
 //
 
-Con_Obj *Con_Object_get_slot_no_custom(Con_Obj *thread, Con_Obj *obj, const char *slot_name, Con_Int slot_name_size)
+Con_Obj *Con_Object_get_slot_no_custom(Con_Obj *thread, Con_Obj *obj, const u_char *slot_name, Con_Int slot_name_size)
 {
 	Con_Builtins_Slots_Atom *slots_atom = CON_FIND_ATOM(obj, CON_BUILTIN(CON_BUILTIN_SLOTS_ATOM_DEF_OBJECT));
 	if (slots_atom != NULL) {
@@ -307,7 +307,7 @@ Con_Obj *Con_Object_get_slot_no_custom(Con_Obj *thread, Con_Obj *obj, const char
 		}
 	}
 
-	if (strncmp(slot_name, "id", 2) == 0) {
+	if (memcmp(slot_name, "id", 2) == 0) {
 		CON_MUTEX_UNLOCK(&obj->mutex);
 		Con_Obj *id = CON_NEW_INT((Con_Int) obj);
 		CON_MUTEX_LOCK(&obj->mutex);
@@ -329,7 +329,7 @@ Con_Obj *Con_Object_get_slot_no_custom(Con_Obj *thread, Con_Obj *obj, const char
 // This function is intended for internal use and by Object.find_slot.
 //
 
-Con_Obj *Con_Object_find_slot_no_custom(Con_Obj *thread, Con_Obj *obj, const char *slot_name, Con_Int slot_name_size)
+Con_Obj *Con_Object_find_slot_no_custom(Con_Obj *thread, Con_Obj *obj, const u_char *slot_name, Con_Int slot_name_size)
 {
 	Con_Builtins_Slots_Atom *slots_atom = CON_FIND_ATOM(obj, CON_BUILTIN(CON_BUILTIN_SLOTS_ATOM_DEF_OBJECT));
 	if (slots_atom != NULL) {
@@ -355,7 +355,7 @@ Con_Obj *Con_Object_find_slot_no_custom(Con_Obj *thread, Con_Obj *obj, const cha
 // Sets slot 'slot_name' in 'obj' to 'val'.
 //
 
-void Con_Object_set_slot(Con_Obj *thread, Con_Obj *obj, Con_Obj *slot_name_obj, const char *slot_name, Con_Int slot_name_size, Con_Obj *val)
+void Con_Object_set_slot(Con_Obj *thread, Con_Obj *obj, Con_Obj *slot_name_obj, const u_char *slot_name, Con_Int slot_name_size, Con_Obj *val)
 {
 	assert((slot_name_obj != NULL) || (slot_name != NULL));
 
@@ -376,9 +376,9 @@ void Con_Object_set_slot(Con_Obj *thread, Con_Obj *obj, Con_Obj *slot_name_obj, 
 		CON_XXX; // immutable object
 	
 	Con_Slots_set_slot(thread, &obj->mutex, &slots_atom->slots, slot_name, slot_name_size, val);
-	if (strncmp(slot_name, "get_slot", sizeof("get_slot") - 1) == 0)
+	if (memcmp(slot_name, "get_slot", sizeof("get_slot") - 1) == 0)
 		obj->custom_get_slot = 1;
-	else if (strncmp(slot_name, "set_slot", sizeof("set_slot") - 1) == 0)
+	else if (memcmp(slot_name, "set_slot", sizeof("set_slot") - 1) == 0)
 		obj->custom_set_slot = 1;
 
 	CON_MUTEX_UNLOCK(&obj->mutex);

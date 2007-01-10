@@ -90,14 +90,14 @@ Con_Obj *Con_Bytecode_add_module(Con_Obj *thread, u_char *bytecode)
 	imports = Con_Builtins_List_Atom_new_sized(thread, ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_NUM_IMPORTS));
 	imports_bytecode_offset = ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_IMPORTS);
 	for (j = 0; j < ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_NUM_IMPORTS); j += 1) {
-		CON_GET_SLOT_APPLY(imports, "append", Con_Builtins_String_Atom_new_copy(thread, (char *) (bytecode + imports_bytecode_offset + CON_BYTECODE_IMPORT_IDENTIFIER), ID_MODULE_GET_WORD(imports_bytecode_offset + CON_BYTECODE_IMPORT_IDENTIFIER_SIZE), CON_STR_UTF_8));
+		CON_GET_SLOT_APPLY(imports, "append", Con_Builtins_String_Atom_new_copy(thread, bytecode + imports_bytecode_offset + CON_BYTECODE_IMPORT_IDENTIFIER, ID_MODULE_GET_WORD(imports_bytecode_offset + CON_BYTECODE_IMPORT_IDENTIFIER_SIZE), CON_STR_UTF_8));
 		imports_bytecode_offset += CON_BYTECODE_IMPORT_IDENTIFIER + Con_Arch_align(thread, ID_MODULE_GET_WORD(imports_bytecode_offset + CON_BYTECODE_IMPORT_IDENTIFIER_SIZE));
 	}
 
 	Con_Obj *top_level_vars_map = Con_Builtins_Dict_Atom_new(thread);
 	Con_Int top_level_vars_map_bytecode_offset = ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_TOP_LEVEL_VARS_MAP);
 	for (j = 0; j < ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_NUM_TOP_LEVEL_VARS); j += 1) {
-		Con_Obj *var_name = Con_Builtins_String_Atom_new_copy(thread, (char *) (bytecode + top_level_vars_map_bytecode_offset + CON_BYTECODE_TOP_LEVEL_VAR_NAME), ID_MODULE_GET_WORD(top_level_vars_map_bytecode_offset + CON_BYTECODE_TOP_LEVEL_VAR_NAME_SIZE), CON_STR_UTF_8);
+		Con_Obj *var_name = Con_Builtins_String_Atom_new_copy(thread, bytecode + top_level_vars_map_bytecode_offset + CON_BYTECODE_TOP_LEVEL_VAR_NAME, ID_MODULE_GET_WORD(top_level_vars_map_bytecode_offset + CON_BYTECODE_TOP_LEVEL_VAR_NAME_SIZE), CON_STR_UTF_8);
 		CON_GET_SLOT_APPLY(top_level_vars_map, "set", var_name, CON_NEW_INT(ID_MODULE_GET_WORD(top_level_vars_map_bytecode_offset + CON_BYTECODE_TOP_LEVEL_VAR_NUM)));
 		top_level_vars_map_bytecode_offset += CON_BYTECODE_TOP_LEVEL_VAR_NAME + Con_Arch_align(thread, ID_MODULE_GET_WORD(top_level_vars_map_bytecode_offset + CON_BYTECODE_TOP_LEVEL_VAR_NAME_SIZE));
 	}

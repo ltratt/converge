@@ -137,7 +137,7 @@ Con_Obj *_Con_Builtins_Set_Class_to_str_func(Con_Obj *thread)
 	else
 		str_mem_size_allocated = set_atom->num_entries * 8;
 	
-	char *str_mem = Con_Memory_malloc_no_gc(thread, str_mem_size_allocated, CON_MEMORY_CHUNK_OPAQUE);
+	u_char *str_mem = Con_Memory_malloc_no_gc(thread, str_mem_size_allocated, CON_MEMORY_CHUNK_OPAQUE);
 	if (str_mem == NULL)
 		CON_XXX;
 

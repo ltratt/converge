@@ -36,7 +36,7 @@
 
 
 
-Con_Int _Con_Slots_find_pos(Con_Obj *, Con_Slots_Hash_Entry *, Con_Int, u_char *, const char *, Con_Int);
+Con_Int _Con_Slots_find_pos(Con_Obj *, Con_Slots_Hash_Entry *, Con_Int, u_char *, const u_char *, Con_Int);
 
 
 
@@ -68,7 +68,7 @@ void Con_Slots_init(Con_Obj *thread, Con_Slots *slots)
 // should always have at least 1 free entry.
 //
 
-Con_Int _Con_Slots_find_pos(Con_Obj *thread, Con_Slots_Hash_Entry *hash_entries, Con_Int num_hash_entries_allocated, u_char *full_entries, const char *slot_name, Con_Int slot_name_size)
+Con_Int _Con_Slots_find_pos(Con_Obj *thread, Con_Slots_Hash_Entry *hash_entries, Con_Int num_hash_entries_allocated, u_char *full_entries, const u_char *slot_name, Con_Int slot_name_size)
 {
 	Con_Int hash = Con_Hash_calc_string_hash(thread, slot_name, slot_name_size);
 	Con_Int i = hash % num_hash_entries_allocated;
@@ -97,7 +97,7 @@ Con_Int _Con_Slots_find_pos(Con_Obj *thread, Con_Slots_Hash_Entry *hash_entries,
 // Assumes the relevant mutex for 'slots' is locked by the caller if necessary.
 //
 
-Con_Obj *Con_Slots_get_slot(Con_Obj *thread, Con_Slots *slots, const char *slot_name, Con_Int slot_name_size)
+Con_Obj *Con_Slots_get_slot(Con_Obj *thread, Con_Slots *slots, const u_char *slot_name, Con_Int slot_name_size)
 {
 	if (slots->hash_entries == NULL)
 		return NULL;
@@ -120,7 +120,7 @@ Con_Obj *Con_Slots_get_slot(Con_Obj *thread, Con_Slots *slots, const char *slot_
 // operation, but will lock it again before returning.
 //
 
-void Con_Slots_set_slot(Con_Obj *thread, Con_Mutex *mutex, Con_Slots *slots, const char *slot_name, Con_Int slot_name_size, Con_Obj *val)
+void Con_Slots_set_slot(Con_Obj *thread, Con_Mutex *mutex, Con_Slots *slots, const u_char *slot_name, Con_Int slot_name_size, Con_Obj *val)
 {
 	if (slots->hash_entries == NULL) {
 		assert(mutex != NULL);
@@ -220,7 +220,7 @@ void Con_Slots_set_slot(Con_Obj *thread, Con_Mutex *mutex, Con_Slots *slots, con
 // returned and the values of 'slot_name' etc are undefined.
 //
 
-bool Con_Slots_read_slot(Con_Obj *thread, Con_Slots *slots, Con_Int *i, const char **slot_name, Con_Int *slot_name_size, Con_Obj **val)
+bool Con_Slots_read_slot(Con_Obj *thread, Con_Slots *slots, Con_Int *i, const u_char **slot_name, Con_Int *slot_name_size, Con_Obj **val)
 {
 	while (*i < slots->num_hash_entries_allocated) {
 		if (slots->hash_entries[*i].full_entry_offset == -1) {

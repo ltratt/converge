@@ -81,7 +81,7 @@ Con_Obj *_Con_Modules_C_Strings_join_func(Con_Obj *thread)
 	else
 		str_mem_size_allocated = num_list_entries * 8 + num_list_entries * separator_string_atom->size;
 	
-	char *str_mem = Con_Memory_malloc(thread, str_mem_size_allocated, CON_MEMORY_CHUNK_OPAQUE);
+	u_char *str_mem = Con_Memory_malloc(thread, str_mem_size_allocated, CON_MEMORY_CHUNK_OPAQUE);
 	
 	Con_Int i = 0;
 	Con_Int str_mem_size = 0;

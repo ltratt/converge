@@ -312,7 +312,7 @@ Con_Obj *_Con_Builtins_List_Class_to_str_func(Con_Obj *thread)
 	else
 		str_mem_size_allocated = LIST_TO_STR_START_SIZE + LIST_TO_STR_END_SIZE + list_atom->num_entries * (8 + LIST_TO_STR_SEPERATOR_SIZE);
 	
-	char *str_mem = Con_Memory_malloc_no_gc(thread, str_mem_size_allocated, CON_MEMORY_CHUNK_OPAQUE);
+	u_char *str_mem = Con_Memory_malloc_no_gc(thread, str_mem_size_allocated, CON_MEMORY_CHUNK_OPAQUE);
 	if (str_mem == NULL)
 		CON_XXX;
 

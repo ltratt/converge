@@ -351,7 +351,7 @@ Con_Obj *Con_Builtins_VM_Atom_apply_with_closure(Con_Obj *thread, Con_Obj *func,
 // Function_Binding objects whenever possible.
 //
 
-Con_Obj *Con_Builtins_VM_Atom_get_slot_apply(Con_Obj *thread, Con_Obj *obj, const char *slot_name, Con_Int slot_name_size, bool suppress_fail, ...)
+Con_Obj *Con_Builtins_VM_Atom_get_slot_apply(Con_Obj *thread, Con_Obj *obj, const u_char *slot_name, Con_Int slot_name_size, bool suppress_fail, ...)
 {
 	bool custom_get_slot;
 
@@ -435,7 +435,7 @@ void Con_Builtins_VM_Atom_pre_apply_pump(Con_Obj *thread, Con_Obj *func, Con_Int
 // calling Con_Builtins_VM_Atom_apply_pump.
 //
 
-void Con_Builtins_VM_Atom_pre_get_slot_apply_pump(Con_Obj *thread, Con_Obj *obj, const char *slot_name, Con_Int slot_name_size, ...)
+void Con_Builtins_VM_Atom_pre_get_slot_apply_pump(Con_Obj *thread, Con_Obj *obj, const u_char *slot_name, Con_Int slot_name_size, ...)
 {
 	bool custom_get_slot;
 	Con_Obj *slot_val = Con_Object_get_slot_no_binding(thread, obj, NULL, slot_name, slot_name_size, &custom_get_slot);
@@ -726,7 +726,7 @@ void Con_Builtins_VM_Atom_yield(Con_Obj *thread, Con_Obj *obj)
 // exbi
 //
 
-Con_Obj *Con_Builtins_VM_Atom_exbi(Con_Obj *thread, Con_Obj *class_, Con_Obj *slot_name_obj, const char *slot_name, Con_Int slot_name_size, Con_Obj *bind_obj)
+Con_Obj *Con_Builtins_VM_Atom_exbi(Con_Obj *thread, Con_Obj *class_, Con_Obj *slot_name_obj, const u_char *slot_name, Con_Int slot_name_size, Con_Obj *bind_obj)
 {
 	assert(((slot_name_obj != NULL) || (slot_name != NULL)) && !((slot_name_obj != NULL) && (slot_name != NULL)));
 
@@ -1078,7 +1078,7 @@ Con_Obj *_Con_Builtins_VM_Atom_execute(Con_Obj *thread)
 				case CON_INSTR_SLOT_LOOKUP: {
 					CON_MUTEX_UNLOCK(&con_stack->mutex);
 					Con_Int slot_name_size = CON_INSTR_DECODE_SLOT_LOOKUP_SIZE(instruction);
-					char slot_name[slot_name_size];
+					u_char slot_name[slot_name_size];
 					Con_Builtins_Module_Atom_read_bytes(thread, pc.module, pc.pc.bytecode_offset + CON_INSTR_DECODE_SLOT_LOOKUP_START(instruction), slot_name, slot_name_size);
 					
 					CON_MUTEX_LOCK(&con_stack->mutex);
@@ -1247,7 +1247,7 @@ Con_Obj *_Con_Builtins_VM_Atom_execute(Con_Obj *thread)
 					CON_MUTEX_UNLOCK(&con_stack->mutex);
 					
 					Con_Int slot_name_size = CON_INSTR_DECODE_SLOT_LOOKUP_SIZE(instruction);
-					char slot_name[slot_name_size];
+					u_char slot_name[slot_name_size];
 					Con_Builtins_Module_Atom_read_bytes(thread, pc.module, pc.pc.bytecode_offset + CON_INSTR_DECODE_ASSIGN_SLOT_START(instruction), slot_name, CON_INSTR_DECODE_SLOT_LOOKUP_SIZE(instruction));
 					Con_Object_set_slot(thread, assignee_obj, NULL, slot_name, slot_name_size, val);
 					
@@ -1413,7 +1413,7 @@ Con_Obj *_Con_Builtins_VM_Atom_execute(Con_Obj *thread)
 				case CON_INSTR_PRE_SLOT_LOOKUP_APPLY: {
 					CON_MUTEX_UNLOCK(&con_stack->mutex);
 					Con_Int slot_name_size = CON_INSTR_DECODE_PRE_SLOT_LOOKUP_SIZE(instruction);
-					char slot_name[slot_name_size];
+					u_char slot_name[slot_name_size];
 					Con_Builtins_Module_Atom_read_bytes(thread, pc.module, pc.pc.bytecode_offset + CON_INSTR_DECODE_PRE_SLOT_LOOKUP_START(instruction), slot_name, slot_name_size);
 					
 					CON_MUTEX_LOCK(&con_stack->mutex);
@@ -1547,7 +1547,7 @@ Con_Obj *_Con_Builtins_VM_Atom_execute(Con_Obj *thread)
 				case CON_INSTR_MODULE_LOOKUP: {
 					CON_MUTEX_UNLOCK(&con_stack->mutex);
 					Con_Int definition_name_size = CON_INSTR_DECODE_MODULE_LOOKUP_SIZE(instruction);
-					char definition_name[definition_name_size];
+					u_char definition_name[definition_name_size];
 					Con_Builtins_Module_Atom_read_bytes(thread, pc.module, pc.pc.bytecode_offset + CON_INSTR_DECODE_MODULE_LOOKUP_START(instruction), definition_name, definition_name_size);
 					
 					CON_MUTEX_LOCK(&con_stack->mutex);

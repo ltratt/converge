@@ -39,7 +39,7 @@
 #include "Builtins/VM/Atom.h"
 
 
-Con_Int _Con_Builtins_String_Atom_find_cached_pos(Con_Obj *, Con_Builtins_String_Class_Unique_Atom *, const char *, Con_Int, Con_String_Encoding, Con_Int);
+Con_Int _Con_Builtins_String_Atom_find_cached_pos(Con_Obj *, Con_Builtins_String_Class_Unique_Atom *, const u_char *, Con_Int, Con_String_Encoding, Con_Int);
 void _Con_Builtins_String_Atom_set_cached(Con_Obj *, Con_Builtins_String_Class_Unique_Atom *, Con_Int, Con_Obj *);
 
 void _Con_Builtins_String_Class_unique_atom_gc_scan_func(Con_Obj *, Con_Obj *, Con_Builtins_Unique_Atom_Def *);
@@ -87,7 +87,7 @@ void Con_Builtins_String_Atom_bootstrap(Con_Obj *thread)
 // String creation functions
 //
 
-Con_Obj *Con_Builtins_String_Atom_new_copy(Con_Obj *thread, const char *str, Con_Int size, Con_String_Encoding enc)
+Con_Obj *Con_Builtins_String_Atom_new_copy(Con_Obj *thread, const u_char *str, Con_Int size, Con_String_Encoding enc)
 {
 	// As a speed hack, we pull the unique atom out of the String class directly; this can be a
 	// surprisingly large saving but does rely on the unique atom being at a fixed position
@@ -120,7 +120,7 @@ Con_Obj *Con_Builtins_String_Atom_new_copy(Con_Obj *thread, const char *str, Con
 
 
 
-Con_Obj *Con_Builtins_String_Atom_new_no_copy(Con_Obj *thread, const char *str, Con_Int size, Con_String_Encoding enc)
+Con_Obj *Con_Builtins_String_Atom_new_no_copy(Con_Obj *thread, const u_char *str, Con_Int size, Con_String_Encoding enc)
 {
 	// As a speed hack, we pull the unique atom out of the String class directly; this can be a
 	// surprisingly large saving but does rely on the unique atom being at a fixed position
@@ -151,7 +151,7 @@ Con_Obj *Con_Builtins_String_Atom_new_no_copy(Con_Obj *thread, const char *str, 
 
 
 
-void Con_Builtins_String_Atom_init_atom(Con_Obj *thread, Con_Builtins_String_Atom *str_atom, const char *str, Con_Int size, Con_String_Encoding enc, Con_Int hash)
+void Con_Builtins_String_Atom_init_atom(Con_Obj *thread, Con_Builtins_String_Atom *str_atom, const u_char *str, Con_Int size, Con_String_Encoding enc, Con_Int hash)
 {
 	if (enc != CON_STR_UTF_8)
 		CON_XXX;
@@ -170,7 +170,7 @@ void Con_Builtins_String_Atom_init_atom(Con_Obj *thread, Con_Builtins_String_Ato
 // Find the position in the hashtable of a string.
 //
 
-Con_Int _Con_Builtins_String_Atom_find_cached_pos(Con_Obj *thread, Con_Builtins_String_Class_Unique_Atom *unique_atom, const char *str, Con_Int size, Con_String_Encoding enc, Con_Int hash)
+Con_Int _Con_Builtins_String_Atom_find_cached_pos(Con_Obj *thread, Con_Builtins_String_Class_Unique_Atom *unique_atom, const u_char *str, Con_Int size, Con_String_Encoding enc, Con_Int hash)
 {
 	Con_Int i = hash % unique_atom->num_cache_entries_allocated;
 	// Since hash can be a negative number, i may be less than 0.
@@ -286,7 +286,7 @@ char *Con_Builtins_String_Atom_to_c_string(Con_Obj *thread, Con_Obj *string)
 // Compare the UTF-8 string 'c_string' of size 'c_string_size' with 'string_obj' for equality.
 //
 
-bool Con_Builtins_String_Atom_c_string_eq(Con_Obj *thread, const char *c_string, Con_Int c_string_size, Con_Obj *string_obj)
+bool Con_Builtins_String_Atom_c_string_eq(Con_Obj *thread, const u_char *c_string, Con_Int c_string_size, Con_Obj *string_obj)
 {
 	Con_Builtins_String_Atom *string_obj_atom = CON_FIND_ATOM(string_obj, CON_BUILTIN(CON_BUILTIN_STRING_ATOM_DEF_OBJECT));
 	

@@ -58,8 +58,8 @@ void Con_Builtins_Class_Atom_bootstrap(Con_Obj *);
 Con_Obj *Con_Builtins_Class_Atom_new(Con_Obj *, Con_Obj *, Con_Obj *, Con_Obj *, ...);
 void Con_Builtins_Class_Atom_init_atom(Con_Obj *, Con_Builtins_Class_Atom *, Con_Obj *, Con_Obj *, ...);
 
-Con_Obj *Con_Builtins_Class_Atom_get_field(Con_Obj *, Con_Obj *, const char *, Con_Int);
-void Con_Builtins_Class_Atom_set_field(Con_Obj *thread, Con_Obj *, const char *, Con_Int, Con_Obj *);
+Con_Obj *Con_Builtins_Class_Atom_get_field(Con_Obj *, Con_Obj *, const u_char *, Con_Int);
+void Con_Builtins_Class_Atom_set_field(Con_Obj *thread, Con_Obj *, const u_char *, Con_Int, Con_Obj *);
 Con_Slots *Con_Builtins_Class_Atom_get_creator_slots(Con_Obj *, Con_Obj *);
 void Con_Builtins_Class_Atom_mark_as_virgin(Con_Obj *, Con_Obj *);
 

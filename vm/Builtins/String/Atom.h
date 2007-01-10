@@ -49,17 +49,21 @@ typedef struct {
 	// str can be an arbitrary pointer. It may not necessarily point to a chunk of memory allocated
 	// by Con_Memory_malloc; it might not even be a pointer to within such a chunk. All that is
 	// required is that it point to a valid memory location.
-	const char *str;
+	//
+	// There is an implicit assumption that when the encoding of a string is CON_STR_UTF_8, that the
+	// type of *str can be either (const u_char *) or (const char *) interchangeably. For any other
+	// encoding, this assumpmtion need not hold.
+	const u_char *str;
 } Con_Builtins_String_Atom;
 
 
 void Con_Builtins_String_Atom_bootstrap(Con_Obj *);
 
-Con_Obj *Con_Builtins_String_Atom_new_copy(Con_Obj *, const char *, Con_Int, Con_String_Encoding);
-Con_Obj *Con_Builtins_String_Atom_new_no_copy(Con_Obj *, const char *, Con_Int, Con_String_Encoding);
-void Con_Builtins_String_Atom_init_atom(Con_Obj *, Con_Builtins_String_Atom *, const char *, Con_Int, Con_String_Encoding, Con_Int);
+Con_Obj *Con_Builtins_String_Atom_new_copy(Con_Obj *, const u_char *, Con_Int, Con_String_Encoding);
+Con_Obj *Con_Builtins_String_Atom_new_no_copy(Con_Obj *, const u_char *, Con_Int, Con_String_Encoding);
+void Con_Builtins_String_Atom_init_atom(Con_Obj *, Con_Builtins_String_Atom *, const u_char *, Con_Int, Con_String_Encoding, Con_Int);
 
 char *Con_Builtins_String_Atom_to_c_string(Con_Obj *, Con_Obj *);
-bool Con_Builtins_String_Atom_c_string_eq(Con_Obj *, const char *, Con_Int, Con_Obj *);
+bool Con_Builtins_String_Atom_c_string_eq(Con_Obj *, const u_char *, Con_Int, Con_Obj *);
 
 #endif

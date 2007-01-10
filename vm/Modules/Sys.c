@@ -79,13 +79,13 @@ Con_Obj *Con_Modules_Sys_init(Con_Obj *thread, Con_Obj *identifier)
 		if (realpath(argv[0], vm_path) == NULL)
 			CON_SET_SLOT(sys_mod, "vm_path", CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
 		else
-			CON_SET_SLOT(sys_mod, "vm_path", Con_Builtins_String_Atom_new_no_copy(thread, vm_path, strlen(vm_path), CON_STR_UTF_8));
+			CON_SET_SLOT(sys_mod, "vm_path", Con_Builtins_String_Atom_new_no_copy(thread, (u_char *) vm_path, strlen(vm_path), CON_STR_UTF_8));
 			
 		char *program_path = Con_Memory_malloc(thread, MAXPATHLEN, CON_MEMORY_CHUNK_OPAQUE);
 		if (realpath(argv[1], program_path) == NULL)
 			CON_SET_SLOT(sys_mod, "program_path", CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
 		else
-			CON_SET_SLOT(sys_mod, "program_path", Con_Builtins_String_Atom_new_no_copy(thread, program_path, strlen(program_path), CON_STR_UTF_8));
+			CON_SET_SLOT(sys_mod, "program_path", Con_Builtins_String_Atom_new_no_copy(thread, (u_char *) program_path, strlen(program_path), CON_STR_UTF_8));
 	}
 	else
 		CON_XXX;
@@ -94,7 +94,7 @@ Con_Obj *Con_Modules_Sys_init(Con_Obj *thread, Con_Obj *identifier)
 	
 	Con_Obj *argv_list = Con_Builtins_List_Atom_new_sized(thread, argc - 2);
 	for (int i = 2; i < argc; i += 1) {
-		CON_GET_SLOT_APPLY(argv_list, "append", Con_Builtins_String_Atom_new_no_copy(thread, argv[i], strlen(argv[i]), CON_STR_UTF_8));
+		CON_GET_SLOT_APPLY(argv_list, "append", Con_Builtins_String_Atom_new_no_copy(thread, (u_char *) argv[i], strlen(argv[i]), CON_STR_UTF_8));
 	}
 	CON_SET_SLOT(sys_mod, "argv", argv_list);
 	

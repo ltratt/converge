@@ -33,7 +33,7 @@ typedef struct {
 typedef struct {
 	Con_Obj *value;
 	Con_Int slot_name_size;
-	char slot_name[0];
+	u_char slot_name[0];
 } Con_Slots_Full_Entry;
 
 struct Con_Slots {
@@ -45,9 +45,9 @@ struct Con_Slots {
 };
 
 void Con_Slots_init(Con_Obj *, Con_Slots *);
-Con_Obj *Con_Slots_get_slot(Con_Obj *, Con_Slots *, const char *, Con_Int);
-void Con_Slots_set_slot(Con_Obj *, Con_Mutex *, Con_Slots *, const char *, Con_Int, Con_Obj *);
-bool Con_Slots_read_slot(Con_Obj *, Con_Slots *, Con_Int *, const char **, Con_Int *, Con_Obj **);
+Con_Obj *Con_Slots_get_slot(Con_Obj *, Con_Slots *, const u_char *, Con_Int);
+void Con_Slots_set_slot(Con_Obj *, Con_Mutex *, Con_Slots *, const u_char *, Con_Int, Con_Obj *);
+bool Con_Slots_read_slot(Con_Obj *, Con_Slots *, Con_Int *, const u_char **, Con_Int *, Con_Obj **);
 
 void Con_Slots_gc_scan_slots(Con_Obj *, Con_Slots *);
 

@@ -310,7 +310,7 @@ Con_Obj *_Con_Builtins_Class_Class_conformed_by_func(Con_Obj *thread)
 			Con_Builtins_Slots_Atom *o_slots_atom = CON_FIND_ATOM(o, CON_BUILTIN(CON_BUILTIN_SLOTS_ATOM_DEF_OBJECT));
 			Con_Int i = 0;
 			while (1) {
-				const char *slot_name;
+				const u_char *slot_name;
 				Con_Int slot_name_size;
 				Con_Obj *val;
 				if (!Con_Slots_read_slot(thread, &class_atom->fields, &i, &slot_name, &slot_name_size, &val))

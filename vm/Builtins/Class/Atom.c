@@ -160,7 +160,7 @@ void Con_Builtins_Class_Atom_init_atom(Con_Obj *thread, Con_Builtins_Class_Atom 
 // Class atom functions
 //
 
-Con_Obj *Con_Builtins_Class_Atom_get_field(Con_Obj *thread, Con_Obj *class_, const char *slot_name, Con_Int slot_name_size)
+Con_Obj *Con_Builtins_Class_Atom_get_field(Con_Obj *thread, Con_Obj *class_, const u_char *slot_name, Con_Int slot_name_size)
 {
 	Con_Builtins_Class_Atom *class_atom = CON_GET_ATOM(class_, CON_BUILTIN(CON_BUILTIN_CLASS_ATOM_DEF_OBJECT));
 
@@ -173,7 +173,7 @@ Con_Obj *Con_Builtins_Class_Atom_get_field(Con_Obj *thread, Con_Obj *class_, con
 
 
 
-void Con_Builtins_Class_Atom_set_field(Con_Obj *thread, Con_Obj *class_, const char *slot_name, Con_Int slot_name_size, Con_Obj *val)
+void Con_Builtins_Class_Atom_set_field(Con_Obj *thread, Con_Obj *class_, const u_char *slot_name, Con_Int slot_name_size, Con_Obj *val)
 {
 	Con_Builtins_Class_Atom *class_atom = CON_GET_ATOM(class_, CON_BUILTIN(CON_BUILTIN_CLASS_ATOM_DEF_OBJECT));
 
@@ -249,7 +249,7 @@ Con_Slots *Con_Builtins_Class_Atom_get_creator_slots(Con_Obj *thread, Con_Obj *c
 		
 		Con_Int j = 0;
 		while (1) {
-			const char *slot_name;
+			const u_char *slot_name;
 			Con_Int slot_name_size;
 			Con_Obj *val;
 			if (!Con_Slots_read_slot(thread, supers_class_fields_for_children, &j, &slot_name, &slot_name_size, &val))
@@ -264,7 +264,7 @@ Con_Slots *Con_Builtins_Class_Atom_get_creator_slots(Con_Obj *thread, Con_Obj *c
 
 	Con_Int j = 0;
 	while (1) {
-		const char *slot_name;
+		const u_char *slot_name;
 		Con_Int slot_name_size;
 		Con_Obj *val;
 		if (!Con_Slots_read_slot(thread, &class_atom->fields, &j, &slot_name, &slot_name_size, &val))
@@ -272,7 +272,7 @@ Con_Slots *Con_Builtins_Class_Atom_get_creator_slots(Con_Obj *thread, Con_Obj *c
 		Con_Slots_set_slot(thread, &class_->mutex, class_fields_for_children, slot_name, slot_name_size, val);
 	}
 	
-	Con_Slots_set_slot(thread, &class_->mutex, class_fields_for_children, "instance_of", sizeof("instance_of") - 1, class_);
+	Con_Slots_set_slot(thread, &class_->mutex, class_fields_for_children, (u_char *) "instance_of", sizeof("instance_of") - 1, class_);
 
 	if (custom_get_slot_field)
 		class_atom->custom_get_slot_field = 1;

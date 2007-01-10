@@ -173,7 +173,7 @@
 #define CON_NEW_STRING(s) Con_Builtins_String_Atom_new_no_copy(thread, (u_char *) s, sizeof(s) - 1, CON_STR_UTF_8)
 #define CON_NEW_INT(i) Con_Builtins_Int_Atom_new(thread, i)
 
-#define CON_ADD(x, y) CON_GET_SLOT_APPLY((x), "+", (y))
-#define CON_SUBTRACT(x, y) CON_GET_SLOT_APPLY((x), "-", (y))
+#define CON_ADD(x, y) Con_Object_add(thread, x, y)
+#define CON_SUBTRACT(x, y) Con_Object_subtract(thread, x, y)
 
 #define CON_C_STRING_EQ(c_string, string_obj) Con_Builtins_String_Atom_c_string_eq(thread, (u_char *) c_string, sizeof(c_string) - 1, string_obj)

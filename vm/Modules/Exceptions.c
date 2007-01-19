@@ -47,6 +47,7 @@ Con_Obj *_Con_Modules_Exception_VM_Exception_init_func(Con_Obj *);
 
 Con_Obj *_Con_Modules_Exception_Apply_Exception_init_func(Con_Obj *);
 Con_Obj *_Con_Modules_Exception_Bounds_Exception_init_func(Con_Obj *);
+Con_Obj *_Con_Modules_Exception_Field_Exception_init_func(Con_Obj *);
 Con_Obj *_Con_Modules_Exception_Import_Exception_init_func(Con_Obj *);
 Con_Obj *_Con_Modules_Exception_Indices_Exception_init_func(Con_Obj *);
 Con_Obj *_Con_Modules_Exception_Key_Exception_init_func(Con_Obj *);
@@ -104,6 +105,12 @@ Con_Obj *Con_Modules_Exceptions_init(Con_Obj *thread, Con_Obj *identifier)
 	Con_Obj *bounds_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("Bounds_Exception"), Con_Builtins_List_Atom_new_va(thread, user_exception, NULL), exceptions_mod);
 	CON_SET_FIELD(bounds_exception, "init", CON_NEW_BOUND_C_FUNC(_Con_Modules_Exception_Bounds_Exception_init_func, "init", exceptions_mod, bounds_exception));
 	CON_SET_SLOT(exceptions_mod, "Bounds_Exception", bounds_exception);
+
+	// class Field_Exception
+
+	Con_Obj *field_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("Field_Exception"), Con_Builtins_List_Atom_new_va(thread, user_exception, NULL), exceptions_mod);
+	CON_SET_FIELD(field_exception, "init", CON_NEW_BOUND_C_FUNC(_Con_Modules_Exception_Field_Exception_init_func, "init", exceptions_mod, field_exception));
+	CON_SET_SLOT(exceptions_mod, "Field_Exception", field_exception);
 
 	// class Import_Exception
 
@@ -265,6 +272,28 @@ Con_Obj *_Con_Modules_Exception_Bounds_Exception_init_func(Con_Obj *thread)
 		msg = CON_ADD(msg, CON_NEW_STRING(" exceeds upper bound "));
 		msg = CON_ADD(msg, CON_GET_SLOT_APPLY(upper_bound, "to_str"));
 	}
+	
+	CON_SET_SLOT(self, "msg", msg);
+	
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
+}
+
+
+
+//
+// 'Field_Exception.init(name, o)'.
+//
+
+Con_Obj *_Con_Modules_Exception_Field_Exception_init_func(Con_Obj *thread)
+{
+	Con_Obj *self, *field_name, *class_;
+	CON_UNPACK_ARGS("OOO", &self, &field_name, &class_);
+
+	Con_Obj *msg = CON_NEW_STRING("No such field '");
+	msg = CON_ADD(msg, field_name);
+	msg = CON_ADD(msg, CON_NEW_STRING("' in class '"));
+	msg = CON_ADD(msg, CON_GET_SLOT(class_, "name"));
+	msg = CON_ADD(msg, CON_NEW_STRING("'."));
 	
 	CON_SET_SLOT(self, "msg", msg);
 	

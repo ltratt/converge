@@ -58,6 +58,7 @@
 
 // 32-bit little endian instructions
 
+#define CON_INSTR_EXBI 1					// bits 0-7 1, bits 8-31 size of field name, bits 32-.. field name
 #define CON_INSTR_VAR_LOOKUP 2  			// bits 0-7 2, bits 8-19 closures offset, bits 20-31 var number
 #define CON_INSTR_VAR_ASSIGN 3  			// bits 0-7 3, bits 8-19 closures offset, bits 20-31 var number
 #define CON_INSTR_INT 4 					// bits 0-7 4, bits 8-62 integer value, bit 63 sign (0 = positive, 1 = negative)
@@ -110,6 +111,9 @@
 #define CON_INSTR_GT 50						// bits 0-7 50
 #define CON_INSTR_MODULE_LOOKUP 51			// bits 0-7 51, bits 8-31 := size of definition name, bits 32-.. := definition name
 
+
+#define CON_INSTR_DECODE_EXBI_SIZE(instruction) ((instruction & 0xFFFFFF00) >> 8)
+#define CON_INSTR_DECODE_EXBI_START(instruction) 4
 
 #define CON_INSTR_DECODE_VAR_ASSIGN_CLOSURES_OFFSET(instruction) ((instruction & 0x000FFF00) >> 8)
 #define CON_INSTR_DECODE_VAR_ASSIGN_VAR_NUM(instruction) ((instruction & 0xFFF00000) >> 20)

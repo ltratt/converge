@@ -967,6 +967,23 @@ Con_Obj *_Con_Builtins_VM_Atom_execute(Con_Obj *thread)
 #			endif
 
 			switch (instruction & 0x000000FF) {
+				case CON_INSTR_EXBI: {
+					CON_MUTEX_UNLOCK(&con_stack->mutex);
+					Con_Int field_name_size = CON_INSTR_DECODE_EXBI_SIZE(instruction);
+					u_char field_name[field_name_size];
+					Con_Builtins_Module_Atom_read_bytes(thread, pc.module, pc.pc.bytecode_offset + CON_INSTR_DECODE_EXBI_START(instruction), field_name, field_name_size);
+
+					CON_MUTEX_LOCK(&con_stack->mutex);
+					Con_Obj *obj = Con_Builtins_Con_Stack_Atom_pop_object(thread, con_stack);
+					Con_Obj *bind_obj = Con_Builtins_Con_Stack_Atom_pop_object(thread, con_stack);
+					CON_MUTEX_UNLOCK(&con_stack->mutex);
+					Con_Obj *val = Con_Builtins_VM_Atom_exbi(thread, obj, NULL, field_name, field_name_size, bind_obj);
+					CON_MUTEX_LOCK(&con_stack->mutex);
+					Con_Builtins_Con_Stack_Atom_push_object(thread, con_stack, val);
+					pc.pc.bytecode_offset += Con_Arch_align(thread, CON_INSTR_DECODE_EXBI_START(instruction) + field_name_size);
+					Con_Builtins_Con_Stack_Atom_update_continuation_frame_pc(thread, con_stack, pc);
+					break;
+				}
 				case CON_INSTR_VAR_LOOKUP: {
 					CON_MUTEX_UNLOCK(&con_stack->mutex);
 					Con_Obj *obj = Con_Builtins_Closure_Atom_get_var(thread, closure, CON_INSTR_DECODE_VAR_LOOKUP_CLOSURES_OFFSET(instruction), CON_INSTR_DECODE_VAR_LOOKUP_VAR_NUM(instruction));

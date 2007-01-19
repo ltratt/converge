@@ -782,6 +782,22 @@ class Bytecode_Gen:
 
 
 
+	func _t_iexbi(node):
+
+		i := self._nesting.len() - 1
+		while i >= 0:
+			if self._nesting[i][0] == NEST_FUNC & self._nesting[i][1] == 1:
+				break
+			i -= 1
+		exhausted:
+			self._compiler.error("exbi can only be used when in scope of a bound function.", node.src_infos)
+
+		self._add_lookup_var("self", node.src_infos)
+		self.preorder(node.object_expr)
+		self._instructions.append(self._target::Instr_EXBI.new(node.src_infos, node.field_name))
+
+
+
 	func _t_ireturn(node):
 	
 		if node.return_expr is null:

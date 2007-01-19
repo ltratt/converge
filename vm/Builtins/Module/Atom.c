@@ -281,6 +281,9 @@ Con_Obj *Con_Builtins_Module_Atom_pc_to_src_locations(Con_Obj *thread, Con_PC pc
 	while (current_pc < pc.pc.bytecode_offset) {
 		Con_Int instruction = MODULE_GET_WORD(current_pc);
 		switch (instruction & 0x000000FF) {
+			case CON_INSTR_EXBI:
+				current_pc += Con_Arch_align(thread, CON_INSTR_DECODE_EXBI_START(instruction) + CON_INSTR_DECODE_EXBI_SIZE(instruction));
+				break;
 			case CON_INSTR_IS_ASSIGNED:
 				current_pc += sizeof(Con_Int) + sizeof(Con_Int);
 				break;

@@ -82,6 +82,7 @@ LIBRARY_BYTECODE_MODULE_OFFSETS := 3
 // Instructions
 //
 
+INSTR_EXBI := 1                    // bits 0-7 := 1, bits 8-31 := size of field name, bits 32-.. := field name
 INSTR_LOOKUP_VAR := 2              // bits 0-7 := 2, bits 8-19 := continuation offset, bits 20-31 := var number
 INSTR_ASSIGN_VAR := 3              // bits 0-7 := 3, bits 8-19 := closures offset, bits 20-31 := var number
 INSTR_INT := 4                     // bits 0-7 := 4, bits 8-30 := integer value, bit 31 := sign
@@ -148,6 +149,29 @@ class Instruction:
 	func bytecode_len_bytes():
 	
 		return WORDSIZE
+
+
+
+
+class Instr_EXBI(Instruction):
+
+
+	func init(src_infos, field_name):
+
+		self.src_infos := src_infos	
+		self.field_name := field_name
+
+
+
+	func bytecode_len_bytes():
+
+		return align(4 + self.field_name.len())
+
+
+
+	func to_bytecode():
+
+		return Array::Array.new(ARRAY_TYPE, b_aligned_string(Array::Array.new("i32", [b_8_24(INSTR_EXBI, self.field_name.len())]).serialize() + self.field_name))
 
 
 

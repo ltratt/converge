@@ -759,6 +759,14 @@ class IModule_Gen:
 		return ITree::ISlice.new(self._preorder(node[1], extra_src_infos), lower_bound, upper_bound, extra_src_infos + node[2].src_infos)
 
 
+
+	func _t_exbi(node, extra_src_infos):
+
+		// exbi ::= "EXBI" expr "." "ID"
+
+		return ITree::IEXBI.new(self._preorder(node[2], extra_src_infos), node[4].value, extra_src_infos + node[1].src_infos)
+
+
 	
 	func _t_return(node, extra_src_infos):
 	

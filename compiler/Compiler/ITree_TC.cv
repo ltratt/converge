@@ -227,7 +227,7 @@ class ITree_TC:
 
 	func _t_islot_lookup(node):
 	
-		self._check_expr(node, "object expr", node.object_expr)
+		self._check_expr(node, "object_expr", node.object_expr)
 		
 		if not Builtins::String.instantiated(node.slot_name):
 			self._type_error(node, "slot_name", node.slot_name, "String")
@@ -236,7 +236,7 @@ class ITree_TC:
 
 	func _t_imodule_lookup(node):
 	
-		self._check_expr(node, "object expr", node.object_expr)
+		self._check_expr(node, "object_expr", node.object_expr)
 		
 		if not (Builtins::String.instantiated(node.def_name) | ITree::IInsert.instantiated(node.def_name)):
 			self._type_error(node, "def_name", node.def_name, "[String, IInsert]")

@@ -1,4 +1,4 @@
-<module name="Platform">
+<module name="Platform::Properties">
 This module provides information about the underlying platform (OS, architecture etc.) that Converge is running on. The following attributes are defined:
 
 <assignment name="BIG_ENDIAN">

@@ -1,0 +1,7 @@
+import C_Platform_Properties
+
+
+
+
+endianness := C_Platform_Properties::endianness
+word_bits := C_Platform_Properties::word_bits

@@ -19,7 +19,7 @@
 // IN THE SOFTWARE.
 
 
-import File, Parse_Options, Platform, Strings, Sys, VM
+import File, Parse_Options, Platform::Properties, Strings, Sys, VM
 import Bytecode_Gen, Compiler_Vars, CV_Module, CV_Parser, IModule_Gen, Targets::Available, Tokenizer
 
 
@@ -39,8 +39,8 @@ class Compiler:
 		options.add(Parse_Options::Option_Spec.new("target", "T", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_ONE))
 		
 		self.bootstrap := 0
-		target_name := Strings::format("%dbit", Platform::word_bits)
-		internal_target_name := Strings::format("%dbit", Platform::word_bits)
+		target_name := Strings::format("%dbit", Properties::word_bits)
+		internal_target_name := Strings::format("%dbit", Properties::word_bits)
 		parsed, extra := options.parse()
 		for option_name, option_val := parsed.iterate():
 			ndif option_name == "output":

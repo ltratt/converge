@@ -1,4 +1,4 @@
-// Copyright (c) 2006 King's College London, created by Laurence Tratt
+// Copyright (c) 2007 King's College London, created by Laurence Tratt
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to
@@ -19,11 +19,11 @@
 // IN THE SOFTWARE.
 
 
-#ifndef _CON_MODULES_PLATFORM_H
-#define _CON_MODULES_PLATFORM_H
+#ifndef _CON_MODULES_C_PLATFORM_ENV_H
+#define _CON_MODULES_C_PLATFORM_ENV_H
 
 #include "Core.h"
 
-Con_Obj *Con_Modules_Platform_init(Con_Obj *, Con_Obj *);
+Con_Obj *Con_Modules_C_Platform_Env_init(Con_Obj *, Con_Obj *);
 
 #endif

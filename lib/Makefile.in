@@ -3,7 +3,7 @@ all: libconverge.cvl
 OBJECT_FILES = File.cvb Functional.cvb Parse_Options.cvb Maths.cvb Numbers.cvb Sort.cvb Strings.cvb \
 	CPK/Tokens.cvb CPK/init.cvb CPK/Token.cvb CPK/Earley/init.cvb \
 	CPK/Earley/Grammar.cvb CPK/Earley/Parser.cvb CPK/Traverser.cvb CPK/Tree.cvb \
-	XML/Nodes.cvb XML/XDM.cvb
+	Platform/Properties.cvb Platform/Env.cvb XML/Nodes.cvb XML/XDM.cvb
 
 include @abs_top_srcdir@/Makefile.inc
 

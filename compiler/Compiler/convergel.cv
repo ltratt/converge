@@ -19,7 +19,7 @@
 // IN THE SOFTWARE.
 
 
-import Array, File, Maths, Parse_Options, Platform, Strings, Sys
+import Array, File, Maths, Parse_Options, Platform::Properties, Strings, Sys
 import Compiler_Vars, CV_Exec, CV_Module, CV_Library, Targets::Available
 
 
@@ -51,7 +51,7 @@ class Linker:
 		options.add(Parse_Options::Option_Spec.new("output", "o", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ONE))
 		options.add(Parse_Options::Option_Spec.new("target", "T", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_ONE))
 		
-		target_name := Strings::format("%dbit", Platform::word_bits)
+		target_name := Strings::format("%dbit", Properties::word_bits)
 		parsed_args, extra_args := options.parse()
 		for option_name, option_val := parsed_args.iterate():
 			if option_name == "output":
@@ -140,7 +140,7 @@ class Library_Linker:
 		options.add(Parse_Options::Option_Spec.new("output", "o", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ONE))
 		options.add(Parse_Options::Option_Spec.new("target", "T", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_ONE))
 		
-		target_name := Strings::format("%dbit", Platform::word_bits)
+		target_name := Strings::format("%dbit", Properties::word_bits)
 		parsed_args, extra_args := options.parse()
 		for option_name, option_val := parsed_args.iterate():
 			if option_name == "library_mode":

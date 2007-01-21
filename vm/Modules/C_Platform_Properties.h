@@ -19,41 +19,11 @@
 // IN THE SOFTWARE.
 
 
-#include "Config.h"
+#ifndef _CON_MODULES_PLATFORM_H
+#define _CON_MODULES_PLATFORM_H
 
 #include "Core.h"
-#include "Memory.h"
-#include "Object.h"
-#include "Shortcuts.h"
 
-#include "Builtins/Con_Stack/Atom.h"
-#include "Builtins/Func/Atom.h"
-#include "Builtins/Int/Atom.h"
-#include "Builtins/List/Atom.h"
-#include "Builtins/Module/Atom.h"
-#include "Builtins/String/Atom.h"
-#include "Builtins/Thread/Atom.h"
-#include "Builtins/VM/Atom.h"
+Con_Obj *Con_Modules_C_Platform_Properties_init(Con_Obj *, Con_Obj *);
 
-#include "Modules/Platform.h"
-
-
-
-Con_Obj *Con_Modules_Platform_init(Con_Obj *thread, Con_Obj *identifier)
-{
-	Con_Obj *platform_mod = Con_Builtins_Module_Atom_new_c(thread, identifier, CON_NEW_STRING("Platform"), CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
-
-	CON_SET_SLOT(platform_mod, "word_bits", CON_NEW_INT(sizeof(Con_Int) * 8));
-
-	// Endianness
-
-	CON_SET_SLOT(platform_mod, "LITTLE_ENDIAN", CON_NEW_INT(0));
-	CON_SET_SLOT(platform_mod, "BIG_ENDIAN", CON_NEW_INT(1));
-#	if CON_BYTEORDER == CON_LITTLE_ENDIAN
-	CON_SET_SLOT(platform_mod, "endianness", CON_GET_SLOT(platform_mod, "LITTLE_ENDIAN"));
-#	elif CON_BYTEORDER == CON_BIG_ENDIAN
-	CON_SET_SLOT(platform_mod, "endianness", CON_GET_SLOT(platform_mod, "BIG_ENDIAN"));
-#	endif
-
-	return platform_mod;
-}
+#endif

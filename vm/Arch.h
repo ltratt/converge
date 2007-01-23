@@ -19,8 +19,8 @@
 // IN THE SOFTWARE.
 
 
-#if defined(CON_ARCH_I386)
-#	include "Platform/Arch/i386/Arch.h"
+#if defined(CON_ARCH_X86)
+#	include "Platform/Arch/x86/Arch.h"
 #elif defined(CON_ARCH_X86_64)
 #	include "Platform/Arch/x86_64/Arch.h"
 #else

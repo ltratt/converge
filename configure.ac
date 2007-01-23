@@ -107,9 +107,9 @@ case $machine_type in
 		AC_SUBST(CON_ARCH, "x86_64")
 		AC_DEFINE(CON_C_STACK_GROWS_DOWN);;
 	i386 | i686 )
-		AC_MSG_RESULT(i386)
-		AC_DEFINE(CON_ARCH_I386, [], [Define if running on i386])
-		AC_SUBST(CON_ARCH, "i386")
+		AC_MSG_RESULT(x86)
+		AC_DEFINE(CON_ARCH_X86, [], [Define if running on x86])
+		AC_SUBST(CON_ARCH, "x86")
 		AC_DEFINE(CON_C_STACK_GROWS_DOWN);;
 	sun4u) 
 		AC_MSG_RESULT(sun4u)

@@ -19,18 +19,15 @@
 // IN THE SOFTWARE.
 
 
-#include "Config.h"
+#ifndef _CON_PLATFORM_X86_H
+#define _CON_PLATFORM_X86_H
+
+#include <stddef.h>
 
 #include "Core.h"
 
-#include "Platform/Arch/i386/Arch.h"
+#define CON_ARCH_GET_STACKP(var) __asm__("movl %%esp, %0" : "=g" (var))
 
+Con_Int Con_Arch_align(Con_Obj *, Con_Int);
 
-
-Con_Int Con_Arch_align(Con_Obj *thread, Con_Int addr)
-{
-	if (addr % sizeof(void *) == 0)
-		return addr;
-	else
-		return (addr - (addr % sizeof(void *))) + sizeof(void *);
-}
+#endif

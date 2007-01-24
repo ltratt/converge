@@ -37,11 +37,10 @@ class QQ_Mode:
 	
 		self.parent_mode := parent_mode
 		
-		// 'vars' and 'renames' are exactly as in Bytecode_Gen; see that file for descriptions of
+		// 'closures' is exactly as in Bytecode_Gen; see that file for descriptions of
 		// them.
 		
-		self.vars := []
-		self.renames := []
+		self.closures := []
 		
 		// These next two slots are purely for convenience.
 
@@ -131,15 +130,13 @@ class QQ_Mode:
 		for var := vars.iterate():
 			vars_dict[var] := vars_dict.len()
 
-		self.vars.append(vars_dict)
-		self.renames.append(renames)
+		self.closures.append([vars_dict, renames])
 
 
 
 	func _pop_vars():
 	
-		self.vars.del(-1)
-		self.renames.del(-1)
+		self.closures.del(-1)
 
 
 
@@ -168,12 +165,12 @@ class QQ_Mode:
 
 		mode := self
 		while not mode is null:
-			i := mode.vars.len() - 1
+			i := mode.closures.len() - 1
 			search_var_name := var_name
 			while i >= 0:
-				if mode.vars[i].find(search_var_name):
+				if mode.closures[i][Compiler_Vars::CLOSURE_VARS].find(search_var_name):
 					break
-				if rename_as := mode.renames[i].find(search_var_name):
+				if rename_as := mode.closures[i][Compiler_Vars::CLOSURE_RENAMES].find(search_var_name):
 					search_var_name := rename_as
 				i -= 1
 			broken:

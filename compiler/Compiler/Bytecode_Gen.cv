@@ -86,9 +86,7 @@ class Bytecode_Gen:
 
 	func generate(imodule, target):
 	
-		// 'vars' and 'renames' are two lists which shadow each other, recording the variables and
-		// renames at each level of nesting. At all times, the length of each list is identical. Each
-		// level of nesting is recorded as a dictionary in each.
+		// 'closures' is a list of '(variables, renames)' tuples for each closure level.
 		//
 		// 'vars' maps variable names to an integer denoting the number of that variable in the
 		// corresponding closure at execution time.
@@ -99,8 +97,7 @@ class Bytecode_Gen:
 		// outer scope (for the running example, this means that when it goes up a level of nesting,
 		// rather than search for "y", it needs to search for "x").
 	
-		self.vars := []
-		self.renames := []
+		self.closures := []
 		
 		self.parent_mode := null
 		
@@ -239,32 +236,30 @@ class Bytecode_Gen:
 		for var := vars.iterate():
 			vars_dict[var] := vars_dict.len()
 
-		self.vars.append(vars_dict)
-		self.renames.append(renames)
+		self.closures.append([vars_dict, renames])
 
 
 
 	func _pop_vars():
 	
-		self.vars.del(-1)
-		self.renames.del(-1)
+		self.closures.del(-1)
 
 
 
 	func _get_var_offsets(var_name, src_infos):
 
-		i := self.vars.len() - 1
+		i := self.closures.len() - 1
 		search_var_name := var_name
 		while i >= 0:
-			if self.vars[i].find(search_var_name):
+			if self.closures[i][Compiler_Vars::CLOSURE_VARS].find(search_var_name):
 				break
-			if rename_as := self.renames[i].find(search_var_name):
+			if rename_as := self.closures[i][Compiler_Vars::CLOSURE_RENAMES].find(search_var_name):
 				search_var_name := rename_as
 			i -= 1
 		exhausted:
 			self._compiler.error(Strings::format("Unknown variable '%s'.", var_name), src_infos)
 		
-		return [(self.vars.len() - i) - 1, self.vars[i][search_var_name]]
+		return [(self.closures.len() - i) - 1, self.closures[i][Compiler_Vars::CLOSURE_VARS][search_var_name]]
 
 
 
@@ -362,7 +357,7 @@ class Bytecode_Gen:
 		self._instructions.append(self._target::Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_NULL_OBJ))
 		self._instructions.append(self._target::Instr_Return.new(node.src_infos))
 		
-		self._top_level_vars_map := self.vars[0]
+		self._top_level_vars_map := self.closures[0][Compiler_Vars::CLOSURE_VARS]
 		
 		self._pop_vars()
 

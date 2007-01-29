@@ -101,7 +101,7 @@ AH_TEMPLATE(CON_C_STACK_GROWS_DOWN, [Define if the stack grows down from a parti
 
 AC_MSG_CHECKING([machine type])
 case $machine_type in
-	amd64 )
+	amd64 | x86_64 )
 		AC_MSG_RESULT(x86_64)
 		AC_DEFINE(CON_ARCH_X86_64, [], [Define if running on x86_64])
 		AC_SUBST(CON_ARCH, "x86_64")

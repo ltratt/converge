@@ -127,13 +127,19 @@ Con_Obj *_Con_Builtins_Class_Class_new_object(Con_Obj *thread)
 			Con_Builtins_Class_Atom *super_class_atom = CON_GET_ATOM(super, CON_BUILTIN(CON_BUILTIN_CLASS_ATOM_DEF_OBJECT));
 			CON_MUTEX_LOCK(&super->mutex);
 			if (super_class_atom->new_object != NULL) {
-				if (new_object != NULL) {
-					// It's only permissible to find a single new_object function in superclasses
-					// unless we already have found a new_object function and we've merely bumped
-					// into the new_object function defined by the Object class in which case it
-					// doesn't count. This is important as otherwise everything would clash with
-					// the new_object function defined in Object.
-					if (super != CON_BUILTIN(CON_BUILTIN_OBJECT_CLASS))
+				// It's only permissible to find a single new_object function in superclasses. There
+				// are however two exceptions:
+				//   1) If we come across exactly the same new_obect function multiple times we
+				//      don't care.
+				//   2) If we come across Object's new_object we effectively ignore it. This is
+				//      important as otherwise everything would clash with the new_object function
+				//      defined in Object.
+				// The first check is cheaper than the second, so we also try to do it first.
+				if (new_object != NULL && new_object != super_class_atom->new_object) {
+					Con_Builtins_Class_Atom *object_class_atom = CON_GET_ATOM(CON_BUILTIN(CON_BUILTIN_OBJECT_CLASS), CON_BUILTIN(CON_BUILTIN_CLASS_ATOM_DEF_OBJECT));
+					if (new_object == object_class_atom->new_object)
+						new_object = super_class_atom->new_object;
+					else if (super_class_atom->new_object != object_class_atom->new_object)
 						CON_XXX;
 				}
 				else

@@ -257,8 +257,6 @@ Con_Slots *Con_Builtins_Class_Atom_get_creator_slots(Con_Obj *thread, Con_Obj *c
 			Con_Obj *val;
 			if (!Con_Slots_read_slot(thread, supers_class_fields_for_children, &j, &slot_name, &slot_name_size, &val))
 				break;
-			if (Con_Slots_get_slot(thread, class_fields_for_children, slot_name, slot_name_size) != NULL)
-				CON_XXX;
 			Con_Slots_set_slot(thread, &class_->mutex, class_fields_for_children, slot_name, slot_name_size, val);
 		}
 	}

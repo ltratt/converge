@@ -187,31 +187,23 @@ class IModule_Gen:
 		imports := []
 		i := 2
 		while i < node.len():
-			// import_name ::= "ID" ( "::" "ID" )* ( "." "ID" )*
+			// import_name ::= "ID" ( "::" "ID" )*
 			module_path_list := [node[i][1].value]
-			slot_name_list := []
 			j := 2
 			while j < node[i].len() & node[i][j].type == "::":
 				module_path_list.append(node[i][j + 1].value)
 				j += 2
 
-			while j < node[i].len() & node[i][j].type == ".":
-				slot_name_list.append([node[i][j + 1].value, node[i][j].src_infos])
-				j += 2
-
-			import_ := ITree::IImport.new(Strings::join(module_path_list, "::"), extra_src_infos + node[1].src_infos)
-			
-			for slot_name, slot_name_src_infos := slot_name_list.iterate():
-				import_ := ITree::ISlot_Lookup.new(import_, slot_name, extra_src_infos + slot_name_src_infos)
-
 			if node[i + 1].len() > 1:
 				// import_as ::= "AS" "ID"
-				import_as := ITree::IVar.new(node[i + 1][2].value, extra_src_infos + node[i + 1][2].src_infos)
+				import_as := node[i + 1][2].value
 			else:
 				// import_as ::=
-				import_as := ITree::IVar.new(node[i][-1].value, extra_src_infos + node[i][-1].src_infos)
+				import_as := node[i][-1].value
+
+			import_ := ITree::IImport.new(Strings::join(module_path_list, "::"), import_as, extra_src_infos + node[1].src_infos)
 			
-			imports.append(ITree::IAssignment.new(ITree::STD_ASSIGN, [import_as], import_, extra_src_infos + node[1].src_infos))
+			imports.append(import_)
 			i += 3
 
 		return imports
@@ -1007,12 +999,16 @@ class IModule_Gen:
 		already_bound_vars := Dict{}
 		for i := 0.to(self._definitions.len()):
 			definition := self._definitions[i]
-			for target := self._definitions[i].targets.iterate():
-				if ITree::IVar.conformed_by(target):
-					already_bound_vars[target.var_name] := i
-				else:
-					for target_var := target.bound_vars.iterate():
-						already_bound_vars[target_var] := i
+			if ITree::IImport.instantiated(definition):
+				already_bound_vars[definition.var_name] := i
+			else:
+				// Must be an IAssignment
+				for target := self._definitions[i].targets.iterate():
+					if ITree::IVar.conformed_by(target):
+						already_bound_vars[target.var_name] := i
+					else:
+						for target_var := target.bound_vars.iterate():
+							already_bound_vars[target_var] := i
 
 		defns_to_include := Set{}
 		for free_var := expr.free_vars.iterate():

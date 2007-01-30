@@ -38,7 +38,7 @@ definition  ::= class_def
 
 
 import      ::= "IMPORT" import_name import_as ( "," import_name import_as )*
-import_name ::= "ID" ( "::" "ID" )* ( "." "ID" )*
+import_name ::= "ID" ( "::" "ID" )*
 import_as   ::= "AS" "ID"
             ::=
 

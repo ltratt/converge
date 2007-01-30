@@ -289,17 +289,28 @@ class Bytecode_Gen:
 
 	func _add_mod_def_lookup(defn_path, src_infos):
 	
-		if not import_full_name, import_extras := self._compiler.find_import_location(defn_path):
+		if not import_id, import_extras := self._compiler.find_import_location(defn_path):
 			self._compiler.error(Strings::format("Can't find module / package '%s'", Strings::join(defn_path, "::")), src_infos)
 
-		if import_num := self._imports.find(import_full_name):
+		if import_num := self._imports.find(import_id):
 			self._instructions.append(self._target::Instr_Import.new(src_infos, import_num))
 		else:
-			self._imports[import_full_name] := self._imports.len()
+			self._imports[import_id] := self._imports.len()
 			self._instructions.append(self._target::Instr_Import.new(src_infos, self._imports.len() - 1))
 		
 		for import_extra := import_extras.iterate():
 			self._instructions.append(self._target::Instr_Module_Lookup.new(src_infos, import_extra))
+
+
+
+	func _find_import_location(module_path, src_infos):
+	
+		import_name_list := Strings::split(module_path, "::")
+	
+		if not import_id, import_extras := self._compiler.find_import_location(import_name_list):
+			self._compiler.error(Strings::format("Can't find module / package '%s'", module_path), src_infos)
+		
+		return [import_id, import_extras]
 		
 
 
@@ -543,19 +554,18 @@ class Bytecode_Gen:
 
 	func _t_iimport(node):
 	
-		import_name_list := Strings::split(node.module_path, "::")
-	
-		if not import_full_name, import_extras := self._compiler.find_import_location(import_name_list):
-			self._compiler.error(Strings::format("Can't find module / package '%s'", node.module_path), node.src_infos)
+		import_id, import_extras := self._find_import_location(node.module_path, node.src_infos)
 
-		if import_num := self._imports.find(import_full_name):
+		if import_num := self._imports.find(import_id):
 			self._instructions.append(self._target::Instr_Import.new(node.src_infos, import_num))
 		else:
-			self._imports[import_full_name] := self._imports.len()
+			self._imports[import_id] := self._imports.len()
 			self._instructions.append(self._target::Instr_Import.new(node.src_infos, self._imports.len() - 1))
 		
 		for import_extra := import_extras.iterate():
 			self._instructions.append(self._target::Instr_Module_Lookup.new(node.src_infos, import_extra))
+		
+		self._add_assign_to_var(node.var_name, node.src_infos)
 
 
 

@@ -227,13 +227,14 @@ class IVar:
 
 class IImport:
 
-	func init(module_path, src_infos):
+	func init(module_path, var_name, src_infos):
 
 		self.module_path := module_path
+		self.var_name := var_name
 		self.src_infos := src_infos
 
-		self.bound_vars := Set{}
-		self.qq_bound_vars := Set{}
+		self.bound_vars := Set{var_name}
+		self.qq_bound_vars := Set{var_name}
 		self.free_vars := Set{}
 
 

@@ -101,7 +101,7 @@ class QQ_Mode:
 					continue
 				
 				qq_bound_var := ITree::IVar.new(var_name, node.src_infos)
-				fresh_name_func := ITree::IModule_Lookup.new(ITree::IImport.new("Compiler::Compiler_Vars", node.src_infos), "fresh_name", node.src_infos)
+				fresh_name_func := self._get_module_def_at_qq("Compiler_Vars", "fresh_name", node.src_infos)
 				fresh_name := ITree::IApplication.new(fresh_name_func, [ITree::IString.new(var_name, node.src_infos)], node.src_infos)
 				return_exprs.append(ITree::IAssignment.new(ITree::STD_ASSIGN, [qq_bound_var], fresh_name, node.src_infos))
 
@@ -156,7 +156,7 @@ class QQ_Mode:
 		if not self._extra_src_infos_var is null:
 			full_src_infos := ITree::IBinary.new(ITree::BINARY_ADD, full_src_infos, self._extra_src_infos_var, node_src_infos)
 
-		itree_node := ITree::ISlot_Lookup.new(ITree::IModule_Lookup.new(ITree::IImport.new("Compiler::ITree", node_src_infos), node_type, node_src_infos), "new", node_src_infos)
+		itree_node := ITree::ISlot_Lookup.new(self._get_module_def_at_qq("ITree", node_type, node_src_infos), "new", node_src_infos)
 		return ITree::IApplication.new(itree_node, args + [full_src_infos], node_src_infos)
 
 
@@ -209,6 +209,23 @@ class QQ_Mode:
 		assert(var_name == renamed_var_name)
 		
 		return self._qq("IVar", [ITree::IVar.new(self._qq_bound_var_name(var_name), node_src_infos)], node_src_infos)
+	
+	
+	
+	//
+	// Return an IOriginal_Name which looks up 'defn_name' in the module named 'module_name' in the
+	// Converge compiler.
+	//
+	
+	func _get_module_def_at_qq(module_name, defn_name, src_infos):
+	
+		if not module_id, import_extras := self._compiler.find_import_location(["Compiler", module_name]):
+			raise "XXX"
+				
+		if import_extras.len() > 0:
+			raise "XXX"
+		
+		return ITree::IOriginal_Name.new(module_id, defn_name, src_infos)
 		
 
 

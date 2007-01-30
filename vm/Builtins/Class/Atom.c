@@ -35,6 +35,7 @@
 #include "Builtins/Func/Atom.h"
 #include "Builtins/Int/Atom.h"
 #include "Builtins/List/Atom.h"
+#include "Builtins/Module/Atom.h"
 #include "Builtins/Slots_Atom_Def.h"
 #include "Builtins/String/Atom.h"
 #include "Builtins/Thread/Atom.h"

@@ -37,6 +37,7 @@ CVB_EXTENSION := "cvb"
 
 CLOSURE_VARS := 0
 CLOSURE_RENAMES := 1
+CLOSURE_IMPORTS := 2
 
 // The default variables in scope in every Converge module.
 

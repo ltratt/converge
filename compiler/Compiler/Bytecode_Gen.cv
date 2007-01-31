@@ -230,13 +230,17 @@ class Bytecode_Gen:
 
 
 
-	func _add_vars(vars, renames):
+	func _add_vars(vars, renames, import_vars):
 	
 		vars_dict := Dict{}
 		for var := vars.iterate():
 			vars_dict[var] := vars_dict.len()
+		
+		import_vars_dict := Dict{}
+		for var := import_vars.iterate():
+			import_vars_dict[var] := null
 
-		self.closures.append([vars_dict, renames])
+		self.closures.append([vars_dict, renames, import_vars_dict])
 
 
 
@@ -263,9 +267,28 @@ class Bytecode_Gen:
 
 
 
-	func _add_assign_to_var(var_name, src_infos):
+	//
+	// Add an instruction assigning the curent value on the stack to 'var_name'. If this assignment
+	// is to an import, 'import_id' should be the ID of the module being assigned to this variable.
+	// Note that for normal assignments, 'import_id' should not be specified.
+	//
+
+	func _add_assign_to_var(var_name, src_infos, import_id := null):
 	
 		closures_offset, var_num := self._get_var_offsets(var_name, src_infos)
+
+		// What we do now is to see if this assignment overwrites a 'protected' import variable.
+		
+		reversed_closures_offset := self.closures.len() - closures_offset - 1
+		if existing_import_id := self.closures[reversed_closures_offset][Compiler_Vars::CLOSURE_IMPORTS].find(var_name):
+			// OK, this does refer to an import. If it's a normal variable assignment (i.e.
+			// 'import_id' wasn't specified), or if it's an import that's already been assigned
+			// then we raise an error.
+			if import_id is null | not existing_import_id is null:
+				self._compiler.error(Strings::format("Can not assign to '%s' variable in more than one place.", var_name), src_infos)
+				
+			// Update our idea of what the import variable refers to.
+			self.closures[reversed_closures_offset][Compiler_Vars::CLOSURE_IMPORTS][var_name] := import_id
 		
 		self._instructions.append(self._target::Instr_Assign_Var.new(src_infos, closures_offset, var_num))
 
@@ -347,7 +370,7 @@ class Bytecode_Gen:
 
 	func _t_imodule(node):
 
-		self._add_vars(node.bound_vars, Dict{})
+		self._add_vars(node.bound_vars, Dict{}, node.import_vars)
 		
 		self._instructions.append(self._target::Instr_Pop.new(node.src_infos))
 		
@@ -437,7 +460,7 @@ class Bytecode_Gen:
 		for rename_ := node.renames.iterate():
 			raise "XXX"
 		
-		self._add_vars(bound_vars, renames)
+		self._add_vars(bound_vars, renames, node.internal_import_vars)
 		
 		self._nesting.append([NEST_FUNC, node.is_bound])
 		
@@ -565,7 +588,7 @@ class Bytecode_Gen:
 		for import_extra := import_extras.iterate():
 			self._instructions.append(self._target::Instr_Module_Lookup.new(node.src_infos, import_extra))
 		
-		self._add_assign_to_var(node.var_name, node.src_infos)
+		self._add_assign_to_var(node.var_name, node.src_infos, import_id)
 
 
 

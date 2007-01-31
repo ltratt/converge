@@ -61,8 +61,10 @@ class IModule:
 		self.src_infos := src_infos
 
 		self.bound_vars := Compiler_Vars::DEFAULT_VARS.scopy()
+		self.import_vars := Set{}
 		for definition := definitions.iterate():
 			self.bound_vars.extend(definition.bound_vars)
+			self.import_vars.extend(definition.import_vars)
 
 
 
@@ -82,6 +84,7 @@ class IClass_Def:
 		self.src_infos := src_infos
 		
 		self.bound_vars := Set{}
+		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		for super := supers.iterate():
 			self.bound_vars.extend(super.bound_vars)
@@ -118,6 +121,8 @@ class IFunc_Def:
 		self.src_infos := src_infos
 
 		self.bound_vars := Set{}
+		self.import_vars := Set{}
+		self.internal_import_vars := Set{}
 
 		if self.is_bound == 1:
 			all_internal_bound_vars := Set{"self"}
@@ -129,6 +134,7 @@ class IFunc_Def:
 		for param := params.iterate():
 			all_internal_bound_vars.extend(param.bound_vars)
 			self.qq_bound_vars.extend(param.qq_bound_vars)
+			self.internal_import_vars.extend(param.import_vars)
 			
 		if not var_arg is null:
 			if IInsert.instantiated(var_arg):
@@ -140,6 +146,7 @@ class IFunc_Def:
 
 		all_internal_bound_vars.extend(self.body.bound_vars)
 		self.qq_bound_vars.extend(self.body.qq_bound_vars)
+		self.internal_import_vars.extend(body.import_vars)
 
 		nonlocals_ := Set{}
 		for nonlocal_ := nonlocals.iterate():
@@ -177,15 +184,18 @@ class IIf:
 		self.src_infos := src_infos
 
 		self.bound_vars := Set{}
+		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		self.free_vars := Set{}
 		for clause := clauses.iterate():
 			self.bound_vars.extend(clause.bound_vars)
+			self.import_vars.extend(clause.import_vars)
 			self.qq_bound_vars.extend(clause.qq_bound_vars)
 			self.free_vars.extend(clause.free_vars)
 		
 		if not else_body is null:
 			self.bound_vars.extend(else_body.bound_vars)
+			self.import_vars.extend(else_body.import_vars)
 			self.free_vars.extend(else_body.free_vars)
 
 
@@ -201,10 +211,12 @@ class INDIf:
 		self.src_infos := src_infos
 
 		self.bound_vars := Set{}
+		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		self.free_vars := Set{}
 		for clause := clauses.iterate():
 			self.bound_vars.extend(clause.bound_vars)
+			self.import_vars.extend(clause.import_vars)
 			self.qq_bound_vars.extend(clause.qq_bound_vars)
 			self.free_vars.extend(clause.free_vars)
 
@@ -219,6 +231,7 @@ class IVar:
 		self.src_infos := src_infos
 
 		self.bound_vars := Set{}
+		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		self.free_vars := Set{self.var_name}
 
@@ -234,6 +247,7 @@ class IImport:
 		self.src_infos := src_infos
 
 		self.bound_vars := Set{var_name}
+		self.import_vars := Set{var_name}
 		self.qq_bound_vars := Set{var_name}
 		self.free_vars := Set{}
 
@@ -251,18 +265,22 @@ class IWhile:
 		self.src_infos := src_infos
 
 		self.bound_vars := condition.bound_vars.scopy()
+		self.import_vars := condition.import_vars.scopy()
 		self.qq_bound_vars := condition.qq_bound_vars.scopy()
 		self.free_vars := condition.free_vars.scopy()
 		if not body is null:
 			self.bound_vars.extend(body.bound_vars)
+			self.import_vars.extend(body.import_vars)
 			self.qq_bound_vars.extend(body.qq_bound_vars)
 			self.free_vars.extend(body.free_vars)
 		if not exhausted_body is null:
 			self.bound_vars.extend(exhausted_body.bound_vars)
+			self.import_vars.extend(exhausted_body.import_vars)
 			self.qq_bound_vars.extend(exhausted_body.qq_bound_vars)
 			self.free_vars.extend(exhausted_body.free_vars)
 		if not broken_body is null:
 			self.bound_vars.extend(broken_body.bound_vars)
+			self.import_vars.extend(broken_body.import_vars)
 			self.qq_bound_vars.extend(broken_body.qq_bound_vars)
 			self.free_vars.extend(broken_body.free_vars)
 
@@ -280,18 +298,22 @@ class IFor:
 		self.src_infos := src_infos
 
 		self.bound_vars := condition.bound_vars.scopy()
+		self.import_vars := condition.import_vars.scopy()
 		self.qq_bound_vars := condition.qq_bound_vars.scopy()
 		self.free_vars := condition.free_vars.scopy()
 		if not body is null:
 			self.bound_vars.extend(body.bound_vars)
+			self.import_vars.extend(body.import_vars)
 			self.qq_bound_vars.extend(body.qq_bound_vars)
 			self.free_vars.extend(body.free_vars)
 		if not exhausted_body is null:
 			self.bound_vars.extend(exhausted_body.bound_vars)
+			self.import_vars.extend(exhausted_body.import_vars)
 			self.qq_bound_vars.extend(exhausted_body.qq_bound_vars)
 			self.free_vars.extend(exhausted_body.free_vars)
 		if not broken_body is null:
 			self.bound_vars.extend(broken_body.bound_vars)
+			self.import_vars.extend(broken_body.import_vars)
 			self.qq_bound_vars.extend(broken_body.qq_bound_vars)
 			self.free_vars.extend(broken_body.free_vars)
 
@@ -306,6 +328,7 @@ class IInt:
 		self.src_infos := src_infos
 
 		self.bound_vars := Set{}
+		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		self.free_vars := Set{}
 
@@ -320,6 +343,7 @@ class IString:
 		self.src_infos := src_infos
 
 		self.bound_vars := Set{}
+		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		self.free_vars := Set{}
 
@@ -335,6 +359,7 @@ class ISlot_Lookup:
 		self.src_infos := src_infos
 
 		self.bound_vars := self.object_expr.bound_vars
+		self.import_vars := self.object_expr.import_vars
 		self.qq_bound_vars := self.object_expr.qq_bound_vars
 		self.free_vars := self.object_expr.free_vars
 
@@ -350,6 +375,7 @@ class IModule_Lookup:
 		self.src_infos := src_infos
 
 		self.bound_vars := self.object_expr.bound_vars
+		self.import_vars := self.object_expr.import_vars
 		self.qq_bound_vars := self.object_expr.qq_bound_vars
 		self.free_vars := self.object_expr.free_vars
 
@@ -364,10 +390,12 @@ class IList:
 		self.src_infos := src_infos
 
 		self.bound_vars := Set{}
+		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		self.free_vars := Set{}
 		for elem := elements.iterate():
 			self.bound_vars.extend(elem.bound_vars)
+			self.import_vars.extend(elem.import_vars)
 			self.qq_bound_vars.extend(elem.qq_bound_vars)
 			self.free_vars.extend(elem.free_vars)
 
@@ -382,11 +410,14 @@ class IDict:
 		self.src_infos := src_infos
 
 		self.bound_vars := Set{}
+		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		self.free_vars := Set{}
 		for key, val := elements.iterate():
 			self.bound_vars.extend(key.bound_vars)
 			self.bound_vars.extend(val.bound_vars)
+			self.import_vars.extend(key.import_vars)
+			self.import_vars.extend(val.import_vars)
 			self.qq_bound_vars.extend(key.qq_bound_vars)
 			self.qq_bound_vars.extend(val.qq_bound_vars)
 			self.free_vars.extend(key.free_vars)
@@ -403,10 +434,12 @@ class ISet:
 		self.src_infos := src_infos
 
 		self.bound_vars := Set{}
+		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		self.free_vars := Set{}
 		for elem := elements.iterate():
 			self.bound_vars.extend(elem.bound_vars)
+			self.import_vars.extend(elem.import_vars)
 			self.qq_bound_vars.extend(elem.qq_bound_vars)
 			self.free_vars.extend(elem.free_vars)
 
@@ -423,6 +456,9 @@ class IApplication:
 
 		self.bound_vars := func_expr.bound_vars.scopy()
 		for self.bound_vars.extend(args.iterate().bound_vars)
+
+		self.import_vars := func_expr.import_vars.scopy()
+		for self.import_vars.extend(args.iterate().import_vars)
 
 		self.qq_bound_vars := func_expr.qq_bound_vars.scopy()
 		for self.qq_bound_vars.extend(args.iterate().qq_bound_vars)
@@ -442,6 +478,7 @@ class IGet:
 		self.src_infos := src_infos
 
 		self.bound_vars := get_object.bound_vars + index.bound_vars
+		self.import_vars := get_object.import_vars + index.import_vars
 		self.qq_bound_vars := get_object.qq_bound_vars + index.qq_bound_vars
 		self.free_vars := get_object.free_vars + index.free_vars
 
@@ -458,14 +495,17 @@ class ISlice:
 		self.src_infos := src_infos
 
 		self.bound_vars := slice_object.bound_vars.scopy()
+		self.import_vars := slice_object.import_vars.scopy()
 		self.qq_bound_vars := slice_object.qq_bound_vars.scopy()
 		self.free_vars := slice_object.free_vars.scopy()
 		if not lower_bound is null:
 			self.bound_vars.extend(lower_bound.bound_vars)
+			self.import_vars.extend(lower_bound.import_vars)
 			self.qq_bound_vars.extend(lower_bound.qq_bound_vars)
 			self.free_vars.extend(lower_bound.free_vars)
 		if not upper_bound is null:
 			self.bound_vars.extend(upper_bound.bound_vars)
+			self.import_vars.extend(upper_bound.import_vars)
 			self.qq_bound_vars.extend(upper_bound.qq_bound_vars)
 			self.free_vars.extend(upper_bound.free_vars)
 
@@ -481,6 +521,7 @@ class IEXBI:
 		self.src_infos := src_infos
 
 		self.bound_vars := self.object_expr.bound_vars
+		self.import_vars := self.object_expr.import_vars
 		self.qq_bound_vars := self.object_expr.qq_bound_vars
 		self.free_vars := self.object_expr.free_vars
 
@@ -498,10 +539,12 @@ class IReturn:
 
 		if self.return_expr is null:
 			self.bound_vars := Set{}
+			self.import_vars := Set{}
 			self.qq_bound_vars := Set{}
 			self.free_vars := Set{}
 		else:
 			self.bound_vars := return_expr.bound_vars
+			self.import_vars := return_expr.import_vars
 			self.qq_bound_vars := return_expr.qq_bound_vars
 			self.free_vars := return_expr.free_vars
 
@@ -516,6 +559,7 @@ class IYield:
 		self.src_infos := src_infos
 		
 		self.bound_vars := yield_expr.bound_vars
+		self.import_vars := yield_expr.import_vars
 		self.qq_bound_vars := yield_expr.qq_bound_vars
 		self.free_vars := yield_expr.free_vars
 
@@ -530,6 +574,7 @@ class IRaise:
 		self.src_infos := src_infos
 		
 		self.bound_vars := raise_expr.bound_vars
+		self.import_vars := raise_expr.import_vars
 		self.qq_bound_vars := raise_expr.qq_bound_vars
 		self.free_vars := raise_expr.free_vars
 
@@ -544,6 +589,7 @@ class IAssert:
 		self.src_infos := src_infos
 		
 		self.bound_vars := assert_expr.bound_vars
+		self.import_vars := assert_expr.import_vars
 		self.qq_bound_vars := assert_expr.qq_bound_vars
 		self.free_vars := assert_expr.free_vars
 
@@ -557,6 +603,7 @@ class IBreak:
 		self.src_infos := src_infos
 		
 		self.bound_vars := Set{}
+		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		self.free_vars := Set{}
 
@@ -570,6 +617,7 @@ class IContinue:
 		self.src_infos := src_infos
 		
 		self.bound_vars := Set{}
+		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		self.free_vars := Set{}
 
@@ -584,10 +632,12 @@ class IConjunction:
 		self.src_infos := src_infos
 		
 		self.bound_vars := Set{}
+		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		self.free_vars := Set{}
 		for expr := exprs.iterate():
 			self.bound_vars.extend(expr.bound_vars)
+			self.import_vars.extend(expr.import_vars)
 			self.qq_bound_vars.extend(expr.qq_bound_vars)
 			self.free_vars.extend(expr.free_vars)
 
@@ -602,10 +652,12 @@ class IAlternation:
 		self.src_infos := src_infos
 		
 		self.bound_vars := Set{}
+		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		self.free_vars := Set{}
 		for expr := exprs.iterate():
 			self.bound_vars.extend(expr.bound_vars)
+			self.import_vars.extend(expr.import_vars)
 			self.qq_bound_vars.extend(expr.qq_bound_vars)
 			self.free_vars.extend(expr.free_vars)
 
@@ -622,6 +674,7 @@ class IAssignment:
 		self.src_infos := src_infos
 
 		self.bound_vars := Set{}
+		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		self.free_vars := Set{}
 		for target := targets.iterate():
@@ -630,6 +683,7 @@ class IAssignment:
 				self.qq_bound_vars.add(target.var_name)
 			else:
 				self.bound_vars.extend(target.bound_vars)
+				self.import_vars.extend(target.import_vars)
 				self.qq_bound_vars.extend(target.qq_bound_vars)
 				self.free_vars.extend(target.free_vars)
 		self.bound_vars.extend(expr.bound_vars)
@@ -647,6 +701,7 @@ class INot:
 		self.src_infos := src_infos
 		
 		self.bound_vars := expr.bound_vars
+		self.import_vars := expr.import_vars
 		self.qq_bound_vars := expr.qq_bound_vars
 		self.free_vars := expr.free_vars
 
@@ -663,6 +718,7 @@ class IBinary:
 		self.src_infos := src_infos
 
 		self.bound_vars := lhs.bound_vars + rhs.bound_vars
+		self.import_vars := lhs.import_vars + rhs.import_vars
 		self.qq_bound_vars := lhs.qq_bound_vars + rhs.qq_bound_vars
 		self.free_vars := lhs.free_vars + rhs.free_vars
 
@@ -680,6 +736,7 @@ class IComparison:
 		self.src_infos := src_infos
 
 		self.bound_vars := lhs.bound_vars + rhs.bound_vars
+		self.import_vars := lhs.import_vars + rhs.import_vars
 		self.qq_bound_vars := lhs.qq_bound_vars + rhs.qq_bound_vars
 		self.free_vars := lhs.free_vars + rhs.free_vars
 
@@ -693,6 +750,7 @@ class IPass:
 		self.src_infos := src_infos
 		
 		self.bound_vars := Set{}
+		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		self.free_vars := Set{}
 
@@ -707,6 +765,7 @@ class IInsert:
 		self.src_infos := src_infos
 		
 		self.bound_vars := expr.bound_vars
+		self.import_vars := expr.import_vars
 		self.qq_bound_vars := expr.bound_vars
 		self.free_vars := expr.free_vars
 
@@ -722,6 +781,7 @@ class IStandard_Quasi_Quotes:
 		self.src_infos := src_infos
 		
 		self.bound_vars := Set{}
+		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		self.free_vars := body.free_vars.scopy()
 		for var := body.qq_bound_vars.iterate():
@@ -734,6 +794,7 @@ class IStandard_Quasi_Quotes:
 			self.qq_bound_vars.add(self.extra_src_infos_var_name)
 			
 			self.bound_vars.extend(extra_src_infos.bound_vars)
+			self.import_vars.extend(extra_src_infos.import_vars)
 			self.qq_bound_vars.extend(extra_src_infos.qq_bound_vars)
 			self.free_vars.extend(extra_src_infos.free_vars)
 
@@ -749,6 +810,7 @@ class IOriginal_Name:
 		self.src_infos := src_infos
 		
 		self.bound_vars := Set{}
+		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		self.free_vars := Set{}
 
@@ -768,6 +830,7 @@ class IExpr_Block:
 		self.src_infos := src_infos
 
 		self.bound_vars := Set{}
+		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		for expr := self.exprs.iterate():
 			//if IClass_Def.instantiated(expr):
@@ -776,6 +839,7 @@ class IExpr_Block:
 				self.bound_vars.add(expr.func_name)
 				self.qq_bound_vars.add(expr.func_name)
 			self.bound_vars.extend(expr.bound_vars)
+			self.import_vars.extend(expr.import_vars)
 			self.qq_bound_vars.extend(expr.qq_bound_vars)
 
 		self.free_vars := Set{}
@@ -794,9 +858,11 @@ class IParam:
 		self.src_infos := src_infos
 		
 		self.bound_vars := Set{var.var_name}
+		self.import_vars := Set{}
 		self.qq_bound_vars := Set{var.var_name}
 		if not default is null:
 			self.bound_vars.extend(default.bound_vars)
+			self.import_vars.extend(default.import_vars)
 			self.qq_bound_vars.extend(default.qq_bound_vars)
 		
 		if default is null:
@@ -816,5 +882,6 @@ class IClause:
 		self.src_infos := src_infos
 
 		self.bound_vars := condition.bound_vars + body.bound_vars
+		self.import_vars := condition.import_vars + body.import_vars
 		self.qq_bound_vars := condition.qq_bound_vars + body.qq_bound_vars
 		self.free_vars := condition.free_vars + body.free_vars

@@ -6,6 +6,13 @@ all:
 	cd manuals && ${MAKE} ${MFLAGS}
 	cd tests && ${MAKE} ${MFLAGS}
 
+install: all
+	cd vm && ${MAKE} ${MFLAGS} install
+	cd lib && ${MAKE} ${MFLAGS} install
+	cd compiler && ${MAKE} ${MFLAGS} install
+	cd examples && ${MAKE} ${MFLAGS} install
+	cd manuals && ${MAKE} ${MFLAGS} install
+
 clean:
 	cd bootstrap && ${MAKE} ${MFLAGS} clean
 	cd vm && ${MAKE} ${MFLAGS} clean

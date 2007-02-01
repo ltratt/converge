@@ -1,9 +1,30 @@
 all: libconverge.cvl
 
-OBJECT_FILES = File.cvb Functional.cvb Parse_Options.cvb Maths.cvb Numbers.cvb Sort.cvb Strings.cvb \
-	CPK/Tokens.cvb CPK/init.cvb CPK/Token.cvb CPK/Earley/init.cvb \
-	CPK/Earley/Grammar.cvb CPK/Earley/Parser.cvb CPK/Traverser.cvb CPK/Tree.cvb \
-	Platform/Properties.cvb Platform/Env.cvb XML/Nodes.cvb XML/XDM.cvb
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+libdir = @libdir@
+conlibdir = ${libdir}/converge-@CONVERGE_VERSION@
+
+BASE_OBJECT_FILES = File.cvb Functional.cvb Parse_Options.cvb Maths.cvb Numbers.cvb Sort.cvb Strings.cvb
+CPK_OBJECT_FILES = CPK/Tokens.cvb CPK/init.cvb CPK/Token.cvb CPK/Traverser.cvb CPK/Tree.cvb
+CPK_EARLEY_OBJECT_FILES = CPK/Earley/init.cvb CPK/Earley/Grammar.cvb CPK/Earley/Parser.cvb
+CPK_PLATFORM_OBJECT_FILES = Platform/Properties.cvb Platform/Env.cvb 
+CPK_XML_OBJECT_FILES = XML/Nodes.cvb XML/XDM.cvb
+
+OBJECT_FILES = ${BASE_OBJECT_FILES} ${CPK_OBJECT_FILES} ${CPK_EARLEY_OBJECT_FILES} ${CPK_PLATFORM_OBJECT_FILES} ${CPK_XML_OBJECT_FILES}
+
+install:
+	install -d ${conlibdir}
+	install -d ${conlibdir}/CPK
+	install -d ${conlibdir}/CPK/Earley
+	install -d ${conlibdir}/Platform
+	install -d ${conlibdir}/XML
+	install -c -m 444 ${BASE_OBJECT_FILES} ${BASE_OBJECT_FILES:.cvb=.cv} ${conlibdir}
+	install -c -m 444 ${CPK_OBJECT_FILES} ${CPK_OBJECT_FILES:.cvb=.cv} ${conlibdir}/CPK
+	install -c -m 444 ${CPK_EARLEY_OBJECT_FILES} ${CPK_EARLEY_OBJECT_FILES:.cvb=.cv} ${conlibdir}/CPK/Earley
+	install -c -m 444 ${CPK_PLATFORM_OBJECT_FILES} ${CPK_PLATFORM_OBJECT_FILES:.cvb=.cv} ${conlibdir}/Platform
+	install -c -m 444 ${CPK_XML_OBJECT_FILES} ${CPK_XML_OBJECT_FILES:.cvb=.cv} ${conlibdir}/XML
+	install -c -m 444 libconverge.cvl ${conlibdir}
 
 include @abs_top_srcdir@/Makefile.inc
 

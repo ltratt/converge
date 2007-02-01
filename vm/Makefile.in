@@ -1,6 +1,9 @@
 CC=@CC@
 CFLAGS=@CFLAGS@
 LIBS=@LIBS@
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+bindir = @bindir@
 
 .SUFFIXES: .c .S .o
 
@@ -33,6 +36,10 @@ OBJECT_FILES = 	@CON_THREAD_ATOM_OBJ@ @CON_THREAD_CLASS_OBJ@ @CON_THREAD_MODULE_
 	
 
 all: converge
+
+install:
+	install -d ${bindir}
+	install -c -m 555 converge ${bindir}
 
 sinclude .depend
 

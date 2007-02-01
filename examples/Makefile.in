@@ -2,6 +2,8 @@ all:
 	cd compile_time && ${MAKE} ${MFLAGS}
 	cd dsls && ${MAKE} ${MFLAGS}
 
+install:
+
 clean:
 	cd compile_time && ${MAKE} ${MFLAGS} clean
 	cd dsls && ${MAKE} ${MFLAGS} clean

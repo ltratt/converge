@@ -13,6 +13,10 @@ A <ref name="File::File" /> object representing standard input.
 A <ref name="File::File" /> object representing standard input.
 </assignment>
 
+<assignment name="version">
+A string denoting the version of the Converge virtual machine. Versions can be of any format (e.g. <code>1.2</code>, <code>1.1-beta</code>, <code>current</code>). Thus one can not determine whether one version string represents a "newer" version than another; one can simply test whether two version strings denote different versions not.
+</assignment>
+
 Important functions and classes in this module are as follows:
 
 <function name="exit">

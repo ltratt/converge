@@ -31,6 +31,7 @@
 #include "Memory.h"
 #include "Object.h"
 #include "Shortcuts.h"
+#include "Version.h"
 
 #include "Builtins/Con_Stack/Atom.h"
 #include "Builtins/Func/Atom.h"
@@ -102,6 +103,10 @@ Con_Obj *Con_Modules_Sys_init(Con_Obj *thread, Con_Obj *identifier)
 	}
 	CON_SET_SLOT(sys_mod, "argv", argv_list);
 	
+	// Version info.
+
+	CON_SET_SLOT(sys_mod, "version", CON_NEW_STRING(CON_VERSION));
+
 	return sys_mod;
 }
 

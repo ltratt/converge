@@ -49,15 +49,19 @@ class Linker:
 	
 		options := Parse_Options::Options.new(_useage)
 		options.add(Parse_Options::Option_Spec.new("output", "o", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ONE))
+		options.add(Parse_Options::Option_Spec.new("mk_shell_script", "s", Parse_Options::NONE, null, Parse_Options::FREQUENCY_ZERO_OR_ONE))
 		options.add(Parse_Options::Option_Spec.new("target", "T", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_ONE))
 		
 		target_name := Strings::format("%dbit", Properties::word_bits)
+		mk_shell_script := 0
 		parsed_args, extra_args := options.parse()
 		for option_name, option_val := parsed_args.iterate():
 			if option_name == "output":
 				output_path := option_val
 			elif option_name == "target":
 				target_name := option_val
+			elif option_name == "mk_shell_script":
+				mk_shell_script := 1
 			else:
 				raise "XXX"
 		
@@ -122,6 +126,9 @@ class Linker:
 		linked_bytecode.extend(modules_bytecode)
 
 		output_file := File::File.new(output_path, "w")
+		if mk_shell_script == 1:
+			sh_header := "#! /usr/bin/env converge\n"
+			output_file.write(sh_header + "\n" * (target::align(sh_header.len()) - sh_header.len()))
 		output_file.write(linked_bytecode.serialize())
 
 

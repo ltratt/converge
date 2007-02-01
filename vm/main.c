@@ -86,9 +86,22 @@ int main(int argc, char** argv) {
 		exit(1);
 	}
 	
-	u_char *bytecode = malloc(con_binary_file_stat.st_size);
-	fread(bytecode, 1, con_binary_file_stat.st_size, con_binary_file);
-	Con_Obj *main_module_identifier = Con_Bytecode_add_executable(thread, bytecode);
+	size_t bytecode_size = con_binary_file_stat.st_size;
+	u_char *bytecode = malloc(bytecode_size);
+	fread(bytecode, 1, bytecode_size, con_binary_file);
+	
+	// We now go through the file and look for where CONVEXEC starts. This means that files can have
+	// arbitrary text at their beginning allowing e.g. "#!" UNIX commands to be inserted there.
+	
+	size_t bytecode_start = 0;
+	while (bytecode_size - bytecode_start >= 8 && strncmp(bytecode + bytecode_start, "CONVEXEC", 8) != 0) {
+		bytecode_start += 1;
+	}
+	if (bytecode_size - bytecode_start < 8) {
+		fprintf(stderr, "%s: '%s' does not appear to be a valid Converge executeable.\n", __progname, argv[1]);
+		exit(1);
+	}
+	Con_Obj *main_module_identifier = Con_Bytecode_add_executable(thread, bytecode + bytecode_start);
 	free(bytecode);
 
 	if (fclose(con_binary_file) != 0) {

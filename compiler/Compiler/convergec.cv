@@ -209,6 +209,8 @@ class Compiler:
 					Sys::stderr.writeln(Strings::format("  Line %d, column %d ", i, col))
 				
 				Sys::stderr.writeln(msg)
+		else:
+			Sys::stderr.writeln(Strings::format("%s: %s", pre_msg, msg))
 					
 
 

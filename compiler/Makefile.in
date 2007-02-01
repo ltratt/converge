@@ -4,14 +4,18 @@ bindir = @bindir@
 libdir = @libdir@
 conlibdir = ${libdir}/converge-@CONVERGE_VERSION@
 
-OBJECT_FILES = Compiler/CV_Parser.cvb Compiler/Tokenizer.cvb Compiler/init.cvb \
+BASE_OBJECT_FILES = Compiler/CV_Parser.cvb Compiler/Tokenizer.cvb Compiler/init.cvb \
 	Compiler/convergec.cvb Compiler/convergep.cvb Compiler/IModule_Gen.cvb \
 	Compiler/ITree.cvb Compiler/Bytecode_Gen.cvb Compiler/Targets/Thirty_Two_Bit.cvb \
-	Compiler/Targets/init.cvb Compiler/Compiler_Vars.cvb Compiler/CV_Module.cvb \
+	Compiler/Compiler_Vars.cvb Compiler/CV_Module.cvb \
 	Compiler/QQ_Mode.cvb Compiler/ITree_Format.cvb Compiler/ITree_TC.cvb \
 	Compiler/CEI.cvb Compiler/convergel.cvb Compiler/CV_Library.cvb \
-	Compiler/CV_Exec.cvb Compiler/Eval.cvb Compiler/Targets/Sixty_Four_Bit.cvb \
+	Compiler/CV_Exec.cvb Compiler/Eval.cvb
+
+TARGET_OBJECT_FILES =Compiler/Targets/init.cvb  Compiler/Targets/Sixty_Four_Bit.cvb \
 	Compiler/Targets/Available.cvb
+
+OBJECT_FILES = ${BASE_OBJECT_FILES} ${TARGET_OBJECT_FILES}
 
 
 all: libcompiler.cvl convergec convergel convergep
@@ -22,7 +26,9 @@ install:
 	install -c -m 555 convergel ${bindir}
 	install -c -m 555 convergep ${bindir}
 	install -d ${conlibdir}/Compiler
-	install -c -m 444 ${OBJECT_FILES} ${OBJECT_FILES:.cvb=.cv} ${conlibdir}/Compiler
+	install -d ${conlibdir}/Compiler/Targets
+	install -c -m 444 ${BASE_OBJECT_FILES} ${BASE_OBJECT_FILES:.cvb=.cv} ${conlibdir}/Compiler
+	install -c -m 444 ${TARGET_OBJECT_FILES} ${TARGET_OBJECT_FILES:.cvb=.cv} ${conlibdir}/Compiler/Targets
 
 
 include @abs_top_srcdir@/Makefile.inc

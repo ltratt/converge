@@ -205,15 +205,20 @@ void *Con_Memory_realloc(Con_Obj *thread, void *ptr, size_t size)
 		bzero(((u_char *) (new_chunk + 1)) + new_chunk->size, size - new_chunk->size);
 
 	new_chunk->size = size;
-	
-	Con_Int i;
-	for (i = 0; i < mem_store->num_chunks; i += 1) {
-		if (mem_store->chunks[i] == chunk) {
-			mem_store->chunks[i] = new_chunk;
-			break;
+
+	// We only need to update the entry for this chunk if its address has been changed by the
+	// reallocation.
+
+	if (new_chunk != chunk) {
+		Con_Int i;
+		for (i = 0; i < mem_store->num_chunks; i += 1) {
+			if (mem_store->chunks[i] == chunk) {
+				mem_store->chunks[i] = new_chunk;
+				break;
+			}
 		}
+		assert(i != mem_store->num_chunks);
 	}
-	assert(i != mem_store->num_chunks);
 	
 	mem_store->num_allocations_since_last_gc += 1;
 	CON_MUTEX_UNLOCK(&mem_store->mem_mutex);
@@ -240,14 +245,19 @@ void *Con_Memory_realloc_no_gc(Con_Obj *thread, void *ptr, size_t size)
 
 	new_chunk->size = size;
 	
-	Con_Int i;
-	for (i = 0; i < mem_store->num_chunks; i += 1) {
-		if (mem_store->chunks[i] == chunk) {
-			mem_store->chunks[i] = new_chunk;
-			break;
+	// We only need to update the entry for this chunk if its address has been changed by the
+	// reallocation.
+
+	if (new_chunk != chunk) {
+		Con_Int i;
+		for (i = 0; i < mem_store->num_chunks; i += 1) {
+			if (mem_store->chunks[i] == chunk) {
+				mem_store->chunks[i] = new_chunk;
+				break;
+			}
 		}
+		assert(i != mem_store->num_chunks);
 	}
-	assert(i != mem_store->num_chunks);
 	
 	mem_store->num_allocations_since_last_gc += 1;
 	CON_MUTEX_UNLOCK(&mem_store->mem_mutex);

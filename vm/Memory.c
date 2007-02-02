@@ -50,17 +50,11 @@ void _Con_Memory_gc_scan_obj(Con_Obj *, Con_Obj *);
 
 Con_Memory_Store *Con_Memory_init()
 {
-	// Initialize the memory store. We bootstrap this so that the only non-Con_Memory_Chunk piece of
-	// memory in the entire system is the mem_store itself. This makes everything nice and
-	// symmetrical and simplifies functions like Con_Memory_make_array_room.
+	// Initialize the memory store.
 
 	Con_Memory_Store* mem_store = malloc(sizeof(Con_Memory_Store));
 	if (mem_store == NULL)
 		CON_XXX;
-	
-	// The two bootstrapped chunks are chunks_chunk and mutexes_chunk.
-	
-	assert(CON_DEFAULT_NUM_OBJECTS_TO_TRACK > 2);
 	
 	mem_store->num_chunks_allocated = CON_DEFAULT_NUM_OBJECTS_TO_TRACK;
 	mem_store->num_chunks = 0;

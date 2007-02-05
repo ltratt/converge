@@ -35,6 +35,7 @@ Con_Obj *Con_Object_new_from_proto(Con_Obj *, Con_Int, Con_Obj *);
 Con_Obj *Con_Object_get_slot(Con_Obj *, Con_Obj *, Con_Obj *, const u_char *, Con_Int);
 Con_Obj *Con_Object_get_slot_no_binding(Con_Obj *, Con_Obj *, Con_Obj *, const u_char *, Con_Int, bool *);
 Con_Obj *Con_Object_get_slot_no_custom(Con_Obj *, Con_Obj *, const u_char *, Con_Int);
+Con_Obj *Con_Object_get_slots(Con_Obj *, Con_Obj *);
 Con_Obj *Con_Object_find_slot_no_custom(Con_Obj *, Con_Obj *, const u_char *, Con_Int);
 void Con_Object_set_slot(Con_Obj *, Con_Obj *, Con_Obj *, const u_char *, Con_Int, Con_Obj *);
 

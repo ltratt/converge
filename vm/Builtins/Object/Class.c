@@ -45,6 +45,7 @@ Con_Obj *_Con_Builtins_Object_Class_new_object(Con_Obj *);
 
 Con_Obj *_Con_Builtins_Object_Class_init_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Object_Class_get_slot_func(Con_Obj *);
+Con_Obj *_Con_Builtins_Object_Class_get_slots_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Object_Class_find_slot_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Object_Class_to_str_func(Con_Obj *);
 
@@ -71,6 +72,7 @@ void Con_Builtins_Object_Class_bootstrap(Con_Obj *thread)
 	
 	CON_SET_FIELD(object_class, "init", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Object_Class_init_func, "init", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), object_class));
 	CON_SET_FIELD(object_class, "get_slot", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Object_Class_get_slot_func, "get_slot", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), object_class));
+	CON_SET_FIELD(object_class, "get_slots", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Object_Class_get_slots_func, "get_slots", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), object_class));
 	CON_SET_FIELD(object_class, "find_slot", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Object_Class_find_slot_func, "find_slot", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), object_class));
 	CON_SET_FIELD(object_class, "to_str", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Object_Class_to_str_func, "to_str", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), object_class));
 }
@@ -143,6 +145,20 @@ Con_Obj *_Con_Builtins_Object_Class_get_slot_func(Con_Obj *thread)
 		slot_val = Con_Builtins_Partial_Application_Class_new(thread, slot_val, self, NULL);
 	
 	return slot_val;
+}
+
+
+
+//
+// 'get_slots()' returns a set of slot names.
+//
+
+Con_Obj *_Con_Builtins_Object_Class_get_slots_func(Con_Obj *thread)
+{
+	Con_Obj *self;
+	CON_UNPACK_ARGS("O", &self);
+	
+	return Con_Object_get_slots(thread, self);
 }
 
 

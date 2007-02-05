@@ -35,6 +35,7 @@
 #include "Builtins/Int/Atom.h"
 #include "Builtins/Module/Atom.h"
 #include "Builtins/Partial_Application/Class.h"
+#include "Builtins/Set/Atom.h"
 #include "Builtins/Slots_Atom_Def.h"
 #include "Builtins/String/Atom.h"
 #include "Builtins/Thread/Atom.h"
@@ -316,6 +317,57 @@ Con_Obj *Con_Object_get_slot_no_custom(Con_Obj *thread, Con_Obj *obj, const u_ch
 	
 	CON_MUTEX_UNLOCK(&obj->mutex);
 	CON_RAISE_EXCEPTION("Slot_Exception", Con_Builtins_String_Atom_new_copy(thread, slot_name, slot_name_size, CON_STR_UTF_8), obj);
+}
+
+
+
+Con_Obj *Con_Object_get_slots(Con_Obj *thread, Con_Obj *obj)
+{
+	Con_Obj *slots = Con_Builtins_Set_Atom_new(thread);
+
+	if (obj->creator_slots != NULL) {
+		Con_Int j = 0;
+		while (1) {
+			Con_Obj *val;
+			const u_char *slot_name;
+			Con_Int slot_name_size;
+			if (!Con_Slots_read_slot(thread, obj->creator_slots, &j, &slot_name, &slot_name_size, &val))
+				break;
+			
+			CON_GET_SLOT_APPLY(slots, "add", Con_Builtins_String_Atom_new_copy(thread, slot_name, slot_name_size, CON_STR_UTF_8));
+		}
+	}
+
+	Con_Builtins_Slots_Atom *slots_atom = CON_FIND_ATOM(obj, CON_BUILTIN(CON_BUILTIN_SLOTS_ATOM_DEF_OBJECT));
+	if (slots_atom != NULL) {
+		Con_Int slot_name_buffer_size = 16;
+		u_char *slot_name_buffer = Con_Memory_malloc(thread, slot_name_buffer_size, CON_MEMORY_CHUNK_OPAQUE);
+		Con_Int j = 0;
+		while (1) {
+			Con_Obj *val;
+			Con_Int old_j = j;
+			const u_char *slot_name;
+			Con_Int slot_name_size;
+			CON_MUTEX_LOCK(&obj->mutex);
+			if (!Con_Slots_read_slot(thread, &slots_atom->slots, &j, &slot_name, &slot_name_size, &val))
+				break;
+			if (slot_name_size > slot_name_buffer_size) {
+				CON_MUTEX_UNLOCK(&obj->mutex);
+				slot_name_buffer_size = slot_name_size;
+				slot_name = Con_Memory_malloc(thread, slot_name_buffer_size, CON_MEMORY_CHUNK_OPAQUE);
+				j = old_j;
+				CON_MUTEX_LOCK(&obj->mutex);
+				continue;
+			}
+			
+			memmove(slot_name_buffer, slot_name, slot_name_size);
+			
+			CON_MUTEX_UNLOCK(&obj->mutex);
+			CON_GET_SLOT_APPLY(slots, "add", Con_Builtins_String_Atom_new_copy(thread, slot_name, slot_name_size, CON_STR_UTF_8));
+		}
+	}
+	
+	return slots;
 }
 
 

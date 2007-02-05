@@ -148,7 +148,7 @@ Con_Obj *_Con_Builtins_Object_Class_get_slot_func(Con_Obj *thread)
 
 
 //
-// 'get_slot(name, caller)' returns the slot named 'name' in 'self'.
+// 'find_slot(name, caller)' returns the slot named 'name' in 'self', failing if it not is found.
 //
 
 Con_Obj *_Con_Builtins_Object_Class_find_slot_func(Con_Obj *thread)

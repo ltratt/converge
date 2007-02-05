@@ -399,7 +399,7 @@ LIBS="$extra_libs"
 AC_CONFIG_FILES([Makefile Makefile.inc compiler/Makefile vm/Version.h vm/Makefile lib/Makefile
 	bootstrap/Makefile tests/Makefile tests/threads/Makefile tests/threads/pthreads/Makefile
 	tests/threads/single_thread/Makefile manuals/Makefile examples/Makefile
-	examples/compile_time/Makefile examples/dsls/Makefile])
+	examples/compile_time/Makefile examples/dsls/Makefile examples/metaclasses/Makefile])
 AC_OUTPUT
 
 

@@ -1,0 +1,37 @@
+import Builtins, Sys
+
+
+
+
+class Singleton(Builtins::Class):
+
+	func new():
+	
+		if not self.find_slot("instance"):
+			self.instance := exbi Builtins::Class.new()
+		
+		return self.instance
+
+
+
+
+class M metaclass Singleton:
+
+	x := 0
+
+
+
+
+func main():
+
+	Sys::print("Two instantiations of Object produce the same object: ")
+	if Builtins::Object.new() is Builtins::Object.new():
+		Sys::println("true")
+	else:
+		Sys::println("false")
+	Sys::print("Two instantiations of M produce the same object: ")
+	if M.new() is M.new():
+		Sys::println("true")
+	else:
+		Sys::println("false")
+

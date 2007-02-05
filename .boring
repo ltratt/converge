@@ -55,6 +55,7 @@ compiler/id_fix$
 ^converge-.*$
 examples/dsls/switch$
 examples/compile_time/printf$
+examples/metaclasses/singleton$
 bootstrap/convergec.bootstrap$
 bootstrap/convergel.bootstrap$
 bootstrap/id_fix.bootstrap$

@@ -1,0 +1,14 @@
+all: singleton
+
+
+singleton: singleton.cvb ${CONVERGE_LIB} ${CONVERGE_COMPILER_LIB}
+	${CONVERGE_VM} ${CONVERGEL} -o singleton singleton.cvb ${CONVERGE_LIB}
+
+clean:
+	rm -f singleton singleton.cvb
+	
+distclean: clean
+	rm -f Makefile .depend
+
+
+include @abs_top_srcdir@/Makefile.inc

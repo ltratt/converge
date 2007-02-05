@@ -33,7 +33,9 @@ typedef struct {
 	// it points to a Con_Slots chunk of memory so that it can be reused by multiple objects,
 	// saving on memory and the time necessary to setup the memory. If subsequently the slots of
 	// the object this atom is a part of change, then proto_slots_for_clones is set to NULL,
-	// which will force it to be recalculated the next time the object is cloned.
+	// which will force it to be recalculated the next time the object is cloned. This means that
+	// the slots pointed to by proto_slots_for_clones are immutable, and no mutex needs to be held
+	// to access them.
 	Con_Slots *proto_slots_for_clones;
 } Con_Builtins_Slots_Atom;
 

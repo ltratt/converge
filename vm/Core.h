@@ -182,6 +182,9 @@ typedef struct Con_Slots Con_Slots;
 struct Con_Obj {
 	size_t size;
 	Con_Mutex mutex;
+	// creator_slots, if non-NULL, refers to another class's proto_slots_for_clones field. Thus
+	// the slots pointed to by creator slots are immutable and no mutex needs to be held to access
+	// them.
 	Con_Slots *creator_slots;
 	unsigned int
 		virgin : 1, custom_get_slot : 1, custom_set_slot : 1, custom_find_slot : 1;

@@ -36,6 +36,20 @@
 typedef enum {CON_MEMORY_CHUNK_OPAQUE, CON_MEMORY_CHUNK_CONSERVATIVE, CON_MEMORY_CHUNK_OBJ, CON_MEMORY_CHUNK_SLOTS} Con_Memory_Chunk_Type;
 
 typedef struct {
+	// The way the mark and sweep works is to mark each chunk as being deleted and, as that chunk
+	// is visited, to unmark it for deletion.
+	//
+	// gc_to_be_deleted therefore is therefore initialized to 1, and is set back to that value at
+	// the end of each GC round. If it is set to 0 during the mark and sweep, the chunk is not
+	// deleted.
+	//
+	// The gc_incomplete_visit boolean is set to true on a chunk when the garbage collection stack is
+	// full and cannot be resized. It means that the garbage collector can, when necessary, run in
+	// constant space (albeit much less efficiently) since one can continually iterate over every
+	// chunk in the system, scanning those which have gc_incomplete_visit set to 1.
+	//
+	// Both of these attributes have to be set to 1 and 0 respectively when a chunk is created,
+	// and must be reset to these values at the end of each GC round.
 	unsigned int
 		gc_to_be_deleted : 1, gc_incomplete_visit : 1;
 	Con_Memory_Chunk_Type type;

@@ -133,6 +133,8 @@ void *Con_Memory_malloc(Con_Obj *thread, size_t size, Con_Memory_Chunk_Type type
 
 	chunk->size = size;
 	chunk->type = type;
+	chunk->gc_to_be_deleted = 1;
+	chunk->gc_incomplete_visit = 0;
 
 	CON_MUTEX_LOCK(&mem_store->mem_mutex);
 	if (!_Con_Memory_make_array_room_no_lock(thread, (void **) &mem_store->chunks, &mem_store->num_chunks_allocated, &mem_store->num_chunks, 1, sizeof(Con_Memory_Chunk *)))
@@ -163,6 +165,8 @@ void *Con_Memory_malloc_no_gc(Con_Obj *thread, size_t size, Con_Memory_Chunk_Typ
 
 	chunk->size = size;
 	chunk->type = type;
+	chunk->gc_to_be_deleted = 1;
+	chunk->gc_incomplete_visit = 0;
 	
 	CON_MUTEX_LOCK(&mem_store->mem_mutex);
 	if (!_Con_Memory_make_array_room_no_lock(thread, (void **) &mem_store->chunks, &mem_store->num_chunks_allocated, &mem_store->num_chunks, 1, sizeof(Con_Memory_Chunk *)))
@@ -535,23 +539,6 @@ void Con_Memory_gc_force(Con_Obj *thread)
 	mem_store->known_low_addr = (u_char *) mem_store->chunks[0];
 	mem_store->known_high_addr = ((u_char *) (mem_store->chunks[mem_store->num_chunks - 1] + 1)) + mem_store->chunks[mem_store->num_chunks - 1]->size;
 
-	// Reset the gc_* attributes of each memory chunk.
-	//
-	// The way this mark and sweep works is to mark each chunk as being deleted and, as that chunk
-	// is visited, to unmark it for deletion.
-	// 
-	// The gc_incomplete_visit boolean is set to true on a chunk when the garbage collection stack is
-	// full and cannot be resized. It means that the garbage collector can, when necessary, run in
-	// constant space (albeit much less efficiently) since one can continually iterate over every
-	// chunk in the system, scanning those which have gc_incomplete_visit set to 1.
-
-	for (Con_Int i = 0; i < mem_store->num_chunks; i += 1) {
-		Con_Memory_Chunk *chunk = mem_store->chunks[i];
-		
-		chunk->gc_to_be_deleted = 1;
-		chunk->gc_incomplete_visit = 0;
-	}
-	
 	// Reset the garbage collection stack.
 	//
 	// gc_stack_overflow will be set to true iff at least one chunk has gc_incomplete_visit set to 1.
@@ -611,15 +598,19 @@ void Con_Memory_gc_force(Con_Obj *thread)
 
 	// Free unused chunks.
 
-	int i = 0;
 #	if CON_FULL_DEBUG
 	printf("Freeing:");
 #	endif
-	while (i < mem_store->num_chunks) {
+	int last_i = 0;
+	int num_chunks = mem_store->num_chunks;
+	for (int i = 0; i < num_chunks; i += 1) {
 		Con_Memory_Chunk *chunk = mem_store->chunks[i];
-		
+
 		if (chunk->gc_to_be_deleted == 0) {
-			i += 1;
+			// Since this chunk is not going to be deleted, we need to reset gc_to_be_deleted.
+			chunk->gc_to_be_deleted = 1;
+			assert(chunk->gc_incomplete_visit == 0);
+			mem_store->chunks[last_i++] = chunk;
 			continue;
 		}
 
@@ -659,14 +650,9 @@ void Con_Memory_gc_force(Con_Obj *thread)
 		}
 #		endif
 
-		// Rather than shuffling memory down, we simply copy the last known chunk to the current
-		// position. This is a *big* saving over shuffling. It does mean that the list will
-		// quickly become unsorted, and this assumes that isn't a problem for this chunk of code.
-		if (i + 1 < mem_store->num_chunks)
-			mem_store->chunks[i] = mem_store->chunks[mem_store->num_chunks - 1];
-		mem_store->num_chunks -= 1;
 		free(chunk);
 	}
+	mem_store->num_chunks = last_i;
 #	if CON_FULL_DEBUG
 	printf("\n");
 	printf(" -> %d\n", mem_store->num_chunks);

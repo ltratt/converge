@@ -426,9 +426,8 @@ void Con_Memory_gc_poll(Con_Obj *thread)
 	//      a fairly marginal case.
 	//   3) A certain number of seconds have passed since the last garbage collection.
 
-	if ((mem_store->num_allocations_since_last_gc >= 100000) || (t < mem_store->time_of_last_gc) || ((t - mem_store->time_of_last_gc) / CLOCKS_PER_SEC > 3)) {
+	if ((mem_store->num_allocations_since_last_gc >= 100000) || (t < mem_store->time_of_last_gc) || ((t - mem_store->time_of_last_gc) / CLOCKS_PER_SEC > 3))
 		Con_Memory_gc_force(thread);
-	}
 	else
 		return;
 #else
@@ -581,8 +580,7 @@ void Con_Memory_gc_force(Con_Obj *thread)
 			else if (current_chunk->type == CON_MEMORY_CHUNK_OBJ)
 				_Con_Memory_gc_scan_obj(thread, (Con_Obj *) (current_chunk + 1));
 			else if (current_chunk->type == CON_MEMORY_CHUNK_SLOTS) {
-				Con_Slots *slots = (Con_Slots *) (current_chunk + 1);
-				Con_Slots_gc_scan_slots(thread, slots);
+				Con_Slots_gc_scan_slots(thread, (Con_Slots *) (current_chunk + 1));
 			}
 			else
 				CON_FATAL_ERROR("Unknown memory type (probable memory corruption).");

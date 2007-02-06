@@ -66,10 +66,6 @@ AH_TOP([
 // Default Converge stack size in words
 
 #define CON_DEFAULT_CON_STACK_SIZE (4096-12)
-
-/* Define this for Linux */
-
-#define _BSD_SOURCE 1
 ])
 
 AH_BOTTOM([#endif])
@@ -125,8 +121,6 @@ AC_C_BIGENDIAN([AC_DEFINE(CON_BYTEORDER, CON_BIG_ENDIAN)],
 
 AC_CHECK_SIZEOF(int)
 AC_CHECK_SIZEOF(long)
-
-AC_CHECK_TYPE(u_char, unsigned char)
 
 AH_TEMPLATE(CON_INT, [The integer type equivalent to a machine word.])
 AC_CHECK_TYPE(ptrdiff_t)
@@ -371,6 +365,25 @@ int main()
 	sigsetjmp(return_env, 0);
 }], [AC_MSG_RESULT(-D_POSIX_C_SOURCE)
 	extra_cflags="$extra_cflags -D_POSIX_C_SOURCE"], [AC_MSG_ERROR(unable to find sigsetjmp)])])
+
+AC_MSG_CHECKING([for u_char etc])
+
+CFLAGS="-std=c99"
+AC_TRY_RUN([
+#include <sys/types.h>
+
+int main()
+{
+	u_char *x;
+}], [AC_MSG_RESULT(yes)], [CFLAGS="-std=c99 -D_BSD_SOURCE"
+	AC_TRY_RUN([
+#include <sys/types.h>
+
+int main()
+{
+	u_char *x;
+}], [AC_MSG_RESULT(-D_BSD_SOURCE)
+	extra_cflags="$extra_cflags -D_BSD_SOURCE"], [AC_MSG_ERROR(unable to define u_char)])])
 
 
 ####################################################################################################

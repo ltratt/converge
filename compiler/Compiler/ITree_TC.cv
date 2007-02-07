@@ -53,7 +53,6 @@ class ITree_TC:
 				break
 		exhausted:
 			self._type_error(parent_node, part, node, "IExpr")
-			raise "XXX"
 		
 		self._preorder(node)
 

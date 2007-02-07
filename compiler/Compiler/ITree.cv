@@ -766,7 +766,7 @@ class IInsert:
 		
 		self.bound_vars := expr.bound_vars
 		self.import_vars := expr.import_vars
-		self.qq_bound_vars := expr.bound_vars
+		self.qq_bound_vars := expr.qq_bound_vars
 		self.free_vars := expr.free_vars
 
 

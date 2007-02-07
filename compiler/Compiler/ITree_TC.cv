@@ -349,6 +349,19 @@ class ITree_TC:
 
 
 
+	func _t_iconjunction(node):
+	
+		for expr := node.exprs.iterate():
+			self._check_expr(node, "expr", expr)
+
+
+
+	func _t_ialternation(node):
+	
+		for expr := node.exprs.iterate():
+			self._check_expr(node, "expr", expr)
+
+
 	func _t_iassignment(node):
 	
 		if not ITree::ALL_ASSIGNMENTS.find(node.type):

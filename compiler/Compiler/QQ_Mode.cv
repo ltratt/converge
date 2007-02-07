@@ -20,7 +20,7 @@
 
 
 import Builtins, Strings
-import CEI, Compiler_Vars, ITree
+import CEI, Compiler_Vars, ITree, ITree_TC
 
 
 
@@ -105,18 +105,25 @@ class QQ_Mode:
 				fresh_name := ITree::IApplication.new(fresh_name_func, [ITree::IString.new(var_name, node.src_infos)], node.src_infos)
 				return_exprs.append(ITree::IAssignment.new(ITree::STD_ASSIGN, [qq_bound_var], fresh_name, node.src_infos))
 
-			exprs := []
-			for expr := node.body.exprs.iterate():
-				exprs.append(self._preorder(expr))
+			// When we evaluate the expression block inside the quasi-quotes, we don't know how
+			// many expressions it will return because if there is an insert lurking in there, it
+			// might expand into multiple definitions.
+
+			e := [<node.src_infos>|
+				func () {
+					exprs := ${self._eval_expr_block(node.body)}
+					if Builtins::List.instantiated(exprs) & exprs.len() == 1:
+						return exprs[0]
+					else:
+						return exprs
+				}()
+			|]
+			ITree_TC::tc(e)
+			return_exprs.append(e)
 
 			// We don't strictly need to pop the last lot of variables, but do so for completeness.
 			
-			self._pop_vars()		
-
-			if exprs.len() == 1:
-				return_exprs.append(exprs[0])
-			else:
-				return_exprs.append(ITree::IList.new(exprs, node.src_infos))
+			self._pop_vars()
 
 			return ITree::IConjunction.new(return_exprs, node.src_infos)
 		else:
@@ -226,6 +233,48 @@ class QQ_Mode:
 			raise "XXX"
 		
 		return ITree::IOriginal_Name.new(module_id, defn_name, src_infos)
+
+
+
+	//
+	// Return an ITree of a list of expressions representing the quasi-quoted expression block 'node'.
+	//
+
+	func _eval_expr_block(node):
+
+		block := []
+		contains_iinsert := 0
+		for expr := node.exprs.iterate():
+			if ITree::IInsert.instantiated(expr):
+				// We need to check the result of an IInsert at "run-time". In an expression block,
+				// it's perfectly legitimite for an insert to return a list. So at "run-time" have
+				// to check if we've got a list, in which case we check that each element of the
+				// list is an expression; if it's not a list, we check that the returned element
+				// itself is an expression.
+				block.append([<expr.src_infos>|
+					func () {
+						expr := ${expr.expr}
+						if Builtins::List.instantiated(expr):
+							for e := expr.iterate():
+								ITree_TC::tc_expr(e, "in expression body", ${CEI::lift(expr.src_infos)})
+						else:
+							ITree_TC::tc_expr(expr, "in expression body", ${CEI::lift(expr.src_infos)})
+
+						return expr
+					}()
+				|])
+				contains_iinsert := 1
+			else:
+				block.append(self._preorder(expr))
+		
+		list := ITree::IList.new(block, node.src_infos)
+		if contains_iinsert == 1:
+			exprs := ITree::IApplication.new(ITree::ISlot_Lookup.new(list, "flattened", node.src_infos), [], node.src_infos)
+		else:
+			exprs := list
+
+		return exprs
+
 		
 
 
@@ -271,14 +320,14 @@ class QQ_Mode:
 				raise "XXX"
 			else:
 				assert ITree::IInsert.instantiated(param)
-				params_list.append(self._preorder(param))
+				params_list.append(param.expr)
 		
 		params := ITree::IApplication.new(ITree::ISlot_Lookup.new(ITree::IList.new(params_list, node.src_infos), "flattened", node.src_infos), [], node.src_infos)
 		
 		if node.var_arg is null:
 			var_arg := ITree::IVar.new("null", node.src_infos)
 		elif ITree::IInsert.instantiated(node.var_arg):
-			var_arg := self._preorder(node.var_arg)
+			var_arg := node.var_arg.expr
 		else:
 			var_arg := self._process_assign_var(node.var_arg.var_name, node.src_infos)
 		
@@ -300,20 +349,7 @@ class QQ_Mode:
 
 	func _t_iexpr_block(node):
 	
-		block := []
-		contains_iinsert := 0
-		for expr := node.exprs.iterate():
-			if ITree::IInsert.instantiated(expr):
-				contains_iinsert := 1
-			block.append(self._preorder(expr))
-		
-		list := ITree::IList.new(block, node.src_infos)
-		if contains_iinsert == 1:
-			exprs := ITree::IApplication.new(ITree::ISlot_Lookup.new(list, "flattened", node.src_infos), [], node.src_infos)
-		else:
-			exprs := list
-
-		return self._qq("IExpr_Block", [exprs], node.src_infos)
+		return self._qq("IExpr_Block", [self._eval_expr_block(node)], node.src_infos)
 
 
 
@@ -375,7 +411,7 @@ class QQ_Mode:
 	func _t_imodule_lookup(node):
 
 		if ITree::IInsert.instantiated(node.def_name):
-			def_name := self._preorder(node.def_name)
+			def_name := node.def_name.expr
 		else:
 			def_name := ITree::IString.new(node.def_name, node.src_infos)
 
@@ -500,11 +536,42 @@ class QQ_Mode:
 
 
 
+	func _t_ifor(node):
 
+		condition := self._preorder(node.condition)
+
+		if node.body is null:
+			body := ITree::IVar.new("null", node.src_infos)
+		else:
+			body := self._preorder(node.body)
+
+		if node.exhausted_body is null:
+			exhausted_body := ITree::IVar.new("null", node.src_infos)
+		else:
+			exhausted_body := self._preorder(node.exhausted_body)
+
+		if node.broken_body is null:
+			broken_body := ITree::IVar.new("null", node.src_infos)
+		else:
+			broken_body := self._preorder(node.broken_body)
+		
+		return self._qq("IFor", [condition, body, exhausted_body, broken_body], node.src_infos)
+		
+
+
+	//
+	// This traversal node is a little different than it may first appear. It is not intended to
+	// proecss *every* IInsert node; it is only intended to process IInsert's which are used as
+	// bog-standard expressions.
+	//
+	// When IInsert's are used in other places (e.g. in expression bodies (where they can return
+	// a single IExpr or a list of IExpr's) or in function parameters etc.) the IInsert should be
+	// handled separately.
+	//
 
 	func _t_iinsert(node):
 	
-		return node.expr
+		return [<node.src_infos>| (expr := ${node.expr}) & ITree_TC::tc_expr(expr, "in expression", ${CEI::lift(node.src_infos)}) & expr |]
 
 
 

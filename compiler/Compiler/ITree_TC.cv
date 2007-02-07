@@ -362,6 +362,7 @@ class ITree_TC:
 			self._check_expr(node, "expr", expr)
 
 
+
 	func _t_iassignment(node):
 	
 		if not ITree::ALL_ASSIGNMENTS.find(node.type):
@@ -457,6 +458,26 @@ class ITree_TC:
 
 
 
+//
+// Typecheck the ITree 'itree' which can be of any valid ITree type.
+//
+
 func tc(itree):
+
+	return ITree_TC.new().tc(itree)
+
+
+
+//
+// Typecheck the ITree 'itree' to ensure it is a valid expression.
+//
+
+func tc_expr(itree, msg, src_infos):
+
+	for elem_class := _EXPRS.iterate():
+		if elem_class.instantiated(itree):
+			break
+	exhausted:
+		Compiler_Vars::peek_compiler().error(Strings::format("Node %s is of type %s instead of IExpr.", msg, itree.instance_of.name), src_infos)
 
 	return ITree_TC.new().tc(itree)

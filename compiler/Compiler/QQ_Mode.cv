@@ -495,7 +495,10 @@ class QQ_Mode:
 
 	func _t_iimport(node):
 	
-		return self._qq("IImport", [ITree::IString.new(node.module_path, node.src_infos)], node.src_infos)
+		raise "XXX"
+		return self._qq("IImport", [ITree::IString.new(node.module_path, node.src_infos), ITree::IString.new(node.var_name, node.src_infos)], node.src_infos)
+
+
 
 
 

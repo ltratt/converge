@@ -69,15 +69,142 @@ class IModule_Gen:
 		i := 1
 		while i < node.len():
 			// expr_body ::= expr ( "NEWLINE" expr )*
-			expr := self._preorder(node[i], extra_src_infos)
-			assert(not Builtins::List.conformed_by(expr))
-			if Builtins::List.conformed_by(expr):
-				exprs.extend(expr)
+			if node[i][1][0] == "splice":
+				expr := self._eval_splice(node[i][1], extra_src_infos)
+				if Builtins::List.conformed_by(expr):
+					for e := expr.iterate():
+						ITree_TC::tc_expr(e, "splice result", extra_src_infos + exprs[0].src_infos)
+					exprs.extend(expr)
+				else:
+					ITree_TC::tc_expr(expr, "splice result", extra_src_infos + exprs[0].src_infos)
+					exprs.append(expr)
 			else:
-				exprs.append(expr)
+				exprs.append(self._preorder(node[i], extra_src_infos))
 			i += 2
 
 		return ITree::IExpr_Block.new(exprs, extra_src_infos + exprs[0].src_infos)
+
+
+
+	func _eval_splice(node, extra_src_infos):
+
+		// splice ::= expr_splice
+		//        ::= dsl_splice
+		
+		// This function is unique since it's the "coal face" for compile-time meta-programming.
+		//
+		// This is a euphemism for "it's a bit complicated".
+		
+		if node[1][0] == "expr_splice":
+			// expr_splice  ::= "$" "<" expr ">"
+			expr := self._preorder(node[1][3], extra_src_infos)
+		else:
+			// dsl_splice ::= "$" "<<" expr ">>" ":" "DSL_BLOCK"
+			//            ::= "$" "<<" expr ">>" "<<" "DSL_BLOCK" ">>"
+			dsl_block := ITree::IString.new(node[1][6].value, extra_src_infos + node[1][6].src_infos)
+
+			assert(node[1][1].src_infos.len() == 1)			
+			src_path := ITree::IString.new(node[1][1].src_infos[0][0], extra_src_infos + node[1][1].src_infos)
+			src_offset := ITree::IInt.new(node[1][6].src_infos[0][1], extra_src_infos + node[1][1].src_infos)
+			src_infos := ITree::IList.new([ITree::IList.new([src_path, src_offset], extra_src_infos + node[1][1].src_infos)], extra_src_infos + node[1][1].src_infos)
+			
+			expr := ITree::IApplication.new(self._preorder(node[1][3], extra_src_infos), [dsl_block, src_infos], extra_src_infos + node[1][1].src_infos)
+
+		splice_name := CEI::fresh_name()
+
+		// Determine all the definitions we've currently processed into ITree's.
+
+		already_bound_vars := Dict{}
+		for i := 0.to(self._definitions.len()):
+			definition := self._definitions[i]
+			if ITree::IImport.instantiated(definition):
+				already_bound_vars[definition.var_name] := i
+			else:
+				// Must be an IAssignment
+				for target := self._definitions[i].targets.iterate():
+					if ITree::IVar.conformed_by(target):
+						already_bound_vars[target.var_name] := i
+					else:
+						for target_var := target.bound_vars.iterate():
+							already_bound_vars[target_var] := i
+
+		defns_to_include := Set{}
+		for free_var := expr.free_vars.iterate():
+			if defn_i := already_bound_vars.find(free_var):
+				defns_to_include.add(defn_i)
+
+		stack := Builtins::List.new(defns_to_include)
+		i := 0
+		while i < stack.len():
+			for free_var := self._definitions[stack[i]].free_vars.iterate():
+				if not defns_to_include.find(free_var) & defn_i := already_bound_vars.find(free_var) & not stack.find_index(defn_i) <= i:
+					stack.append(defn_i)
+					defns_to_include.add(defn_i)
+			i += 1
+
+		// Only include the definitions so far processed if they're absolutely necessary (i.e.
+		// they're referenced by the splice expression, or referenced by something referenced
+		// by the splice expression).
+
+		definitions := []
+		i := 0
+		for i := 0.to(self._definitions.len()):
+			if defns_to_include.find(i):
+				definitions.append(self._definitions[i])
+
+		dummy_func := ITree::IFunc_Def.new(0, splice_name, [], null, [], [], ITree::IExpr_Block.new([ITree::IReturn.new(expr, extra_src_infos + node[1][1].src_infos)], expr.src_infos), extra_src_infos + node[1][1].src_infos)
+		dummy_definitions := definitions + [ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(splice_name, extra_src_infos + node[1][1].src_infos)], dummy_func, extra_src_infos + node[1][1].src_infos)]
+		dummy_imodule := ITree::IModule.new(splice_name, dummy_definitions, extra_src_infos + node[1][1].src_infos)
+
+		ITree_TC::tc(dummy_imodule)
+
+		dummy_module := Bytecode_Gen::Bytecode_Gen.new().generate(dummy_imodule, self._compiler.internal_target)
+
+		if self._compiler.bootstrap == 1:
+			// In bootstrapping mode we have to make sure that anything we inject into the
+			// running VM is entirely in terms of old module ids.
+			new_imports := []
+			for import_ := dummy_module.get_imports().iterate():
+				if import_.prefixed_by(self._compiler.top_level_path):
+					new_imports.append(File::join_names(self._compiler.original_lc_top_level_path, import_[self._compiler.top_level_path.len() : ]))
+				else:
+					new_imports.append(import_)
+			dummy_module.set_imports(new_imports)
+
+		modules_stack := [dummy_module]
+		modules_bytecode := [dummy_module.serialize()]
+		i := 0
+		known_module_names := Set{}
+		for known_module_names.add(VM::vm.modules.keys())
+		for known_module_names.add(Compiler_Vars::BUILTIN_MODULES.iterate())
+		while modules_stack.len() > 0:
+			module := modules_stack.pop()
+			for import_ := module.get_imports().iterate():
+				if self._compiler.bootstrap == 1 & import_.prefixed_by(self._compiler.top_level_path):
+					// In bootstrapping mode we have to make sure that anything we inject into the
+					// running VM is entirely in terms of old module ids.
+					import_ := File::join_names(self._compiler.original_lc_top_level_path, import_[self._compiler.top_level_path.len() : ])
+				if not known_module_names.find(import_):
+					new_module_file := File::open(File::join_ext(File::split_ext(import_)[0], CV_Module::CVB_EXTENSION), "r")
+					new_module_data := new_module_file.read()
+					modules_bytecode.append(new_module_data)
+					new_module := CV_Module::CV_Module.new(self._compiler.internal_target)
+					new_module.deserialize_str(new_module_data)
+					modules_stack.append(new_module)
+					assert(import_ == new_module.full_name)
+					known_module_names.add(import_)
+			i += 1
+
+		// Import all the modules into the VM.
+
+		module_identifiers := VM::add_modules(modules_bytecode)
+		module := VM::import_module(module_identifiers[0])
+		if not out_itree := module.get_def(splice_name)():
+			self._compiler.error("Splice did not return a value.", expr.src_infos)
+		if out_itree is null:
+			self._compiler.error("Splice returned null.", expr.src_infos)
+
+		return out_itree
 
 
 
@@ -135,9 +262,10 @@ class IModule_Gen:
 		//            ::= func_def
 		//            ::= import
 		//            ::= var_def ( "," var_def )* ":=" expr
-		//            ::= splice_insert
+		//            ::= splice
+		//            ::= insert
 
-		if node.len() == 2 & node[1][0] == "class_def":
+		ndif node.len() == 2 & node[1][0] == "class_def":
 			// definition ::= class_def
 			class_def := self._preorder(node[1], extra_src_infos)
 			return [ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(class_def.class_name, extra_src_infos + node[1][2][1].src_infos)], class_def, extra_src_infos + node[1][2][1].src_infos)]
@@ -159,20 +287,23 @@ class IModule_Gen:
 					// var_def ::= "&" "ID"
 					raise "XXX"
 				else:
-					// var_def ::= splice_insert
+					// var_def ::= splice
+					//         ::= insert
 					raise "XXX"
 				i += 2
 			return [ITree::IAssignment.new(ITree::STD_ASSIGN, targets, self._preorder(node[-1], extra_src_infos), extra_src_infos + node[-2].src_infos)]
-		elif node[1][0] == "splice_insert":
-			// definition ::= splice_insert
-			
-			result := self._preorder(node[1], extra_src_infos)
-			if Builtins::List.conformed_by(result):
-				return result
+		elif node[1][0] == "splice":
+			// definition ::= splice
+			defn := self._eval_splice(node[1], extra_src_infos)
+			if Builtins::List.conformed_by(defn):
+				for d := defn.iterate():
+					ITree_TC::tc_expr(d, "splice result", extra_src_infos + node[1][1][1].src_infos)
+				return defn
 			else:
-				return [result]
-
-		raise "XXX"
+				ITree_TC::tc_expr(defn, "splice result", extra_src_infos + node[1][1][1].src_infos)
+				return [defn]
+		elif node[1][0] == "insert":
+			return self._preorder(node[1], extra_src_infos)
 
 
 
@@ -301,8 +432,16 @@ class IModule_Gen:
 			// func_name ::=
 			func_name := ""
 		elif Builtins::List.conformed_by(node[2][1]):
-			// func_name ::= splice_insert
-			func_name := self._preorder(node[2][1], extra_src_infos)
+			// func_name ::= splice
+			//           ::= insert
+			if node[2][1][0] == "splice":
+				// splice ::= expr_splice
+				//        ::= dsl_splice
+				func_name := self._eval_splice(node[2][1], extra_src_infos)
+				if not Builtins::String.instantiated(func_name):
+					ITree_TC::type_error("Func", "name", func_name, "String", extra_src_infos + node[2][1][1][1].src_infos)
+			else:
+				func_name := self._preorder(node[2][1], extra_src_infos)
 		elif node[2][1].type == "ID":
 			// func_name ::= "ID"
 			func_name := node[2][1].value
@@ -329,9 +468,11 @@ class IModule_Gen:
 			var_args := null
 			if node[4][1][0] == "func_params_elems":
 				// func_params_elems  ::= var_def func_param_default { "," var_def func_param_default }*
-				//                    ::= splice_insert
+				//                    ::= splice
+				//                    ::= insert
 				if node[4][1].len() == 2:
-					// func_params_elems  ::= splice_insert
+					// func_params_elems ::= splice
+					//                   ::= insert
 					raise "XXX"
 				else:
 					// func_params_elems  ::= var_def func_param_default { "," var_def func_param_default }*
@@ -346,19 +487,27 @@ class IModule_Gen:
 							// var_def ::= "ID"
 							params.append(ITree::IParam.new(ITree::IVar.new(node[4][1][i][1].value, extra_src_infos + node[4][1][i][1].src_infos), param_default, extra_src_infos + node[4][1][i][1].src_infos))
 						elif node[4][1][i].len() == 2:
-							// var_def ::= splice_insert
-							params.append(self._preorder(node[4][1][i]))
+							// var_def ::= splice
+							//         ::= insert
+							if node[4][1][i][1][0] == "splice":
+								raise "XXX"
+							else:
+								params.append(self._preorder(node[4][1][i]))
 						else:
 							raise "XXX"
 						i += 3
 			if node[4][-1][0] == "func_varargs":
 				// func_varargs ::= "*" var_def
-				//              ::= "*" splice_insert
+				//              ::= "*" splice
+				//              ::= "*" insert
 				if node[4][-1][2][0] == "var_def":
 					// func_varargs ::= "*" var_def
 					var_args := ITree::IVar.new(node[4][-1][2][1].value, extra_src_infos + node[4][-1][2][1].src_infos)
-				else:
-					// func_varargs ::= "*" splice_insert
+				elif node[4][-1][2][0] == "splice":
+					// func_varargs ::= "*" splice
+					raise "XXX"
+				else:	
+					// func_varargs ::= "*" insert
 					var_args := self._preorder(node[4][-1][1])
 		else:
 			// func_params ::=
@@ -462,7 +611,8 @@ class IModule_Gen:
 		//      ::= comparison
 		//      ::= pass
 		//      ::= import
-		//      ::= splice_insert
+		//      ::= splice
+		//      ::= insert
 		//      ::= quasi_quotes
 		//      ::= brackets
 
@@ -584,7 +734,8 @@ class IModule_Gen:
 	
 		// var_def ::= "ID"
 		//         ::= "&" "ID"
-		//         ::= splice_insert
+		//         ::= splice
+		//         ::= insert
 		
 		if node.len() == 2 & not Builtins::List.conformed_by(node[1]):
 			// var_def ::= "ID"
@@ -595,8 +746,11 @@ class IModule_Gen:
 		elif node.len() == 3:
 			// var_def ::= "&" "ID"
 			raise "XXX"
+		elif node[1][0] == "splice":
+			// var_def ::= splice
+			raise "XXX"
 		else:
-			// var_def ::= splice_insert
+			// var_def ::= insert
 			return self._preorder(node[1])
 
 
@@ -632,10 +786,12 @@ class IModule_Gen:
 	func _t_slot_lookup(node, extra_src_infos):
 	
 		// slot_lookup ::= expr "." "ID"
-		//             ::= expr "." splice_insert
+		//             ::= expr "." splice
+		//             ::= expr "." insert
 		
 		if Builtins::List.conformed_by(node[3]):
-			// slot_lookup ::= expr "." splice_insert
+			// slot_lookup ::= expr "." splice
+			//             ::= expr "." insert
 			raise "XXX"
 		else:
 			// slot_lookup ::= expr "." "ID"
@@ -646,11 +802,15 @@ class IModule_Gen:
 	func _t_module_lookup(node, extra_src_infos):
 	
 		// module_lookup ::= expr "::" "ID"
-		//               ::= expr "::" splice_insert
+		//               ::= expr "::" splice
+		//               ::= expr "::" insert
 		
 		if Builtins::List.conformed_by(node[3]):
-			// module_lookup ::= expr "::" splice_insert
-			return ITree::IModule_Lookup.new(self._preorder(node[1], extra_src_infos), self._preorder(node[3], extra_src_infos), extra_src_infos + node[2].src_infos)
+			if node[3][0] == "splice":	
+				raise "XXX"
+			else:
+				// module_lookup ::= expr "::" insert
+				return ITree::IModule_Lookup.new(self._preorder(node[1], extra_src_infos), self._preorder(node[3], extra_src_infos), extra_src_infos + node[2].src_infos)
 		else:
 			// module_lookup ::= expr "::" "ID"
 			return ITree::IModule_Lookup.new(self._preorder(node[1], extra_src_infos), node[3].value, extra_src_infos + node[2].src_infos)
@@ -959,134 +1119,25 @@ class IModule_Gen:
 
 
 
-	func _t_splice_insert(node, extra_src_infos):
-	
-		// splice_insert ::= splice
-		//               ::= insert
-		
-		return self._preorder(node[1], extra_src_infos)
-		
-
+	//
+	// This traversal node is a little different than it may first appear. It is not intended to
+	// proecss *every* splice node; it is only intended to process splices which are used as
+	// bog-standard expressions.
+	//
+	// When splices are used in other places (e.g. in expression bodies (where they can return
+	// a single IExpr or a list of IExpr's) or in function parameters etc.) the splice should be
+	// handled separately.
+	//
 
 	func _t_splice(node, extra_src_infos):
-	
+
 		// splice ::= expr_splice
 		//        ::= dsl_splice
+
+		result := self._eval_splice(node, extra_src_infos)
+		ITree_TC::tc_expr(result, "splice", extra_src_infos + node[1][1].src_infos)
 		
-		// This function is unique since it's the "coal face" for compile-time meta-programming.
-		//
-		// This is a euphemism for "it's a bit complicated".
-		
-		if node[1][0] == "expr_splice":
-			// expr_splice  ::= "$" "<" expr ">"
-			expr := self._preorder(node[1][3], extra_src_infos)
-		else:
-			// dsl_splice ::= "$" "<<" expr ">>" ":" "DSL_BLOCK"
-			//            ::= "$" "<<" expr ">>" "<<" "DSL_BLOCK" ">>"
-			dsl_block := ITree::IString.new(node[1][6].value, extra_src_infos + node[1][6].src_infos)
-
-			assert(node[1][1].src_infos.len() == 1)			
-			src_path := ITree::IString.new(node[1][1].src_infos[0][0], extra_src_infos + node[1][1].src_infos)
-			src_offset := ITree::IInt.new(node[1][6].src_infos[0][1], extra_src_infos + node[1][1].src_infos)
-			src_infos := ITree::IList.new([ITree::IList.new([src_path, src_offset], extra_src_infos + node[1][1].src_infos)], extra_src_infos + node[1][1].src_infos)
-			
-			expr := ITree::IApplication.new(self._preorder(node[1][3], extra_src_infos), [dsl_block, src_infos], extra_src_infos + node[1][1].src_infos)
-
-		splice_name := CEI::fresh_name()
-
-		// Determine all the definitions we've currently processed into ITree's.
-
-		already_bound_vars := Dict{}
-		for i := 0.to(self._definitions.len()):
-			definition := self._definitions[i]
-			if ITree::IImport.instantiated(definition):
-				already_bound_vars[definition.var_name] := i
-			else:
-				// Must be an IAssignment
-				for target := self._definitions[i].targets.iterate():
-					if ITree::IVar.conformed_by(target):
-						already_bound_vars[target.var_name] := i
-					else:
-						for target_var := target.bound_vars.iterate():
-							already_bound_vars[target_var] := i
-
-		defns_to_include := Set{}
-		for free_var := expr.free_vars.iterate():
-			if defn_i := already_bound_vars.find(free_var):
-				defns_to_include.add(defn_i)
-
-		stack := Builtins::List.new(defns_to_include)
-		i := 0
-		while i < stack.len():
-			for free_var := self._definitions[stack[i]].free_vars.iterate():
-				if not defns_to_include.find(free_var) & defn_i := already_bound_vars.find(free_var) & not stack.find_index(defn_i) <= i:
-					stack.append(defn_i)
-					defns_to_include.add(defn_i)
-			i += 1
-
-		// Only include the definitions so far processed if they're absolutely necessary (i.e.
-		// they're referenced by the splice expression, or referenced by something referenced
-		// by the splice expression).
-
-		definitions := []
-		i := 0
-		for i := 0.to(self._definitions.len()):
-			if defns_to_include.find(i):
-				definitions.append(self._definitions[i])
-
-		dummy_func := ITree::IFunc_Def.new(0, splice_name, [], null, [], [], ITree::IExpr_Block.new([ITree::IReturn.new(expr, extra_src_infos + node[1][1].src_infos)], expr.src_infos), extra_src_infos + node[1][1].src_infos)
-		dummy_definitions := definitions + [ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(splice_name, extra_src_infos + node[1][1].src_infos)], dummy_func, extra_src_infos + node[1][1].src_infos)]
-		dummy_imodule := ITree::IModule.new(splice_name, dummy_definitions, extra_src_infos + node[1][1].src_infos)
-
-		ITree_TC::tc(dummy_imodule)
-
-		dummy_module := Bytecode_Gen::Bytecode_Gen.new().generate(dummy_imodule, self._compiler.internal_target)
-
-		if self._compiler.bootstrap == 1:
-			// In bootstrapping mode we have to make sure that anything we inject into the
-			// running VM is entirely in terms of old module ids.
-			new_imports := []
-			for import_ := dummy_module.get_imports().iterate():
-				if import_.prefixed_by(self._compiler.top_level_path):
-					new_imports.append(File::join_names(self._compiler.original_lc_top_level_path, import_[self._compiler.top_level_path.len() : ]))
-				else:
-					new_imports.append(import_)
-			dummy_module.set_imports(new_imports)
-
-		modules_stack := [dummy_module]
-		modules_bytecode := [dummy_module.serialize()]
-		i := 0
-		known_module_names := Set{}
-		for known_module_names.add(VM::vm.modules.keys())
-		for known_module_names.add(Compiler_Vars::BUILTIN_MODULES.iterate())
-		while modules_stack.len() > 0:
-			module := modules_stack.pop()
-			for import_ := module.get_imports().iterate():
-				if self._compiler.bootstrap == 1 & import_.prefixed_by(self._compiler.top_level_path):
-					// In bootstrapping mode we have to make sure that anything we inject into the
-					// running VM is entirely in terms of old module ids.
-					import_ := File::join_names(self._compiler.original_lc_top_level_path, import_[self._compiler.top_level_path.len() : ])
-				if not known_module_names.find(import_):
-					new_module_file := File::open(File::join_ext(File::split_ext(import_)[0], CV_Module::CVB_EXTENSION), "r")
-					new_module_data := new_module_file.read()
-					modules_bytecode.append(new_module_data)
-					new_module := CV_Module::CV_Module.new(self._compiler.internal_target)
-					new_module.deserialize_str(new_module_data)
-					modules_stack.append(new_module)
-					assert(import_ == new_module.full_name)
-					known_module_names.add(import_)
-			i += 1
-
-		// Import all the modules into the VM.
-
-		module_identifiers := VM::add_modules(modules_bytecode)
-		module := VM::import_module(module_identifiers[0])
-		if not out_itree := module.get_def(splice_name)():
-			self._compiler.error("Splice did not return a value.", expr.src_infos)
-		if out_itree is null:
-			self._compiler.error("Splice returned null.", expr.src_infos)
-
-		return out_itree
+		return result
 
 
 

@@ -34,7 +34,8 @@ definition  ::= class_def
             ::= func_def
             ::= import
             ::= var_def ( "," var_def )* ":=" expr
-            ::= splice_insert
+            ::= splice
+			::= insert
 
 
 import      ::= "IMPORT" import_name import_as ( "," import_name import_as )*
@@ -45,7 +46,8 @@ import_as   ::= "AS" "ID"
 
 class_def       ::= "CLASS" class_name class_supers class_metaclass ":" "INDENT" class_fields "DEDENT"
 class_name      ::= "ID"
-                ::= splice_insert
+                ::= splice
+				::= insert
 class_supers    ::= "(" expr ( "," expr )* ")"
                 ::=
 class_metaclass ::= "METACLASS" expr
@@ -54,7 +56,8 @@ class_fields    ::= class_field ( "NEWLINE" class_field )*
 class_field     ::= class_def
                 ::= func_def
                 ::= var_def ":=" expr
-                ::= splice_insert
+                ::= splice
+				::= insert
                 ::= "PASS"
 
 func_def            ::= func_type func_name "(" func_params ")" ":" "INDENT" func_decls expr_body "DEDENT"
@@ -74,7 +77,8 @@ func_name           ::= "ID"
                     ::= "!="
                     ::= ">="
                     ::= "<="
-                    ::= splice_insert
+                    ::= splice
+					::= insert
                     ::=
 func_params         ::= func_params_elems "," func_varargs
                     ::= func_params_elems
@@ -84,7 +88,8 @@ func_params_elems   ::= var_def func_param_default ( "," var_def func_param_defa
 func_param_default  ::= ":=" expr
                     ::=
 func_varargs        ::= "*" var_def
-                    ::= "*" splice_insert
+                    ::= "*" splice
+					::= "*" insert
 func_decls          ::= func_decl ( "NEWLINE" func_decl )*
                     ::=
 func_decl           ::= func_decl_nonlocals
@@ -131,7 +136,8 @@ expr ::= class_def
      ::= comparison      %precedence 20
      ::= pass
      ::= import			 %precedence 5
-     ::= splice_insert
+     ::= splice
+	 ::= insert
      ::= quasi_quotes
      ::= brackets
 
@@ -168,7 +174,8 @@ number ::= "INT"
 
 var_def ::= "ID"
         ::= "&" "ID"
-    	::= splice_insert
+    	::= splice
+		::= insert
 
 var_lookup ::= "ID"
            ::= "&" "ID"
@@ -176,10 +183,12 @@ var_lookup ::= "ID"
 string ::= "STRING"
 
 module_lookup ::= expr "::" "ID"
-              ::= expr "::" splice_insert
+              ::= expr "::" splice
+			  ::= expr "::" insert
 
 slot_lookup ::= expr "." "ID"
-            ::= expr "." splice_insert
+            ::= expr "." splice
+            ::= expr "." insert
 
 list ::= "[" expr ( "," expr )* "]"
      ::= "[" "]"
@@ -251,9 +260,6 @@ comparison_op ::= "IS"
               ::= ">"
 
 pass ::= "PASS"
-
-splice_insert ::= splice
-              ::= insert
 
 splice        ::= expr_splice
               ::= dsl_splice

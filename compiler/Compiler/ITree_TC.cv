@@ -42,7 +42,7 @@ class ITree_TC:
 
 	func _type_error(parent_node, part, node, should_be):
 	
-		Compiler_Vars::peek_compiler().error(Strings::format("In %s node, got %s type for %s instead of %s.", parent_node.instance_of.name, node.instance_of.name, part, should_be), parent_node.src_infos)
+		type_error(parent_node.instance_of.name, part, node, should_be, parent_node.src_infos)
 
 
 
@@ -481,3 +481,9 @@ func tc_expr(itree, msg, src_infos):
 		Compiler_Vars::peek_compiler().error(Strings::format("Node %s is of type %s instead of IExpr.", msg, itree.instance_of.name), src_infos)
 
 	return ITree_TC.new().tc(itree)
+
+
+
+func type_error(parent_node_name, part, node, should_be, src_infos):
+
+	Compiler_Vars::peek_compiler().error(Strings::format("In %s node, got %s type for %s instead of %s.", parent_node_name, node.instance_of.name, part, should_be), src_infos)

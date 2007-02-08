@@ -47,6 +47,7 @@ Con_Obj *_Con_Builtins_Object_Class_init_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Object_Class_get_slot_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Object_Class_get_slots_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Object_Class_find_slot_func(Con_Obj *);
+Con_Obj *_Con_Builtins_Object_Class_set_slot_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Object_Class_to_str_func(Con_Obj *);
 
 
@@ -74,6 +75,7 @@ void Con_Builtins_Object_Class_bootstrap(Con_Obj *thread)
 	CON_SET_FIELD(object_class, "get_slot", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Object_Class_get_slot_func, "get_slot", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), object_class));
 	CON_SET_FIELD(object_class, "get_slots", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Object_Class_get_slots_func, "get_slots", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), object_class));
 	CON_SET_FIELD(object_class, "find_slot", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Object_Class_find_slot_func, "find_slot", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), object_class));
+	CON_SET_FIELD(object_class, "set_slot", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Object_Class_set_slot_func, "set_slot", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), object_class));
 	CON_SET_FIELD(object_class, "to_str", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Object_Class_to_str_func, "to_str", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), object_class));
 }
 
@@ -190,6 +192,24 @@ Con_Obj *_Con_Builtins_Object_Class_find_slot_func(Con_Obj *thread)
 	}
 	
 	return slot_val;
+}
+
+
+
+//
+// 'set_slot(name, val)' sets the value of the slot named 'name' to 'val', returning null.
+//
+
+Con_Obj *_Con_Builtins_Object_Class_set_slot_func(Con_Obj *thread)
+{
+	Con_Obj *self, *slot_name, *val;
+	CON_UNPACK_ARGS("OSO", &self, &slot_name, &val);
+	
+	CON_MUTEX_LOCK(&self->mutex);
+	Con_Object_set_slot(thread, self, slot_name, NULL, -1, val);
+	CON_MUTEX_UNLOCK(&self->mutex);
+	
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }
 
 

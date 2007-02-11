@@ -47,6 +47,7 @@
 
 Con_Obj *_Con_Builtins_Module_Class_to_str_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Module_Class_get_def_func(Con_Obj *);
+Con_Obj *_Con_Builtins_Module_Class_get_slot_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Module_Class_def_names_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Module_Class_path_func(Con_Obj *);
 
@@ -72,8 +73,9 @@ void Con_Builtins_Module_Class_bootstrap(Con_Obj *thread)
 	Con_Memory_change_chunk_type(thread, module_class, CON_MEMORY_CHUNK_OBJ);
 	
 	CON_SET_FIELD(module_class, "to_str", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Module_Class_to_str_func, "to_str", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), module_class));
-	CON_SET_FIELD(module_class, "def_names", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Module_Class_def_names_func, "def_names", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), module_class));	
-	CON_SET_FIELD(module_class, "get_def", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Module_Class_get_def_func, "get_def", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), module_class));	
+	CON_SET_FIELD(module_class, "def_names", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Module_Class_def_names_func, "def_names", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), module_class));
+	CON_SET_FIELD(module_class, "get_def", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Module_Class_get_def_func, "get_def", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), module_class));
+	CON_SET_FIELD(module_class, "get_slot", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Module_Class_get_slot_func, "get_slot", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), module_class));
 	CON_SET_FIELD(module_class, "path", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Module_Class_path_func, "path", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), module_class));
 }
 
@@ -147,6 +149,26 @@ Con_Obj *_Con_Builtins_Module_Class_get_def_func(Con_Obj *thread)
 	Con_Builtins_String_Atom *name_string_atom = CON_GET_ATOM(name_obj, CON_BUILTIN(CON_BUILTIN_STRING_ATOM_DEF_OBJECT));
 	
 	return Con_Builtins_Module_Atom_get_definition(thread, self, name_string_atom->str, name_string_atom->size);
+}
+
+
+
+//
+// 'get_slot(name)'.
+//
+
+Con_Obj *_Con_Builtins_Module_Class_get_slot_func(Con_Obj *thread)
+{
+	Con_Obj *self, *slot_name;
+	CON_UNPACK_ARGS("MO", &self, &slot_name);
+
+	Con_Builtins_Module_Atom *self_module_atom = CON_GET_ATOM(self, CON_BUILTIN(CON_BUILTIN_MODULE_ATOM_DEF_OBJECT));
+
+	if (CON_C_STRING_EQ("module_id", slot_name)) {
+		return self_module_atom->identifier;
+	}
+	else
+		return CON_APPLY(CON_EXBI(CON_BUILTIN(CON_BUILTIN_OBJECT_CLASS), "get_slot", self), slot_name);
 }
 
 

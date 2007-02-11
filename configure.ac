@@ -270,7 +270,7 @@ AC_CHECK_FUNC(mergesort, [AC_DEFINE(CON_HAVE_MERGESORT)])
 
 # fgetln
 
-AC_CHECK_FUNC(fgetln, [], [AC_SUBST(FGETLN, misc/fgetln.o)])
+AC_CHECK_FUNC(fgetln, [], [AC_SUBST(FGETLN, Platform/fgetln.o)])
 
 
 # getdirentries

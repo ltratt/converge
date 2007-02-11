@@ -19,7 +19,8 @@
 // IN THE SOFTWARE.
 
 
-import Bytecode_Gen, CEI, Compiler_Vars, CV_Parser, IModule_Gen, ITree, Strings, Targets::Thirty_Two_Bit, Tokenizer, VM
+import Platform::Properties
+import Bytecode_Gen, CEI, Compiler_Vars, CV_Parser, IModule_Gen, ITree, Strings, Targets::Available, Tokenizer, VM
 
 
 
@@ -35,7 +36,7 @@ class _Eval_Compiler:
 		self.includes := includes
 		self.src_path := "<eval>"
 		self.module_id := Strings::format(Compiler_Vars::UNIQUE_EVAL_NAME_TEMPLATE, CEI::fresh_name())
-		self.target := Thirty_Two_Bit
+		self.target := Available::TARGETS[Strings::format("%dbit", Properties::word_bits)]
 
 
 

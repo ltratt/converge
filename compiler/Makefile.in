@@ -10,7 +10,7 @@ BASE_OBJECT_FILES = Compiler/CV_Parser.cvb Compiler/Tokenizer.cvb Compiler/init.
 	Compiler/Compiler_Vars.cvb Compiler/CV_Module.cvb \
 	Compiler/QQ_Mode.cvb Compiler/ITree_Format.cvb Compiler/ITree_TC.cvb \
 	Compiler/CEI.cvb Compiler/convergel.cvb Compiler/CV_Library.cvb \
-	Compiler/CV_Exec.cvb Compiler/Eval.cvb
+	Compiler/CV_Exec.cvb Compiler/Eval.cvb Compiler/convergei.cvb
 
 TARGET_OBJECT_FILES =Compiler/Targets/init.cvb  Compiler/Targets/Sixty_Four_Bit.cvb \
 	Compiler/Targets/Available.cvb
@@ -18,11 +18,12 @@ TARGET_OBJECT_FILES =Compiler/Targets/init.cvb  Compiler/Targets/Sixty_Four_Bit.
 OBJECT_FILES = ${BASE_OBJECT_FILES} ${TARGET_OBJECT_FILES}
 
 
-all: libcompiler.cvl convergec convergel convergep
+all: libcompiler.cvl convergec convergei convergel convergep
 
 install:
 	install -d ${bindir}
 	install -c -m 555 convergec ${bindir}
+	install -c -m 555 convergei ${bindir}
 	install -c -m 555 convergel ${bindir}
 	install -c -m 555 convergep ${bindir}
 	install -d ${conlibdir}/Compiler
@@ -52,6 +53,9 @@ libcompiler.cvl: ${OBJECT_FILES}
 
 convergec: ${OBJECT_FILES} ${CONVERGE_LIB}
 	${CONVERGE_VM} ${CONVERGEL} -s -o convergec Compiler/convergec.cvb ${OBJECT_FILES} ${CONVERGE_LIB}
+
+convergei: ${OBJECT_FILES} ${CONVERGE_LIB}
+	${CONVERGE_VM} ${CONVERGEL} -s -o convergei Compiler/convergei.cvb ${OBJECT_FILES} ${CONVERGE_LIB}
 
 convergel: ${OBJECT_FILES} ${CONVERGE_LIB}
 	${CONVERGE_VM} ${CONVERGEL} -s -o convergel Compiler/convergel.cvb ${OBJECT_FILES} ${CONVERGE_LIB}

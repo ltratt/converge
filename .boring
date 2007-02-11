@@ -49,6 +49,7 @@ lib/Makefile$
 test/t1$
 test/thread_test$
 compiler/convergec$
+compiler/convergei$
 compiler/convergel$
 compiler/convergep$
 compiler/id_fix$

@@ -45,11 +45,44 @@ class _Eval_Compiler:
 		self.tokenizer := Tokenizer::Tokenizer.new()
 		parse_tree := CV_Parser::parse_expr(self._str)
 
+		body := []
+		
+		compiler_var_name := CEI::fresh_name()
+		compiler_var := ITree::IVar.new(compiler_var_name, [])
+		body.append(ITree::IAssignment.new(ITree::STD_ASSIGN, [compiler_var], ITree::IApplication.new(ITree::IOriginal_Name.new(Compiler_Vars.module_id, "peek_compiler", []), [], []), []))
+		
+		vars_val := ITree::ISlot_Lookup.new(compiler_var, "_vars", [])
+		for var_name, _ := self._vars.iterate():
+			var_val := ITree::IApplication.new(ITree::ISlot_Lookup.new(vars_val, "get", []), [ITree::IString.new(var_name, [])], [])
+			body.append(ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(var_name, [])], var_val, []))
+
 		expr := IModule_Gen::IModule_Gen.new().generate(parse_tree)
-		
-		eval_name := CEI::fresh_name()
-		
-		dummy_func := ITree::IFunc_Def.new(0, eval_name, [], null, [], [], ITree::IExpr_Block.new([ITree::IReturn.new(expr, [])], []), [])
+
+		dict_vals := []
+		for var_name, var_val := self._vars.iterate():
+			dict_vals.append([ITree::IString.new(var_name, []), ITree::IVar.new(var_name, [])])
+		rtn_dict := ITree::IDict.new(dict_vals, [])
+
+		vars_assign := []
+		vars_assign_names := Set{}
+		for var_name, _ := self._vars.iterate():
+			vars_assign_names.add(var_name)
+		vars_assign_names.extend(expr.bound_vars)
+		for var_name := vars_assign_names.iterate():
+			var_val := ITree::IApplication.new(ITree::ISlot_Lookup.new(vars_val, "set", []), [ITree::IString.new(var_name, []), ITree::IVar.new(var_name, [])], [])
+			vars_assign.append(var_val)
+
+		body.append([|
+			if rtn := ${expr}:
+				${vars_assign}
+				return rtn
+			else:
+				${vars_assign}
+				return fail
+		|])
+
+		eval_name := CEI::fresh_name()		
+		dummy_func := ITree::IFunc_Def.new(0, eval_name, [], null, [], [], ITree::IExpr_Block.new(body, []), [])
 		dummy_definitions := [ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(eval_name, [])], dummy_func, [])]
 		dummy_imodule := ITree::IModule.new(eval_name, dummy_definitions, [])
 		
@@ -57,6 +90,7 @@ class _Eval_Compiler:
 		
 		module_identifiers := VM::add_modules([bytecode])
 		module := VM::import_module(module_identifiers[0])
+		
 		return module.get_def(eval_name)()
 
 
@@ -66,7 +100,9 @@ func eval(str, vars := Dict{}, includes := []):
 
 	compiler := _Eval_Compiler.new(str, vars, includes)
 	Compiler_Vars::push_compiler(compiler)
-	result := compiler.eval()
-	Compiler_Vars::pop_compiler()
-
-	return result
+	if not (result := compiler.eval()):
+		Compiler_Vars::pop_compiler()
+		return fail
+	else:
+		Compiler_Vars::pop_compiler()
+		return result

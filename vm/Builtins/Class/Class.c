@@ -47,11 +47,13 @@ Con_Obj *_Con_Builtins_Class_Class_new_object(Con_Obj *);
 
 Con_Obj *_Con_Builtins_Class_Class_new_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Class_Class_get_slot_func(Con_Obj *);
+Con_Obj *_Con_Builtins_Class_Class_to_str_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Class_Class_path_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Class_Class_get_field_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Class_Class_set_field_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Class_Class_conformed_by_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Class_Class_instantiated_func(Con_Obj *);
+
 
 
 
@@ -77,6 +79,7 @@ void Con_Builtins_Class_Class_bootstrap(Con_Obj *thread)
 	CON_SET_FIELD(class_class, "new", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Class_Class_new_func, "new", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), class_class));
 	
 	CON_SET_FIELD(class_class, "get_slot", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Class_Class_get_slot_func, "get_slot", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), class_class));
+	CON_SET_FIELD(class_class, "to_str", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Class_Class_to_str_func, "to_str", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), class_class));
 
 	CON_SET_FIELD(class_class, "path", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Class_Class_path_func, "path", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), class_class));
 
@@ -216,7 +219,21 @@ Con_Obj *_Con_Builtins_Class_Class_get_slot_func(Con_Obj *thread)
 
 
 //
-// 'path(stop_at)' returns the path (including containers up to, but including, stop_at) of this
+// 'to_str()'.
+//
+
+Con_Obj *_Con_Builtins_Class_Class_to_str_func(Con_Obj *thread)
+{
+	Con_Obj *self;
+	CON_UNPACK_ARGS("C", &self);
+
+	return CON_ADD(CON_NEW_STRING("<Class "), CON_ADD(CON_GET_SLOT_APPLY(self, "path", CON_BUILTIN(CON_BUILTIN_NULL_OBJ)), CON_NEW_STRING(">")));
+}
+
+
+
+//
+// 'path(stop_at := null)' returns the path (including containers up to, but including, stop_at) of this
 // function.
 //
 // XXX incomplete
@@ -225,7 +242,7 @@ Con_Obj *_Con_Builtins_Class_Class_get_slot_func(Con_Obj *thread)
 Con_Obj *_Con_Builtins_Class_Class_path_func(Con_Obj *thread)
 {
 	Con_Obj *self, *stop_at;
-	CON_UNPACK_ARGS("CO", &self, &stop_at);
+	CON_UNPACK_ARGS("C;o", &self, &stop_at);
 
 	if (self == stop_at)
 		return CON_NEW_STRING("");

@@ -30,7 +30,7 @@ Reads <code>size</code> bytes from the file. If <code>size</code> is <code>null<
 </function>
 
 <function name="File#readln">
-Returns the next line of text from the file.
+Successively generates each line of text in the file.
 </function>
 
 <function name="File#write">

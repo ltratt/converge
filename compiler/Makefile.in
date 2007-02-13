@@ -67,4 +67,4 @@ clean:
 	rm -f libcompiler.cvl ${OBJECT_FILES}
 
 distclean: clean
-	rm -f Makefile convergec convergel convergep
+	rm -f Makefile convergec convergei convergel convergep

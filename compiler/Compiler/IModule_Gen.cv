@@ -73,10 +73,10 @@ class IModule_Gen:
 				expr := self._eval_splice(node[i][1], extra_src_infos)
 				if Builtins::List.conformed_by(expr):
 					for e := expr.iterate():
-						ITree_TC::tc_expr(e, "splice result", extra_src_infos + exprs[0].src_infos)
+						ITree_TC::tc_expr(e, "splice result", extra_src_infos + node[i][1][1][1].src_infos)
 					exprs.extend(expr)
 				else:
-					ITree_TC::tc_expr(expr, "splice result", extra_src_infos + exprs[0].src_infos)
+					ITree_TC::tc_expr(expr, "splice result", extra_src_infos + node[i][1][1][1].src_infos)
 					exprs.append(expr)
 			else:
 				exprs.append(self._preorder(node[i], extra_src_infos))

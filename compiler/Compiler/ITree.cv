@@ -19,7 +19,7 @@
 // IN THE SOFTWARE.
 
 
-import Builtins, Strings, Sys
+import Builtins, Functional, Strings, Sys
 import Compiler_Vars
 
 
@@ -68,6 +68,14 @@ class IModule:
 
 
 
+	func extended_src_infos(extra_src_infos):
+		
+		definitions := self._extended_collection_src_infos(self.definitions, extra_src_infos)
+		
+		return IModule.new(self.module_name, definitions, self.src_infos + extra_src_infos)
+
+
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Definitions
@@ -103,6 +111,16 @@ class IClass_Def:
 			self.free_vars.extend(metaclass_.free_vars)
 		for field := fields.iterate():
 			self.free_vars.extend(field.free_vars)
+
+
+
+	func extended_src_infos(extra_src_infos):
+
+		supers := _extended_collection_src_infos(self.supers, extra_src_infos)
+		metaclass_ := _extended_obj_src_infos(self.metaclass_, extra_src_infos)
+		fields := _extended_collection_src_infos(self.fields, extra_src_infos)
+		
+		return IClass_Def.new(self.class_name, supers, metaclass_, fields, self.src_infos + extra_src_infos)
 
 
 
@@ -166,6 +184,18 @@ class IFunc_Def:
 
 
 
+	func extended_src_infos(extra_src_infos):
+		
+		params := _extended_collection_src_infos(self.params, extra_src_infos)
+		var_arg := _extended_obj_src_infos(self.var_arg, extra_src_infos)
+		nonlocals := _extended_collection_src_infos(self.nonlocals, extra_src_infos)
+		renames := _extended_collection_src_infos(self.renames, extra_src_infos)
+		body := self.body.extended_src_infos(extra_src_infos)
+		
+		return IFunc_Def.new(self.is_bound, self.func_name, params, var_arg, nonlocals, renames, body, self.src_infos + extra_src_infos)
+
+
+
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -200,6 +230,15 @@ class IIf:
 
 
 
+	func extended_src_infos(extra_src_infos):
+		
+		clauses := _extended_collection_src_infos(self.clauses, extra_src_infos)
+		else_body := _extended_obj_src_infos(self.else_body, extra_src_infos)
+		
+		return IIf.new(clauses, else_body, self.src_infos + extra_src_infos)
+
+
+
 
 class INDIf:
 
@@ -222,6 +261,14 @@ class INDIf:
 
 
 
+	func extended_src_infos(extra_src_infos):
+		
+		clauses := _extended_collection_src_infos(self.clauses, extra_src_infos)
+		
+		return INDIf.new(clauses, self.src_infos + extra_src_infos)
+
+
+
 
 class IVar:
 
@@ -234,6 +281,12 @@ class IVar:
 		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		self.free_vars := Set{self.var_name}
+
+
+
+	func extended_src_infos(extra_src_infos):
+		
+		return IVar.new(self.var_name, self.src_infos + extra_src_infos)
 
 
 
@@ -250,6 +303,12 @@ class IImport:
 		self.import_vars := Set{var_name}
 		self.qq_bound_vars := Set{var_name}
 		self.free_vars := Set{}
+
+
+
+	func extended_src_infos(extra_src_infos):
+		
+		return IImport.new(self.module_path, self.var_name, self.src_infos + extra_src_infos)
 
 
 
@@ -286,6 +345,17 @@ class IWhile:
 
 
 
+	func extended_src_infos(extra_src_infos):
+		
+		condition := self.condition.extended_src_infos(extra_src_infos)
+		body := _extended_obj_src_infos(self.body, extra_src_infos)
+		exhausted_body := _extended_obj_src_infos(self.exhausted_body, extra_src_infos)
+		broken_body := _extended_collection_src_infos(self.broken_body, extra_src_infos)
+		
+		return IWhile.new(condition, body, exhausted_body, broken_body, self.src_infos + extra_src_infos)
+
+
+
 
 class IFor:
 
@@ -319,6 +389,17 @@ class IFor:
 
 
 
+	func extended_src_infos(extra_src_infos):
+		
+		condition := self.condition.extended_src_infos(extra_src_infos)
+		body := _extended_obj_src_infos(self.body, extra_src_infos)
+		exhausted_body := _extended_obj_src_infos(self.exhausted_body, extra_src_infos)
+		broken_body := _extended_collection_src_infos(self.broken_body, extra_src_infos)
+		
+		return IFor.new(condition, body, exhausted_body, broken_body, self.src_infos + extra_src_infos)
+
+
+
 
 class IInt:
 
@@ -334,6 +415,12 @@ class IInt:
 
 
 
+	func extended_src_infos(extra_src_infos):
+	
+		return IInt.new(self.val, self.src_infos + extra_src_infos)
+
+
+
 
 class IString:
 
@@ -346,6 +433,12 @@ class IString:
 		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		self.free_vars := Set{}
+
+
+
+	func extended_src_infos(extra_src_infos):
+	
+		return IString.new(self.string, self.src_infos + extra_src_infos)
 
 
 
@@ -365,6 +458,14 @@ class ISlot_Lookup:
 
 
 
+	func extended_src_infos(extra_src_infos):
+	
+		object_expr := self.object_expr.extended_src_infos(extra_src_infos)
+		
+		return ISlot_Lookup.new(object_expr, self.slot_name, self.src_infos + extra_src_infos)
+
+
+
 
 class IModule_Lookup:
 
@@ -378,6 +479,14 @@ class IModule_Lookup:
 		self.import_vars := self.object_expr.import_vars
 		self.qq_bound_vars := self.object_expr.qq_bound_vars
 		self.free_vars := self.object_expr.free_vars
+
+
+
+	func extended_src_infos(extra_src_infos):
+	
+		object_expr := self.object_expr.extended_src_infos(extra_src_infos)
+		
+		return IModule_Lookup.new(object_expr, self.def_name, self.src_infos + extra_src_infos)
 
 
 
@@ -398,6 +507,14 @@ class IList:
 			self.import_vars.extend(elem.import_vars)
 			self.qq_bound_vars.extend(elem.qq_bound_vars)
 			self.free_vars.extend(elem.free_vars)
+
+
+
+	func extended_src_infos(extra_src_infos):
+	
+		elems := _extended_collection_src_infos(self.elements, extra_src_infos)
+		
+		return IList.new(elems, self.src_infos + extra_src_infos)
 
 
 
@@ -425,6 +542,16 @@ class IDict:
 
 
 
+	func extended_src_infos(extra_src_infos):
+	
+		elems := []
+		for key, val := self.elements.iterate():
+			elems.append(key.extended_src_infos(extra_src_infos), val.extended_src_infos(extra_src_infos))
+		
+		return IDict.new(elems, self.src_infos + extra_src_infos)
+
+
+
 
 class ISet:
 
@@ -442,6 +569,14 @@ class ISet:
 			self.import_vars.extend(elem.import_vars)
 			self.qq_bound_vars.extend(elem.qq_bound_vars)
 			self.free_vars.extend(elem.free_vars)
+
+
+
+	func extended_src_infos(extra_src_infos):
+
+		elems := _extended_collection_src_infos(self.elems, extra_src_infos)
+		
+		return ISet.new(elems, self.src_infos + extra_src_infos)
 
 
 
@@ -468,6 +603,15 @@ class IApplication:
 
 
 
+	func extended_src_infos(extra_src_infos):
+	
+		func_expr := self.func_expr.extended_src_infos(extra_src_infos)
+		args := _extended_collection_src_infos(self.args, extra_src_infos)
+		
+		return IApplication.new(func_expr, args, self.src_infos + extra_src_infos)
+
+
+
 
 class IGet:
 
@@ -481,6 +625,15 @@ class IGet:
 		self.import_vars := get_object.import_vars + index.import_vars
 		self.qq_bound_vars := get_object.qq_bound_vars + index.qq_bound_vars
 		self.free_vars := get_object.free_vars + index.free_vars
+
+
+
+	func extended_src_infos(extra_src_infos):
+	
+		get_object := self.get_object.extended_src_infos(extra_src_infos)
+		index := self.index.extended_src_infos(extra_src_infos)
+		
+		return IGet.new(get_object, index, self.src_infos + extra_src_infos)
 
 
 
@@ -511,6 +664,16 @@ class ISlice:
 
 
 
+	func extended_src_infos(extra_src_infos):
+	
+		slice_object := self.slice_object.extended_src_infos(extra_src_infos)
+		lower_bound := _extended_obj_src_infos(self.lower_bound, extra_src_infos)
+		upper_bound := _extended_obj_src_infos(self.upper_bound, extra_src_infos)
+		
+		return ISlice.new(slice_object, lower_bound, upper_bound, self.src_infos + extra_src_infos)
+
+
+
 
 class IEXBI:
 
@@ -524,6 +687,14 @@ class IEXBI:
 		self.import_vars := self.object_expr.import_vars
 		self.qq_bound_vars := self.object_expr.qq_bound_vars
 		self.free_vars := self.object_expr.free_vars
+
+
+
+	func extended_src_infos(extra_src_infos):
+	
+		object_expr := self.object_expr.extended_src_infos(extra_src_infos)
+		
+		return IEXBI.new(object_expr, self.field_name, self.src_infos + extra_src_infos)
 
 
 
@@ -550,6 +721,14 @@ class IReturn:
 
 
 
+	func extended_src_infos(extra_src_infos):
+	
+		return_expr := _extended_obj_src_infos(self.return_expr, extra_src_infos)
+		
+		return IReturn.new(return_expr, self.src_infos + extra_src_infos)
+
+
+
 
 class IYield:
 
@@ -562,6 +741,14 @@ class IYield:
 		self.import_vars := yield_expr.import_vars
 		self.qq_bound_vars := yield_expr.qq_bound_vars
 		self.free_vars := yield_expr.free_vars
+
+
+
+	func extended_src_infos(extra_src_infos):
+	
+		yield_expr := self.yield_expr.extended_src_infos(extra_src_infos)
+		
+		return IYield.new(yield_expr, self.src_infos + extra_src_infos)
 
 
 
@@ -580,6 +767,14 @@ class IRaise:
 
 
 
+	func extended_src_infos(extra_src_infos):
+	
+		raise_expr := self.raise_expr.extended_src_infos(extra_src_infos)
+		
+		return IYield.new(raise_expr, self.src_infos + extra_src_infos)
+
+
+
 
 class IAssert:
 
@@ -592,6 +787,14 @@ class IAssert:
 		self.import_vars := assert_expr.import_vars
 		self.qq_bound_vars := assert_expr.qq_bound_vars
 		self.free_vars := assert_expr.free_vars
+
+
+
+	func extended_src_infos(extra_src_infos):
+	
+		assert_expr := self.assert_expr.extended_src_infos(extra_src_infos)
+		
+		return IAssert.new(assert_expr, self.src_infos + extra_src_infos)
 
 
 
@@ -609,6 +812,12 @@ class IBreak:
 
 
 
+	func extended_src_infos(extra_src_infos):
+	
+		return IBreak.new(self.src_infos + extra_src_infos)
+
+
+
 
 class IContinue:
 
@@ -620,6 +829,12 @@ class IContinue:
 		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		self.free_vars := Set{}
+
+
+
+	func extended_src_infos(extra_src_infos):
+	
+		return IContinue.new(self.src_infos + extra_src_infos)
 
 
 
@@ -643,6 +858,14 @@ class IConjunction:
 
 
 
+	func extended_src_infos(extra_src_infos):
+	
+		exprs := _extended_collection_src_infos(self.exprs, extra_src_infos)
+	
+		return IConjunction.new(exprs, self.src_infos + extra_src_infos)
+
+
+
 
 class IAlternation:
 
@@ -660,6 +883,14 @@ class IAlternation:
 			self.import_vars.extend(expr.import_vars)
 			self.qq_bound_vars.extend(expr.qq_bound_vars)
 			self.free_vars.extend(expr.free_vars)
+
+
+
+	func extended_src_infos(extra_src_infos):
+	
+		exprs := _extended_collection_src_infos(self.exprs, extra_src_infos)
+	
+		return IAlternation.new(exprs, self.src_infos + extra_src_infos)
 
 
 
@@ -692,6 +923,15 @@ class IAssignment:
 
 
 
+	func extended_src_infos(extra_src_infos):
+	
+		targets := _extended_collection_src_infos(self.targets, extra_src_infos)
+		expr := self.expr.extended_src_infos(extra_src_infos)
+	
+		return IAssignment.new(self.type, targets, expr, self.src_infos + extra_src_infos)
+
+
+
 
 class INot:
 
@@ -704,6 +944,14 @@ class INot:
 		self.import_vars := expr.import_vars
 		self.qq_bound_vars := expr.qq_bound_vars
 		self.free_vars := expr.free_vars
+
+
+
+	func extended_src_infos(extra_src_infos):
+	
+		expr := self.expr.extended_src_infos(extra_src_infos)
+	
+		return INot.new(expr, self.src_infos + extra_src_infos)
 
 
 
@@ -721,6 +969,15 @@ class IBinary:
 		self.import_vars := lhs.import_vars + rhs.import_vars
 		self.qq_bound_vars := lhs.qq_bound_vars + rhs.qq_bound_vars
 		self.free_vars := lhs.free_vars + rhs.free_vars
+
+
+
+	func extended_src_infos(extra_src_infos):
+	
+		lhs := self.lhs.extended_src_infos(extra_src_infos)
+		rhs := self.rhs.extended_src_infos(extra_src_infos)
+	
+		return IBinary.new(self.type, lhs, rhs, self.src_infos + extra_src_infos)
 
 
 
@@ -742,6 +999,15 @@ class IComparison:
 
 
 
+	func extended_src_infos(extra_src_infos):
+	
+		lhs := self.lhs.extended_src_infos(extra_src_infos)
+		rhs := self.rhs.extended_src_infos(extra_src_infos)
+	
+		return IComparison.new(self.type, lhs, rhs, self.src_infos + extra_src_infos)
+
+
+
 
 class IPass:
 
@@ -753,6 +1019,12 @@ class IPass:
 		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		self.free_vars := Set{}
+
+
+
+	func extended_src_infos(extra_src_infos):
+	
+		return IPass.new(self.src_infos + extra_src_infos)
 
 
 
@@ -768,6 +1040,14 @@ class IInsert:
 		self.import_vars := expr.import_vars
 		self.qq_bound_vars := expr.qq_bound_vars
 		self.free_vars := expr.free_vars
+
+
+
+	func extended_src_infos(extra_src_infos):
+	
+		expr := self.expr.extended_src_infos(extra_src_infos)
+	
+		return IInsert.new(expr, self.src_infos + extra_src_infos)
 
 
 
@@ -800,6 +1080,15 @@ class IStandard_Quasi_Quotes:
 
 
 
+	func extended_src_infos(extra_src_infos):
+	
+		body := self.body.extended_src_infos(extra_src_infos)
+		esi := _extended_obj_src_infos(self.extra_src_infos, extra_src_infos)
+	
+		return IStandard_Quasi_Quotes.new(body, esi, self.src_infos + extra_src_infos)
+
+
+
 
 class IOriginal_Name:
 
@@ -813,6 +1102,12 @@ class IOriginal_Name:
 		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		self.free_vars := Set{}
+
+
+
+	func extended_src_infos(extra_src_infos):
+	
+		return IOriginal_Name.new(self.module_id, self.def_name, self.src_infos + extra_src_infos)
 
 
 
@@ -848,6 +1143,14 @@ class IExpr_Block:
 
 
 
+	func extended_src_infos(extra_src_infos):
+	
+		exprs := _extended_collection_src_infos(self.exprs, extra_src_infos)
+	
+		return IExpr_Block.new(exprs, self.src_infos + extra_src_infos)
+
+
+
 
 class IParam:
 
@@ -870,7 +1173,16 @@ class IParam:
 		else:
 			self.free_vars := default.free_vars
 			
+
+
+	func extended_src_infos(extra_src_infos):
+	
+		var := self.var.extended_src_infos(extra_src_infos)
+		default := _extended_obj_src_infos(self.default, extra_src_infos)
+	
+		return IParam.new(var, default, self.src_infos + extra_src_infos)
 			
+
 
 
 class IClause:
@@ -885,3 +1197,32 @@ class IClause:
 		self.import_vars := condition.import_vars + body.import_vars
 		self.qq_bound_vars := condition.qq_bound_vars + body.qq_bound_vars
 		self.free_vars := condition.free_vars + body.free_vars
+
+
+
+	func extended_src_infos(extra_src_infos):
+	
+		condition := self.condition.extended_src_infos(extra_src_infos)
+		body := self.body.extended_src_infos(extra_src_infos)
+	
+		return IClause.new(condition, body, self.src_infos + extra_src_infos)
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Helper functions
+//
+
+func _extended_collection_src_infos(c, extra_src_infos):
+
+	return Functional::map(func (x) { return x.extended_src_infos(extra_src_infos) }, c)
+
+
+
+func _extended_obj_src_infos(o, extra_src_infos):
+
+	if o is null:
+		return o
+	else:
+		return o.extended_src_infos(extra_src_infos)

@@ -72,12 +72,31 @@ class IModule_Gen:
 			if node[i][1][0] == "splice":
 				expr := self._eval_splice(node[i][1], extra_src_infos)
 				if Builtins::List.conformed_by(expr):
+					tmp_exprs := []
 					for e := expr.iterate():
 						ITree_TC::tc_expr(e, "splice result", extra_src_infos + node[i][1][1][1].src_infos)
-					exprs.extend(expr)
+						if node[1][1][1][0] == "expr_splice":
+							// expr_splice  ::= "$" "<" expr ">"
+
+							// With normal splices, we augment the src infos with the position of the
+							// splice (as well as the src infos that the returned itree has as
+							// standard).
+
+							tmp_exprs.append(expr.extended_src_infos(node[1][1][1][1].src_infos))
+						else:
+							tmp_exprs.append(expr)
+					exprs.extend(tmp_exprs)
 				else:
 					ITree_TC::tc_expr(expr, "splice result", extra_src_infos + node[i][1][1][1].src_infos)
-					exprs.append(expr)
+					if node[1][1][1][0] == "expr_splice":
+						// expr_splice  ::= "$" "<" expr ">"
+
+						// With normal splices, we augment the src infos with the position of the
+						// splice (as well as the src infos that the returned itree has as standard).
+
+						exprs.append(expr.extended_src_infos(node[1][1][1][1].src_infos))
+					else:
+						exprs.append(expr)
 			else:
 				exprs.append(self._preorder(node[i], extra_src_infos))
 			i += 2
@@ -203,7 +222,7 @@ class IModule_Gen:
 			self._compiler.error("Splice did not return a value.", expr.src_infos)
 		if out_itree is null:
 			self._compiler.error("Splice returned null.", expr.src_infos)
-
+		
 		return out_itree
 
 
@@ -296,11 +315,29 @@ class IModule_Gen:
 			// definition ::= splice
 			defn := self._eval_splice(node[1], extra_src_infos)
 			if Builtins::List.conformed_by(defn):
+				tmp_defns := []
 				for d := defn.iterate():
 					ITree_TC::tc_expr(d, "splice result", extra_src_infos + node[1][1][1].src_infos)
-				return defn
+					if node[1][1][0] == "expr_splice":
+						// expr_splice  ::= "$" "<" expr ">"
+
+						// With normal splices, we augment the src infos with the position of the
+						// splice (as well as the src infos that the returned itree has as standard).
+
+						tmp_defns.append(d.extended_src_infos(node[1][1][1].src_infos))
+					else:
+						tmp_defns.append(d)
+				return tmp_defns
 			else:
 				ITree_TC::tc_expr(defn, "splice result", extra_src_infos + node[1][1][1].src_infos)
+				if node[1][1][0] == "expr_splice":
+					// expr_splice  ::= "$" "<" expr ">"
+
+					// With normal splices, we augment the src infos with the position of the
+					// splice (as well as the src infos that the returned itree has as standard).
+
+					defn := defn.extended_src_infos(node[1][1][1].src_infos)
+
 				return [defn]
 		elif node[1][0] == "insert":
 			return self._preorder(node[1], extra_src_infos)
@@ -1136,6 +1173,14 @@ class IModule_Gen:
 
 		result := self._eval_splice(node, extra_src_infos)
 		ITree_TC::tc_expr(result, "splice", extra_src_infos + node[1][1].src_infos)
+		
+		if node[1][0] == "expr_splice":
+			// expr_splice  ::= "$" "<" expr ">"
+
+			// With normal splices, we augment the src infos with the position of the
+			// splice (as well as the src infos that the returned itree has as standard).
+
+			result := result.extended_src_infos(node[1][1].src_infos)
 		
 		return result
 

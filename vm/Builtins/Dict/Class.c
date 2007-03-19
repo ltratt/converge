@@ -44,6 +44,7 @@
 
 
 Con_Obj *_Con_Builtins_Dict_Class_to_str_func(Con_Obj *);
+Con_Obj *_Con_Builtins_Dict_Class_del_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Dict_Class_find_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Dict_Class_get_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Dict_Class_iterate_func(Con_Obj *);
@@ -74,6 +75,7 @@ void Con_Builtins_Dict_Class_bootstrap(Con_Obj *thread)
 	Con_Memory_change_chunk_type(thread, dict_class, CON_MEMORY_CHUNK_OBJ);
 
 	CON_SET_FIELD(dict_class, "to_str", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Dict_Class_to_str_func, "to_str", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), dict_class));
+	CON_SET_FIELD(dict_class, "del", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Dict_Class_del_func, "del", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), dict_class));
 	CON_SET_FIELD(dict_class, "find", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Dict_Class_find_func, "find", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), dict_class));
 	CON_SET_FIELD(dict_class, "get", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Dict_Class_get_func, "get", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), dict_class));
 	CON_SET_FIELD(dict_class, "iterate", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Dict_Class_iterate_func, "iterate", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), dict_class));
@@ -187,6 +189,44 @@ Con_Obj *_Con_Builtins_Dict_Class_to_str_func(Con_Obj *thread)
 	str_mem_size += DICT_TO_STR_END_SIZE;
 	
 	return Con_Builtins_String_Atom_new_no_copy(thread, str_mem, str_mem_size, CON_STR_UTF_8);
+}
+
+
+
+//
+// 'del(key)' deletes 'key' from the dictionary, raising an exception if 'key' is not found.
+//
+
+Con_Obj *_Con_Builtins_Dict_Class_del_func(Con_Obj *thread)
+{
+	Con_Obj *key, *self;
+	CON_UNPACK_ARGS("DO", &self, &key);
+
+	Con_Builtins_Dict_Atom *dict_atom = CON_GET_ATOM(self, CON_BUILTIN(CON_BUILTIN_DICT_ATOM_DEF_OBJECT));
+
+	Con_Hash hash = Con_Hash_get(thread, key);
+	CON_MUTEX_LOCK(&self->mutex);
+	Con_Int i = Con_Builtins_Dict_Atom_find_entry(thread, &self->mutex, dict_atom->entries, dict_atom->num_entries_allocated, key, hash);
+	if (dict_atom->entries[i].key == NULL)
+		CON_RAISE_EXCEPTION("Key_Exception", key);
+
+	Con_Int j = i;
+	while (1) {
+		j = (j + 1) % dict_atom->num_entries_allocated;
+		if (dict_atom->entries[j].key == NULL)
+			break;
+
+		Con_Int real_i = dict_atom->entries[j].hash % dict_atom->num_entries_allocated;
+		if ((j > i && (real_i <= i || real_i > j)) || (j < i && real_i <= i && real_i > j)) {
+			dict_atom->entries[i] = dict_atom->entries[j];
+			i = j;
+		}
+	}
+	dict_atom->entries[i].key = NULL;
+	dict_atom->num_entries -= 1;
+	CON_MUTEX_UNLOCK(&self->mutex);
+
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }
 
 

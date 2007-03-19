@@ -32,6 +32,11 @@ Sets the value of field <code>name</code> to <code>o</code>, creating <code>name
 <class name="Dict">
 The standard class <code>Dict</code>.
 
+<function name="del">
+<argument name="o" type="Object" />
+Deletes the entry <code>key</code>. If 'key' is not found an exception is raised.
+</function>
+
 <function name="find">
 <argument name="o" type="Object" />
 <argument name="default" type="Object">fail</argument>

@@ -48,7 +48,7 @@ class Switch_Translator(IModule_Gen::IModule_Gen):
 		clauses := self._preorder(node[5], extra_src_infos + __SRC_INFO__)
 		default := self._preorder(node[6], extra_src_infos + __SRC_INFO__)
 		
-		return return CEI::iif(clauses, default, node[1].src_infos)
+		return CEI::iif(clauses, default, node[1].src_infos)
 
 
 

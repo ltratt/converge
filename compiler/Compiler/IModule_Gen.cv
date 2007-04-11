@@ -97,6 +97,8 @@ class IModule_Gen:
 						exprs.append(expr.extended_src_infos(node[1][1][1][1].src_infos))
 					else:
 						exprs.append(expr)
+			elif node[i][1][0] == "import":
+				exprs.extend(self._t_import(node[i][1], extra_src_infos))
 			else:
 				exprs.append(self._preorder(node[i], extra_src_infos))
 			i += 2
@@ -378,6 +380,7 @@ class IModule_Gen:
 
 
 
+
 	//
 	// Returns an IClass_Def.
 	//
@@ -653,7 +656,14 @@ class IModule_Gen:
 		//      ::= quasi_quotes
 		//      ::= brackets
 
-		return self._preorder(node[1], extra_src_infos)
+		if node[1][0] == "import":
+			imports := self._preorder(node[1], extra_src_infos)
+			if imports.len() == 1:
+				return imports[0]
+			else:
+				return ITree::IConjunction.new(imports, extra_src_infos + node[1].src_infos)
+		else:
+			return self._preorder(node[1], extra_src_infos)
 
 
 

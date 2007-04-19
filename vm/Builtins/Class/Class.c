@@ -36,6 +36,7 @@
 #include "Builtins/Func/Atom.h"
 #include "Builtins/Int/Atom.h"
 #include "Builtins/List/Atom.h"
+#include "Builtins/Module/Atom.h"
 #include "Builtins/Slots_Atom_Def.h"
 #include "Builtins/String/Atom.h"
 #include "Builtins/Thread/Atom.h"
@@ -95,6 +96,9 @@ Con_Obj *_Con_Builtins_Class_Class_new_object(Con_Obj *thread)
 {
 	Con_Obj *class, *container, *name, *new_object, *supers;
 	CON_UNPACK_ARGS("COOO;O", &class, &name, &supers, &container, &new_object);
+
+	if (Con_Numbers_Number_to_Con_Int(thread, CON_GET_SLOT_APPLY(supers, "len")) == 0)
+		CON_RAISE_EXCEPTION("User_Exception", CON_NEW_STRING("At least one super class must be supplied."));
 
 	Con_Obj *new_class = Con_Object_new_from_class(thread, sizeof(Con_Obj) + sizeof(Con_Builtins_Class_Atom) + sizeof(Con_Builtins_Slots_Atom), class);
 	Con_Builtins_Class_Atom *class_atom = (Con_Builtins_Class_Atom *) new_class->first_atom;

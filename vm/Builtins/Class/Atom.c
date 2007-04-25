@@ -199,6 +199,11 @@ void Con_Builtins_Class_Atom_set_field(Con_Obj *thread, Con_Obj *class_, const u
 			class_atom->custom_find_slot_field = 1;
 	}
 
+	// Since we've altered the class's fields, we need to reset class_fields_for_children to ensure
+	// that it is recalculated the next time an object is created.
+
+	class_atom->class_fields_for_children = NULL;
+
 	CON_MUTEX_UNLOCK(&class_->mutex);
 }
 

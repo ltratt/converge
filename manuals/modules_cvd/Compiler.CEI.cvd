@@ -1,0 +1,408 @@
+<module name="Compiler::CEI">
+
+This is the <q>Compiler External Interface</q> module which is the recommended way for the user to interact with the Converge compiler. This module necessarily contains a diverse range of functionality.
+
+<h3>Eval</h3>
+
+<function name="eval">
+<argument name="expr" type="String" />
+<argument name="vars">Dict{}</argument>
+<argument name="includes">[]</argument>
+Dynamically evaluates the expression specified in the string <code>expr</code>, returning its result (which may be to fail). The expression is evaluated in the context of variables defined in the dictionary <code>vars</code>; the values in this dictionary are updated after <code>expr's</code> evaluation to reflect any assignments to them during evaluation. <code>includes</code> specifies a list of module objects to be made available as imports to <code>expr</code>.
+
+<p>For example the following call to <code>eval</code>:
+<pre>
+vars := Dict{"x" : 2}
+rtn := CEI::eval("y := (x += 1) + 4", vars)
+Sys::println(rtn, ": ", vars)
+</pre>
+
+will result in the following output:
+<pre>
+7: Dict{"x" : 3, "y" : 7}
+</pre></p>
+</function>
+
+
+<h3>Generic compile-time meta-programming functions</h3>
+
+<function name="fresh_name">
+<argument name="name" type="String">null</argument>
+Returns the name of a guaranteed <q>fresh</q> variable name (i.e. a variable name which won't clash with another variable name). If <code>name</code> is non-<code>null</code>, then it should be a string, the contents of which will form part of the fresh variable name.
+</function>
+
+<function name="lift">
+<argument name="obj" />
+<argument name="src_infos">null</argument>
+<q>Lifts</q> an object into its ITree equivalent i.e. turns a string into an IString, an int into a IInt etc. Container types such as lists are recursively converted into their ITree equivalent.
+</function>
+
+
+<h3>DSL block related functions</h3>
+
+<function name="dsl_parse">
+<argument name="dsl_block" />
+<argument name="src_infos" />
+<argument name="extra_keywords" />
+<argument name="extra_symbols" />
+<argument name="grammar" />
+<argument name="start_rule" />
+</function>
+
+
+
+<h3>ITree definition and creation</h3>
+
+<h4>ITree definitions and expressions</h4>
+
+<function name="imodule">
+<argument name="module_name" />
+<argument name="definitions" />
+<argument name="src_infos" />
+</function>
+
+
+<function name="iclass_def">
+<argument name="class_name" type="String"/>
+<argument name="supers"/>
+<argument name="metaclass_" />
+<argument name="fields" />
+<argument name="src_infos" />
+Returns an IClass_Def whose: name is the string <code>class_name</code>; superclasses are defined by the list of IExpr's <code>supers</code>; metaclass is specified by the IExpr <code>metaclass_</code>, or <code>null</code> if there is no metaclass; fields are specified by the list of IAssignment's or IFunc_Def's <code>fields</code>.
+</function>
+
+
+<function name="ifunc_def">
+<argument name="is_bound" type="Int" />
+<argument name="func_name" type="String" />
+<argument name="params" />
+<argument name="var_arg" />
+<argument name="nonlocals" />
+<argument name="renames" />
+<argument name="body" />
+<argument name="src_infos" />
+Returns an IFunc_Def which is a bound function if <code>is_bound</code> is <code>1</code> and unbound if it is <code>0</code> (other values of <code>is_bound</code> lead to undefined behaviour). The resulting IFunc_Def has: name is the string <code>func_name</code>; parameters are defined by the list of IParam's <code>params</code>; var arg is defined by the IVar <code>var_arg</code>, or null if no var arg is specified; nonlocals are defined by the list of IVar's <code>nonlocals</code>; renames are defined by the list of <code>[<emph>from</emph>, <emph>to</emph>]</code> pairs in <code>renames</code>; body is defined by the IExpr_Block <code>body</code>.
+</function>
+
+
+<function name="iif">
+<argument name="clauses" />
+<argument name="else_body" />
+<argument name="src_infos" />
+Returns an IIf whose: main clauses are defined by the list of IClause's <code>clauses</code>; else branch is defined by the IExpr_Block <code>else_body</code>, or null if there is no else branch.
+</function>
+
+
+<function name="indif">
+<argument name="clauses" />
+<argument name="src_infos" />
+Returns an INDIf whose main clauses are defined by the list of IClause's <code>clauses</code>.
+</function>
+
+
+<function name="ivar">
+<argument name="var_name" type="String" />
+<argument name="src_infos" />
+Returns an IVar whose name is defined by the string <code>var_name</code>.
+</function>
+
+
+<function name="iimport">
+<argument name="module_id" type="String" />
+<argument name="var_name" />
+<argument name="src_infos" />
+Returns an IImport which imports the module with ID <code>module_id</code> to the variable whose name is defined by the string <code>var_name</code>.
+</function>
+
+
+<function name="iwhile">
+<argument name="condition" />
+<argument name="body" />
+<argument name="exhausted_body" />
+<argument name="broken_body" />
+<argument name="src_infos" />
+Returns an IWhile whose: condition is defined by the IExpr <code>condition</code>; main body is defined by the IExpr_Block <code>body</code>; exhausted body is defined by the IExpr_Block <code>exhausted_body</code>, or <code>null</code> if no exhausted body is specified; broken body is defined by the IExpr_Block <code>broken_body</code>, or <code>null</code> if no broken body is specified.
+</function>
+
+
+<function name="ifor">
+<argument name="condition" />
+<argument name="body" />
+<argument name="exhausted_body" />
+<argument name="broken_body" />
+<argument name="src_infos" />
+Returns an IFor whose: condition is defined by the IExpr <code>condition</code>; main body is defined by the IExpr_Block <code>body</code>; exhausted body is defined by the IExpr_Block <code>exhausted_body</code>, or <code>null</code> if no exhausted body is specified; broken body is defined by the IExpr_Block <code>broken_body</code>, or <code>null</code> if no broken body is specified.
+</function>
+
+
+<function name="iint">
+<argument name="val" />
+<argument name="src_infos" />
+Returns an IInt whose value is that of the integer <code>val</code>.
+</function>
+
+
+<function name="istring">
+<argument name="str" />
+<argument name="src_infos" />
+Returns an IString whose value is that of the string <code>str</code>.
+</function>
+
+
+<function name="islot_lookup">
+<argument name="object_expr" />
+<argument name="slot_name" />
+<argument name="src_infos" />
+Returns an ISlot_Lookup which looks up the slot defined in the string <code>slot_name</code> in the IExpr defined in <code>object_expr</code>.
+</function>
+
+
+<function name="imodule_lookup">
+<argument name="object_expr" />
+<argument name="def_name" />
+<argument name="src_infos" />
+Returns an IModule_Lookup which looks up the slot defined in the string <code>slot_name</code> in the IExpr defined in <code>object_expr</code>.
+</function>
+
+
+<function name="ilist">
+<argument name="elements" />
+<argument name="src_infos" />
+Returns an IList whose elements are the list of IExpr's in <code>elements</code>.
+</function>
+
+
+<function name="idict">
+<argument name="elements" />
+<argument name="src_infos" />
+Returns an IDict whose elements are specified in the list of pairs <code>[<emph>key</emph>, <emph>val</emph>]</code> (both elements of which are IExpr's) in <code>elements</code>.
+</function>
+
+
+<function name="iset">
+<argument name="elements" />
+<argument name="src_infos" />
+Returns an ISet whose elements are the list of IExpr's in <code>elements</code>.
+</function>
+
+
+<function name="iapplication">
+<argument name="func_expr" />
+<argument name="args" />
+<argument name="src_infos" />
+Returns an IApplication of the list of IExpr <code>args</code> to the function specified in the IExpr <code>func_expr</code>.
+</function>
+
+
+<function name="iget">
+<argument name="get_object" />
+<argument name="index" />
+<argument name="src_infos" />
+Returns an IGet (i.e. <code><emph>get_object</emph>[<emph>index</emph>]</code>) which looks up the index element specified by the IExpr <code>index</code> in the object specified by the IExpr <code>get_object</code>.
+</function>
+
+
+<function name="islice">
+<argument name="slice_object" />
+<argument name="lower_bound" />
+<argument name="upper_bound" />
+<argument name="src_infos" />
+Returns an ISlice (i.e. <code><emph>get_object</emph>[<emph>index</emph>]</code>) which looks up the index element specified by the IExpr <code>index</code> in the object specified by the IExpr <code>get_object</code>.
+</function>
+
+
+<function name="iexbi">
+<argument name="object_expr" />
+<argument name="field_name" />
+<argument name="src_infos" />
+Returns an IEXBI which looks up the field specified by the string <code>field_name</code> in the IExpr <code>object_expr</code>.
+</function>
+
+
+<function name="ireturn">
+<argument name="return_expr" />
+Returns an IReturn which returns the value of the IExpr <code>return_expr</code>, which may be <code>null</code> if the default return value is to be returned.
+</function>
+
+
+<function name="iyield">
+<argument name="yield_expr" />
+<argument name="src_infos" />
+Returns an IYield which returns the value of the IExpr <code>yield_expr</code>.
+</function>
+
+
+<function name="iraise">
+<argument name="raise_expr" />
+<argument name="src_infos" />
+Returns an IRaise which raises the expression specified by the IExpr <code>raise_expr</code>.
+</function>
+
+
+<function name="iassert">
+<argument name="assert_expr" />
+<argument name="src_infos" />
+Returns an IAssert which checks the assertion in the expression specified by the IExpr <code>assert_expr</code>.
+</function>
+
+
+<function name="ibreak">
+<argument name="src_infos" />
+Returns an IBreak.
+</function>
+
+
+<function name="icontinue">
+<argument name="src_infos" />
+Returns an IContinue.
+</function>
+
+
+<function name="iconjunction">
+<argument name="exprs" />
+<argument name="src_infos" />
+Returns an IConjunction of the list of IExpr's in <code>exprs</code>.
+</function>
+
+
+<function name="ialternation">
+<argument name="exprs" />
+<argument name="src_infos" />
+Returns an IAlternation of the list of IExpr's in <code>exprs</code>.
+</function>
+
+
+<function name="iassignment">
+<argument name="type" />
+<argument name="targets" />
+<argument name="expr" />
+<argument name="src_infos" />
+Returns an IAssignment whose: <code>type</code> must be one of <ref name="STD_ASSIGN">STD_ASSIGN</ref>, <ref name="ADD_ASSIGN">ADD_ASSIGN</ref>, <ref name="SUB_ASSIGN">SUB_ASSIGN</ref>, <ref name="MUL_ASSIGN">MUL_ASSIGN</ref>, or <ref name="DIV_ASSIGN">DIV_ASSIGN</ref>; targets are defined by the non-empty list <code>targets</code> of IVar's, IGet's, or ISlot_Lookup's; expression is specified by the IExpr <code>expr</code>.
+</function>
+
+
+<function name="inot">
+<argument name="expr" />
+<argument name="src_infos" />
+Returns an INot which checks the expression specified by the IExpr <code>expr</code>.
+</function>
+
+
+<function name="ibinary">
+<argument name="type" />
+<argument name="lhs" />
+<argument name="rhs" />
+<argument name="src_infos" />
+Returns an IBinary whose: <code>type</code> must be one of <ref name="BINARY_ADD">BINARY_ADD</ref>, <ref name="BINARY_SUB">BINARY_SUB</ref>, <ref name="BINARY_MUL">BINARY_MUL</ref>, <ref name="BINARY_DIV">BINARY_DIV</ref>, or <ref name="BINARY_MOD">BINARY_MOD</ref>; left hand side expression is specified by the IExpr <code>lhs</code>; right hand side expression is specified by the IExpr <code>rhs</code>.
+</function>
+
+
+<function name="icomparison">
+<argument name="type" />
+<argument name="lhs" />
+<argument name="rhs" />
+<argument name="src_infos" />
+Returns an IComparison whose: <code>type</code> must be one of <ref name="IS_COMPARISON">IS_COMPARISON</ref>, <ref name="EQ_COMPARISON">EQ_COMPARISON</ref>, <ref name="NEQ_COMPARISON">NEQ_COMPARISON</ref>, <ref name="LEQ_COMPARISON">LEQ_COMPARISON</ref>, <ref name="GEQ_COMPARISON">GEQ_COMPARISON</ref>, <ref name="LE_COMPARISON">LE_COMPARISON</ref>, or <ref name="GE_COMPARISON">GE_COMPARISON</ref>; left hand side expression is specified by the IExpr <code>lhs</code>; right hand side expression is specified by the IExpr <code>rhs</code>.
+</function>
+
+
+<function name="ipass">
+<argument name="src_infos" />
+Returns an IPass.
+</function>
+
+
+<function name="iinsert">
+<argument name="expr" />
+<argument name="src_infos" />
+Returns an INot which inserts the expression specified by the IExpr <code>expr</code> into a surrounding quasi-quoted expression.
+</function>
+
+
+<function name="istandard_quasi_quotes">
+<argument name="body" />
+<argument name="extra_src_infos" />
+<argument name="src_infos" />
+Returns an IStandard_Quasi_Quotes which quasi-quotes the IExpr_Block <code>body</code>, adding extra src infos specified by <code>extra_src_infos</code> which may be <code>null</code> if no extra src infos are to be added to the resulting ITree.
+</function>
+
+
+<function name="ioriginal_name">
+<argument name="module_id" />
+<argument name="def_name" type="String" />
+<argument name="src_infos" />
+Returns an IOriginal_Name which looks up the definition specified by the string <code>def_name</code> in the module with ID <code>module_id</code>.
+</function>
+
+
+<h4>ITree <q>virtual</q> elements</h4>
+
+<function name="iexpr_block">
+<argument name="exprs" />
+<argument name="src_infos" />
+Returns an IExpr_Block of the non-empty list of IExpr's <code>exprs</code>.
+</function>
+
+
+<function name="iparam">
+<argument name="var" />
+<argument name="default" />
+<argument name="src_infos" />
+Returns an IParam whose name is defined by the IVar <code>name</code>, and whose default value is specified by the IExpr <code>default</code> or <code>null</code> if there is no default value.
+</function>
+
+
+<function name="iclause">
+<argument name="condition" />
+<argument name="body" />
+<argument name="src_infos" />
+Returns an IClause whose: condition is specified by the IExpr <code>condition</code>; body is specified by the IExpr_Block <code>body</code>.
+</function>
+
+
+<h4>Assignment types</h4>
+
+<assignment name="STD_ASSIGN">for the standard assignment operator <code>:=</code>.</assignment>
+
+<assignment name="ADD_ASSIGN">for the addition assignment operator <code>+=</code>.</assignment>
+
+<assignment name="SUB_ASSIGN">for the subtraction assignment operator <code>-=</code>.</assignment>
+
+<assignment name="MUL_ASSIGN">for the multiplication assignment operator <code>*=</code>.</assignment>
+
+<assignment name="DIV_ASSIGN">for the division assignment operator <code>/=</code>.</assignment>
+
+
+
+<h4>Binary operator types</h4>
+
+<assignment name="BINARY_ADD">for the binary operator <code>+</code>.</assignment>
+
+<assignment name="BINARY_SUB">for the binary operator <code>-</code>.</assignment>
+
+<assignment name="BINARY_MUL">for the binary operator <code>*</code>.</assignment>
+
+<assignment name="BINARY_DIV">for the binary operator <code>/</code>.</assignment>
+
+<assignment name="BINARY_MOD">for the binary operator <code>%</code>.</assignment>
+
+
+
+<h4>Comparison operator types</h4>
+
+<assignment name="IS_COMPARISON">for the comparison operator <code>is</code>.</assignment>
+
+<assignment name="EQ_COMPARISON">for the comparison operator <code>==</code>.</assignment>
+
+<assignment name="NEQ_COMPARISON">for the comparison operator <code>!=</code>.</assignment>
+
+<assignment name="LEQ_COMPARISON">for the comparison operator <code>&lt;=</code>.</assignment>
+
+<assignment name="GEQ_COMPARISON">for the comparison operator <code>&gt;=</code>.</assignment>
+
+<assignment name="LE_COMPARISON">for the comparison operator <code>&lt;</code>.</assignment>
+
+<assignment name="GE_COMPARISON">for the comparison operator <code>&gt;</code>.</assignment>
+
+
+</module>

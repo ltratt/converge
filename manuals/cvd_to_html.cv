@@ -245,7 +245,7 @@ class CVD_To_HTML:
 
 	func _e_assignment(node):
 
-		return Strings::format("""<div style="padding-left: 2em"><p style="text-indent: -1em" /><code>%s</code>\n%s</div>""", node.get_attr("name").value, self._preorder_children(node))
+		return Strings::format("""<div style="padding-left: 2em"><p style="text-indent: -1em" /><a name="%s"><code>%s</code></a>\n%s</div>""", node.get_attr("name").value, node.get_attr("name").value, self._preorder_children(node))
 
 
 

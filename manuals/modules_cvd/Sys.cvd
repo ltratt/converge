@@ -5,6 +5,10 @@ This module defines a number of important values:
 A list containing the command line arguments passed to the Converge program.
 </assignment>
 
+<assignment name="program_path">
+A string containing the path of the current program. NB: This may be set to null (e.g. if the program was loaded from memory), and if present may not be a fully canonicalized path.
+</assignment>
+
 <assignment name="stdin">
 A <ref name="File::File" /> object representing standard input.
 </assignment>
@@ -35,8 +39,4 @@ Prints all arguments passed to it to standard out. Strings are printed as is; al
 <vararg name="s" />
 Prints all arguments passed to it to standard out, and then prints a trailing newline. Strings are printed as is; all other objects have their <code>to_str</code> function called.
 </function>
-
-<assignment name="program_path">
-A string containing the path of the current program. NB: This may be set to null (e.g. if the program was loaded from memory), and if present may not be a fully canonicalized path.
-</assignment>
 </module>

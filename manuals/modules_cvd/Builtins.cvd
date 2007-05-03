@@ -20,6 +20,10 @@ Succeeds if this class (or one of its subclasses) instantiated <code>o</code>.
 Returns the field <code>name</code> in the class, raising an exception if it does not exist.
 </function>
 
+<function name="get_fields">
+Returns a set of all field names defined in this class (note that this does <em>not</em> include slots defined in superclasses).
+</function>
+
 <function name="set_field">
 <argument name="name" type="String" />
 <argument name="o" type="Object" />

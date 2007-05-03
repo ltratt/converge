@@ -37,6 +37,7 @@
 #include "Builtins/Int/Atom.h"
 #include "Builtins/List/Atom.h"
 #include "Builtins/Module/Atom.h"
+#include "Builtins/Set/Atom.h"
 #include "Builtins/Slots_Atom_Def.h"
 #include "Builtins/String/Atom.h"
 #include "Builtins/Thread/Atom.h"
@@ -51,6 +52,7 @@ Con_Obj *_Con_Builtins_Class_Class_get_slot_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Class_Class_to_str_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Class_Class_path_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Class_Class_get_field_func(Con_Obj *);
+Con_Obj *_Con_Builtins_Class_Class_get_fields_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Class_Class_set_field_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Class_Class_conformed_by_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Class_Class_instantiated_func(Con_Obj *);
@@ -85,6 +87,7 @@ void Con_Builtins_Class_Class_bootstrap(Con_Obj *thread)
 	CON_SET_FIELD(class_class, "path", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Class_Class_path_func, "path", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), class_class));
 
 	CON_SET_FIELD(class_class, "get_field", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Class_Class_get_field_func, "get_field", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), class_class));
+	CON_SET_FIELD(class_class, "get_fields", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Class_Class_get_fields_func, "get_fields", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), class_class));
 	CON_SET_FIELD(class_class, "set_field", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Class_Class_set_field_func, "set_field", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), class_class));
 	CON_SET_FIELD(class_class, "conformed_by", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Class_Class_conformed_by_func, "conformed_by", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), class_class));
 	CON_SET_FIELD(class_class, "instantiated", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Class_Class_instantiated_func, "instantiated", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), class_class));
@@ -288,6 +291,50 @@ Con_Obj *_Con_Builtins_Class_Class_get_field_func(Con_Obj *thread)
 	assert(name_string_atom->encoding = CON_STR_UTF_8);
 	
 	return Con_Builtins_Class_Atom_get_field(thread, self, name_string_atom->str, name_string_atom->size);
+}
+
+
+
+//
+// 'get_fields()'.
+//
+
+Con_Obj *_Con_Builtins_Class_Class_get_fields_func(Con_Obj *thread)
+{
+	Con_Obj *self;
+	CON_UNPACK_ARGS("C", &self);
+
+	Con_Builtins_Class_Atom *class_atom = CON_GET_ATOM(self, CON_BUILTIN(CON_BUILTIN_CLASS_ATOM_DEF_OBJECT));
+
+	Con_Obj *fields = Con_Builtins_Set_Atom_new(thread);
+	Con_Slots *slots = &class_atom->fields;
+	Con_Int slot_name_buffer_size = 16;
+	u_char *slot_name_buffer = Con_Memory_malloc(thread, slot_name_buffer_size, CON_MEMORY_CHUNK_OPAQUE);
+	Con_Int j = 0;
+	while (1) {
+		Con_Obj *val;
+		Con_Int old_j = j;
+		const u_char *slot_name;
+		Con_Int slot_name_size;
+		CON_MUTEX_LOCK(&self->mutex);
+		if (!Con_Slots_read_slot(thread, slots, &j, &slot_name, &slot_name_size, &val))
+			break;
+		if (slot_name_size > slot_name_buffer_size) {
+			CON_MUTEX_UNLOCK(&self->mutex);
+			slot_name_buffer_size = slot_name_size;
+			slot_name = Con_Memory_malloc(thread, slot_name_buffer_size, CON_MEMORY_CHUNK_OPAQUE);
+			j = old_j;
+			CON_MUTEX_LOCK(&self->mutex);
+			continue;
+		}
+
+		memmove(slot_name_buffer, slot_name, slot_name_size);
+
+		CON_MUTEX_UNLOCK(&self->mutex);
+		CON_GET_SLOT_APPLY(fields, "add", Con_Builtins_String_Atom_new_copy(thread, slot_name, slot_name_size, CON_STR_UTF_8));
+	}
+	
+	return fields;
 }
 
 

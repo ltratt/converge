@@ -29,6 +29,10 @@ Returns a set of all field names defined in this class (note that this does <em>
 <argument name="o" type="Object" />
 Sets the value of field <code>name</code> to <code>o</code>, creating <code>name</code> if it did not previously exist.
 </function>
+
+<function name="get_supers">
+Returns a list of all this parents superclasses.
+</function>
 </class>
 
 

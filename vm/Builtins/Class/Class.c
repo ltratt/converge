@@ -53,6 +53,7 @@ Con_Obj *_Con_Builtins_Class_Class_to_str_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Class_Class_path_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Class_Class_get_field_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Class_Class_get_fields_func(Con_Obj *);
+Con_Obj *_Con_Builtins_Class_Class_get_supers_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Class_Class_set_field_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Class_Class_conformed_by_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Class_Class_instantiated_func(Con_Obj *);
@@ -89,6 +90,7 @@ void Con_Builtins_Class_Class_bootstrap(Con_Obj *thread)
 	CON_SET_FIELD(class_class, "get_field", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Class_Class_get_field_func, "get_field", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), class_class));
 	CON_SET_FIELD(class_class, "get_fields", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Class_Class_get_fields_func, "get_fields", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), class_class));
 	CON_SET_FIELD(class_class, "set_field", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Class_Class_set_field_func, "set_field", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), class_class));
+	CON_SET_FIELD(class_class, "get_supers", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Class_Class_get_supers_func, "get_supers", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), class_class));
 	CON_SET_FIELD(class_class, "conformed_by", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Class_Class_conformed_by_func, "conformed_by", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), class_class));
 	CON_SET_FIELD(class_class, "instantiated", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Class_Class_instantiated_func, "instantiated", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), class_class));
 }
@@ -355,6 +357,36 @@ Con_Obj *_Con_Builtins_Class_Class_set_field_func(Con_Obj *thread)
 	Con_Builtins_Class_Atom_set_field(thread, self, name_string_atom->str, name_string_atom->size, o);
 
 	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
+}
+
+
+
+//
+// 'get_supers()'.
+//
+
+Con_Obj *_Con_Builtins_Class_Class_get_supers_func(Con_Obj *thread)
+{
+	Con_Obj *self;
+	CON_UNPACK_ARGS("C", &self);
+
+	Con_Builtins_Class_Atom *class_atom = CON_GET_ATOM(self, CON_BUILTIN(CON_BUILTIN_CLASS_ATOM_DEF_OBJECT));
+
+	CON_MUTEX_LOCK(&self->mutex);
+	Con_Int num_supers = class_atom->num_supers;
+	CON_MUTEX_UNLOCK(&self->mutex);
+
+	Con_Obj *supers_list = Con_Builtins_List_Atom_new_sized(thread, num_supers);
+	CON_MUTEX_LOCK(&self->mutex);
+	for (Con_Int i = 0; i < class_atom->num_supers; i += 1) {
+		Con_Obj *super = class_atom->supers[i];
+		CON_MUTEX_UNLOCK(&self->mutex);
+		CON_GET_SLOT_APPLY(supers_list, "append", super);
+		CON_MUTEX_LOCK(&self->mutex);
+	}
+	CON_MUTEX_UNLOCK(&self->mutex);
+	
+	return supers_list;
 }
 
 

@@ -21,7 +21,7 @@
 
 import Builtins, Exceptions, Strings, Thread
 import CPK::Earley::Grammar
-import Compiler_Vars, convergec, CV_Parser, Eval, ITree, ITree_TC, Tokenizer
+import Compiler_Vars, convergec, CV_Parser, Eval, ITree, ITree_Format, ITree_TC, Tokenizer
 
 
 
@@ -41,6 +41,12 @@ func eval(str, vars := Dict{}, includes := []):
 func fresh_name(name := null):
 
 	return Compiler_Vars::fresh_name(name)
+
+
+
+func itree_format(itree):
+
+	return ITree_Format::format(itree)
 
 
 

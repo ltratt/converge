@@ -20,7 +20,7 @@
 
 
 import Builtins, Exceptions, Strings, Sys
-import Compiler::CEI, Compiler::ITree_Format
+import Compiler::CEI
 
 
 
@@ -154,7 +154,7 @@ func printf(format):
 	// what's happening above to life.
 	
 	Sys::println(Strings::format("For the input:\n  %s\nformat generated the following function:\n", format))
-	Sys::println(ITree_Format::format(func_) + "\n")
+	Sys::println(CEI::itree_format(func_) + "\n")
 	
 	return func_
 

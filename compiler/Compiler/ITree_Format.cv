@@ -20,7 +20,7 @@
 
 
 import File, Functional, Strings
-import CEI, ITree
+import Compiler_Vars, ITree
 
 
 
@@ -261,7 +261,7 @@ class ITree_Format:
 
 	func _t_ioriginal_name(node):
 	
-		if node.module_id == CEI::compiler().module_id:
+		if node.module_id == Compiler_Vars::peek_compiler().module_id:
 			return node.def_name // XXX
 		else:
 			raise "XXX"

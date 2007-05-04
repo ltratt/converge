@@ -51,7 +51,15 @@ Returns the name of a guaranteed <q>fresh</q> variable name (i.e. a variable nam
 
 
 
-<h3>ITree definition and creation</h3>
+<h3>ITree functions</h3>
+
+<h4>Pretty printing</h4>
+
+<function name="itree_format">
+<argument name="itree" />
+Returns a string representing the pretty-printed ITree <code>itree</code>.
+</function>
+
 
 <h4>ITree definitions and expressions</h4>
 

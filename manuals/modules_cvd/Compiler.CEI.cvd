@@ -47,6 +47,7 @@ Returns the name of a guaranteed <q>fresh</q> variable name (i.e. a variable nam
 <argument name="extra_symbols" />
 <argument name="grammar" />
 <argument name="start_rule" />
+Parse the string <code>dsl_block</code>, relative to the src infos <code>src_infos</code> using the standard Converge tokenizer. Extra keywords and extra_symbols that the tokenizer should recognise can be passed as lists of strings. The DSL block will be parsed relative to the CPK grammar <code>grammar</code> whose start rule is <code>start_rule</code>
 </function>
 
 

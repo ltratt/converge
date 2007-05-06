@@ -302,8 +302,16 @@ Con_Obj *_Con_Builtins_Set_Class_extend_func(Con_Obj *thread)
 		}
 		CON_MUTEX_UNLOCK(&o_obj->mutex);
 	}
-	else
-		CON_RAISE_EXCEPTION("Type_Exception", CON_BUILTIN(CON_BUILTIN_SET_CLASS), o_obj, CON_NEW_STRING("XXX"));
+	else {
+		CON_PRE_GET_SLOT_APPLY_PUMP(o_obj, "iterate");
+		while (1) {
+			Con_Obj *e = CON_APPLY_PUMP();
+			if (e == NULL)
+				break;
+
+			CON_GET_SLOT_APPLY(self_obj, "add", e);
+		}
+	}
 			
 	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }

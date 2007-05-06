@@ -49,6 +49,7 @@ Con_Obj *_Con_Builtins_Set_Class_add_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Set_Class_complement_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Set_Class_extend_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Set_Class_find_func(Con_Obj *);
+Con_Obj *_Con_Builtins_Set_Class_intersect_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Set_Class_iterate_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Set_Class_len_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Set_Class_scopy_func(Con_Obj *);
@@ -80,6 +81,7 @@ void Con_Builtins_Set_Class_bootstrap(Con_Obj *thread)
 	CON_SET_FIELD(set_class, "complement", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Set_Class_complement_func, "complement", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), set_class));
 	CON_SET_FIELD(set_class, "extend", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Set_Class_extend_func, "extend", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), set_class));
 	CON_SET_FIELD(set_class, "find", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Set_Class_find_func, "find", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), set_class));
+	CON_SET_FIELD(set_class, "intersect", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Set_Class_intersect_func, "intersect", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), set_class));
 	CON_SET_FIELD(set_class, "iterate", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Set_Class_iterate_func, "iterate", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), set_class));
 	CON_SET_FIELD(set_class, "len", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Set_Class_len_func, "len", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), set_class));
 	CON_SET_FIELD(set_class, "scopy", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Set_Class_scopy_func, "scopy", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), set_class));
@@ -337,6 +339,59 @@ Con_Obj *_Con_Builtins_Set_Class_find_func(Con_Obj *thread)
 	return rtn;
 }
 
+
+
+//
+// 'intersect(o)' returns a set which contains every element of 'self' which is also in 'o'.
+//
+
+Con_Obj *_Con_Builtins_Set_Class_intersect_func(Con_Obj *thread)
+{
+	Con_Obj *o_obj, *self_obj;
+	CON_UNPACK_ARGS("WO", &self_obj, &o_obj);
+
+	Con_Builtins_Set_Atom *self_set_atom = CON_FIND_ATOM(self_obj, CON_BUILTIN(CON_BUILTIN_SET_ATOM_DEF_OBJECT));	
+	Con_Builtins_Set_Atom *o_set_atom = CON_FIND_ATOM(o_obj, CON_BUILTIN(CON_BUILTIN_SET_ATOM_DEF_OBJECT));
+
+	if (o_set_atom != NULL) {
+		CON_MUTEX_LOCK(&self_obj->mutex);
+		Con_Int max_num_entries = self_set_atom->num_entries;
+		CON_MUTEX_UNLOCK(&self_obj->mutex);
+		// Guessing how many entries the new set is going to have is a stab in the dark at best.
+		Con_Obj *new_set = Con_Builtins_Set_Atom_new_sized(thread, max_num_entries);
+
+		CON_MUTEX_LOCK(&self_obj->mutex);
+		for (Con_Int i = 0; i < self_set_atom->num_entries_allocated; i += 1) {
+			if (self_set_atom->entries[i].obj == NULL)
+				continue;
+
+			Con_Hash hash = self_set_atom->entries[i].hash;
+			Con_Obj *obj = self_set_atom->entries[i].obj;
+			CON_MUTEX_UNLOCK(&self_obj->mutex);
+
+			CON_MUTEX_LOCK(&o_obj->mutex);
+			Con_Int offset = Con_Builtins_Set_Atom_find_entry(thread, &o_obj->mutex, o_set_atom->entries, o_set_atom->num_entries_allocated, obj, hash);
+			if (o_set_atom->entries[offset].obj != NULL) {
+				CON_MUTEX_UNLOCK(&o_obj->mutex);
+				CON_MUTEX_LOCK(&new_set->mutex);
+				Con_Builtins_Set_Atom_add_entry(thread, new_set, obj, hash);
+				CON_MUTEX_UNLOCK(&new_set->mutex);
+				CON_MUTEX_LOCK(&self_obj->mutex);
+			}
+			else {
+				CON_MUTEX_UNLOCK(&o_obj->mutex);
+				CON_MUTEX_LOCK(&self_obj->mutex);
+			}
+
+			CON_ASSERT_MUTEX_LOCKED(&self_obj->mutex);
+		}
+		CON_MUTEX_UNLOCK(&self_obj->mutex);
+
+		return new_set;
+	}
+
+	CON_RAISE_EXCEPTION("Type_Exception", CON_BUILTIN(CON_BUILTIN_SET_CLASS), o_obj, CON_NEW_STRING("XXX"));
+}
 
 
 

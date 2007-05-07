@@ -45,6 +45,11 @@ The standard class <code>Dict</code>.
 Deletes the entry <code>key</code>. If 'key' is not found an exception is raised.
 </function>
 
+<function name="extend">
+<argument name="o" type="Object" />
+Adds every element from the dictoinary <code>o</code> into the dictionary. Key conflicts are resolved in favour of <code>o</code> i.e. elements in <code>o</code> overwrite elements in the dictionary being extended.
+</function>
+
 <function name="find">
 <argument name="o" type="Object" />
 <argument name="default" type="Object">fail</argument>

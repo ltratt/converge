@@ -45,6 +45,7 @@
 
 Con_Obj *_Con_Builtins_Dict_Class_to_str_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Dict_Class_del_func(Con_Obj *);
+Con_Obj *_Con_Builtins_Dict_Class_extend_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Dict_Class_find_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Dict_Class_get_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Dict_Class_iterate_func(Con_Obj *);
@@ -76,6 +77,7 @@ void Con_Builtins_Dict_Class_bootstrap(Con_Obj *thread)
 
 	CON_SET_FIELD(dict_class, "to_str", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Dict_Class_to_str_func, "to_str", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), dict_class));
 	CON_SET_FIELD(dict_class, "del", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Dict_Class_del_func, "del", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), dict_class));
+	CON_SET_FIELD(dict_class, "extend", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Dict_Class_extend_func, "extend", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), dict_class));
 	CON_SET_FIELD(dict_class, "find", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Dict_Class_find_func, "find", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), dict_class));
 	CON_SET_FIELD(dict_class, "get", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Dict_Class_get_func, "get", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), dict_class));
 	CON_SET_FIELD(dict_class, "iterate", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Dict_Class_iterate_func, "iterate", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), dict_class));
@@ -258,6 +260,41 @@ Con_Obj *_Con_Builtins_Dict_Class_find_func(Con_Obj *thread)
 	CON_MUTEX_UNLOCK(&self->mutex);
 	
 	return val;
+}
+
+
+
+//
+// 'extend(o)' adds all the elements in the dictionary 'o' to. Elements in 'o' will overwrite
+// their equivalents in 'self'.
+//
+
+Con_Obj *_Con_Builtins_Dict_Class_extend_func(Con_Obj *thread)
+{
+	Con_Obj *o, *self;
+	CON_UNPACK_ARGS("DO", &self, &o);
+
+	Con_Builtins_Dict_Atom *o_dict_atom = CON_FIND_ATOM(o, CON_BUILTIN(CON_BUILTIN_DICT_ATOM_DEF_OBJECT));
+	if (o_dict_atom != NULL) {
+		CON_MUTEX_LOCK(&o->mutex);
+		for (Con_Int i = 0; i < o_dict_atom->num_entries_allocated; i += 1) {
+			if (o_dict_atom->entries[i].key == NULL)
+				continue;
+
+			Con_Obj *key = o_dict_atom->entries[i].key;
+			Con_Obj *val = o_dict_atom->entries[i].val;
+			CON_MUTEX_UNLOCK(&o->mutex);
+
+			CON_GET_SLOT_APPLY(self, "set", key, val);
+
+			CON_MUTEX_LOCK(&o->mutex);
+		}
+		CON_MUTEX_UNLOCK(&o->mutex);
+
+		return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
+	}
+
+	CON_XXX;
 }
 
 

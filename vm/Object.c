@@ -187,7 +187,7 @@ void *Con_Object_get_atom(Con_Obj *thread, Con_Obj *obj, Con_Obj *atom_type)
 	}
 	while ((atom = atom->next_atom) != NULL);
 	
-	CON_XXX;
+	CON_RAISE_EXCEPTION("VM_Exception", CON_NEW_STRING("Con_Object_get_atom trying to get an atom type that does not exist."));
 }
 
 

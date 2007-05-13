@@ -44,6 +44,7 @@
 
 
 Con_Obj *_Con_Builtins_Set_Class_add_plus_func(Con_Obj *);
+Con_Obj *_Con_Builtins_Set_Class_eq_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Set_Class_to_str_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Set_Class_add_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Set_Class_complement_func(Con_Obj *);
@@ -76,6 +77,7 @@ void Con_Builtins_Set_Class_bootstrap(Con_Obj *thread)
 	Con_Memory_change_chunk_type(thread, set_class, CON_MEMORY_CHUNK_OBJ);
 
 	CON_SET_FIELD(set_class, "+", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Set_Class_add_plus_func, "+", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), set_class));
+	CON_SET_FIELD(set_class, "==", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Set_Class_eq_func, "==", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), set_class));
 	CON_SET_FIELD(set_class, "to_str", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Set_Class_to_str_func, "to_str", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), set_class));
 	CON_SET_FIELD(set_class, "add", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Set_Class_add_func, "add", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), set_class));
 	CON_SET_FIELD(set_class, "complement", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Set_Class_complement_func, "complement", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), set_class));
@@ -107,6 +109,57 @@ Con_Obj *_Con_Builtins_Set_Class_add_plus_func(Con_Obj *thread)
 	
 	return new_set;
 }
+
+
+
+//
+// '==(o)'.
+//
+
+Con_Obj *_Con_Builtins_Set_Class_eq_func(Con_Obj *thread)
+{
+	Con_Obj *o, *self;
+	CON_UNPACK_ARGS("Wo", &self, &o);
+
+	Con_Builtins_Set_Atom *self_set_atom = CON_GET_ATOM(self, CON_BUILTIN(CON_BUILTIN_SET_ATOM_DEF_OBJECT));	
+	Con_Builtins_Set_Atom *o_set_atom = CON_FIND_ATOM(o, CON_BUILTIN(CON_BUILTIN_SET_ATOM_DEF_OBJECT));
+	
+	if (o_set_atom == NULL)
+		CON_XXX;
+	
+	CON_MUTEXES_LOCK(&self->mutex, &o->mutex);
+	if (self_set_atom->num_entries != o_set_atom->num_entries) {
+		CON_MUTEXES_UNLOCK(&self->mutex, &o->mutex);
+		return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
+	}
+	
+	CON_MUTEXES_UNLOCK(&self->mutex, &o->mutex);
+	
+	CON_MUTEX_LOCK(&self->mutex);
+	for (Con_Int i = 0; i < self_set_atom->num_entries_allocated; i += 1) {
+		if (self_set_atom->entries[i].obj == NULL)
+			continue;
+		
+		Con_Hash hash = self_set_atom->entries[i].hash;
+		Con_Obj *obj = self_set_atom->entries[i].obj;
+		CON_MUTEX_UNLOCK(&self->mutex);
+
+		CON_MUTEX_LOCK(&o->mutex);
+		Con_Int offset = Con_Builtins_Set_Atom_find_entry(thread, &o->mutex, o_set_atom->entries, o_set_atom->num_entries_allocated, obj, hash);
+		if (o_set_atom->entries[offset].obj == NULL) {
+			CON_MUTEX_UNLOCK(&o->mutex);
+			return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
+		}
+		CON_MUTEX_UNLOCK(&o->mutex);
+
+		CON_MUTEX_LOCK(&self->mutex);
+	}
+	CON_MUTEX_UNLOCK(&self->mutex);
+	
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
+}
+
+
 
 //
 // 'to_str().

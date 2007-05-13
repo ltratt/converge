@@ -294,7 +294,7 @@ Con_Obj *_Con_Builtins_Dict_Class_extend_func(Con_Obj *thread)
 		return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 	}
 
-	CON_XXX;
+	CON_RAISE_EXCEPTION("Type_Exception", CON_BUILTIN(CON_BUILTIN_DICT_CLASS), o, CON_NEW_STRING("argument"));
 }
 
 

@@ -303,12 +303,12 @@ class QQ_Mode:
 			// at the earliest possible stage.
 			func_name := [<node.src_infos>|
 				func () {
-					func_name := ${self._preorder(node.func_name)}
+					func_name := ${node.func_name.expr}
 
-					if not ITree::IVar.instantiated(func_name):
-						raise Compiler_Vars::Compiler_Exception.new(Strings::format("In function node, got %s type for name instead of IVar.", func_name.instance_of.name))
+					if not Builtins::String.instantiated(func_name):
+						ITree_TC::type_error("Func_Def", "name", func_name, "String", ${CEI::lift(node.src_infos)})
 
-					return func_name.var_name
+					return func_name
 				}()
 			|]
 		else:

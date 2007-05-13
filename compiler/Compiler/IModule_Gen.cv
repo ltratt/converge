@@ -137,17 +137,9 @@ class IModule_Gen:
 
 		already_bound_vars := Dict{}
 		for i := 0.to(self._definitions.len()):
-			definition := self._definitions[i]
-			if ITree::IImport.instantiated(definition):
-				already_bound_vars[definition.var_name] := i
-			else:
-				// Must be an IAssignment
-				for target := self._definitions[i].targets.iterate():
-					if ITree::IVar.conformed_by(target):
-						already_bound_vars[target.var_name] := i
-					else:
-						for target_var := target.bound_vars.iterate():
-							already_bound_vars[target_var] := i
+			defn := self._definitions[i]
+			for target_var := defn.bound_vars.iterate():
+				already_bound_vars[target_var] := i
 
 		defns_to_include := Set{}
 		for free_var := expr.free_vars.iterate():
@@ -585,25 +577,7 @@ class IModule_Gen:
 
 		self._nesting.del(-1)
 		
-		func_def := ITree::IFunc_Def.new(is_bound, func_name, params, var_args, nonlocals_, renames, body, extra_src_infos + node[1][1].src_infos)
-		
-		if func_name is "":
-			return func_def
-		
-		i := self._nesting.len() - 1
-		while i >= 0:
-			if self._nesting[i] == _NEST_CLASS:
-				break
-			i -= 1
-		broken:
-			return func_def
-		
-		if Builtins::String.instantiated(func_name):
-			func_var := ITree::IVar.new(func_name, extra_src_infos + node[1][1].src_infos)
-		else:
-			func_var := func_name
-		
-		return ITree::IAssignment.new(ITree::STD_ASSIGN, [func_var], func_def, extra_src_infos + node[1][1].src_infos)
+		return ITree::IFunc_Def.new(is_bound, func_name, params, var_args, nonlocals_, renames, body, extra_src_infos + node[1][1].src_infos)
 
 
 

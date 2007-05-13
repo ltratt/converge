@@ -447,6 +447,16 @@ class Bytecode_Gen:
 			self._instructions.append(self._target::Instr_Pop.new(field.src_infos))
 		self._nesting.del(-1)
 
+		inside_class := 0
+		for nest := self._nesting.riterate():
+			if nest[0] == NEST_CLASS:
+				inside_class := 1
+			elif nest[0] == NEST_FUNC:
+				break
+		
+		if inside_class == 0:
+			self._add_assign_to_var(node.class_name, node.src_infos)
+
 
 
 	func _t_ifunc_def(node):
@@ -514,6 +524,20 @@ class Bytecode_Gen:
 		self._instructions.append(self._target::Instr_Return.new(node.src_infos))
 		
 		self._set_label(end_of_func_body_label)
+		
+		if node.func_name == "":
+			return
+		
+		inside_class := 0
+		for nest := self._nesting.riterate():
+			if nest[0] == NEST_CLASS:
+				inside_class := 1
+			elif nest[0] == NEST_FUNC:
+				break
+		
+		if inside_class == 0:
+			self._add_assign_to_var(node.func_name, node.src_infos)
+			
 
 
 

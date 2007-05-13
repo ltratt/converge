@@ -101,7 +101,6 @@ class IClass_Def:
 			self.bound_vars.extend(metaclass_.bound_vars)
 			self.qq_bound_vars.extend(metaclass_.qq_bound_vars)
 		for field := fields.iterate():
-			self.bound_vars.extend(field.bound_vars)
 			self.qq_bound_vars.extend(field.qq_bound_vars)
 		
 		self.free_vars := Set{}
@@ -138,7 +137,10 @@ class IFunc_Def:
 		self.body := body
 		self.src_infos := src_infos
 
-		self.bound_vars := Set{}
+		if IInsert.instantiated(func_name):
+			self.bound_vars := Set{}
+		else:
+			self.bound_vars := Set{func_name}
 		self.import_vars := Set{}
 		self.internal_import_vars := Set{}
 
@@ -1128,11 +1130,6 @@ class IExpr_Block:
 		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		for expr := self.exprs.iterate():
-			//if IClass_Def.instantiated(expr):
-			//	raise "XXX"
-			if IFunc_Def.instantiated(expr) & expr.func_name != "":
-				self.bound_vars.add(expr.func_name)
-				self.qq_bound_vars.add(expr.func_name)
 			self.bound_vars.extend(expr.bound_vars)
 			self.import_vars.extend(expr.import_vars)
 			self.qq_bound_vars.extend(expr.qq_bound_vars)

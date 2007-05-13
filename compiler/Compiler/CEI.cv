@@ -101,10 +101,9 @@ func _ibuilder():
 	for def_name := ITree.def_names():
 		if def_name[0] != "I" | not Builtins::Class.instantiated(def := ITree.get_def(def_name)):
 			continue
-		builder_name_var := ITree::IVar.new(def_name.to_lower_case(), __SRC_INFO__)
 		num_params := ITree::IInt.new(ITree.get_def(def_name).get_field("init").num_params, __SRC_INFO__)
 		builders.append([|
-			func ${builder_name_var}(*args):
+			func ${def_name.to_lower_case()}(*args):
 			
 				// Add src info from the calling function.
 

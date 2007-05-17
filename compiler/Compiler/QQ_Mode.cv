@@ -206,7 +206,7 @@ class QQ_Mode:
 
 
 
-	func _process_assign_var(var_name, node_src_infos):
+	func _process_assign_name(var_name, node_src_infos):
 
 		renamed_var_name, mode, i := self._get_var_offset(var_name, node_src_infos)
 		
@@ -215,10 +215,16 @@ class QQ_Mode:
 
 		assert(var_name == renamed_var_name)
 		
-		return self._qq("IVar", [ITree::IVar.new(self._qq_bound_var_name(var_name), node_src_infos)], node_src_infos)
-	
-	
-	
+		return ITree::IVar.new(self._qq_bound_var_name(var_name), node_src_infos)
+
+
+
+	func _process_assign_var(var_name, node_src_infos):
+
+		return self._qq("IVar", [self._process_assign_name(var_name, node_src_infos)], node_src_infos)
+
+
+
 	//
 	// Return an IOriginal_Name which looks up 'defn_name' in the module named 'module_name' in the
 	// Converge compiler.
@@ -312,7 +318,10 @@ class QQ_Mode:
 				}()
 			|]
 		else:
-			func_name := ITree::IString.new(node.func_name, node.src_infos)
+			if node.func_name == "":
+				func_name := ITree::IString.new("", node.src_infos)
+			else:
+				func_name := self._process_assign_name(node.func_name, node.src_infos)
 			
 		params_list := []
 		for param := node.params.iterate():

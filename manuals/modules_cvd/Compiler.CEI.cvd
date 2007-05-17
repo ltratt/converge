@@ -90,7 +90,7 @@ Returns an IClass_Def whose: name is the string <code>class_name</code>; supercl
 <argument name="renames" />
 <argument name="body" />
 <argument name="src_infos" />
-Returns an IFunc_Def which is a bound function if <code>is_bound</code> is <code>1</code> and unbound if it is <code>0</code> (other values of <code>is_bound</code> lead to undefined behaviour). The resulting IFunc_Def has: name is the string <code>func_name</code>; parameters are defined by the list of IParam's <code>params</code>; var arg is defined by the IVar <code>var_arg</code>, or null if no var arg is specified; nonlocals are defined by the list of IVar's <code>nonlocals</code>; renames are defined by the list of <code>[<emph>from</emph>, <emph>to</emph>]</code> pairs in <code>renames</code>; body is defined by the IExpr_Block <code>body</code>.
+Returns an IFunc_Def which is a bound function if <code>is_bound</code> is <code>1</code> and unbound if it is <code>0</code> (other values of <code>is_bound</code> lead to undefined behaviour). The resulting IFunc_Def has: name is the string <code>func_name</code> (which can be the empty string if the function is anonymous); parameters are defined by the list of IParam's <code>params</code>; var arg is defined by the IVar <code>var_arg</code>, or null if no var arg is specified; nonlocals are defined by the list of IVar's <code>nonlocals</code>; renames are defined by the list of <code>[<emph>from</emph>, <emph>to</emph>]</code> pairs in <code>renames</code>; body is defined by the IExpr_Block <code>body</code>.
 </function>
 
 

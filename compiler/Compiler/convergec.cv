@@ -199,8 +199,10 @@ class Compiler:
 				for i := 0.to(src_infos.len()):
 					module_id, src_offset := src_infos[i]
 					if module_id != self.module_id:
-						raise "XXX"
-					newlines := self.tokenizer.newlines
+						Sys::println(module_id, " ", src_offset)
+						continue
+					else:
+						newlines := self.tokenizer.newlines
 					i := 0
 					while i < newlines.len():
 						if src_offset < newlines[i]:

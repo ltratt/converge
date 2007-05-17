@@ -113,7 +113,7 @@ class ITree_TC:
 		for i := 0.to(node.fields.len()):
 			field := node.fields[i]
 			if not (ITree::IAssignment.instantiated(field) | ITree::IFunc_Def.instantiated(field)):
-				self._type_error(node, Strings::format("fields[%d]", i), field, "IAssignment")
+				self._type_error(node, Strings::format("fields[%d]", i), field, "[IAssignment, IFunc_Def]")
 
 
 

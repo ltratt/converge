@@ -427,7 +427,11 @@ class IModule_Gen:
 				fields.append(ITree::IAssignment.new(ITree::STD_ASSIGN, [self._preorder(node[7][i][1], extra_src_infos)], self._preorder(node[7][i][3], extra_src_infos), extra_src_infos + node[7][i][2].src_infos))
 			elif node[7][i].len() == 2:
 				// class_field ::= splice
-				raise "XXX"
+				sp := self._eval_splice(node[7][i][1], extra_src_infos)
+				if Builtins::List.conformed_by(sp):
+					fields.extend(sp)
+				else:
+					fields.append(sp)
 			i += 2
 		self._nesting.del(-1)
 

@@ -163,9 +163,10 @@ Con_Obj *_Con_Builtins_List_Class_new_object(Con_Obj *thread)
 Con_Obj *_Con_Builtins_List_Class_init_func(Con_Obj *thread)
 {
 	Con_Obj *o, *self;
-	CON_UNPACK_ARGS("LO", &self, &o);
+	CON_UNPACK_ARGS("L;O", &self, &o);
 	
-	CON_GET_SLOT_APPLY(self, "extend", o);
+	if (o != NULL)
+		CON_GET_SLOT_APPLY(self, "extend", o);
 
 	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }

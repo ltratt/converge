@@ -25,6 +25,7 @@
 
 #include "Core.h"
 #include "Hash.h"
+#include "Numbers.h"
 #include "Object.h"
 #include "Shortcuts.h"
 
@@ -42,7 +43,9 @@
 #include "Builtins/VM/Atom.h"
 
 
+Con_Obj *_Con_Builtins_Set_Class_new_object(Con_Obj *);
 
+Con_Obj *_Con_Builtins_Set_Class_init_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Set_Class_add_plus_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Set_Class_eq_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Set_Class_to_str_func(Con_Obj *);
@@ -72,10 +75,11 @@ void Con_Builtins_Set_Class_bootstrap(Con_Obj *thread)
 	slots_atom->next_atom = NULL;
 	
 	Con_Builtins_Slots_Atom_Def_init_atom(thread, slots_atom);
-	Con_Builtins_Class_Atom_init_atom(thread, class_atom, CON_NEW_STRING("Set"), NULL, CON_BUILTIN(CON_BUILTIN_OBJECT_CLASS), NULL);
+	Con_Builtins_Class_Atom_init_atom(thread, class_atom, CON_NEW_STRING("Set"), CON_NEW_UNBOUND_C_FUNC(_Con_Builtins_Set_Class_new_object, "Set_new", CON_BUILTIN(CON_BUILTIN_NULL_OBJ)), CON_BUILTIN(CON_BUILTIN_OBJECT_CLASS), NULL);
 	
 	Con_Memory_change_chunk_type(thread, set_class, CON_MEMORY_CHUNK_OBJ);
 
+	CON_SET_FIELD(set_class, "init", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Set_Class_init_func, "init", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), set_class));
 	CON_SET_FIELD(set_class, "+", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Set_Class_add_plus_func, "+", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), set_class));
 	CON_SET_FIELD(set_class, "==", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Set_Class_eq_func, "==", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), set_class));
 	CON_SET_FIELD(set_class, "to_str", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Set_Class_to_str_func, "to_str", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), set_class));
@@ -92,8 +96,51 @@ void Con_Builtins_Set_Class_bootstrap(Con_Obj *thread)
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+// func Set_new
+//
+
+Con_Obj *_Con_Builtins_Set_Class_new_object(Con_Obj *thread)
+{
+	Con_Obj *class_, *var_args;
+	CON_UNPACK_ARGS("Ov", &class_, &var_args);
+	
+	Con_Int num_entries_to_allocate;
+	if (Con_Numbers_Number_to_Con_Int(thread, CON_GET_SLOT_APPLY(var_args, "len")) == 0)
+		num_entries_to_allocate = 0;
+	else {
+		Con_Obj *first_elem = CON_GET_SLOT_APPLY(var_args, "get", CON_NEW_INT(0));
+		num_entries_to_allocate = Con_Numbers_Number_to_Con_Int(thread, CON_GET_SLOT_APPLY(first_elem, "len"));
+	}
+	
+	Con_Obj *new_set = Con_Builtins_Set_Atom_new_sized(thread, num_entries_to_allocate);\
+
+	CON_GET_SLOT_APPLY(CON_GET_SLOT(new_set, "init"), "apply", var_args);
+
+	return new_set;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 // Set class fields
 //
+
+//
+// 'init(o)'.
+//
+
+Con_Obj *_Con_Builtins_Set_Class_init_func(Con_Obj *thread)
+{
+	Con_Obj *o, *self;
+	CON_UNPACK_ARGS("W;O", &self, &o);
+	
+	if (o != NULL)
+		CON_GET_SLOT_APPLY(self, "extend", o);
+
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
+}
+
+
 
 //
 // '+(o)'.

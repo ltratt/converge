@@ -359,8 +359,12 @@ Con_Obj *Con_Builtins_Module_Atom_pc_to_src_locations(Con_Obj *thread, Con_PC pc
 
 	Con_Int src_info_pos = 0;
 	Con_Int src_info_num = 0;
-	while (src_info_num < instruction_num) {
+	while (1) {
 		Con_Int src_info = MODULE_GET_32BIT(MODULE_GET_WORD(CON_BYTECODE_MODULE_SRC_POSITIONS) + src_info_pos * sizeof(uint32_t));
+
+		if (src_info_num + (src_info & 0x000007) > instruction_num)
+			break;
+
 		src_info_num += src_info & 0x000007;
 
 		while (src_info & (1 << 3)) {

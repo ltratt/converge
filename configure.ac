@@ -24,7 +24,7 @@ AC_PROG_GCC_TRADITIONAL
 AC_SUBST(CONVERGE_VERSION, [$converge_version])
 AC_SUBST(CONVERGE_DATE, [$converge_date])
 
-AC_SUBST(CONVERGE_DIR, [`readlink -f .`])
+AC_SUBST(CONVERGE_DIR, [`pwd`])
 
 
 ####################################################################################################
@@ -82,6 +82,19 @@ AC_DEFINE_UNQUOTED(CON_CC, [$CC])
 
 extra_cflags="-I/usr/local/include -I/usr/include/pcre"
 extra_libs="-L/usr/local/lib"
+
+
+
+####################################################################################################
+# Platform check
+#
+
+AC_MSG_CHECKING(platform)
+operating_system=`uname -s`
+case $operating_system in
+	OpenBSD | FreeBSD | NetBSD | Linux | Darwin | CYGWIN_NT*) AC_MSG_RESULT(POSiX); AC_DEFINE(CON_PLATFORM_POSIX, [], [Define if you are running on a POSiX platform. Note that you can can only define one CON_PLATFORM_* variable.]);;
+	*) AC_MSG_ERROR([Unknown platform "$operating_system"]);;
+esac
 
 
 
@@ -172,33 +185,21 @@ int main()
 
 AC_CHECK_SIZEOF(CON_INT)
 
-AC_MSG_CHECKING([for architecture specific memmove])
-if [[ -f vm/Platform/Arch/$CON_ARCH/memmove.S ]]; then
-	AC_MSG_RESULT(Platform/Arch/$CON_ARCH/memmove.S)
-	AC_SUBST(CON_MEMMOVE, "Platform/Arch/$CON_ARCH/memmove.o")
-else
-	AC_MSG_RESULT(none found)
-fi
-
-
-
-####################################################################################################
-# Platform check
-#
-
-AC_MSG_CHECKING(platform)
-operating_system=`uname -s`
-case $operating_system in
-	OpenBSD | FreeBSD | NetBSD | Linux | CYGWIN_NT*) AC_MSG_RESULT(POSiX); AC_DEFINE(CON_PLATFORM_POSIX, [], [Define if you are running on a POSiX platform. Note that you can can only define one CON_PLATFORM_* variable.]);;
-	*) AC_MSG_ERROR([Unknown platform "$operating_system"]);;
-esac
-
-
 case $ac_cv_sizeof_CON_INT in
 	4 ) AC_C_BIGENDIAN([bootstrap_dir="bootstrap/32bit_big_endian"], [bootstrap_dir="bootstrap/32bit_little_endian"]);;
 	8 ) AC_C_BIGENDIAN([bootstrap_dir="bootstrap/64bit_big_endian"], [bootstrap_dir="bootstrap/64bit_little_endian"]);;
 	* ) AC_MSG_ERROR([Unknown word size "$ac_cv_sizeof_CON_INT"]);;
 esac
+
+AC_MSG_CHECKING([for architecture specific memmove])
+# XXX Since Darwin's as doesn't seem to like the included memmove.o, we simply avoid compiling it.
+# If anyone knows how to fix it (or whether this is worth fixing, please shout).
+if [[ -f vm/Platform/Arch/$CON_ARCH/memmove.S -a $operating_system != "Darwin" ]]; then
+	AC_MSG_RESULT(Platform/Arch/$CON_ARCH/memmove.S)
+	AC_SUBST(CON_MEMMOVE, "Platform/Arch/$CON_ARCH/memmove.o")
+else
+	AC_MSG_RESULT(none found)
+fi
 
 
 ####################################################################################################
@@ -239,13 +240,12 @@ fi
 
 CFLAGS="$extra_cflags"
 
-AC_CHECK_HEADER(pcre.h, , [AC_MSG_ERROR([Unable to find pcre.h])], [#include "pcre.h"])
-
-case $operating_system in
-	CYGWIN_NT*) extra_libs="$extra_libs /usr/lib/libpcre.a";;
-	*) extra_libs="$extra_libs -lpcre";;
-esac
-
+AC_PATH_PROG(pcre_config, pcre-config, fail)
+if [[ "$pcre_config" = "fail" ]]; then
+	AC_MSG_ERROR([Unable to find pcre-config])
+fi
+extra_cflags="$extra_cflags `$pcre_config --cflags`"
+extra_libs="$extra_libs `$pcre_config --libs`"
 
 AC_PATH_PROG(xml2_config, xml2-config, fail)
 if [[ "$xml2_config" = "fail" ]]; then

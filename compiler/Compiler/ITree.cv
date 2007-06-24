@@ -548,7 +548,7 @@ class IDict:
 	
 		elems := []
 		for key, val := self.elements.iterate():
-			elems.append(key.extended_src_infos(extra_src_infos), val.extended_src_infos(extra_src_infos))
+			elems.append([key.extended_src_infos(extra_src_infos), val.extended_src_infos(extra_src_infos)])
 		
 		return IDict.new(elems, self.src_infos + extra_src_infos)
 

@@ -381,7 +381,10 @@ class IModule_Gen:
 
 		// class_def ::= "CLASS" class_name class_supers class_metaclass ":" "INDENT" class_fields "DEDENT"
 		
-		if not Builtins::List.conformed_by(node[2][1]):
+		if node[2].len() == 1:
+			// class_name ::=
+			class_name := ""
+		elif not Builtins::List.conformed_by(node[2][1]):
 			// class_name ::= "ID"
 			class_name := node[2][1].value
 		else:

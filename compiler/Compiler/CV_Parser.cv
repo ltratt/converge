@@ -48,6 +48,7 @@ class_def       ::= "CLASS" class_name class_supers class_metaclass ":" "INDENT"
 class_name      ::= "ID"
                 ::= splice
 				::= insert
+				::=
 class_supers    ::= "(" expr ( "," expr )* ")"
                 ::=
 class_metaclass ::= "METACLASS" expr

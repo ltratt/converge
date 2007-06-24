@@ -28,6 +28,9 @@ import CEI, Compiler_Vars, ITree, ITree_TC
 _QQ_STANDARD := 0
 _QQ_DEFINITION := 1
 
+_NEST_CLASS := 0
+_NEST_FUNC := 1
+
 
 
 
@@ -46,6 +49,10 @@ class QQ_Mode:
 
 		self._compiler := CEI::compiler()
 		self._module_id := self._compiler.module_id
+		
+		// We need to track functions which are directly nested inside classes.
+		
+		self._nesting := []
 		
 		if ITree::IStandard_Quasi_Quotes.instantiated(node):
 			self._type := _QQ_STANDARD
@@ -294,6 +301,53 @@ class QQ_Mode:
 
 
 
+	func _t_iclass_def(node):
+
+		if ITree::IInsert.instantiated(node.class_name):
+			// Class names are a little odd because the class "name" is also used as a variable
+			// to be assigned to. The class name is actually just the string part of this variable
+			// name, which means we have to manually pluck it out. If the user gives us a variable
+			// which isn't of type IVar, they would get an odd error message along the lines of
+			// "1 doesn't have a class_name slot" which wouldn't really help them track things down.
+			// To cope with this eventuality, we put a manual check in that catches such an error
+			// at the earliest possible stage.
+			class_name := [<node.src_infos>|
+				func () {
+					class_name := ${node.class_name.expr}
+
+					if not Builtins::String.instantiated(class_name):
+						ITree_TC::type_error("Class_Def", "name", class_name, "String", ${CEI::lift(node.src_infos)})
+
+					return class_name
+				}()
+			|]
+		else:
+			if node.class_name == "":
+				class_name := ITree::IString.new("", node.src_infos)
+			else:
+				class_name := self._process_assign_name(node.class_name, node.src_infos)
+
+		supers := []
+		for super := node.supers.iterate():
+			supers.append(self._preorder(super))
+		
+		if node.metaclass_ is null:
+			metaclass_ := ITree::IVar.new("null", node.src_infos)
+		else:
+			metaclass_ := self._preorder(node.metaclass_)
+		
+		self._nesting.append(_NEST_CLASS)
+		
+		fields := []
+		for field := node.fields.iterate():
+			fields.append(self._preorder(field))
+		
+		self._nesting.pop()
+		
+		return self._qq("IClass_Def", [class_name, ITree::IList.new(supers, node.src_infos), metaclass_, ITree::IList.new(fields, node.src_infos)], node.src_infos)
+
+
+
 	func _t_ifunc_def(node):
 
 		self._add_vars(node.internal_bound_vars, [])
@@ -321,12 +375,17 @@ class QQ_Mode:
 			if node.func_name == "":
 				func_name := ITree::IString.new("", node.src_infos)
 			else:
-				func_name := self._process_assign_name(node.func_name, node.src_infos)
-			
+				if self._nesting.len() > 0 & self._nesting[-1] == _NEST_CLASS:
+					func_name := ITree::IString.new(node.func_name, node.src_infos)
+				else:
+					func_name := self._process_assign_name(node.func_name, node.src_infos)
+
+		self._nesting.append(_NEST_FUNC)
+
 		params_list := []
 		for param := node.params.iterate():
 			if ITree::IParam.instantiated(param):
-				raise "XXX"
+				params_list.append(param)
 			else:
 				assert ITree::IInsert.instantiated(param)
 				params_list.append(param.expr)
@@ -350,6 +409,7 @@ class QQ_Mode:
 		
 		body := self._preorder(node.body)
 		
+		self._nesting.pop()
 		self._pop_vars()
 		
 		return self._qq("IFunc_Def", [is_bound, func_name, params, var_arg, ITree::IList.new(nonlocals, node.src_infos), ITree::IList.new(renames, node.src_infos), body], node.src_infos)

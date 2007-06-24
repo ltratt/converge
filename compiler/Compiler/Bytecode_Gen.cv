@@ -447,6 +447,9 @@ class Bytecode_Gen:
 			self._instructions.append(self._target::Instr_Pop.new(field.src_infos))
 		self._nesting.del(-1)
 
+		if node.class_name == "":
+			return
+
 		inside_class := 0
 		for nest := self._nesting.riterate():
 			if nest[0] == NEST_CLASS:

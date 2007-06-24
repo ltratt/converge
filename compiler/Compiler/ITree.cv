@@ -90,10 +90,14 @@ class IClass_Def:
 		self.metaclass_ := metaclass_
 		self.fields := fields
 		self.src_infos := src_infos
-		
-		self.bound_vars := Set{}
+
+		if IInsert.instantiated(class_name) | class_name == "":
+			self.bound_vars := Set{}
+			self.qq_bound_vars := Set{}
+		else:
+			self.bound_vars := Set{class_name}
+			self.qq_bound_vars := Set{class_name}
 		self.import_vars := Set{}
-		self.qq_bound_vars := Set{}
 		for super := supers.iterate():
 			self.bound_vars.extend(super.bound_vars)
 			self.qq_bound_vars.extend(super.qq_bound_vars)

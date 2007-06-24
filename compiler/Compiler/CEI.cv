@@ -73,6 +73,11 @@ func lift(obj, src_infos := null):
 		for e := obj.iterate():
 			elems.append(lift(e, src_infos))
 		return ITree::ISet.new(elems, src_infos)
+	elif Builtins::Dict.conformed_by(obj):
+		elems := []
+		for key, val := obj.iterate():
+			elems.append([lift(key, src_infos), lift(val, src_infos)])
+		return ITree::IDict.new(elems, src_infos)
 	else:
 		raise Exceptions::Exception.new(Strings::format("Don't know how to lift instance of '%s': '%s'.", obj.instance_of.name, obj.to_str()))
 

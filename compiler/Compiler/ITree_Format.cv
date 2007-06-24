@@ -46,6 +46,28 @@ class ITree_Format:
 
 
 
+	func _t_iclass_def(node):
+
+		supers := Strings::join(Functional::map(func (x) { return self._preorder(x) }, node.supers), ", ")
+		if node.metaclass_ is null:
+			metaclass_ := "Class"
+		else:
+			metaclass_ := self._preorder(node.metaclass_)
+
+		self._indent_level += 1
+		fields := []
+		for field := node.fields.iterate():
+			fields.append(self._preorder(field))
+		self._indent_level -= 1
+
+		indent := _INDENT_STRING * (self._indent_level + 1)
+
+		return Strings::format("""class %s(%s) metaclass %s:
+
+%s%s""", node.class_name, supers, metaclass_, indent, Strings::join(fields, "\n" + indent))
+
+
+
 	func _t_ifunc_def(node):
 
 		params := Strings::join(Functional::map(self._preorder, node.params), ", ")

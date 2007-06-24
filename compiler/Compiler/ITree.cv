@@ -773,7 +773,7 @@ class IRaise:
 	
 		raise_expr := self.raise_expr.extended_src_infos(extra_src_infos)
 		
-		return IYield.new(raise_expr, self.src_infos + extra_src_infos)
+		return IRaise.new(raise_expr, self.src_infos + extra_src_infos)
 
 
 

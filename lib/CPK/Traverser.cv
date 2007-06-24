@@ -26,7 +26,7 @@ import Builtins, Exceptions, Strings, Sys
 
 class Traverser:
 
-	func preorder(node):
+	func _preorder(node):
 
 		if not Builtins::List.conformed_by(node):
 			return fail

@@ -587,3 +587,9 @@ class QQ_Mode:
 	func _t_istandard_quasi_quotes(node):
 	
 		return self._preorder(QQ_Mode.new().generate(self, node))
+
+
+
+	func _t_ioriginal_name(node):
+	
+		return self._qq("IOriginal_Name", [ITree::IString.new(node.module_id, node.src_infos), ITree::IString.new(node.def_name, node.src_infos)], node.src_infos)

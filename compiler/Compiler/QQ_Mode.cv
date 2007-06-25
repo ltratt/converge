@@ -391,7 +391,7 @@ class QQ_Mode:
 		params_list := []
 		for param := node.params.iterate():
 			if ITree::IParam.instantiated(param):
-				params_list.append(param)
+				params_list.append(self._preorder(param))
 			else:
 				assert ITree::IInsert.instantiated(param)
 				params_list.append(param.expr)
@@ -419,6 +419,18 @@ class QQ_Mode:
 		self._pop_vars()
 		
 		return self._qq("IFunc_Def", [is_bound, func_name, params, var_arg, ITree::IList.new(nonlocals, node.src_infos), ITree::IList.new(renames, node.src_infos), body], node.src_infos)
+
+
+
+	func _t_iparam(node):
+
+		var := self._preorder(node.var)
+		if node.default is null:
+			default := ITree::IVar.new("null", node.src_infos)
+		else:
+			default := self._preorder(node.default)
+
+		return self._qq("IParam", [var, default], node.src_infos)
 
 
 

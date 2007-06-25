@@ -222,7 +222,10 @@ class QQ_Mode:
 
 		assert(var_name == renamed_var_name)
 		
-		return ITree::IVar.new(self._qq_bound_var_name(var_name), node_src_infos)
+		if self._nesting.len() > 0 & self._nesting[-1] == _NEST_CLASS:
+			return ITree::IVar.new(var_name, node_src_infos)
+		else:
+			return ITree::IVar.new(self._qq_bound_var_name(var_name), node_src_infos)
 
 
 
@@ -325,7 +328,10 @@ class QQ_Mode:
 			if node.class_name == "":
 				class_name := ITree::IString.new("", node.src_infos)
 			else:
-				class_name := self._process_assign_name(node.class_name, node.src_infos)
+				if self._nesting.len() > 0 & self._nesting[-1] == _NEST_CLASS:
+					class_name := ITree::IString.new(node.class_name, node.src_infos)
+				else:
+					class_name := self._process_assign_name(node.class_name, node.src_infos)
 
 		supers := []
 		for super := node.supers.iterate():
@@ -566,7 +572,10 @@ class QQ_Mode:
 		targets := []
 		for target := node.targets.iterate():
 			if ITree::IVar.instantiated(target):
-				targets.append(self._process_assign_var(target.var_name, target.src_infos))
+				if self._nesting.len() > 0 & self._nesting[-1] == _NEST_CLASS:
+					targets.append(self._qq("IVar", [ITree::IString.new(target.var_name, node.src_infos)], node.src_infos))
+				else:
+					targets.append(self._process_assign_var(target.var_name, target.src_infos))
 			else:
 				targets.append(self._preorder(target))
 

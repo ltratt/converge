@@ -152,6 +152,7 @@ class IFunc_Def:
 
 		if self.is_bound == 1:
 			all_internal_bound_vars := Set{"self"}
+			self.qq_bound_vars.add("self")
 		else:
 			all_internal_bound_vars := Set{}
 

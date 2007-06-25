@@ -356,8 +356,6 @@ class QQ_Mode:
 
 	func _t_ifunc_def(node):
 
-		self._add_vars(node.internal_bound_vars, [])
-	
 		is_bound := ITree::IInt.new(node.is_bound, node.src_infos)
 		if ITree::IInsert.instantiated(node.func_name):
 			// Function names are a little odd because the function "name" is also used as a variable
@@ -388,6 +386,8 @@ class QQ_Mode:
 
 		self._nesting.append(_NEST_FUNC)
 
+		self._add_vars(node.internal_bound_vars, [])
+
 		params_list := []
 		for param := node.params.iterate():
 			if ITree::IParam.instantiated(param):
@@ -414,9 +414,9 @@ class QQ_Mode:
 			raise "XXX"
 		
 		body := self._preorder(node.body)
-		
-		self._nesting.pop()
+
 		self._pop_vars()
+		self._nesting.pop()
 		
 		return self._qq("IFunc_Def", [is_bound, func_name, params, var_arg, ITree::IList.new(nonlocals, node.src_infos), ITree::IList.new(renames, node.src_infos), body], node.src_infos)
 
@@ -428,7 +428,7 @@ class QQ_Mode:
 		if node.default is null:
 			default := ITree::IVar.new("null", node.src_infos)
 		else:
-			default := self._preorder(node.default)
+			default := ITree::IVar.new(self._qq_bound_var_name(var.var_name), node.src_infos)
 
 		return self._qq("IParam", [var, default], node.src_infos)
 

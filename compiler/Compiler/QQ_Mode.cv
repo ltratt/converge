@@ -50,7 +50,10 @@ class QQ_Mode:
 		self._compiler := CEI::compiler()
 		self._module_id := self._compiler.module_id
 		
-		// We need to track functions which are directly nested inside classes.
+		// We need to track when we're dealing with class fields or not. So we track when we're nested
+		// within nothing (i.e. at the top level), a class (meaning we're at the class field level
+		// when we don't alpha rename functions or classes), or within a function (meaning we can
+		// merrily alpha rename things).
 		
 		self._nesting := []
 		
@@ -329,6 +332,7 @@ class QQ_Mode:
 				class_name := ITree::IString.new("", node.src_infos)
 			else:
 				if self._nesting.len() > 0 & self._nesting[-1] == _NEST_CLASS:
+					// Classes which are class fields are not alpha-renamed.
 					class_name := ITree::IString.new(node.class_name, node.src_infos)
 				else:
 					class_name := self._process_assign_name(node.class_name, node.src_infos)
@@ -341,7 +345,10 @@ class QQ_Mode:
 			metaclass_ := ITree::IVar.new("null", node.src_infos)
 		else:
 			metaclass_ := self._preorder(node.metaclass_)
-		
+
+		// Note that it is only when processing the classes field that we note that we are nested
+		// within a class.
+				
 		self._nesting.append(_NEST_CLASS)
 		
 		fields := []
@@ -380,9 +387,12 @@ class QQ_Mode:
 				func_name := ITree::IString.new("", node.src_infos)
 			else:
 				if self._nesting.len() > 0 & self._nesting[-1] == _NEST_CLASS:
+					// Functions which are class fields are not alpha-renamed.
 					func_name := ITree::IString.new(node.func_name, node.src_infos)
 				else:
 					func_name := self._process_assign_name(node.func_name, node.src_infos)
+
+		// Note that we consider ourselves nested within a function even when processing parameters.
 
 		self._nesting.append(_NEST_FUNC)
 
@@ -391,7 +401,14 @@ class QQ_Mode:
 		params_list := []
 		for param := node.params.iterate():
 			if ITree::IParam.instantiated(param):
-				params_list.append(self._preorder(param))
+				var := self._preorder(node.var)
+				if param.default is null:
+					default := ITree::IVar.new("null", node.src_infos)
+				else:
+					// When we're processing a parameter, we're converting its name from a string
+					// "x" to a variable lookup "$qq_x".
+					default := ITree::IVar.new(self._qq_bound_var_name(var.var_name), node.src_infos)
+				params_list.append(self._qq("IParam", [var, default], node.src_infos))
 			else:
 				assert ITree::IInsert.instantiated(param)
 				params_list.append(param.expr)
@@ -419,18 +436,6 @@ class QQ_Mode:
 		self._nesting.pop()
 		
 		return self._qq("IFunc_Def", [is_bound, func_name, params, var_arg, ITree::IList.new(nonlocals, node.src_infos), ITree::IList.new(renames, node.src_infos), body], node.src_infos)
-
-
-
-	func _t_iparam(node):
-
-		var := self._preorder(node.var)
-		if node.default is null:
-			default := ITree::IVar.new("null", node.src_infos)
-		else:
-			default := ITree::IVar.new(self._qq_bound_var_name(var.var_name), node.src_infos)
-
-		return self._qq("IParam", [var, default], node.src_infos)
 
 
 

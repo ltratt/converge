@@ -50,6 +50,7 @@ Con_Obj *_Con_Builtins_Module_Class_get_def_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Module_Class_get_slot_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Module_Class_def_names_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Module_Class_path_func(Con_Obj *);
+Con_Obj *_Con_Builtins_Module_Class_src_offset_to_line_column_func(Con_Obj *);
 
 
 
@@ -77,6 +78,7 @@ void Con_Builtins_Module_Class_bootstrap(Con_Obj *thread)
 	CON_SET_FIELD(module_class, "get_def", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Module_Class_get_def_func, "get_def", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), module_class));
 	CON_SET_FIELD(module_class, "get_slot", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Module_Class_get_slot_func, "get_slot", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), module_class));
 	CON_SET_FIELD(module_class, "path", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Module_Class_path_func, "path", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), module_class));
+	CON_SET_FIELD(module_class, "src_offset_to_line_column", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Module_Class_src_offset_to_line_column_func, "src_offset_to_line_column", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), module_class));
 }
 
 
@@ -205,4 +207,22 @@ Con_Obj *_Con_Builtins_Module_Class_path_func(Con_Obj *thread)
 		
 		return rtn;
 	}
+}
+
+
+
+//
+// 'src_offset_to_line_column(src_offset)' returns a list [line number, column position] of the src
+// offset within this module.
+//
+
+Con_Obj *_Con_Builtins_Module_Class_src_offset_to_line_column_func(Con_Obj *thread)
+{
+	Con_Obj *self, *src_offset;
+	CON_UNPACK_ARGS("MI", &self, &src_offset);
+
+	Con_Int line, col;
+	Con_Builtins_Module_Atom_src_offset_to_line_column(thread, self, Con_Numbers_Number_to_Con_Int(thread, src_offset), &line, &col);
+
+	return Con_Builtins_List_Atom_new_va(thread, CON_NEW_INT(line), CON_NEW_INT(col), NULL);
 }

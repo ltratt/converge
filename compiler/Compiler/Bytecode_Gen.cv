@@ -468,9 +468,6 @@ class Bytecode_Gen:
 		
 		bound_vars := node.internal_bound_vars
 
-		if node.is_bound == 1:
-			bound_vars.add("self")
-		
 		renames := Dict{}
 		for rename_ := node.renames.iterate():
 			raise "XXX"
@@ -479,19 +476,15 @@ class Bytecode_Gen:
 		
 		self._nesting.append([NEST_FUNC, node.is_bound])
 		
-		params := node.params[ : ]
-		if node.is_bound == 1:
-			params.insert(0, ITree::IParam.new(ITree::IVar.new("self", node.src_infos), null, node.src_infos))
-
 		self._instructions.append(self._target::Instr_String.new(node.src_infos, node.func_name))
 		self._instructions.append(self._target::Instr_Int.new(node.src_infos, bound_vars.len() + node.is_bound))
-		self._instructions.append(self._target::Instr_Int.new(node.src_infos, params.len()))
+		self._instructions.append(self._target::Instr_Int.new(node.src_infos, node.params.len()))
 		self._instructions.append(self._target::Instr_Func_Def.new(node.src_infos, node.is_bound))
 		end_of_func_body_label := self._create_label()
 		self._instructions.append(self._target::Instr_Branch.new(node.src_infos, end_of_func_body_label))
 		
 		params_info := []
-		for param := params.iterate():
+		for param := node.params.iterate():
 			closures_offset, var_num := self._get_var_offsets(param.var.var_name, param.var.src_infos)
 			assert(closures_offset == 0)
 			if param.default is null:
@@ -507,7 +500,7 @@ class Bytecode_Gen:
 			params_info.append([var_num, 0])
 			self._instructions.append(self._target::Instr_Unpack_Args.new(node.src_infos, params_info, 1))
 		
-		for param := params.iterate():
+		for param := node.params.iterate():
 			if param.default is null:
 				continue
 			next_param_label := self._create_label()

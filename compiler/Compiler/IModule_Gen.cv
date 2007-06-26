@@ -510,12 +510,14 @@ class IModule_Gen:
 			func_name := node[2][1].type
 
 		self._nesting.append(_NEST_FUNC)
-		params := []
+		if is_bound == 1:
+			params := [ITree::IParam.new(ITree::IVar.new("self", extra_src_infos + node[3].src_infos), null, extra_src_infos + node[3].src_infos)]
+		else:
+			params := []
 		if node[4].len() > 1:
 			// func_params ::= func_params_elems "," func_varargs
 			//             ::= func_params_elems
 			//             ::= func_varargs
-			params := []
 			var_args := null
 			if node[4][1][0] == "func_params_elems":
 				// func_params_elems  ::= var_def func_param_default { "," var_def func_param_default }*
@@ -562,7 +564,6 @@ class IModule_Gen:
 					var_args := self._preorder(node[4][-1][1])
 		else:
 			// func_params ::=
-			params := []
 			var_args := null
 
 		nonlocals_ := []

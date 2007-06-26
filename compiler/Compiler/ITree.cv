@@ -150,11 +150,7 @@ class IFunc_Def:
 		self.import_vars := Set{}
 		self.internal_import_vars := Set{}
 
-		if self.is_bound == 1:
-			all_internal_bound_vars := Set{"self"}
-			self.qq_bound_vars.add("self")
-		else:
-			all_internal_bound_vars := Set{}
+		all_internal_bound_vars := Set{}
 
 		for param := params.iterate():
 			all_internal_bound_vars.extend(param.bound_vars)

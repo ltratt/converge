@@ -315,7 +315,7 @@ class ITree_Format:
 		if node.module_id == Compiler_Vars::peek_compiler().module_id:
 			return node.def_name // XXX
 		else:
-			raise "XXX"
+			return Strings::format("<%s>::%s", node.module_id, node.def_name)
 
 
 

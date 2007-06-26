@@ -401,14 +401,14 @@ class QQ_Mode:
 		params_list := []
 		for param := node.params.iterate():
 			if ITree::IParam.instantiated(param):
-				var := self._preorder(node.var)
+				var := self._preorder(param.var)
 				if param.default is null:
-					default := ITree::IVar.new("null", node.src_infos)
+					default := ITree::IVar.new("null", param.src_infos)
 				else:
 					// When we're processing a parameter, we're converting its name from a string
 					// "x" to a variable lookup "$qq_x".
-					default := ITree::IVar.new(self._qq_bound_var_name(var.var_name), node.src_infos)
-				params_list.append(self._qq("IParam", [var, default], node.src_infos))
+					default := ITree::IVar.new(self._qq_bound_var_name(var.var_name), param.src_infos)
+				params_list.append(self._qq("IParam", [var, default], param.src_infos))
 			else:
 				assert ITree::IInsert.instantiated(param)
 				params_list.append(param.expr)

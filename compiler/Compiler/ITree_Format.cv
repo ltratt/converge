@@ -264,6 +264,12 @@ class ITree_Format:
 
 
 
+	func _t_ipass(node):
+
+		return "pass"
+
+
+
 	func _t_ibinary(node):
 
 		if node.type == ITree::BINARY_ADD:

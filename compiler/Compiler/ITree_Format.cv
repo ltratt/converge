@@ -27,6 +27,9 @@ import Compiler_Vars, ITree
 
 _INDENT_STRING := "\t"
 
+_NEST_CLASS := 0
+_NEST_FUNC := 1
+
 
 
 
@@ -35,6 +38,11 @@ class ITree_Format:
 	func format(itree):
 	
 		self._indent_level := 0
+
+		// We need to track when we're dealing with class fields or not so that we can be intelligent
+		// about printing "bound_func", "unbounc_func" or - hopefully! - just "func".
+
+		self._nesting := []
 		
 		return self._preorder(itree)
 
@@ -55,9 +63,11 @@ class ITree_Format:
 			metaclass_ := self._preorder(node.metaclass_)
 
 		self._indent_level += 1
+		self._nesting.append(_NEST_CLASS)
 		fields := []
 		for field := node.fields.iterate():
 			fields.append(self._preorder(field))
+		self._nesting.pop()
 		self._indent_level -= 1
 
 		indent := _INDENT_STRING * (self._indent_level + 1)
@@ -69,6 +79,17 @@ class ITree_Format:
 
 
 	func _t_ifunc_def(node):
+
+		if self._nesting.len() == 0 | self._nesting[-1] == _NEST_FUNC:
+			if node.is_bound == 0:
+				func_type := "func"
+			else:
+				func_type := "bound_func"
+		else:
+			if node.is_bound == 1:
+				func_type := "func"
+			else:
+				func_type := "unbound_func"
 
 		params := Strings::join(Functional::map(self._preorder, node.params), ", ")
 		if not node.var_arg is null:
@@ -83,12 +104,14 @@ class ITree_Format:
 			raise "XXX"
 		
 		self._indent_level += 1
+		self._nesting.append(_NEST_FUNC)
 		body := self._preorder(node.body)
+		self._nesting.pop()
 		self._indent_level -= 1
 
-		return Strings::format("""func %s(%s%s):
+		return Strings::format("""%s %s(%s%s):
 
-%s%s""", node.func_name, params, var_arg, _INDENT_STRING * (self._indent_level + 1), body)
+%s%s""", func_type, node.func_name, params, var_arg, _INDENT_STRING * (self._indent_level + 1), body)
 
 
 

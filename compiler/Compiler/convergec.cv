@@ -184,34 +184,45 @@ class Compiler:
 	func _print_msg(pre_msg, msg, src_infos := null):
 	
 		if not src_infos is null:
-			if src_infos.len() == 1 & src_infos[0][0] := self.module_id:
-				src_offset := src_infos[0][1]
-				newlines := self.tokenizer.newlines
-				i := 0
-				while i < newlines.len():
-					if src_offset < newlines[i]:
-						break
-					i += 1
-				col := src_offset - newlines[i - 1]
-				Sys::stderr.writeln(Strings::format("%s: Line %d, column %d: %s", pre_msg, i, col, msg))
+			assert src_infos.len() > 0
+
+			// If any of the src infos reference a file other than the one being specified, then
+			// other_files will be set to 1. This then changes the way we format error messages.
+
+			other_files := 0
+			for src_info := src_infos.iterate():
+				if src_info[0] != self.module_id:
+					other_files := 1
+					break
+
+			if src_infos.len() == 1 & other_files == 0:
+				Sys::stderr.write(Strings::format("%s: ", pre_msg))
 			else:
 				Sys::stderr.writeln(Strings::format("%s:", pre_msg))
-				for i := 0.to(src_infos.len()):
-					module_id, src_offset := src_infos[i]
-					if module_id != self.module_id:
-						Sys::println(module_id, " ", src_offset)
-						continue
-					else:
-						newlines := self.tokenizer.newlines
-					i := 0
-					while i < newlines.len():
-						if src_offset < newlines[i]:
+
+			for src_info := src_infos.iterate():
+				if src_info[0] == self.module_id:
+					src_offset := src_info[1]
+					newlines := self.tokenizer.newlines
+					line := 0
+					while line < newlines.len():
+						if src_offset < newlines[line]:
 							break
-						i += 1
-					col := src_offset - newlines[i - 1]
-					Sys::stderr.writeln(Strings::format("  Line %d, column %d ", i, col))
+						line += 1
+					col := src_offset - newlines[line - 1]
+				else:
+					mod := VM::import_module(src_info[0])
+					line, col := mod.src_offset_to_line_column(src_info[1])
 				
-				Sys::stderr.writeln(msg)
+				if src_infos.len() == 1 & other_files == 0:
+					Sys::stderr.write(Strings::format("Line %d, column %d: ", line, col))
+				else:
+					if other_files == 0:
+						Sys::stderr.writeln(Strings::format("  Line %d, column %d", line, col))
+					else:
+						Sys::stderr.writeln(Strings::format("  %s, line %d, column %d", src_info[0], line, col))
+
+			Sys::stderr.writeln(msg)
 		else:
 			Sys::stderr.writeln(Strings::format("%s: %s", pre_msg, msg))
 					

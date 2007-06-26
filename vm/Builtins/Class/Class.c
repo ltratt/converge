@@ -260,6 +260,8 @@ Con_Obj *_Con_Builtins_Class_Class_path_func(Con_Obj *thread)
 	
 	CON_MUTEX_LOCK(&self->mutex);
 	Con_Obj *name = self_class_atom->name;
+	if (CON_C_STRING_EQ("", name))
+		name = CON_NEW_STRING("<anon>");
 	Con_Obj *container = self_class_atom->container;
 	CON_MUTEX_UNLOCK(&self->mutex);
 	

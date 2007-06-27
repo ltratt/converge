@@ -431,9 +431,13 @@ class Bytecode_Gen:
 			self._instructions.append(self._target::Instr_Pre_Apply_Slot_Lookup.new(field.src_infos, "set_field"))
 		
 			if ITree::IFunc_Def.instantiated(field):
+				if field.func_name == "":
+					self._compiler.error("Functions as class fields can not be anonymous.", node.src_infos)
 				self._instructions.append(self._target::Instr_String.new(field.src_infos, field.func_name))
 				self.preorder(field)
 			elif ITree::IClass_Def.instantiated(field):
+				if field.class_name == "":
+					self._compiler.error("Classes as class fields can not be anonymous.", node.src_infos)
 				self._instructions.append(self._target::Instr_String.new(field.src_infos, field.class_name))
 				self.preorder(field)
 			elif ITree::IAssignment.instantiated(field):
@@ -447,17 +451,15 @@ class Bytecode_Gen:
 			self._instructions.append(self._target::Instr_Pop.new(field.src_infos))
 		self._nesting.del(-1)
 
+		if node.class_name == "":
+			return
+
 		inside_class := 0
 		for nest := self._nesting.riterate():
 			if nest[0] == NEST_CLASS:
 				inside_class := 1
 			elif nest[0] == NEST_FUNC:
 				break
-
-		if node.class_name == "":
-			if inside_class == 1:
-				self._compiler.error("Classes as class fields can not be anonymous.", node.src_infos)
-			return
 
 		if inside_class == 0:
 			self._add_assign_to_var(node.class_name, node.src_infos)
@@ -467,7 +469,7 @@ class Bytecode_Gen:
 	func _t_ifunc_def(node):
 		
 		bound_vars := node.internal_bound_vars
-
+		
 		renames := Dict{}
 		for rename_ := node.renames.iterate():
 			raise "XXX"
@@ -523,17 +525,15 @@ class Bytecode_Gen:
 		
 		self._set_label(end_of_func_body_label)
 		
+		if node.func_name == "":
+			return
+		
 		inside_class := 0
 		for nest := self._nesting.riterate():
 			if nest[0] == NEST_CLASS:
 				inside_class := 1
 			elif nest[0] == NEST_FUNC:
 				break
-
-		if node.func_name == "":
-			if inside_class == 1:
-				self._compiler.error("Functions as class fields can not be anonymous.", node.src_infos)
-			return
 
 		if inside_class == 0:
 			self._add_assign_to_var(node.func_name, node.src_infos)

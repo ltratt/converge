@@ -380,6 +380,12 @@ class ITree_TC:
 
 
 
+	func _t_inot(node):
+
+		self._check_expr(node, "expr", node.expr)
+
+
+
 	func _t_ibinary(node):
 	
 		if not ITree::ALL_BINARIES.find(node.type):

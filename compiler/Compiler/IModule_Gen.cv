@@ -448,7 +448,7 @@ class IModule_Gen:
 				else:
 					fields.append(sp)
 			i += 2
-		self._nesting.del(-1)
+		self._nesting.pop()
 
 		return ITree::IClass_Def.new(class_name, supers, metaclass_, fields, extra_src_infos + node[1].src_infos)
 
@@ -595,7 +595,7 @@ class IModule_Gen:
 
 			body := self._eval_expr_body(node[9])
 
-		self._nesting.del(-1)
+		self._nesting.pop()
 		
 		return ITree::IFunc_Def.new(is_bound, func_name, params, var_args, nonlocals_, renames, body, extra_src_infos + node[1][1].src_infos)
 

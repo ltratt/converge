@@ -584,6 +584,16 @@ class QQ_Mode:
 
 
 
+	func _t_ialternation(node):
+
+		exprs := []
+		for expr := node.exprs.iterate():
+			exprs.append(self._preorder(expr))
+
+		return self._qq("IAlternation", [ITree::IList.new(exprs, node.src_infos)], node.src_infos)
+
+
+
 	func _t_iassignment(node):
 
 		targets := []

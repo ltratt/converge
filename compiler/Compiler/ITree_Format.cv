@@ -150,6 +150,58 @@ class ITree_Format:
 
 
 
+	func _t_iwhile(node):
+
+		pp := ["while ", self._preorder(node.condition)]
+
+		if not node.body is null:
+			self._indent_level += 1
+			pp.append(":\n" + (_INDENT_STRING * self._indent_level))
+			pp.append(self._preorder(node.body))
+			self._indent_level -= 1
+
+			if not node.exhausted_body is null:
+				pp.append(Strings::format("\n%sexhausted:\n%s", _INDENT_STRING * self._indent_level, _INDENT_STRING * (self._indent_level + 1)))
+				self._indent_level += 1
+				pp.append(self._preorder(node.exhausted_body))
+				self._indent_level -= 1
+
+			if not node.broken_body is null:
+				pp.append(Strings::format("\n%sbroken:\n%s", _INDENT_STRING * self._indent_level, _INDENT_STRING * (self._indent_level + 1)))
+				self._indent_level += 1
+				pp.append(self._preorder(node.broken_body))
+				self._indent_level -= 1
+
+		return Strings::join(pp, "")
+
+
+
+	func _t_ifor(node):
+
+		pp := ["for ", self._preorder(node.condition)]
+
+		if not node.body is null:
+			self._indent_level += 1
+			pp.append(":\n" + (_INDENT_STRING * self._indent_level))
+			pp.append(self._preorder(node.body))
+			self._indent_level -= 1
+
+			if not node.exhausted_body is null:
+				pp.append(Strings::format("\n%sexhausted:\n%s", _INDENT_STRING * self._indent_level, _INDENT_STRING * (self._indent_level + 1)))
+				self._indent_level += 1
+				pp.append(self._preorder(node.exhausted_body))
+				self._indent_level -= 1
+
+			if not node.broken_body is null:
+				pp.append(Strings::format("\n%sbroken:\n%s", _INDENT_STRING * self._indent_level, _INDENT_STRING * (self._indent_level + 1)))
+				self._indent_level += 1
+				pp.append(self._preorder(node.broken_body))
+				self._indent_level -= 1
+
+		return Strings::join(pp, "")
+
+
+
 	func _t_iint(node):
 	
 		return Strings::format("%d", node.val)

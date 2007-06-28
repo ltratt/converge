@@ -558,7 +558,10 @@ class QQ_Mode:
 
 	func _t_ireturn(node):
 	
-		return self._qq("IReturn", [self._preorder(node.return_expr)], node.src_infos)
+		if node.return_expr is null:
+			return self._qq("IReturn", [ITree::IVar.new("null", node.src_infos)], node.src_infos)
+		else:
+			return self._qq("IReturn", [self._preorder(node.return_expr)], node.src_infos)
 
 
 

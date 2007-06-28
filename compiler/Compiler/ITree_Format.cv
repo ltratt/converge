@@ -162,6 +162,14 @@ class ITree_Format:
 
 
 
+	func _t_idict(node):
+
+		elems := Functional::map(func (e) { return Strings::format("%s : %s", self._preorder(e[0]), self._preorder(e[1])) }, node.elements)
+
+		return Strings::format("Dict{%s}", Strings::join(elems, ", "))
+
+
+
 	func _t_istring(node):
 	
 		return Strings::format("\"%s\"", node.string)

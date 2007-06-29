@@ -275,9 +275,11 @@ class QQ_Mode:
 						expr := ${expr.expr}
 						if Builtins::List.instantiated(expr):
 							for e := expr.iterate():
-								ITree_TC::tc_expr(e, "in expression body", ${CEI::lift(expr.src_infos)})
+								if not ITree::IPass.instantiated(e):
+									ITree_TC::tc_expr(e, "in expression body", ${CEI::lift(expr.src_infos)})
 						else:
-							ITree_TC::tc_expr(expr, "in expression body", ${CEI::lift(expr.src_infos)})
+							if not ITree::IPass.instantiated(expr):
+								ITree_TC::tc_expr(expr, "in expression body", ${CEI::lift(expr.src_infos)})
 
 						return expr
 					}()

@@ -536,6 +536,7 @@ class IModule_Gen:
 							param_default := self._preorder(node[4][1][i + 1][2], extra_src_infos)
 						else:
 							param_default := null
+						var_def := node[4][1][i]
 						if node[4][1][i].len() == 2 & not Builtins::List.conformed_by(node[4][1][i][1]):
 							// var_def ::= "ID"
 							params.append(ITree::IParam.new(ITree::IVar.new(node[4][1][i][1].value, extra_src_infos + node[4][1][i][1].src_infos), param_default, extra_src_infos + node[4][1][i][1].src_infos))
@@ -547,7 +548,14 @@ class IModule_Gen:
 							else:
 								params.append(self._preorder(node[4][1][i]))
 						else:
-							raise "XXX"
+							// var_def ::= "&" "ID"
+							var := [| ITree::IVar.new(${ITree::IString.new(var_def[2].value, var_def[2].src_infos)}, ${CEI::lift(extra_src_infos + var_def[2].src_infos)}) |]
+							if param_default is null:
+								param := [| ITree::IParam.new(${var}, null, ${CEI::lift(extra_src_infos + var_def[2].src_infos)}) |]
+							else:
+								param := [| ITree::IParam.new(${var}, ${param_default}, ${CEI::lift(extra_src_infos + var_def[2].src_infos)}) |]
+							
+							params.append(ITree::IInsert.new(param, extra_src_infos + var_def[2].src_infos))
 						i += 3
 			if node[4][-1][0] == "func_varargs":
 				// func_varargs ::= "*" var_def
@@ -812,7 +820,7 @@ class IModule_Gen:
 				return ITree::IVar.new(node[1].value, extra_src_infos + node[1].src_infos)
 		elif node.len() == 3:
 			// var_def ::= "&" "ID"
-			raise "XXX"
+			return ITree::IInsert.new([<node[2].src_infos>| ITree::IVar.new(${ITree::IString.new(node[2].value, node[2].src_infos)}, ${CEI::lift(node[2].src_infos)}) |], node[2].src_infos)
 
 
 

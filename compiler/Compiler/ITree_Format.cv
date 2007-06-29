@@ -299,6 +299,12 @@ class ITree_Format:
 
 	func _t_iconjunction(node):
 	
+		return Strings::join(Functional::map(self._preorder, node.exprs), " & ")
+
+
+
+	func _t_ialternation(node):
+	
 		return Strings::join(Functional::map(self._preorder, node.exprs), " | ")
 
 

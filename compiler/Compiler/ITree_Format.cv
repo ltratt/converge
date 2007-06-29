@@ -222,6 +222,12 @@ class ITree_Format:
 
 
 
+	func _t_iset(node):
+
+		return Strings::format("Set{%s}", Strings::join(Functional::map(self._preorder, node.elements), ", "))
+
+
+
 	func _t_istring(node):
 	
 		return Strings::format("\"%s\"", node.string)
@@ -256,6 +262,18 @@ class ITree_Format:
 
 		return Strings::format("%s[%s]", self._preorder(node.get_object), self._preorder(node.index))
 
+
+
+	func _t_islice(node):
+
+		if node.lower_bound is null & node.upper_bound is null:
+			return Strings::format("%s[ : ]", self._preorder(node.slice_object))
+		elif node.lower_bound is null:
+			return Strings::format("%s[ : %s]", self._preorder(node.slice_object), self._preorder(node.upper_bound))
+		elif node.upper_bound is null:
+			return Strings::format("%s[%s : ]", self._preorder(node.slice_object), self._preorder(node.lower_bound))
+		else:
+			return Strings::format("%s[%s : %s]", self._preorder(node.slice_object), self._preorder(node.lower_bound), self._preorder(node.upper_bound))
 
 
 	func _t_ireturn(node):

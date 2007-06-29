@@ -523,6 +523,26 @@ class QQ_Mode:
 
 
 
+	func _t_idict(node):
+
+		elems := []
+		for key, val := node.elements.iterate():
+			elems.append(ITree::IList.new([self._preorder(key), self._preorder(val)], node.src_infos))
+		
+		return self._qq("IDict", [ITree::IList.new(elems, node.src_infos)], node.src_infos)
+
+
+
+	func _t_iset(node):
+
+		elems := []
+		for elem := node.elements.iterate():
+			elems.append(self._preorder(elem))
+		
+		return self._qq("ISet", [ITree::IList.new(elems, node.src_infos)], node.src_infos)
+
+
+
 	func _t_iapplication(node):
 
 		func_expr := self._preorder(node.func_expr)

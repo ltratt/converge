@@ -663,11 +663,12 @@ class Bytecode_Gen:
 			self._instructions.append(self._target::Instr_Fail_Now.new(node.src_infos))
 		
 		self._set_label(body_label)
-		self._nesting.append([NEST_WHILE, start_of_while_label, broken_body_label])
-		self._instructions.append(self._target::Instr_Add_Failure_Frame.new(node.src_infos, start_of_while_label))
-		self.preorder(node.body)
-		self._instructions.append(self._target::Instr_Remove_Failure_Frame.new(node.src_infos))
-		self._nesting.del(-1)
+		if not node.body is null:
+			self._nesting.append([NEST_WHILE, start_of_while_label, broken_body_label])
+			self._instructions.append(self._target::Instr_Add_Failure_Frame.new(node.src_infos, start_of_while_label))
+			self.preorder(node.body)
+			self._instructions.append(self._target::Instr_Remove_Failure_Frame.new(node.src_infos))
+			self._nesting.del(-1)
 		self._instructions.append(self._target::Instr_Branch.new(node.src_infos, start_of_while_label))
 		
 		if not node.exhausted_body is null:

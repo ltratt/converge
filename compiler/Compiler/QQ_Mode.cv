@@ -599,6 +599,24 @@ class QQ_Mode:
 
 
 
+	func _t_iassert(node):
+
+		return self._qq("IAssert", [self._preorder(node.assert_expr)], node.src_infos)
+
+
+
+	func _t_ibreak(node):
+
+		return self._qq("IBreak", [], node.src_infos)
+
+
+
+	func _t_icontinue(node):
+
+		return self._qq("IContinue", [], node.src_infos)
+
+
+
 	func _t_iconjunction(node):
 	
 		exprs := []

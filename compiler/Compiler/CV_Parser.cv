@@ -103,7 +103,7 @@ expr_body ::= expr ( "NEWLINE" expr )*
 
 expr ::= class_def
      ::= func_def
-     ::= while
+     ::= while           %precedence 5
      ::= if
 	 ::= ndif
      ::= for             %precedence 5

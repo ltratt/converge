@@ -2,6 +2,21 @@
 
 This is the <q>Compiler External Interface</q> module which is the recommended way for the user to interact with the Converge compiler. This module necessarily contains a diverse range of functionality.
 
+<h3>Error reporting</h3>
+
+<function name="error">
+<argument name="msg" type="String" />
+<argument name="src_infos">null</argument>
+Reports the error in <code>msg</code> to the user, pinpointing it as occurring at <code>src_infos</code> positions if that is non-null. Once the error is reported, compilation stops, and an error code is returned.
+</function>
+
+<function name="warning">
+<argument name="msg" type="String" />
+<argument name="src_infos">null</argument>
+Reports the warning in <code>msg</code> to the user, pinpointing it as occurring at <code>src_infos</code> positions if that is non-null. Once the error is reported, compilation continues as normal.
+</function>
+
+
 <h3>Eval</h3>
 
 <function name="eval">

@@ -32,6 +32,18 @@ func compiler():
 
 
 
+func error(msg, src_infos := null):
+
+	Compiler_Vars::peek_compiler().error(msg, src_infos)
+
+
+
+func warning(msg, src_infos := null):
+
+	Compiler_Vars::peek_compiler().warning(msg, src_infos)
+
+
+
 func eval(str, vars := Dict{}, includes := []):
 
 	return Eval::eval(str, vars, includes)

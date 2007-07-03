@@ -1,0 +1,49 @@
+Installing Converge on MacOSX follows a "unixish" approach that users unfamiliar with unix may find confusing. The following steps should make the installation process simple:
+
+1 - Let's assume that the Converge source has been decompressed into a folder named 'Converge' located on the desktop. 
+
+1 - Converge relies on two external libraries: PCRE (Perl Compatible Regular Expressions) and libxml2. Since these are typically not installed on MacOS X systems, they need to be installed manually. Download the PCRE source code from http://pcre.org/ and decompress it into the Converge folder. Open a terminal (a.k.a xterm), go to the pcre-7.2 folder (assuming that you installed the version 7.2 of it) and execute the following command:
+
+  $ ./configure --prefix=$HOME/Desktop/Converge
+
+This invocation will build the Makefile needed to compile PCRE. It also says that it will have to be installed in the Converge folder. I am sure you do not not want to touch the Darwin filesystem :-)
+You can now invoke 'make' and then 'make install':
+
+  $ make
+  gcc -DHAVE_CONFIG_H -I. -O2 -MT pcre_compile.lo -MD -MP -MF .deps/pcre_compile.Tpo -c pcre_compile.c -o pcre_compile.o >/dev/null 2>&1
+  mv -f .deps/pcre_compile.Tpo .deps/pcre_compile.Plo
+  /bin/sh ./libtool --tag=CC
+  ........
+  gcc -O2 -o .libs/pcredemo pcredemo.o  ./.libs/libpcre.dylib
+  creating pcredemo
+  $ make install
+
+New folders titled 'bin', 'include' will have been created, and populated, in the Converge folder.
+
+3 - The path has to be adjusted. The new 'bin' folder has to be included in the shell variable PATH. Simply execute:
+
+  $ export PATH=$PATH:$HOME/Desktop/Converge/bin/
+
+
+4 - Installing libxml2 is much simpler. Just go to http://www.explain.com.au/oss/libxml2xslt.html and download the image for MacOS 10.4 (http://www.explain.com.au/download/combo-2006-06-15.dmg.gz). Mount the archive (double click on it if it is not automatically done) and copy its files in a new folder libxml2 in the Converge folder. The PATH variable does not need to be adjusted for this. MacOSX is smart enough to discover this library without external help.
+
+
+5 - Converge can now be compiled. Go to ~/Desktop/Converge and type: 
+
+  $ ./configure --prefix=$HOME/Desktop/Converge
+  $ make
+  $ make install
+
+If you now type 'converge' in your Terminal, you should see a message such as:
+
+  $ converge: too few options.
+  usage: converge <file> [args]
+
+You're done! Converge is installed!
+
+
+Hardware used during the writing of this file:
+Mac book, OSX version 10.4.9. Processor 1.83GHz Intel Core 2 Duo. 
+1GB 667 MHz DDR2 SDRAM
+
+Alexandre Bergel, July 3, 2007

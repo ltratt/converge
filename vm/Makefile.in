@@ -32,7 +32,8 @@ OBJECT_FILES = 	@CON_THREAD_ATOM_OBJ@ @CON_THREAD_CLASS_OBJ@ @CON_THREAD_MODULE_
 	Modules/Exceptions.o Modules/PCRE.o Modules/Sys.o Numbers.o Object.o \
 	Platform/Arch/@CON_ARCH@/Arch.o @CON_MEMMOVE@ \
 	Platform/POSIX/POSIX_File_Module.o Slots.o main.o Modules/Thread.o Modules/libXML2.o \
-	Modules/Random.o Modules/C_Platform_Properties.o Modules/C_Platform_Env.o @FGETLN@
+	Modules/Random.o Modules/C_Platform_Properties.o Modules/C_Platform_Env.o \
+	Modules/C_Platform_Exec.o @FGETLN@
 	
 
 all: converge

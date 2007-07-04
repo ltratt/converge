@@ -1,0 +1,8 @@
+<module name="Platform::Exec">
+This module provides platform dependent functions for executing other programs.
+
+<function name="command">
+<argument name="cmd" type="String" />
+Passes <code>cmd</code> to the shell for execution, returning the exit code of the program.
+</function>
+</module>

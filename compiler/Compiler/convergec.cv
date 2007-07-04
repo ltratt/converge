@@ -253,7 +253,13 @@ class Compiler:
 				import_extras := import_name_list[extra_pos + 1 : ]
 				break
 		exhausted:
-			if Compiler_Vars::BUILTIN_MODULES.find(import_name_list[0]):
+			if self.bootstrap == 1:
+				// If we're in bootstrapping mode, we see if we can import the module from the VM
+				// i.e. whether it's a builtin module or not.
+				import_full_name := import_name_list[0]
+				VM.import_module(import_full_name)
+				import_extras := import_name_list[1 : ]
+			elif Compiler_Vars::BUILTIN_MODULES.find(import_name_list[0]):
 				import_full_name := import_name_list[0]
 				import_extras := import_name_list[1 : ]
 			else:

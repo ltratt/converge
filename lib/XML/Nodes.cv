@@ -5,7 +5,7 @@ import Builtins, Strings
 
 class Document(Builtins::List):
 
-	func get_root_elem():
+	func get_root_elem(self):
 	
 		for elem := self.iterate():
 			if Element.instantiated(elem):
@@ -18,7 +18,7 @@ class Document(Builtins::List):
 
 class Attribute:
 
-	func init(name, value, prefix := "", namespace := ""):
+	func init(self, name, value, prefix := "", namespace := ""):
 	
 		if (prefix == "" & namespace != "") | (prefix != "" & namespace == ""):
 			raise "XXX"
@@ -30,7 +30,7 @@ class Attribute:
 	
 	
 	
-	func hash():
+	func hash(self):
 	
 		return Strings::format("%s:%s", self.prefix, self.name).hash()
 
@@ -39,7 +39,7 @@ class Attribute:
 
 class Element(Builtins::List):
 
-	func init(name, attrs, prefix := "", namespace := ""):
+	func init(self, name, attrs, prefix := "", namespace := ""):
 	
 		self.name := name
 		self._attr_namespaces := Dict{}
@@ -52,7 +52,7 @@ class Element(Builtins::List):
 
 
 
-	func find_attr(name, namespace := ""):
+	func find_attr(self, name, namespace := ""):
 	
 		if not (namespace := self._attr_namespaces.find(namespace)):
 			return fail
@@ -61,13 +61,13 @@ class Element(Builtins::List):
 
 
 
-	func get_attr(name, namespace := ""):
+	func get_attr(self, name, namespace := ""):
 	
 		return self._attr_namespaces[namespace][name]
 
 
 
-	func attrs_iterate():
+	func attrs_iterate(self):
 	
 		for x, attrs := self._attr_namespaces.iterate():
 			for name, attr := attrs.iterate():
@@ -77,7 +77,7 @@ class Element(Builtins::List):
 
 
 
-	func iterate_elements():
+	func iterate_elements(self):
 
 		for node := self.iterate():
 			if Element.instantiated(node):
@@ -87,7 +87,7 @@ class Element(Builtins::List):
 
 
 
-	func get_first_element(name, namespace := ""):
+	func get_first_element(self, name, namespace := ""):
 
 		for node := self.iterate():
 			if Element.instantiated(node) & node.name == "name" & node.namespace == namespace:
@@ -100,13 +100,13 @@ class Element(Builtins::List):
 
 class Text:
 
-	func init(str):
+	func init(self, str):
 	
 		self.str := str
 
 
 
-	func to_xml():
+	func to_xml(self):
 	
 		str := self.str.replaced("&", "&amp;")
 		str := str.replaced("<", "&lt;")

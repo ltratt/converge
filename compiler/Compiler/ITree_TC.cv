@@ -32,7 +32,7 @@ _EXPRS := [ITree::IClass_Def, ITree::IFunc_Def, ITree::IIf, ITree::INDIf, ITree:
 
 class ITree_TC:
 
-	func tc(itree):
+	func tc(self, itree):
 	
 		self._indent_level := 0
 		
@@ -40,13 +40,13 @@ class ITree_TC:
 
 
 
-	func _type_error(parent_node, part, node, should_be):
+	func _type_error(self, parent_node, part, node, should_be):
 	
 		type_error(parent_node.instance_of.name, part, node, should_be, parent_node.src_infos)
 
 
 
-	func _check_expr(parent_node, part, node):
+	func _check_expr(self, parent_node, part, node):
 	
 		for elem_class := _EXPRS.iterate():
 			if elem_class.instantiated(node):
@@ -58,7 +58,7 @@ class ITree_TC:
 
 
 
-	func _check_expr_block(parent_node, part, node):
+	func _check_expr_block(self, parent_node, part, node):
 	
 		if not Builtins::List.conformed_by(node.exprs):
 			self._type_error(node, "exprs", node.exprs, "List")
@@ -76,13 +76,13 @@ class ITree_TC:
 	//
 
 
-	func _preorder(node):
+	func _preorder(self, node):
 	
 		return self.get_slot("_t_" + node.instance_of.name.to_lower_case())(node)
 
 
 
-	func _t_imodule(node):
+	func _t_imodule(self, node):
 
 		if not Builtins::String.instantiated(node.module_name):
 			self._type_error(node, "module_name", node.module_name, "String")
@@ -95,7 +95,7 @@ class ITree_TC:
 
 
 
-	func _t_iclass_def(node):
+	func _t_iclass_def(self, node):
 
 		if not Builtins::String.instantiated(node.class_name):
 			self._type_error(node, "class_name", node.class_name, "String")
@@ -119,7 +119,7 @@ class ITree_TC:
 
 
 	
-	func _t_ifunc_def(node):
+	func _t_ifunc_def(self, node):
 	
 		if not (node.is_bound == 0 | node.is_bound == 1):
 			raise "XXX"
@@ -154,7 +154,7 @@ class ITree_TC:
 
 
 
-	func _t_iif(node):
+	func _t_iif(self, node):
 
 		for clause := node.clauses.iterate():
 			if not ITree::IClause.instantiated(clause):
@@ -165,7 +165,7 @@ class ITree_TC:
 
 
 
-	func _t_indif(node):
+	func _t_indif(self, node):
 
 		for clause := node.clauses.iterate():
 			if not ITree::IClause.instantiated(clause):
@@ -173,20 +173,20 @@ class ITree_TC:
 
 
 
-	func _t_ivar(node):
+	func _t_ivar(self, node):
 	
 		pass
 
 
 
-	func _t_iimport(node):
+	func _t_iimport(self, node):
 	
 		if not Builtins::String.instantiated(node.module_path):
 			self._type_error(node, "module_path", node.module_path, "String")
 
 
 
-	func _t_iwhile(node):
+	func _t_iwhile(self, node):
 	
 		self._check_expr(node, "condition", node.condition)
 		if not node.body is null:
@@ -198,7 +198,7 @@ class ITree_TC:
 
 
 
-	func _t_ifor(node):
+	func _t_ifor(self, node):
 	
 		self._check_expr(node, "condition", node.condition)
 		if not node.body is null:
@@ -210,21 +210,21 @@ class ITree_TC:
 
 
 
-	func _t_iint(node):
+	func _t_iint(self, node):
 
 		if not Builtins::Int.instantiated(node.val):
 			self._type_error(node, "value", node.val, "Int")
 
 
 
-	func _t_istring(node):
+	func _t_istring(self, node):
 
 		if not Builtins::String.instantiated(node.string):
 			self._type_error(node, "value", node.string, "String")
 
 
 
-	func _t_islot_lookup(node):
+	func _t_islot_lookup(self, node):
 	
 		self._check_expr(node, "object_expr", node.object_expr)
 		
@@ -233,7 +233,7 @@ class ITree_TC:
 
 
 
-	func _t_imodule_lookup(node):
+	func _t_imodule_lookup(self, node):
 	
 		self._check_expr(node, "object_expr", node.object_expr)
 		
@@ -242,7 +242,7 @@ class ITree_TC:
 
 
 
-	func _t_ilist(node):
+	func _t_ilist(self, node):
 	
 		if not Builtins::List.conformed_by(node.elements):
 			self._type_error(node, "elements", node.elements, "List")
@@ -252,7 +252,7 @@ class ITree_TC:
 
 
 
-	func _t_idict(node):
+	func _t_idict(self, node):
 	
 		if not Builtins::List.conformed_by(node.elements):
 			self._type_error(node, "elements", node.elements, "List")
@@ -263,7 +263,7 @@ class ITree_TC:
 
 
 
-	func _t_iset(node):
+	func _t_iset(self, node):
 	
 		if not Builtins::List.conformed_by(node.elements):
 			self._type_error(node, "elements", node.elements, "List")
@@ -273,7 +273,7 @@ class ITree_TC:
 
 
 
-	func _t_iapplication(node):
+	func _t_iapplication(self, node):
 	
 		self._check_expr(node, "func_expr", node.func_expr)
 
@@ -284,14 +284,14 @@ class ITree_TC:
 
 
 
-	func _t_iget(node):
+	func _t_iget(self, node):
 	
 		self._check_expr(node, "get_object", node.get_object)
 		self._check_expr(node, "index", node.index)
 
 
 
-	func _t_islice(node):
+	func _t_islice(self, node):
 	
 		self._check_expr(node, "slice_object", node.slice_object)
 		
@@ -303,7 +303,7 @@ class ITree_TC:
 
 
 
-	func _t_iexbi(node):
+	func _t_iexbi(self, node):
 
 		self._check_expr(node, "object_expr", node.object_expr)
 
@@ -312,58 +312,58 @@ class ITree_TC:
 
 
 
-	func _t_ireturn(node):
+	func _t_ireturn(self, node):
 	
 		if not node.return_expr is null:
 			self._check_expr(node, "return_expr", node.return_expr)
 
 
 
-	func _t_iyield(node):
+	func _t_iyield(self, node):
 	
 		self._check_expr(node, "yield_expr", node.yield_expr)
 
 
 
-	func _t_iraise(node):
+	func _t_iraise(self, node):
 	
 		self._check_expr(node, "raise_expr", node.raise_expr)
 
 
 
-	func _t_iassert(node):
+	func _t_iassert(self, node):
 	
 		self._check_expr(node, "assert_expr", node.assert_expr)
 
 
 
-	func _t_ibreak(node):
+	func _t_ibreak(self, node):
 	
 		pass
 
 
 
-	func _t_icontinue(node):
+	func _t_icontinue(self, node):
 	
 		pass
 
 
 
-	func _t_iconjunction(node):
+	func _t_iconjunction(self, node):
 	
 		for expr := node.exprs.iterate():
 			self._check_expr(node, "expr", expr)
 
 
 
-	func _t_ialternation(node):
+	func _t_ialternation(self, node):
 	
 		for expr := node.exprs.iterate():
 			self._check_expr(node, "expr", expr)
 
 
 
-	func _t_iassignment(node):
+	func _t_iassignment(self, node):
 	
 		if not ITree::ALL_ASSIGNMENTS.find(node.type):
 			raise "XXX"
@@ -380,13 +380,13 @@ class ITree_TC:
 
 
 
-	func _t_inot(node):
+	func _t_inot(self, node):
 
 		self._check_expr(node, "expr", node.expr)
 
 
 
-	func _t_ibinary(node):
+	func _t_ibinary(self, node):
 	
 		if not ITree::ALL_BINARIES.find(node.type):
 			raise "XXX"
@@ -396,7 +396,7 @@ class ITree_TC:
 
 
 
-	func _t_icomparison(node):
+	func _t_icomparison(self, node):
 	
 		if not ITree::ALL_COMPARISONS.find(node.type):
 			raise "XXX"
@@ -406,19 +406,19 @@ class ITree_TC:
 
 
 
-	func _t_ipass(node):
+	func _t_ipass(self, node):
 	
 		pass
 
 
 
-	func _t_iinsert(node):
+	func _t_iinsert(self, node):
 	
 		self._check_expr(node, "expr", node.expr)
 	
 	
 	
-	func _t_istandard_quasi_quotes(node):
+	func _t_istandard_quasi_quotes(self, node):
 	
 		self._check_expr_block(node, "body", node.body)
 		
@@ -427,7 +427,7 @@ class ITree_TC:
 
 
 
-	func _t_ioriginal_name(node):
+	func _t_ioriginal_name(self, node):
 	
 		if not Builtins::String.instantiated(node.module_id):
 			self._type_error(node, "module_id", node.module_id, "String")
@@ -437,7 +437,7 @@ class ITree_TC:
 	
 
 	
-	func _t_iexpr_block(node):
+	func _t_iexpr_block(self, node):
 
 		if not Builtins::List.conformed_by(node.exprs):
 			self._type_error(node, "exprs", node.exprs, "List")
@@ -446,7 +446,7 @@ class ITree_TC:
 
 
 
-	func _t_iparam(node):
+	func _t_iparam(self, node):
 	
 		if not ITree::IVar.instantiated(node.var):
 			self._type_error(node, "var", node.var, "IVar")
@@ -456,7 +456,7 @@ class ITree_TC:
 
 
 
-	func _t_iclause(node):
+	func _t_iclause(self, node):
 	
 		self._check_expr(node, "condition", node.condition)
 		self._check_expr_block(node, "body", node.body)

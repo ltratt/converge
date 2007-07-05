@@ -39,7 +39,7 @@ default ::= "NEWLINE" "DEFAULT" ":" "INDENT" expr_body "DEDENT"
 
 class Switch_Translator(IModule_Gen::IModule_Gen):
 
-	func _t_switch(node, extra_src_infos):
+	func _t_switch(self, node, extra_src_infos):
 	
 		// switch ::= "SWITCH" "ID" ":" "INDENT" clauses default "DEDENT"
 		
@@ -52,7 +52,7 @@ class Switch_Translator(IModule_Gen::IModule_Gen):
 
 
 
-	func _t_clauses(node, extra_src_infos):
+	func _t_clauses(self, node, extra_src_infos):
 
 		// clauses ::= { clause "NEWLINE" }* clause
 		//         ::=
@@ -67,7 +67,7 @@ class Switch_Translator(IModule_Gen::IModule_Gen):
 		
 
 	
-	func _t_clause(node, extra_src_infos):
+	func _t_clause(self, node, extra_src_infos):
 	
 		// clause ::= "CASE" expr ":" "INDENT" expr_body "DEDENT"
 		
@@ -75,7 +75,7 @@ class Switch_Translator(IModule_Gen::IModule_Gen):
 		
 
 
-	func _t_default(node, extra_src_infos):
+	func _t_default(self, node, extra_src_infos):
 	
 		// default ::= "NEWLINE" "DEFAULT" ":" "INDENT" expr_body "DEDENT"
 		//         ::=

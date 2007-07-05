@@ -36,7 +36,7 @@ _NEST_FUNC := 1
 
 class QQ_Mode:
 
-	func generate(parent_mode, node):
+	func generate(self, parent_mode, node):
 	
 		self.parent_mode := parent_mode
 		
@@ -141,7 +141,7 @@ class QQ_Mode:
 
 
 
-	func _add_vars(vars, renames):
+	func _add_vars(self, vars, renames):
 	
 		vars_dict := Dict{}
 		for var := vars.iterate():
@@ -151,19 +151,19 @@ class QQ_Mode:
 
 
 
-	func _pop_vars():
+	func _pop_vars(self):
 	
 		self.closures.del(-1)
 
 
 
-	func _qq_bound_var_name(var_name):
+	func _qq_bound_var_name(self, var_name):
 	
 		return Strings::format(Compiler_Vars::QUASI_QUOTES_NAME, var_name)
 	
 	
 	
-	func _qq(node_type, args, node_src_infos):
+	func _qq(self, node_type, args, node_src_infos):
 
 		src_infos := []
 		for src_file, src_offset := node_src_infos.iterate():
@@ -178,7 +178,7 @@ class QQ_Mode:
 
 
 
-	func _get_var_offset(var_name, src_infos):
+	func _get_var_offset(self, var_name, src_infos):
 
 		mode := self
 		while not mode is null:
@@ -199,7 +199,7 @@ class QQ_Mode:
 
 
 
-	func _process_lookup_var(var_name, node_src_infos):
+	func _process_lookup_var(self, var_name, node_src_infos):
 
 		renamed_var_name, mode, i := self._get_var_offset(var_name, node_src_infos)
 		
@@ -216,7 +216,7 @@ class QQ_Mode:
 
 
 
-	func _process_assign_name(var_name, node_src_infos):
+	func _process_assign_name(self, var_name, node_src_infos):
 
 		renamed_var_name, mode, i := self._get_var_offset(var_name, node_src_infos)
 		
@@ -232,7 +232,7 @@ class QQ_Mode:
 
 
 
-	func _process_assign_var(var_name, node_src_infos):
+	func _process_assign_var(self, var_name, node_src_infos):
 
 		return self._qq("IVar", [self._process_assign_name(var_name, node_src_infos)], node_src_infos)
 
@@ -243,7 +243,7 @@ class QQ_Mode:
 	// Converge compiler.
 	//
 	
-	func _get_module_def_at_qq(module_name, defn_name, src_infos):
+	func _get_module_def_at_qq(self, module_name, defn_name, src_infos):
 	
 		if not module_id, import_extras := self._compiler.find_import_location(["Compiler", module_name]):
 			raise "XXX"
@@ -259,7 +259,7 @@ class QQ_Mode:
 	// Return an ITree of a list of expressions representing the quasi-quoted expression block 'node'.
 	//
 
-	func _eval_expr_block(node):
+	func _eval_expr_block(self, node):
 
 		block := []
 		contains_iinsert := 0
@@ -303,13 +303,13 @@ class QQ_Mode:
 	// Node traversal
 	//
 
-	func _preorder(node):
+	func _preorder(self, node):
 	
 		return self.get_slot("_t_" + node.instance_of.name.to_lower_case())(node)
 
 
 
-	func _t_iclass_def(node):
+	func _t_iclass_def(self, node):
 
 		if ITree::IInsert.instantiated(node.class_name):
 			// Class names are a little odd because the class "name" is also used as a variable
@@ -363,7 +363,7 @@ class QQ_Mode:
 
 
 
-	func _t_ifunc_def(node):
+	func _t_ifunc_def(self, node):
 
 		is_bound := ITree::IInt.new(node.is_bound, node.src_infos)
 		if ITree::IInsert.instantiated(node.func_name):
@@ -441,13 +441,13 @@ class QQ_Mode:
 
 
 
-	func _t_iexpr_block(node):
+	func _t_iexpr_block(self, node):
 	
 		return self._qq("IExpr_Block", [self._eval_expr_block(node)], node.src_infos)
 
 
 
-	func _t_iif(node):
+	func _t_iif(self, node):
 
 		clauses := []
 		for clause := node.clauses.iterate():
@@ -462,7 +462,7 @@ class QQ_Mode:
 
 
 
-	func _t_indif(node):
+	func _t_indif(self, node):
 
 		clauses := []
 		for clause := node.clauses.iterate():
@@ -472,37 +472,37 @@ class QQ_Mode:
 
 
 
-	func _t_iclause(node):
+	func _t_iclause(self, node):
 	
 		return self._qq("IClause", [self._preorder(node.condition), self._preorder(node.body)], node.src_infos)
 
 
 
-	func _t_iint(node):
+	func _t_iint(self, node):
 
 		return self._qq("IInt", [node], node.src_infos)
 
 
 
-	func _t_ivar(node):
+	func _t_ivar(self, node):
 
 		return self._process_lookup_var(node.var_name, node.src_infos)
 
 
 
-	func _t_istring(node):
+	func _t_istring(self, node):
 
 		return self._qq("IString", [node], node.src_infos)
 
 
 
-	func _t_islot_lookup(node):
+	func _t_islot_lookup(self, node):
 
 		return self._qq("ISlot_Lookup", [self._preorder(node.object_expr), ITree::IString.new(node.slot_name, node.src_infos)], node.src_infos)
 
 
 
-	func _t_imodule_lookup(node):
+	func _t_imodule_lookup(self, node):
 
 		if ITree::IInsert.instantiated(node.def_name):
 			def_name := node.def_name.expr
@@ -513,7 +513,7 @@ class QQ_Mode:
 
 
 
-	func _t_ilist(node):
+	func _t_ilist(self, node):
 
 		elems := []
 		for elem := node.elements.iterate():
@@ -523,7 +523,7 @@ class QQ_Mode:
 
 
 
-	func _t_idict(node):
+	func _t_idict(self, node):
 
 		elems := []
 		for key, val := node.elements.iterate():
@@ -533,7 +533,7 @@ class QQ_Mode:
 
 
 
-	func _t_iset(node):
+	func _t_iset(self, node):
 
 		elems := []
 		for elem := node.elements.iterate():
@@ -543,7 +543,7 @@ class QQ_Mode:
 
 
 
-	func _t_iapplication(node):
+	func _t_iapplication(self, node):
 
 		func_expr := self._preorder(node.func_expr)
 		args := []
@@ -554,13 +554,13 @@ class QQ_Mode:
 
 
 
-	func _t_iget(node):
+	func _t_iget(self, node):
 		
 		return self._qq("IGet", [self._preorder(node.get_object), self._preorder(node.index)], node.src_infos)
 
 
 
-	func _t_islice(node):
+	func _t_islice(self, node):
 
 		slice_object := self._preorder(node.slice_object)
 		
@@ -578,7 +578,7 @@ class QQ_Mode:
 
 
 
-	func _t_ireturn(node):
+	func _t_ireturn(self, node):
 	
 		if node.return_expr is null:
 			return self._qq("IReturn", [ITree::IVar.new("null", node.src_infos)], node.src_infos)
@@ -587,37 +587,37 @@ class QQ_Mode:
 
 
 
-	func _t_iyield(node):
+	func _t_iyield(self, node):
 	
 		return self._qq("IYield", [self._preorder(node.yield_expr)], node.src_infos)
 
 
 
-	func _t_iraise(node):
+	func _t_iraise(self, node):
 	
 		return self._qq("IRaise", [self._preorder(node.raise_expr)], node.src_infos)
 
 
 
-	func _t_iassert(node):
+	func _t_iassert(self, node):
 
 		return self._qq("IAssert", [self._preorder(node.assert_expr)], node.src_infos)
 
 
 
-	func _t_ibreak(node):
+	func _t_ibreak(self, node):
 
 		return self._qq("IBreak", [], node.src_infos)
 
 
 
-	func _t_icontinue(node):
+	func _t_icontinue(self, node):
 
 		return self._qq("IContinue", [], node.src_infos)
 
 
 
-	func _t_iconjunction(node):
+	func _t_iconjunction(self, node):
 	
 		exprs := []
 		for expr := node.exprs.iterate():
@@ -627,7 +627,7 @@ class QQ_Mode:
 
 
 
-	func _t_ialternation(node):
+	func _t_ialternation(self, node):
 
 		exprs := []
 		for expr := node.exprs.iterate():
@@ -637,7 +637,7 @@ class QQ_Mode:
 
 
 
-	func _t_iassignment(node):
+	func _t_iassignment(self, node):
 
 		targets := []
 		for target := node.targets.iterate():
@@ -653,38 +653,38 @@ class QQ_Mode:
 
 
 
-	func _t_inot(node):
+	func _t_inot(self, node):
 	
 		return self._qq("INot", [self._preorder(node.expr)], node.src_infos)
 
 
 
-	func _t_ibinary(node):
+	func _t_ibinary(self, node):
 	
 		return self._qq("IBinary", [ITree::IInt.new(node.type, node.src_infos), self._preorder(node.lhs), self._preorder(node.rhs)], node.src_infos)
 
 
 
-	func _t_icomparison(node):
+	func _t_icomparison(self, node):
 	
 		return self._qq("IComparison", [ITree::IInt.new(node.type, node.src_infos), self._preorder(node.lhs), self._preorder(node.rhs)], node.src_infos)
 
 
 
-	func _t_ipass(node):
+	func _t_ipass(self, node):
 	
 		return self._qq("IPass", [], node.src_infos)
 
 
 
-	func _t_iimport(node):
+	func _t_iimport(self, node):
 	
 		raise "XXX"
 		return self._qq("IImport", [ITree::IString.new(node.module_path, node.src_infos), ITree::IString.new(node.var_name, node.src_infos)], node.src_infos)
 
 
 
-	func _t_iwhile(node):
+	func _t_iwhile(self, node):
 
 		condition := self._preorder(node.condition)
 
@@ -707,7 +707,7 @@ class QQ_Mode:
 
 
 
-	func _t_ifor(node):
+	func _t_ifor(self, node):
 
 		condition := self._preorder(node.condition)
 
@@ -740,18 +740,18 @@ class QQ_Mode:
 	// handled separately.
 	//
 
-	func _t_iinsert(node):
+	func _t_iinsert(self, node):
 	
 		return [<node.src_infos>| (expr := ${node.expr}) & ITree_TC::tc_expr(expr, "in expression", ${CEI::lift(node.src_infos)}) & expr |]
 
 
 
-	func _t_istandard_quasi_quotes(node):
+	func _t_istandard_quasi_quotes(self, node):
 	
 		return self._preorder(QQ_Mode.new().generate(self, node))
 
 
 
-	func _t_ioriginal_name(node):
+	func _t_ioriginal_name(self, node):
 	
 		return self._qq("IOriginal_Name", [ITree::IString.new(node.module_id, node.src_infos), ITree::IString.new(node.def_name, node.src_infos)], node.src_infos)

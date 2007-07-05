@@ -27,7 +27,7 @@ import Bytecode_Gen, CEI, Compiler_Vars, CV_Parser, IModule_Gen, ITree, Strings,
 
 class _Eval_Compiler:
 
-	func init(str, vars, includes):
+	func init(self, str, vars, includes):
 	
 		self._str := str
 		self._vars := vars
@@ -40,7 +40,7 @@ class _Eval_Compiler:
 
 
 
-	func eval():
+	func eval(self):
 		
 		self.tokenizer := Tokenizer::Tokenizer.new()
 		parse_tree := CV_Parser::parse_expr(self._str)

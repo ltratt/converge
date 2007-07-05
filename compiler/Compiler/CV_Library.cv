@@ -41,13 +41,13 @@ LIBRARY_VERSION := 0
 
 class CV_Library:
 
-	func init(target):
+	func init(self, target):
 	
 		self._target := target
 
 
 
-	func deserialize(module_str):
+	func deserialize(self, module_str):
 	
 		library := Array::Array.new(self._target::ARRAY_TYPE, module_str)
 	
@@ -65,7 +65,7 @@ class CV_Library:
 
 
 
-	func serialize():
+	func serialize(self):
 	
 		library := Array::Array.new(self._target::ARRAY_TYPE)
 		library.extend_from_string(LIBRARY_INIT_STRING)

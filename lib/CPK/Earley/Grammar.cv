@@ -73,7 +73,7 @@ _COMPILED_CLOSE_OPTIONAL_GROUP := 5
 class Grammar:
 
 
-	func init(grammar, start_rule, tokens_map):
+	func init(self, grammar, start_rule, tokens_map):
 
 		self._grammar := grammar
 		self._start_rule := start_rule
@@ -81,7 +81,7 @@ class Grammar:
 
 	
 	
-	func tokenize(grammar):
+	func tokenize(self, grammar):
 	
 		// The naming of variables in this function is terrible.
 	
@@ -140,7 +140,7 @@ class Grammar:
 
 
 
-	func compile():
+	func compile(self):
 	
 		tokens, newlines := self.tokenize(self._grammar)
 		
@@ -148,7 +148,7 @@ class Grammar:
 	
 	
 	
-	func bootstrap_compile(tokens, newlines):
+	func bootstrap_compile(self, tokens, newlines):
 
 		// This method is a mess, but it's only temporary until the CPK is fully bootstrapped.
 
@@ -425,7 +425,7 @@ class Grammar:
 	
 	
 	
-	func _error(msg, token):
+	func _error(self, msg, token):
 		
 		Sys::println(self._tokens_map)
 		Sys::println(Strings::format("%s: %s", token.src_info.to_str(), msg))
@@ -433,7 +433,7 @@ class Grammar:
 
 
 
-	func _make_recogniser_brackets_map(compiled_alternative, j):
+	func _make_recogniser_brackets_map(self, compiled_alternative, j):
 	
 		if j < compiled_alternative.len() & [_COMPILED_OPEN_KLEENE_STAR_GROUP, _COMPILED_CLOSE_KLEENE_STAR_GROUP, _COMPILED_OPEN_OPTIONAL_GROUP, _COMPILED_CLOSE_OPTIONAL_GROUP].find(compiled_alternative[j]):
 			bracket_map := self._make_recogniser_brackets_map(compiled_alternative, j + 2)
@@ -468,7 +468,7 @@ class Grammar:
 
 
 
-	func _make_parser_brackets_map(compiled_alternative, j):
+	func _make_parser_brackets_map(self, compiled_alternative, j):
 	
 		if j < compiled_alternative.len() & (compiled_alternative[j] == _COMPILED_OPEN_KLEENE_STAR_GROUP | compiled_alternative[j] == _COMPILED_CLOSE_KLEENE_STAR_GROUP | compiled_alternative[j] == _COMPILED_OPEN_OPTIONAL_GROUP | compiled_alternative[j] == _COMPILED_CLOSE_OPTIONAL_GROUP):
 			if compiled_alternative[j] == _COMPILED_OPEN_KLEENE_STAR_GROUP:

@@ -35,7 +35,7 @@ _NEST_FUNC := 1
 
 class ITree_Format:
 
-	func format(itree):
+	func format(self, itree):
 	
 		self._indent_level := 0
 
@@ -48,13 +48,13 @@ class ITree_Format:
 
 
 
-	func _preorder(node):
+	func _preorder(self, node):
 	
 		return self.get_slot("_t_" + node.instance_of.name.to_lower_case())(node)
 
 
 
-	func _t_iclass_def(node):
+	func _t_iclass_def(self, node):
 
 		supers := Strings::join(Functional::map(func (x) { return self._preorder(x) }, node.supers), ", ")
 		if node.metaclass_ is null:
@@ -78,7 +78,7 @@ class ITree_Format:
 
 
 
-	func _t_ifunc_def(node):
+	func _t_ifunc_def(self, node):
 
 		if self._nesting.len() == 0 | self._nesting[-1] == _NEST_FUNC:
 			if node.is_bound == 0:
@@ -115,7 +115,7 @@ class ITree_Format:
 
 
 
-	func _t_iif(node):
+	func _t_iif(self, node):
 	
 		pp := []
 		for i := 0.to(node.clauses.len()):
@@ -138,19 +138,19 @@ class ITree_Format:
 	
 
 
-	func _t_iimport(node):
+	func _t_iimport(self, node):
 	
 		return Strings::format("import %s", File::split_ext(File::split_leaf(node.module_path)[1])[0])
 
 
 
-	func _t_ivar(node):
+	func _t_ivar(self, node):
 	
 		return node.var_name
 
 
 
-	func _t_iwhile(node):
+	func _t_iwhile(self, node):
 
 		pp := ["while ", self._preorder(node.condition)]
 
@@ -176,7 +176,7 @@ class ITree_Format:
 
 
 
-	func _t_ifor(node):
+	func _t_ifor(self, node):
 
 		pp := ["for ", self._preorder(node.condition)]
 
@@ -202,19 +202,19 @@ class ITree_Format:
 
 
 
-	func _t_iint(node):
+	func _t_iint(self, node):
 	
 		return Strings::format("%d", node.val)
 
 
 
-	func _t_ilist(node):
+	func _t_ilist(self, node):
 
 		return Strings::format("[%s]", Strings::join(Functional::map(self._preorder, node.elements), ", "))
 
 
 
-	func _t_idict(node):
+	func _t_idict(self, node):
 
 		elems := Functional::map(func (e) { return Strings::format("%s : %s", self._preorder(e[0]), self._preorder(e[1])) }, node.elements)
 
@@ -222,49 +222,49 @@ class ITree_Format:
 
 
 
-	func _t_iset(node):
+	func _t_iset(self, node):
 
 		return Strings::format("Set{%s}", Strings::join(Functional::map(self._preorder, node.elements), ", "))
 
 
 
-	func _t_istring(node):
+	func _t_istring(self, node):
 	
 		return Strings::format("\"%s\"", node.string)
 
 
 
-	func _t_islot_lookup(node):
+	func _t_islot_lookup(self, node):
 
 		return Strings::format("%s.%s", self._preorder(node.object_expr), node.slot_name)
 
 
 
-	func _t_imodule_lookup(node):
+	func _t_imodule_lookup(self, node):
 
 		return Strings::format("%s::%s", self._preorder(node.object_expr), node.def_name)
 
 
 
-	func _t_ilist(node):
+	func _t_ilist(self, node):
 	
 		return Strings::format("[%s]", Strings::join(Functional::map(self._preorder, node.elements), ", "))
 
 
 
-	func _t_iapplication(node):
+	func _t_iapplication(self, node):
 	
 		return Strings::format("%s(%s)", self._preorder(node.func_expr), Strings::join(Functional::map(self._preorder, node.args), ", "))
 
 
 
-	func _t_iget(node):
+	func _t_iget(self, node):
 
 		return Strings::format("%s[%s]", self._preorder(node.get_object), self._preorder(node.index))
 
 
 
-	func _t_islice(node):
+	func _t_islice(self, node):
 
 		if node.lower_bound is null & node.upper_bound is null:
 			return Strings::format("%s[ : ]", self._preorder(node.slice_object))
@@ -276,7 +276,7 @@ class ITree_Format:
 			return Strings::format("%s[%s : %s]", self._preorder(node.slice_object), self._preorder(node.lower_bound), self._preorder(node.upper_bound))
 
 
-	func _t_ireturn(node):
+	func _t_ireturn(self, node):
 	
 		if node.return_expr is null:
 			return "return"
@@ -285,55 +285,55 @@ class ITree_Format:
 
 
 
-	func _t_iyield(node):
+	func _t_iyield(self, node):
 
 		return Strings::format("yield %s", self._preorder(node.yield_expr))
 
 
 
-	func _t_iraise(node):
+	func _t_iraise(self, node):
 
 		return Strings::format("raise %s", self._preorder(node.raise_expr))
 
 
 
-	func _t_iassert(node):
+	func _t_iassert(self, node):
 
 		return Strings::format("assert %s", self._preorder(node.assert_expr))
 
 
 
-	func _t_ibreak(node):
+	func _t_ibreak(self, node):
 
 		return "break"
 
 
 
-	func _t_icontinue(node):
+	func _t_icontinue(self, node):
 
 		return "continue"
 
 
 
-	func _t_iconjunction(node):
+	func _t_iconjunction(self, node):
 	
 		return Strings::join(Functional::map(self._preorder, node.exprs), " & ")
 
 
 
-	func _t_ialternation(node):
+	func _t_ialternation(self, node):
 	
 		return Strings::join(Functional::map(self._preorder, node.exprs), " | ")
 
 
 
-	func _t_inot(node):
+	func _t_inot(self, node):
 
 		return Strings::format("not %s", self._preorder(node.expr))
 
 
 
-	func _t_iassignment(node):
+	func _t_iassignment(self, node):
 	
 		if node.type == ITree::STD_ASSIGN:
 			op := ":="
@@ -350,7 +350,7 @@ class ITree_Format:
 
 
 
-	func _t_icomparison(node):
+	func _t_icomparison(self, node):
 	
 		if node.type == ITree::IS_COMPARISON:
 			op := "is"
@@ -371,13 +371,13 @@ class ITree_Format:
 
 
 
-	func _t_ipass(node):
+	func _t_ipass(self, node):
 
 		return "pass"
 
 
 
-	func _t_ibinary(node):
+	func _t_ibinary(self, node):
 
 		if node.type == ITree::BINARY_ADD:
 			op := "+"
@@ -394,7 +394,7 @@ class ITree_Format:
 
 
 
-	func _t_ioriginal_name(node):
+	func _t_ioriginal_name(self, node):
 	
 		if node.module_id == Compiler_Vars::peek_compiler().module_id:
 			return node.def_name // XXX
@@ -403,7 +403,7 @@ class ITree_Format:
 
 
 
-	func _t_iexpr_block(node):
+	func _t_iexpr_block(self, node):
 
 		pp := []
 		for expr := node.exprs.iterate():
@@ -413,7 +413,7 @@ class ITree_Format:
 
 		
 		
-	func _t_iparam(node):
+	func _t_iparam(self, node):
 	
 		if not node.default is null:
 			return Strings::format("%s := %s", self._preorder(node.var), self._preorder(node.default))

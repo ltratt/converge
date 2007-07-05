@@ -40,19 +40,19 @@ MODULE_VERSION := 0
 
 class CV_Module:
 
-	func init(target):
+	func init(self, target):
 	
 		self._target := target
 
 
 
-	func deserialize_str(module_str):
+	func deserialize_str(self, module_str):
 	
 		self.deserialize_array(Array::Array.new(self._target::ARRAY_TYPE, module_str))
 	
 	
 	
-	func deserialize_array(module):
+	func deserialize_array(self, module):
 	
 		self._name := self._decode_string(module, module[self._target::MODULE_BYTECODE_NAME], module[self._target::MODULE_BYTECODE_NAME_SIZE])
 
@@ -76,43 +76,43 @@ class CV_Module:
 
 
 
-	func get_name():
+	func get_name(self):
 	
 		return self._name
 
 
 
-	func set_name(name):
+	func set_name(self, name):
 	
 		return self._name := name
 
 
 
-	func get_identifier():
+	func get_identifier(self):
 	
 		return self._identifier
 
 
 
-	func set_identifier(identifier):
+	func set_identifier(self, identifier):
 	
 		self._identifier := identifier
 
 
 
-	func get_instructions_bytecode():
+	func get_instructions_bytecode(self):
 	
 		return self._instructions_bytecode
 
 
 
-	func set_instructions_bytecode(instructions_bytecode):
+	func set_instructions_bytecode(self, instructions_bytecode):
 	
 		self._instructions_bytecode := instructions_bytecode
 
 
 
-	func get_imports():
+	func get_imports(self):
 	
 		i := 0
 		imports_pos := 0
@@ -127,7 +127,7 @@ class CV_Module:
 
 
 
-	func set_imports(imports):
+	func set_imports(self, imports):
 
 		self._imports := Array::Array.new(self._target::ARRAY_TYPE)
 		for import_ := imports.iterate():
@@ -137,31 +137,31 @@ class CV_Module:
 
 
 
-	func get_src_infos():
+	func get_src_infos(self):
 	
 		return self._target::decode_src_infos(self._src_infos)
 
 
 
-	func set_src_infos(src_infos):
+	func set_src_infos(self, src_infos):
 	
 		self._src_infos := self._target::encode_src_infos(src_infos)
 
 
 
-	func get_newlines():
+	func get_newlines(self):
 	
 		return self._newlines
 
 
 
-	func set_newlines(newlines):
+	func set_newlines(self, newlines):
 	
 		self._newlines := newlines
 
 
 
-	func get_top_level_vars_map():
+	func get_top_level_vars_map(self):
 
 		top_level_vars_map := Dict{}
 		top_level_vars_pos := 0
@@ -176,7 +176,7 @@ class CV_Module:
 
 
 
-	func set_top_level_vars_map(top_level_vars_map):
+	func set_top_level_vars_map(self, top_level_vars_map):
 
 		self._top_level_vars_map := Array::Array.new(self._target::ARRAY_TYPE)
 		for var_name, var_num := top_level_vars_map.iterate():
@@ -187,19 +187,19 @@ class CV_Module:
 
 
 
-	func get_constants_offsets():
+	func get_constants_offsets(self):
 	
 		return self._constants_offsets
 
 
 
-	func set_constants_offsets(constants_offsets):
+	func set_constants_offsets(self, constants_offsets):
 	
 		self._constants_offsets := constants_offsets
 
 
 
-	func serialize():
+	func serialize(self):
 	
 		module := Array::Array.new(self._target::ARRAY_TYPE)
 		module.extend_from_string(MODULE_INIT_STRING)
@@ -282,6 +282,6 @@ class CV_Module:
 
 
 
-	func _decode_string(module, start, size):
+	func _decode_string(self, module, start, size):
 
 		return module[start / self._target::WORDSIZE : start / self._target::WORDSIZE + self._target::align(size) / self._target::WORDSIZE].to_str()[ : size]

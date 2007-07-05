@@ -35,7 +35,7 @@ _NEST_CLASS := 1
 
 class IModule_Gen:
 
-	func generate(parse_tree):
+	func generate(self, parse_tree):
 
 		self._definitions := []
 		self._nesting := []
@@ -61,7 +61,7 @@ class IModule_Gen:
 	// node.
 	//
 
-	func _eval_expr_body(node, extra_src_infos := []):
+	func _eval_expr_body(self, node, extra_src_infos := []):
 
 		// expr_body ::= expr ( "NEWLINE" expr )*
 
@@ -107,7 +107,7 @@ class IModule_Gen:
 
 
 
-	func _eval_splice(node, extra_src_infos):
+	func _eval_splice(self, node, extra_src_infos):
 
 		// splice ::= expr_splice
 		//        ::= dsl_splice
@@ -225,7 +225,7 @@ class IModule_Gen:
 	// Node traversal
 	//
 
-	func _preorder(node, extra_src_infos := []):
+	func _preorder(self, node, extra_src_infos := []):
 
 		if not Builtins::List.conformed_by(node):
 			raise "XXX"
@@ -247,7 +247,7 @@ class IModule_Gen:
 
 
 
-	func _t_top_level(node, extra_src_infos):
+	func _t_top_level(self, node, extra_src_infos):
 
 		// top_level ::= definition ( "NEWLINE" definition )*
 		//           ::=
@@ -269,7 +269,7 @@ class IModule_Gen:
 	// Returns a list of IDefinition's
 	//
 
-	func _t_definition(node, extra_src_infos):
+	func _t_definition(self, node, extra_src_infos):
 
 		// definition ::= class_def
 		//            ::= func_def
@@ -342,7 +342,7 @@ class IModule_Gen:
 	// Returns a list of assignment's of imports.
 	//
 
-	func _t_import(node, extra_src_infos):
+	func _t_import(self, node, extra_src_infos):
 
 		// import ::= "IMPORT" import_name import_as ( "," import_name import_as )*
 
@@ -377,7 +377,7 @@ class IModule_Gen:
 	// Returns an IClass_Def.
 	//
 
-	func _t_class_def(node, extra_src_infos):
+	func _t_class_def(self, node, extra_src_infos):
 
 		// class_def ::= "CLASS" class_name class_supers class_metaclass ":" "INDENT" class_fields "DEDENT"
 		
@@ -458,7 +458,7 @@ class IModule_Gen:
 	// Returns an IFunc_Def.
 	//
 
-	func _t_func_def(node, extra_src_infos):
+	func _t_func_def(self, node, extra_src_infos):
 
 		// func_def ::= func_type func_name "(" func_params ")" ":" "INDENT" func_defs expr_body
 		//              "DEDENT"
@@ -510,10 +510,7 @@ class IModule_Gen:
 			func_name := node[2][1].type
 
 		self._nesting.append(_NEST_FUNC)
-		if is_bound == 1:
-			params := [ITree::IParam.new(ITree::IVar.new("self", extra_src_infos + node[3].src_infos), null, extra_src_infos + node[3].src_infos)]
-		else:
-			params := []
+		params := []
 		if node[4].len() > 1:
 			// func_params ::= func_params_elems "," func_varargs
 			//             ::= func_params_elems
@@ -616,7 +613,7 @@ class IModule_Gen:
 	// These functions should all return an instance of IExpr.
 	//
 
-	func _t_expr(node, extra_src_infos):
+	func _t_expr(self, node, extra_src_infos):
 
 		// expr ::= class_def
 		//      ::= func_def
@@ -669,7 +666,7 @@ class IModule_Gen:
 
 
 
-	func _t_if(node, extra_src_infos):
+	func _t_if(self, node, extra_src_infos):
 	
 		// if ::= "IF" expr ":" "INDENT" expr_body "DEDENT" ( if_elif )* if_else
 		//    ::= "IF" expr "{" "INDENT" expr_body "DEDENT" "NEWLINE" "}" ( if_elif )* if_else
@@ -699,7 +696,7 @@ class IModule_Gen:
 
 
 
-	func _t_ndif(node, extra_src_infos):
+	func _t_ndif(self, node, extra_src_infos):
 	
 		// ndif ::= "NDIF" expr ":" "INDENT" expr_body "DEDENT" ( if_elif )*
 		//      ::= "NDIF" expr "{" "INDENT" expr_body "DEDENT" "NEWLINE" "}" ( if_elif )*
@@ -721,7 +718,7 @@ class IModule_Gen:
 
 
 
-	func _t_while(node, extra_src_infos):
+	func _t_while(self, node, extra_src_infos):
 	
 		// while ::= "WHILE" expr ":" "INDENT" expr_body "DEDENT" exhausted broken
 		//       ::= "WHILE" expr
@@ -745,7 +742,7 @@ class IModule_Gen:
 
 
 
-	func _t_for(node, extra_src_infos):
+	func _t_for(self, node, extra_src_infos):
 	
 		// for ::= "FOR" expr ":" "INDENT" expr_body "DEDENT" exhausted broken
 		//     ::= "FOR" expr
@@ -771,7 +768,7 @@ class IModule_Gen:
 
 
 
-	func _t_number(node, extra_src_infos):
+	func _t_number(self, node, extra_src_infos):
 	
 		// number ::= "INT"
 	
@@ -779,7 +776,7 @@ class IModule_Gen:
 
 
 
-	func _t_var_def(node, extra_src_infos):
+	func _t_var_def(self, node, extra_src_infos):
 	
 		// var_def ::= "ID"
 		//         ::= "&" "ID"
@@ -804,7 +801,7 @@ class IModule_Gen:
 
 
 
-	func _t_var_lookup(node, extra_src_infos):
+	func _t_var_lookup(self, node, extra_src_infos):
 	
 		// var_lookup ::= "ID"
 		//            ::= "&" "ID"
@@ -824,7 +821,7 @@ class IModule_Gen:
 
 
 
-	func _t_string(node, extra_src_infos):
+	func _t_string(self, node, extra_src_infos):
 	
 		// string ::= "STRING"
 		
@@ -832,7 +829,7 @@ class IModule_Gen:
 
 
 
-	func _t_slot_lookup(node, extra_src_infos):
+	func _t_slot_lookup(self, node, extra_src_infos):
 	
 		// slot_lookup ::= expr "." "ID"
 		//             ::= expr "." splice
@@ -848,7 +845,7 @@ class IModule_Gen:
 		
 		
 		
-	func _t_module_lookup(node, extra_src_infos):
+	func _t_module_lookup(self, node, extra_src_infos):
 	
 		// module_lookup ::= expr "::" "ID"
 		//               ::= expr "::" splice
@@ -866,7 +863,7 @@ class IModule_Gen:
 
 
 
-	func _t_list(node, extra_src_infos):
+	func _t_list(self, node, extra_src_infos):
 	
 		// list ::= "[" expr { "," expr }* "]"
 		//      ::= "[" "]"
@@ -881,7 +878,7 @@ class IModule_Gen:
 
 
 
-	func _t_dict(node, extra_src_infos):
+	func _t_dict(self, node, extra_src_infos):
 	
 		// dict ::= "DICT{" expr ":" expr ( "," expr ":" expr )* "CLOSE_CURLY"
 		//      ::= "DICT{" "CLOSE_CURLY"
@@ -896,7 +893,7 @@ class IModule_Gen:
 
 
 
-	func _t_set(node, extra_src_infos):
+	func _t_set(self, node, extra_src_infos):
 	
 		// set ::= "SET{" expr ( "," expr )* "CLOSE_CURLY"
 		//     ::= "SET{" "CLOSE_CURLY"
@@ -911,7 +908,7 @@ class IModule_Gen:
 
 
 
-	func _t_application(node, extra_src_infos):
+	func _t_application(self, node, extra_src_infos):
 
 		// application ::= expr "(" expr ( "," expr )* ")"
 		//             ::= expr "(" ")"
@@ -926,7 +923,7 @@ class IModule_Gen:
 
 
 
-	func _t_get(node, extra_src_infos):
+	func _t_get(self, node, extra_src_infos):
 	
 		// get ::= expr "[" expr "]"
 		
@@ -934,7 +931,7 @@ class IModule_Gen:
 
 
 
-	func _t_slice(node, extra_src_infos):
+	func _t_slice(self, node, extra_src_infos):
 	
 		// slice ::= expr "[" expr ":" expr "]"
 		//       ::= expr "[" ":" expr "]"
@@ -961,7 +958,7 @@ class IModule_Gen:
 
 
 
-	func _t_exbi(node, extra_src_infos):
+	func _t_exbi(self, node, extra_src_infos):
 
 		// exbi ::= "EXBI" expr "." "ID"
 
@@ -969,7 +966,7 @@ class IModule_Gen:
 
 
 	
-	func _t_return(node, extra_src_infos):
+	func _t_return(self, node, extra_src_infos):
 	
 		// return ::= "RETURN" expr
 		//        ::= "RETURN"
@@ -983,7 +980,7 @@ class IModule_Gen:
 
 
 
-	func _t_yield(node, extra_src_infos):
+	func _t_yield(self, node, extra_src_infos):
 	
 		// yield ::= "YIELD" expr
 		
@@ -991,7 +988,7 @@ class IModule_Gen:
 
 
 
-	func _t_raise(node, extra_src_infos):
+	func _t_raise(self, node, extra_src_infos):
 	
 		// raise ::= "RAISE" expr
 		
@@ -999,7 +996,7 @@ class IModule_Gen:
 
 
 
-	func _t_assert(node, extra_src_infos):
+	func _t_assert(self, node, extra_src_infos):
 	
 		// assert ::= "ASSERT" expr
 		
@@ -1007,7 +1004,7 @@ class IModule_Gen:
 
 
 
-	func _t_break(node, extra_src_infos):
+	func _t_break(self, node, extra_src_infos):
 	
 		// break ::= "BREAK"
 		
@@ -1015,7 +1012,7 @@ class IModule_Gen:
 
 
 
-	func _t_continue(node, extra_src_infos):
+	func _t_continue(self, node, extra_src_infos):
 	
 		// continue ::= "CONTINUE"
 		
@@ -1023,7 +1020,7 @@ class IModule_Gen:
 
 
 
-	func _t_conjunction(node, extra_src_infos):
+	func _t_conjunction(self, node, extra_src_infos):
 	
 		// conjunction ::= expr ( "&" expr )+
 		
@@ -1037,7 +1034,7 @@ class IModule_Gen:
 
 
 
-	func _t_alternation(node, extra_src_infos):
+	func _t_alternation(self, node, extra_src_infos):
 	
 		// alternation ::= expr ( "|" expr )+
 		
@@ -1051,7 +1048,7 @@ class IModule_Gen:
 
 
 
-	func _t_assignment(node, extra_src_infos):
+	func _t_assignment(self, node, extra_src_infos):
 
 		// assignment ::= assignment_target ( "," assignment_target )* assignment_type expr
 		
@@ -1095,7 +1092,7 @@ class IModule_Gen:
 
 
 
-	func _t_not(node, extra_src_infos):
+	func _t_not(self, node, extra_src_infos):
 	
 		// not ::= "NOT" expr
 		
@@ -1103,7 +1100,7 @@ class IModule_Gen:
 
 
 
-	func _t_binary(node, extra_src_infos):
+	func _t_binary(self, node, extra_src_infos):
 	
 		// binary ::= expr binary_op expr
 
@@ -1122,7 +1119,7 @@ class IModule_Gen:
 
 
 
-	func _t_comparison(node, extra_src_infos):
+	func _t_comparison(self, node, extra_src_infos):
 	
 		// comparison ::= expr comparison_op expr
 		
@@ -1152,7 +1149,7 @@ class IModule_Gen:
 
 
 
-	func _t_pass(node, extra_src_infos):
+	func _t_pass(self, node, extra_src_infos):
 	
 		// pass ::= "PASS"
 	
@@ -1160,7 +1157,7 @@ class IModule_Gen:
 
 
 
-	func _t_brackets(node, extra_src_infos):
+	func _t_brackets(self, node, extra_src_infos):
 	
 		// brackets ::= "(" expr ")"
 		
@@ -1178,7 +1175,7 @@ class IModule_Gen:
 	// handled separately.
 	//
 
-	func _t_splice(node, extra_src_infos):
+	func _t_splice(self, node, extra_src_infos):
 
 		// splice ::= expr_splice
 		//        ::= dsl_splice
@@ -1198,7 +1195,7 @@ class IModule_Gen:
 
 
 
-	func _t_insert(node, extra_src_infos):
+	func _t_insert(self, node, extra_src_infos):
 	
 		// insert ::= "$" "{" expr "}"
 		
@@ -1206,7 +1203,7 @@ class IModule_Gen:
 
 
 
-	func _t_quasi_quotes(node, extra_src_infos):
+	func _t_quasi_quotes(self, node, extra_src_infos):
 		
 		// quasi_quotes ::= expr_quasi_quotes
 		//              ::= defn_quasi_quotes
@@ -1215,7 +1212,7 @@ class IModule_Gen:
 
 
 
-	func _t_expr_quasi_quotes(node, extra_src_infos):
+	func _t_expr_quasi_quotes(self, node, extra_src_infos):
 
 		// expr_quasi_quotes ::= quasi_quotes_customize "INDENT" expr_body "DEDENT" "NEWLINE" "|]"
 		//                   ::= quasi_quotes_customize expr "|]"

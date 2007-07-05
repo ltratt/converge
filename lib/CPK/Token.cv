@@ -27,7 +27,7 @@ import Builtins, Strings
 class Token:
 
 
-	func init(type, value, src_infos):
+	func init(self, type, value, src_infos):
 	
 		self.type := type
 		self.value := value
@@ -35,7 +35,7 @@ class Token:
 
 
 
-	func to_str():
+	func to_str(self):
 	
 		if self.value is null:
 			return Strings::format("<%s>", self.type)

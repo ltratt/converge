@@ -27,7 +27,7 @@ import Bytecode_Gen, Compiler_Vars, CV_Module, CV_Parser, IModule_Gen, Targets::
 
 class Compiler:
 
-	func compile():
+	func compile(self):
 	
 		self.includes := []
 	
@@ -157,7 +157,7 @@ class Compiler:
 		
 
 
-	func _useage_callback(msg):
+	func _useage_callback(self, msg):
 	
 		if not msg is null:
 			Sys::stderr.writeln(Strings::format("Error: %s", msg))
@@ -167,21 +167,21 @@ class Compiler:
 
 
 
-	func error(msg, src_infos := null):
+	func error(self, msg, src_infos := null):
 	
 		self._print_msg("Error", msg, src_infos)
 		Sys::exit(1)
 
 
 
-	func warning(msg, src_infos := null):
+	func warning(self, msg, src_infos := null):
 	
 		self._print_msg("Warning", msg, src_infos)
 		Sys::exit(1)
 	
 	
 	
-	func _print_msg(pre_msg, msg, src_infos := null):
+	func _print_msg(self, pre_msg, msg, src_infos := null):
 	
 		if not src_infos is null:
 			assert src_infos.len() > 0
@@ -228,7 +228,7 @@ class Compiler:
 					
 
 
-	func find_import_location(import_name_list):
+	func find_import_location(self, import_name_list):
 
 		func match_path(i, dir):
 		
@@ -269,7 +269,7 @@ class Compiler:
 
 
 
-	func _target_name_to_target(target_name):
+	func _target_name_to_target(self, target_name):
 
 		if not Available::TARGETS.find(target_name):
 			self.error(Strings::format("No support yet for target '%s'.", target_name))

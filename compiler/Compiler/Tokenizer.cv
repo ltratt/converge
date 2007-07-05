@@ -70,7 +70,7 @@ class Tokenizer:
 	// via the extra_keywords and extra_symbols paramters respectively.
 	//
 
-	func tokenize(str, src_infos, extra_keywords, extra_symbols):
+	func tokenize(self, str, src_infos, extra_keywords, extra_symbols):
 
 		self._str := str
 		if src_infos.len() != 1:
@@ -455,7 +455,7 @@ class Tokenizer:
 	// result since it has updated self.newlines. Be careful.
 	//
 
-	func _skip_newlines(i):
+	func _skip_newlines(self, i):
 	
 		skipped_any := fail
 		while i < self._str.len():
@@ -482,7 +482,7 @@ class Tokenizer:
 	// src_pos should be relative to 0 (i.e. not relative to self._src_offset).
 	//
 
-	func error(msg, src_pos):
+	func error(self, msg, src_pos):
 	
 		CEI::compiler().error(msg, [[self._src_path, src_pos]])
 					

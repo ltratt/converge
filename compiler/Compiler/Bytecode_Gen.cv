@@ -84,7 +84,7 @@ NEST_FUNC := 4   // [NEST_FUNC, <bound = 1> | <unbound = 0>]
 
 class Bytecode_Gen:
 
-	func generate(imodule, target):
+	func generate(self, imodule, target):
 	
 		// 'closures' is a list of '(variables, renames)' tuples for each closure level.
 		//
@@ -215,7 +215,7 @@ class Bytecode_Gen:
 
 
 
-	func _create_label():
+	func _create_label(self):
 	
 		new_label := self._labels.len().to_str()
 		self._labels[new_label] := null
@@ -224,13 +224,13 @@ class Bytecode_Gen:
 
 
 
-	func _set_label(label, offset := self._instructions.len()):
+	func _set_label(self, label, offset := self._instructions.len()):
 	
 		self._labels[label] := offset
 
 
 
-	func _add_vars(vars, renames, import_vars):
+	func _add_vars(self, vars, renames, import_vars):
 	
 		vars_dict := Dict{}
 		for var := vars.iterate():
@@ -244,13 +244,13 @@ class Bytecode_Gen:
 
 
 
-	func _pop_vars():
+	func _pop_vars(self):
 	
 		self.closures.del(-1)
 
 
 
-	func _get_var_offsets(var_name, src_infos):
+	func _get_var_offsets(self, var_name, src_infos):
 
 		i := self.closures.len() - 1
 		search_var_name := var_name
@@ -273,7 +273,7 @@ class Bytecode_Gen:
 	// Note that for normal assignments, 'import_id' should not be specified.
 	//
 
-	func _add_assign_to_var(var_name, src_infos, import_id := null):
+	func _add_assign_to_var(self, var_name, src_infos, import_id := null):
 	
 		closures_offset, var_num := self._get_var_offsets(var_name, src_infos)
 
@@ -294,7 +294,7 @@ class Bytecode_Gen:
 
 
 
-	func _add_lookup_var(var_name, src_infos):
+	func _add_lookup_var(self, var_name, src_infos):
 	
 		closures_offset, var_num := self._get_var_offsets(var_name, src_infos)
 		
@@ -310,7 +310,7 @@ class Bytecode_Gen:
 	// Module::Def1::Def2::... is ["Module", "Def1", "Def2", ...].
 	//	
 
-	func _add_mod_def_lookup(defn_path, src_infos):
+	func _add_mod_def_lookup(self, defn_path, src_infos):
 	
 		if not import_id, import_extras := self._compiler.find_import_location(defn_path):
 			self._compiler.error(Strings::format("Can't find module / package '%s'", Strings::join(defn_path, "::")), src_infos)
@@ -326,7 +326,7 @@ class Bytecode_Gen:
 
 
 
-	func _find_import_location(module_path, src_infos):
+	func _find_import_location(self, module_path, src_infos):
 	
 		import_name_list := Strings::split(module_path, "::")
 	
@@ -341,13 +341,13 @@ class Bytecode_Gen:
 	// Traversal
 	//
 
-	func preorder(node):
+	func preorder(self, node):
 	
 		self.get_slot("_t_" + node.instance_of.name.to_lower_case())(node)
 
 
 
-	func _t_iexpr_block(node):
+	func _t_iexpr_block(self, node):
 	
 		for expr := node.exprs.iterate():
 			end_of_expr_label := self._create_label()
@@ -368,7 +368,7 @@ class Bytecode_Gen:
 	// Definitions
 	//
 
-	func _t_imodule(node):
+	func _t_imodule(self, node):
 
 		self._add_vars(node.bound_vars, Dict{}, node.import_vars)
 		
@@ -397,7 +397,7 @@ class Bytecode_Gen:
 
 
 
-	func _t_iclass_def(node):
+	func _t_iclass_def(self, node):
 		
 		if node.metaclass_ is null:
 			self._instructions.append(self._target::Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_CLASS_CLASS))
@@ -466,7 +466,7 @@ class Bytecode_Gen:
 
 
 
-	func _t_ifunc_def(node):
+	func _t_ifunc_def(self, node):
 		
 		bound_vars := node.internal_bound_vars
 		
@@ -545,7 +545,7 @@ class Bytecode_Gen:
 	// Expressions
 	//
 
-	func _t_iif(node):
+	func _t_iif(self, node):
 	
 		end_of_if_label := self._create_label()
 		for clause := node.clauses.iterate():
@@ -571,7 +571,7 @@ class Bytecode_Gen:
 
 
 
-	func _t_indif(node):
+	func _t_indif(self, node):
 	
 		end_of_ndif_label := self._create_label()
 		for clause := node.clauses.iterate():
@@ -599,7 +599,7 @@ class Bytecode_Gen:
 
 
 
-	func _t_iimport(node):
+	func _t_iimport(self, node):
 	
 		import_id, import_extras := self._find_import_location(node.module_path, node.src_infos)
 
@@ -616,13 +616,13 @@ class Bytecode_Gen:
 
 
 
-	func _t_ivar(node):
+	func _t_ivar(self, node):
 	
 		self._add_lookup_var(node.var_name, node.src_infos)
 
 
 
-	func _t_iint(node):
+	func _t_iint(self, node):
 	
 		constant_name := Strings::format(_CONSTANT_INT_TEMPLATE, node.val.to_str())
 		if not self._constants.find(constant_name):
@@ -638,7 +638,7 @@ class Bytecode_Gen:
 
 
 
-	func _t_iwhile(node):
+	func _t_iwhile(self, node):
 	
 		start_of_while_label := self._create_label()
 		body_label := self._create_label()
@@ -686,7 +686,7 @@ class Bytecode_Gen:
 
 
 
-	func _t_ifor(node):
+	func _t_ifor(self, node):
 	
 		broken_body_label := self._create_label()
 		body_label := self._create_label()
@@ -737,7 +737,7 @@ class Bytecode_Gen:
 
 
 
-	func _t_istring(node):
+	func _t_istring(self, node):
 	
 		constant_name := Strings::format(_CONSTANT_STRING_TEMPLATE, node.string)
 		if not self._constants.find(constant_name):
@@ -753,21 +753,21 @@ class Bytecode_Gen:
 
 
 
-	func _t_islot_lookup(node):
+	func _t_islot_lookup(self, node):
 	
 		self.preorder(node.object_expr)
 		self._instructions.append(self._target::Instr_Slot_Lookup.new(node.src_infos, node.slot_name))
 
 
 
-	func _t_imodule_lookup(node):
+	func _t_imodule_lookup(self, node):
 	
 		self.preorder(node.object_expr)
 		self._instructions.append(self._target::Instr_Module_Lookup.new(node.src_infos, node.def_name))
 
 
 
-	func _t_ilist(node):
+	func _t_ilist(self, node):
 	
 		for elem := node.elements.iterate():
 			self.preorder(elem)
@@ -775,7 +775,7 @@ class Bytecode_Gen:
 
 
 
-	func _t_idict(node):
+	func _t_idict(self, node):
 	
 		for key, val := node.elements.iterate():
 			self.preorder(key)
@@ -784,7 +784,7 @@ class Bytecode_Gen:
 
 
 
-	func _t_iset(node):
+	func _t_iset(self, node):
 	
 		for elem := node.elements.iterate():
 			self.preorder(elem)
@@ -792,7 +792,7 @@ class Bytecode_Gen:
 
 
 
-	func _t_iapplication(node):
+	func _t_iapplication(self, node):
 	
 		if ITree::ISlot_Lookup.instantiated(node.func_expr):
 			self.preorder(node.func_expr.object_expr)
@@ -807,7 +807,7 @@ class Bytecode_Gen:
 
 
 
-	func _t_iget(node):
+	func _t_iget(self, node):
 
 		self.preorder(node.get_object)
 		self._instructions.append(self._target::Instr_Pre_Apply_Slot_Lookup.new(node.src_infos, "get"))
@@ -816,7 +816,7 @@ class Bytecode_Gen:
 
 
 
-	func _t_islice(node):
+	func _t_islice(self, node):
 	
 		self.preorder(node.slice_object)
 		self._instructions.append(self._target::Instr_Pre_Apply_Slot_Lookup.new(node.src_infos, "get_slice"))
@@ -835,7 +835,7 @@ class Bytecode_Gen:
 
 
 
-	func _t_iexbi(node):
+	func _t_iexbi(self, node):
 
 		i := self._nesting.len() - 1
 		while i >= 0:
@@ -851,7 +851,7 @@ class Bytecode_Gen:
 
 
 
-	func _t_ireturn(node):
+	func _t_ireturn(self, node):
 	
 		if node.return_expr is null:
 			self._instructions.append(self._target::Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_NULL_OBJ))
@@ -870,21 +870,21 @@ class Bytecode_Gen:
 
 
 
-	func _t_iyield(node):
+	func _t_iyield(self, node):
 	
 		self.preorder(node.yield_expr)
 		self._instructions.append(self._target::Instr_Yield.new(node.src_infos))
 
 
 
-	func _t_iraise(node):
+	func _t_iraise(self, node):
 	
 		self.preorder(node.raise_expr)
 		self._instructions.append(self._target::Instr_Raise.new(node.src_infos))
 
 
 
-	func _t_iassert(node):
+	func _t_iassert(self, node):
 	
 		assert_failed_label := self._create_label()
 		assert_end_label := self._create_label()
@@ -907,7 +907,7 @@ class Bytecode_Gen:
 
 
 
-	func _t_ibreak(node):
+	func _t_ibreak(self, node):
 
 		i := self._nesting.len() - 1
 		while not [NEST_FOR, NEST_WHILE].find(self._nesting[i][0]):
@@ -925,7 +925,7 @@ class Bytecode_Gen:
 
 
 
-	func _t_icontinue(node):
+	func _t_icontinue(self, node):
 
 		i := self._nesting.len() - 1
 		while not [NEST_FOR, NEST_WHILE].find(self._nesting[i][0]):
@@ -943,7 +943,7 @@ class Bytecode_Gen:
 
 
 
-	func _t_iconjunction(node):
+	func _t_iconjunction(self, node):
 
 		for i := 0.to(node.exprs.len()):
 			next_expr_label := self._create_label()
@@ -956,7 +956,7 @@ class Bytecode_Gen:
 
 
 
-	func _t_ialternation(node):
+	func _t_ialternation(self, node):
 
 		end_of_alternation_label := self._create_label()
 		for expr := node.exprs.iterate():
@@ -974,7 +974,7 @@ class Bytecode_Gen:
 
 
 
-	func _t_iassignment(node):
+	func _t_iassignment(self, node):
 	
 		if node.type != ITree::STD_ASSIGN:
 			for target := node.targets.iterate():
@@ -1033,7 +1033,7 @@ class Bytecode_Gen:
 
 
 
-	func _t_inot(node):
+	func _t_inot(self, node):
 	
 		success_label := self._create_label()
 		self._nesting.append([NEST_NORMAL])
@@ -1049,7 +1049,7 @@ class Bytecode_Gen:
 
 
 	
-	func _t_ibinary(node):
+	func _t_ibinary(self, node):
 
 		self.preorder(node.lhs)
 		
@@ -1070,7 +1070,7 @@ class Bytecode_Gen:
 
 
 
-	func _t_icomparison(node):
+	func _t_icomparison(self, node):
 
 		self.preorder(node.lhs)
 		self.preorder(node.rhs)
@@ -1091,19 +1091,19 @@ class Bytecode_Gen:
 
 
 
-	func _t_ipass(node):
+	func _t_ipass(self, node):
 	
 		pass
 
 
 
-	func _t_istandard_quasi_quotes(node):
+	func _t_istandard_quasi_quotes(self, node):
 	
 		self.preorder(QQ_Mode::QQ_Mode.new().generate(self, node))
 
 
 
-	func _t_ioriginal_name(node):
+	func _t_ioriginal_name(self, node):
 	
 		if self._compiler.bootstrap == 1 & node.module_id.prefixed_by(self._compiler.original_lc_top_level_path):
 			// In bootstrapping mode we have to make sure that anything we output is entirely in

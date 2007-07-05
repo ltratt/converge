@@ -38,7 +38,7 @@ FREQUENCY_ZERO_OR_MORE := 2
 
 class Option_Spec:
 
-	func init(name, short_option, optionality := NONE, type := TYPE_ANY, frequency := FREQUENCY_ZERO_OR_ONE):
+	func init(self, name, short_option, optionality := NONE, type := TYPE_ANY, frequency := FREQUENCY_ZERO_OR_ONE):
 	
 		self.name := name
 		self.short_option := short_option
@@ -51,14 +51,14 @@ class Option_Spec:
 
 class Options:
 
-	func init(useage_callback):
+	func init(self, useage_callback):
 	
 		self._useage_callback := useage_callback
 		self._option_specs := []
 
 
 
-	func add(option_spec):
+	func add(self, option_spec):
 	
 		if self._option_specs.find(option_spec.name):
 			raise Exceptions::User_Exception.new(Strings::format("Option '%s' has already been specified.", option_spec.name))
@@ -67,7 +67,7 @@ class Options:
 
 
 
-	func parse():
+	func parse(self):
 	
 		options := Dict{}
 		

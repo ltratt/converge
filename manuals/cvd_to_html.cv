@@ -33,7 +33,7 @@ _RE_NAME_SEPARATOR := PCRE::compile("[#.]")
 
 class CVD_To_HTML:
 
-	func init():
+	func init(self):
 
 		options := Parse_Options::Options.new(self._useage_callback)
 		options.add(Parse_Options::Option_Spec.new("output", "o", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ONE))
@@ -102,7 +102,7 @@ class CVD_To_HTML:
 
 
 
-	func _useage_callback(msg):
+	func _useage_callback(self, msg):
 
 		Sys::stderr.writeln(Strings::format("Error: %s", msg))
 		Sys::stderr.writeln("Usage: cvd_to_html -o <output> <input>")
@@ -110,7 +110,7 @@ class CVD_To_HTML:
 
 
 
-	func _process_local_name(node):
+	func _process_local_name(self, node):
 
 		i := 0
 		assert(not node.find("::"))
@@ -136,7 +136,7 @@ class CVD_To_HTML:
 
 
 
-	func _process_ref_name(node):
+	func _process_ref_name(self, node):
 
 		i := 0
 		name := node.get_attr("name").value
@@ -168,7 +168,7 @@ class CVD_To_HTML:
 
 
 
-	func _preorder_children(children):
+	func _preorder_children(self, children):
 
 		s := []
 		for child := children.iterate():
@@ -181,7 +181,7 @@ class CVD_To_HTML:
 
 
 
-	func _preorder_elem(node):
+	func _preorder_elem(self, node):
 
 		if f := self.find_slot("_e_" + node.name.to_lower_case()):
 			return f(node)
@@ -215,7 +215,7 @@ class CVD_To_HTML:
 
 
 
-	func _e_module(node):
+	func _e_module(self, node):
 
 		body_text := []
 		i := 0
@@ -243,13 +243,13 @@ class CVD_To_HTML:
 
 
 
-	func _e_assignment(node):
+	func _e_assignment(self, node):
 
 		return Strings::format("""<div style="padding-left: 2em"><p style="text-indent: -1em" /><a name="%s"><code>%s</code></a>\n%s</div>""", node.get_attr("name").value, node.get_attr("name").value, self._preorder_children(node))
 
 
 
-	func _e_class(node):
+	func _e_class(self, node):
 
 		anchor, leaf := self._process_local_name(node)
 
@@ -257,7 +257,7 @@ class CVD_To_HTML:
 
 
 
-	func _e_function(node):
+	func _e_function(self, node):
 
 		i := 0
 		args_text := []
@@ -291,7 +291,7 @@ class CVD_To_HTML:
 
 
 
-	func _e_ref(node):
+	func _e_ref(self, node):
 
 		if attr := node.find_attr("name"):
 			link, name := self._process_ref_name(node)

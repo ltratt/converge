@@ -43,7 +43,7 @@ func _error(msg):
 
 class Linker:
 
-	func init():
+	func init(self):
 	
 		self.includes := []
 	
@@ -138,7 +138,7 @@ class Linker:
 
 class Library_Linker:
 
-	func init():
+	func init(self):
 	
 		self.includes := []
 	

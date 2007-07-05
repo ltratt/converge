@@ -26,7 +26,7 @@ import Builtins, Exceptions, Strings, Sys
 
 class Traverser:
 
-	func _preorder(node):
+	func _preorder(self, node):
 
 		if not Builtins::List.conformed_by(node):
 			return fail
@@ -42,7 +42,7 @@ class Traverser:
 
 class Liberal_Traverser(Traverser):
 
-	func _default(node):
+	func _default(self, node):
 	
 		for c := node[1 : ].iterate():
 			self.preorder(c)
@@ -54,6 +54,6 @@ class Liberal_Traverser(Traverser):
 
 class Strict_Traverser(Traverser):
 
-	func _default(node):
+	func _default(self, node):
 	
 		raise Exceptions::User_Exception.new(Strings::format("Unknown node '%s'.", node[0]))

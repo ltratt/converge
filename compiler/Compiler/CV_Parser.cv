@@ -288,7 +288,7 @@ brackets ::= "(" expr ")"
 
 class CV_Parser(Parser::Parser):
 
-	func error(token):
+	func error(self, token):
 
 		if token.value is null:
 			token_print := token.type

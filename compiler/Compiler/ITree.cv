@@ -54,7 +54,7 @@ ALL_COMPARISONS := [IS_COMPARISON, EQ_COMPARISON, NEQ_COMPARISON, LEQ_COMPARISON
 
 class IModule:
 	
-	func init(module_name, definitions, src_infos):
+	func init(self, module_name, definitions, src_infos):
 	
 		self.module_name := module_name
 		self.definitions := definitions
@@ -68,7 +68,7 @@ class IModule:
 
 
 
-	func extended_src_infos(extra_src_infos):
+	func extended_src_infos(self, extra_src_infos):
 		
 		definitions := self._extended_collection_src_infos(self.definitions, extra_src_infos)
 		
@@ -83,7 +83,7 @@ class IModule:
 
 class IClass_Def:
 
-	func init(class_name, supers, metaclass_, fields, src_infos):
+	func init(self, class_name, supers, metaclass_, fields, src_infos):
 
 		self.class_name := class_name
 		self.supers := supers
@@ -117,7 +117,7 @@ class IClass_Def:
 
 
 
-	func extended_src_infos(extra_src_infos):
+	func extended_src_infos(self, extra_src_infos):
 
 		supers := _extended_collection_src_infos(self.supers, extra_src_infos)
 		metaclass_ := _extended_obj_src_infos(self.metaclass_, extra_src_infos)
@@ -130,7 +130,7 @@ class IClass_Def:
 
 class IFunc_Def:
 
-	func init(is_bound, func_name, params, var_arg, nonlocals, renames, body, src_infos):
+	func init(self, is_bound, func_name, params, var_arg, nonlocals, renames, body, src_infos):
 
 		self.is_bound := is_bound
 		self.func_name := func_name
@@ -187,7 +187,7 @@ class IFunc_Def:
 
 
 
-	func extended_src_infos(extra_src_infos):
+	func extended_src_infos(self, extra_src_infos):
 		
 		params := _extended_collection_src_infos(self.params, extra_src_infos)
 		var_arg := _extended_obj_src_infos(self.var_arg, extra_src_infos)
@@ -210,7 +210,7 @@ class IIf:
 	// 'clauses' is a list of 'IClause's.
 	// 'else_body' can be null.
 
-	func init(clauses, else_body, src_infos):
+	func init(self, clauses, else_body, src_infos):
 	
 		self.clauses := clauses
 		self.else_body := else_body
@@ -233,7 +233,7 @@ class IIf:
 
 
 
-	func extended_src_infos(extra_src_infos):
+	func extended_src_infos(self, extra_src_infos):
 		
 		clauses := _extended_collection_src_infos(self.clauses, extra_src_infos)
 		else_body := _extended_obj_src_infos(self.else_body, extra_src_infos)
@@ -247,7 +247,7 @@ class INDIf:
 
 	// 'clauses' is a list of 'IClause's.
 
-	func init(clauses, src_infos):
+	func init(self, clauses, src_infos):
 	
 		self.clauses := clauses
 		self.src_infos := src_infos
@@ -264,7 +264,7 @@ class INDIf:
 
 
 
-	func extended_src_infos(extra_src_infos):
+	func extended_src_infos(self, extra_src_infos):
 		
 		clauses := _extended_collection_src_infos(self.clauses, extra_src_infos)
 		
@@ -275,7 +275,7 @@ class INDIf:
 
 class IVar:
 
-	func init(var_name, src_infos):
+	func init(self, var_name, src_infos):
 	
 		self.var_name := var_name
 		self.src_infos := src_infos
@@ -287,7 +287,7 @@ class IVar:
 
 
 
-	func extended_src_infos(extra_src_infos):
+	func extended_src_infos(self, extra_src_infos):
 		
 		return IVar.new(self.var_name, self.src_infos + extra_src_infos)
 
@@ -296,7 +296,7 @@ class IVar:
 
 class IImport:
 
-	func init(module_path, var_name, src_infos):
+	func init(self, module_path, var_name, src_infos):
 
 		self.module_path := module_path
 		self.var_name := var_name
@@ -309,7 +309,7 @@ class IImport:
 
 
 
-	func extended_src_infos(extra_src_infos):
+	func extended_src_infos(self, extra_src_infos):
 		
 		return IImport.new(self.module_path, self.var_name, self.src_infos + extra_src_infos)
 
@@ -318,7 +318,7 @@ class IImport:
 
 class IWhile:
 
-	func init(condition, body, exhausted_body, broken_body, src_infos):
+	func init(self, condition, body, exhausted_body, broken_body, src_infos):
 	
 		self.condition := condition
 		self.body := body
@@ -348,7 +348,7 @@ class IWhile:
 
 
 
-	func extended_src_infos(extra_src_infos):
+	func extended_src_infos(self, extra_src_infos):
 		
 		condition := self.condition.extended_src_infos(extra_src_infos)
 		body := _extended_obj_src_infos(self.body, extra_src_infos)
@@ -362,7 +362,7 @@ class IWhile:
 
 class IFor:
 
-	func init(condition, body, exhausted_body, broken_body, src_infos):
+	func init(self, condition, body, exhausted_body, broken_body, src_infos):
 	
 		self.condition := condition
 		self.body := body
@@ -392,7 +392,7 @@ class IFor:
 
 
 
-	func extended_src_infos(extra_src_infos):
+	func extended_src_infos(self, extra_src_infos):
 		
 		condition := self.condition.extended_src_infos(extra_src_infos)
 		body := _extended_obj_src_infos(self.body, extra_src_infos)
@@ -406,7 +406,7 @@ class IFor:
 
 class IInt:
 
-	func init(val, src_infos):
+	func init(self, val, src_infos):
 
 		self.val := val
 		self.src_infos := src_infos
@@ -418,7 +418,7 @@ class IInt:
 
 
 
-	func extended_src_infos(extra_src_infos):
+	func extended_src_infos(self, extra_src_infos):
 	
 		return IInt.new(self.val, self.src_infos + extra_src_infos)
 
@@ -427,7 +427,7 @@ class IInt:
 
 class IString:
 
-	func init(string, src_infos):
+	func init(self, string, src_infos):
 
 		self.string := string
 		self.src_infos := src_infos
@@ -439,7 +439,7 @@ class IString:
 
 
 
-	func extended_src_infos(extra_src_infos):
+	func extended_src_infos(self, extra_src_infos):
 	
 		return IString.new(self.string, self.src_infos + extra_src_infos)
 
@@ -448,7 +448,7 @@ class IString:
 
 class ISlot_Lookup:
 
-	func init(object_expr, slot_name, src_infos):
+	func init(self, object_expr, slot_name, src_infos):
 	
 		self.object_expr := object_expr
 		self.slot_name := slot_name
@@ -461,7 +461,7 @@ class ISlot_Lookup:
 
 
 
-	func extended_src_infos(extra_src_infos):
+	func extended_src_infos(self, extra_src_infos):
 	
 		object_expr := self.object_expr.extended_src_infos(extra_src_infos)
 		
@@ -472,7 +472,7 @@ class ISlot_Lookup:
 
 class IModule_Lookup:
 
-	func init(object_expr, def_name, src_infos):
+	func init(self, object_expr, def_name, src_infos):
 	
 		self.object_expr := object_expr
 		self.def_name := def_name
@@ -485,7 +485,7 @@ class IModule_Lookup:
 
 
 
-	func extended_src_infos(extra_src_infos):
+	func extended_src_infos(self, extra_src_infos):
 	
 		object_expr := self.object_expr.extended_src_infos(extra_src_infos)
 		
@@ -496,7 +496,7 @@ class IModule_Lookup:
 
 class IList:
 
-	func init(elements, src_infos):
+	func init(self, elements, src_infos):
 	
 		self.elements := elements
 		self.src_infos := src_infos
@@ -513,7 +513,7 @@ class IList:
 
 
 
-	func extended_src_infos(extra_src_infos):
+	func extended_src_infos(self, extra_src_infos):
 	
 		elems := _extended_collection_src_infos(self.elements, extra_src_infos)
 		
@@ -524,7 +524,7 @@ class IList:
 
 class IDict:
 
-	func init(elements, src_infos):
+	func init(self, elements, src_infos):
 	
 		self.elements := elements
 		self.src_infos := src_infos
@@ -545,7 +545,7 @@ class IDict:
 
 
 
-	func extended_src_infos(extra_src_infos):
+	func extended_src_infos(self, extra_src_infos):
 	
 		elems := []
 		for key, val := self.elements.iterate():
@@ -558,7 +558,7 @@ class IDict:
 
 class ISet:
 
-	func init(elements, src_infos):
+	func init(self, elements, src_infos):
 	
 		self.elements := elements
 		self.src_infos := src_infos
@@ -575,7 +575,7 @@ class ISet:
 
 
 
-	func extended_src_infos(extra_src_infos):
+	func extended_src_infos(self, extra_src_infos):
 
 		elems := _extended_collection_src_infos(self.elems, extra_src_infos)
 		
@@ -586,7 +586,7 @@ class ISet:
 
 class IApplication:
 
-	func init(func_expr, args, src_infos):
+	func init(self, func_expr, args, src_infos):
 	
 		self.func_expr := func_expr
 		self.args := args
@@ -606,7 +606,7 @@ class IApplication:
 
 
 
-	func extended_src_infos(extra_src_infos):
+	func extended_src_infos(self, extra_src_infos):
 	
 		func_expr := self.func_expr.extended_src_infos(extra_src_infos)
 		args := _extended_collection_src_infos(self.args, extra_src_infos)
@@ -618,7 +618,7 @@ class IApplication:
 
 class IGet:
 
-	func init(get_object, index, src_infos):
+	func init(self, get_object, index, src_infos):
 	
 		self.get_object := get_object
 		self.index := index
@@ -631,7 +631,7 @@ class IGet:
 
 
 
-	func extended_src_infos(extra_src_infos):
+	func extended_src_infos(self, extra_src_infos):
 	
 		get_object := self.get_object.extended_src_infos(extra_src_infos)
 		index := self.index.extended_src_infos(extra_src_infos)
@@ -643,7 +643,7 @@ class IGet:
 
 class ISlice:
 
-	func init(slice_object, lower_bound, upper_bound, src_infos):
+	func init(self, slice_object, lower_bound, upper_bound, src_infos):
 	
 		self.slice_object := slice_object
 		self.lower_bound := lower_bound
@@ -667,7 +667,7 @@ class ISlice:
 
 
 
-	func extended_src_infos(extra_src_infos):
+	func extended_src_infos(self, extra_src_infos):
 	
 		slice_object := self.slice_object.extended_src_infos(extra_src_infos)
 		lower_bound := _extended_obj_src_infos(self.lower_bound, extra_src_infos)
@@ -680,7 +680,7 @@ class ISlice:
 
 class IEXBI:
 
-	func init(object_expr, field_name, src_infos):
+	func init(self, object_expr, field_name, src_infos):
 
 		self.object_expr := object_expr
 		self.field_name := field_name
@@ -693,7 +693,7 @@ class IEXBI:
 
 
 
-	func extended_src_infos(extra_src_infos):
+	func extended_src_infos(self, extra_src_infos):
 	
 		object_expr := self.object_expr.extended_src_infos(extra_src_infos)
 		
@@ -706,7 +706,7 @@ class IReturn:
 
 	// return_expr can be null.
 
-	func init(return_expr, src_infos):
+	func init(self, return_expr, src_infos):
 	
 		self.return_expr := return_expr
 		self.src_infos := src_infos
@@ -724,7 +724,7 @@ class IReturn:
 
 
 
-	func extended_src_infos(extra_src_infos):
+	func extended_src_infos(self, extra_src_infos):
 	
 		return_expr := _extended_obj_src_infos(self.return_expr, extra_src_infos)
 		
@@ -735,7 +735,7 @@ class IReturn:
 
 class IYield:
 
-	func init(yield_expr, src_infos):
+	func init(self, yield_expr, src_infos):
 	
 		self.yield_expr := yield_expr
 		self.src_infos := src_infos
@@ -747,7 +747,7 @@ class IYield:
 
 
 
-	func extended_src_infos(extra_src_infos):
+	func extended_src_infos(self, extra_src_infos):
 	
 		yield_expr := self.yield_expr.extended_src_infos(extra_src_infos)
 		
@@ -758,7 +758,7 @@ class IYield:
 
 class IRaise:
 
-	func init(raise_expr, src_infos):
+	func init(self, raise_expr, src_infos):
 	
 		self.raise_expr := raise_expr
 		self.src_infos := src_infos
@@ -770,7 +770,7 @@ class IRaise:
 
 
 
-	func extended_src_infos(extra_src_infos):
+	func extended_src_infos(self, extra_src_infos):
 	
 		raise_expr := self.raise_expr.extended_src_infos(extra_src_infos)
 		
@@ -781,7 +781,7 @@ class IRaise:
 
 class IAssert:
 
-	func init(assert_expr, src_infos):
+	func init(self, assert_expr, src_infos):
 	
 		self.assert_expr := assert_expr
 		self.src_infos := src_infos
@@ -793,7 +793,7 @@ class IAssert:
 
 
 
-	func extended_src_infos(extra_src_infos):
+	func extended_src_infos(self, extra_src_infos):
 	
 		assert_expr := self.assert_expr.extended_src_infos(extra_src_infos)
 		
@@ -804,7 +804,7 @@ class IAssert:
 
 class IBreak:
 
-	func init(src_infos):
+	func init(self, src_infos):
 	
 		self.src_infos := src_infos
 		
@@ -815,7 +815,7 @@ class IBreak:
 
 
 
-	func extended_src_infos(extra_src_infos):
+	func extended_src_infos(self, extra_src_infos):
 	
 		return IBreak.new(self.src_infos + extra_src_infos)
 
@@ -824,7 +824,7 @@ class IBreak:
 
 class IContinue:
 
-	func init(src_infos):
+	func init(self, src_infos):
 	
 		self.src_infos := src_infos
 		
@@ -835,7 +835,7 @@ class IContinue:
 
 
 
-	func extended_src_infos(extra_src_infos):
+	func extended_src_infos(self, extra_src_infos):
 	
 		return IContinue.new(self.src_infos + extra_src_infos)
 
@@ -844,7 +844,7 @@ class IContinue:
 
 class IConjunction:
 
-	func init(exprs, src_infos):
+	func init(self, exprs, src_infos):
 	
 		self.exprs := exprs
 		self.src_infos := src_infos
@@ -861,7 +861,7 @@ class IConjunction:
 
 
 
-	func extended_src_infos(extra_src_infos):
+	func extended_src_infos(self, extra_src_infos):
 	
 		exprs := _extended_collection_src_infos(self.exprs, extra_src_infos)
 	
@@ -872,7 +872,7 @@ class IConjunction:
 
 class IAlternation:
 
-	func init(exprs, src_infos):
+	func init(self, exprs, src_infos):
 	
 		self.exprs := exprs
 		self.src_infos := src_infos
@@ -889,7 +889,7 @@ class IAlternation:
 
 
 
-	func extended_src_infos(extra_src_infos):
+	func extended_src_infos(self, extra_src_infos):
 	
 		exprs := _extended_collection_src_infos(self.exprs, extra_src_infos)
 	
@@ -900,7 +900,7 @@ class IAlternation:
 
 class IAssignment:
 
-	func init(type, targets, expr, src_infos):
+	func init(self, type, targets, expr, src_infos):
 		
 		self.type := type
 		self.targets := targets
@@ -926,7 +926,7 @@ class IAssignment:
 
 
 
-	func extended_src_infos(extra_src_infos):
+	func extended_src_infos(self, extra_src_infos):
 	
 		targets := _extended_collection_src_infos(self.targets, extra_src_infos)
 		expr := self.expr.extended_src_infos(extra_src_infos)
@@ -938,7 +938,7 @@ class IAssignment:
 
 class INot:
 
-	func init(expr, src_infos):
+	func init(self, expr, src_infos):
 	
 		self.expr := expr
 		self.src_infos := src_infos
@@ -950,7 +950,7 @@ class INot:
 
 
 
-	func extended_src_infos(extra_src_infos):
+	func extended_src_infos(self, extra_src_infos):
 	
 		expr := self.expr.extended_src_infos(extra_src_infos)
 	
@@ -961,7 +961,7 @@ class INot:
 
 class IBinary:
 
-	func init(type, lhs, rhs, src_infos):
+	func init(self, type, lhs, rhs, src_infos):
 		
 		self.type := type
 		self.lhs := lhs
@@ -975,7 +975,7 @@ class IBinary:
 
 
 
-	func extended_src_infos(extra_src_infos):
+	func extended_src_infos(self, extra_src_infos):
 	
 		lhs := self.lhs.extended_src_infos(extra_src_infos)
 		rhs := self.rhs.extended_src_infos(extra_src_infos)
@@ -988,7 +988,7 @@ class IBinary:
 
 class IComparison:
 
-	func init(type, lhs, rhs, src_infos):
+	func init(self, type, lhs, rhs, src_infos):
 		
 		self.type := type
 		self.lhs := lhs
@@ -1002,7 +1002,7 @@ class IComparison:
 
 
 
-	func extended_src_infos(extra_src_infos):
+	func extended_src_infos(self, extra_src_infos):
 	
 		lhs := self.lhs.extended_src_infos(extra_src_infos)
 		rhs := self.rhs.extended_src_infos(extra_src_infos)
@@ -1014,7 +1014,7 @@ class IComparison:
 
 class IPass:
 
-	func init(src_infos):
+	func init(self, src_infos):
 	
 		self.src_infos := src_infos
 		
@@ -1025,7 +1025,7 @@ class IPass:
 
 
 
-	func extended_src_infos(extra_src_infos):
+	func extended_src_infos(self, extra_src_infos):
 	
 		return IPass.new(self.src_infos + extra_src_infos)
 
@@ -1034,7 +1034,7 @@ class IPass:
 
 class IInsert:
 
-	func init(expr, src_infos):
+	func init(self, expr, src_infos):
 	
 		self.expr := expr
 		self.src_infos := src_infos
@@ -1046,7 +1046,7 @@ class IInsert:
 
 
 
-	func extended_src_infos(extra_src_infos):
+	func extended_src_infos(self, extra_src_infos):
 	
 		expr := self.expr.extended_src_infos(extra_src_infos)
 	
@@ -1057,7 +1057,7 @@ class IInsert:
 
 class IStandard_Quasi_Quotes:
 
-	func init(body, extra_src_infos, src_infos):
+	func init(self, body, extra_src_infos, src_infos):
 	
 		self.body := body
 		self.extra_src_infos := extra_src_infos
@@ -1083,7 +1083,7 @@ class IStandard_Quasi_Quotes:
 
 
 
-	func extended_src_infos(extra_src_infos):
+	func extended_src_infos(self, extra_src_infos):
 	
 		body := self.body.extended_src_infos(extra_src_infos)
 		esi := _extended_obj_src_infos(self.extra_src_infos, extra_src_infos)
@@ -1095,7 +1095,7 @@ class IStandard_Quasi_Quotes:
 
 class IOriginal_Name:
 
-	func init(module_id, def_name, src_infos):
+	func init(self, module_id, def_name, src_infos):
 	
 		self.module_id := module_id
 		self.def_name := def_name
@@ -1108,7 +1108,7 @@ class IOriginal_Name:
 
 
 
-	func extended_src_infos(extra_src_infos):
+	func extended_src_infos(self, extra_src_infos):
 	
 		return IOriginal_Name.new(self.module_id, self.def_name, self.src_infos + extra_src_infos)
 
@@ -1122,7 +1122,7 @@ class IOriginal_Name:
 
 class IExpr_Block:
 
-	func init(exprs, src_infos):
+	func init(self, exprs, src_infos):
 	
 		self.exprs := exprs
 		self.src_infos := src_infos
@@ -1141,7 +1141,7 @@ class IExpr_Block:
 
 
 
-	func extended_src_infos(extra_src_infos):
+	func extended_src_infos(self, extra_src_infos):
 	
 		exprs := _extended_collection_src_infos(self.exprs, extra_src_infos)
 	
@@ -1152,7 +1152,7 @@ class IExpr_Block:
 
 class IParam:
 
-	func init(var, default, src_infos):
+	func init(self, var, default, src_infos):
 	
 		self.var := var
 		self.default := default
@@ -1173,7 +1173,7 @@ class IParam:
 			
 
 
-	func extended_src_infos(extra_src_infos):
+	func extended_src_infos(self, extra_src_infos):
 	
 		var := self.var.extended_src_infos(extra_src_infos)
 		default := _extended_obj_src_infos(self.default, extra_src_infos)
@@ -1185,7 +1185,7 @@ class IParam:
 
 class IClause:
 
-	func init(condition, body, src_infos):
+	func init(self, condition, body, src_infos):
 	
 		self.condition := condition
 		self.body := body
@@ -1198,7 +1198,7 @@ class IClause:
 
 
 
-	func extended_src_infos(extra_src_infos):
+	func extended_src_infos(self, extra_src_infos):
 	
 		condition := self.condition.extended_src_infos(extra_src_infos)
 		body := self.body.extended_src_infos(extra_src_infos)

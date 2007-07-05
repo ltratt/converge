@@ -141,13 +141,13 @@ INSTR_MODULE_LOOKUP := 51          // bits 0-7 := 51, bits 8-31 := size of slot 
 
 class Instruction:
 
-	func init(src_infos):
+	func init(self, src_infos):
 
 		self.src_infos := src_infos
 
 
 
-	func bytecode_len_bytes():
+	func bytecode_len_bytes(self):
 	
 		return WORDSIZE
 
@@ -156,20 +156,20 @@ class Instruction:
 
 class Instr_EXBI(Instruction):
 
-	func init(src_infos, field_name):
+	func init(self, src_infos, field_name):
 
 		self.src_infos := src_infos	
 		self.field_name := field_name
 
 
 
-	func bytecode_len_bytes():
+	func bytecode_len_bytes(self):
 
 		return WORDSIZE + align(self.field_name.len())
 
 
 
-	func to_bytecode():
+	func to_bytecode(self):
 
 		return [b_8_24(INSTR_EXBI, self.field_name.len())] + b_aligned_string(self.field_name)
 
@@ -178,7 +178,7 @@ class Instr_EXBI(Instruction):
 
 class Instr_Lookup_Var(Instruction):
 
-	func init(src_infos, closures_offset, var_number):
+	func init(self, src_infos, closures_offset, var_number):
 	
 		self.src_infos := src_infos
 		self.closures_offset := closures_offset
@@ -186,7 +186,7 @@ class Instr_Lookup_Var(Instruction):
 
 
 
-	func to_bytecode():
+	func to_bytecode(self):
 	
 		return b_8_12_12(INSTR_LOOKUP_VAR, self.closures_offset, self.var_number)
 
@@ -195,7 +195,7 @@ class Instr_Lookup_Var(Instruction):
 
 class Instr_Assign_Var(Instruction):
 
-	func init(src_infos, closures_offset, var_number):
+	func init(self, src_infos, closures_offset, var_number):
 	
 		self.src_infos := src_infos
 		self.closures_offset := closures_offset
@@ -203,7 +203,7 @@ class Instr_Assign_Var(Instruction):
 
 
 
-	func to_bytecode():
+	func to_bytecode(self):
 	
 		return b_8_12_12(INSTR_ASSIGN_VAR, self.closures_offset, self.var_number)
 
@@ -212,14 +212,14 @@ class Instr_Assign_Var(Instruction):
 
 class Instr_Int(Instruction):
 
-	func init(src_infos, val):
+	func init(self, src_infos, val):
 	
 		self.src_infos := src_infos
 		self.val := val
 
 
 
-	func to_bytecode():
+	func to_bytecode(self):
 	
 		if self.val < 0:
 			int_val := (0 - self.val).or(1.lsl(23))
@@ -235,14 +235,14 @@ class Instr_Int(Instruction):
 
 class Instr_Add_Failure_Frame(Instruction):
 
-	func init(src_infos, pc_offset):
+	func init(self, src_infos, pc_offset):
 	
 		self.src_infos := src_infos
 		self.pc_offset := pc_offset
 
 
 
-	func to_bytecode():
+	func to_bytecode(self):
 	
 		return b_8_s24(INSTR_ADD_FAILURE_FRAME, self.pc_offset)
 
@@ -251,7 +251,7 @@ class Instr_Add_Failure_Frame(Instruction):
 
 class Instr_Add_Fail_Up_Frame(Instruction):
 
-	func to_bytecode():
+	func to_bytecode(self):
 	
 		return b_8(INSTR_ADD_FAIL_UP_FRAME)
 
@@ -260,7 +260,7 @@ class Instr_Add_Fail_Up_Frame(Instruction):
 
 class Instr_Remove_Failure_Frame(Instruction):
 
-	func to_bytecode():
+	func to_bytecode(self):
 	
 		return b_8(INSTR_REMOVE_FAILURE_FRAME)
 
@@ -269,7 +269,7 @@ class Instr_Remove_Failure_Frame(Instruction):
 
 class Instr_Is_Assigned(Instruction):
 
-	func init(src_infos, closures_offset, var_number, pc_offset):
+	func init(self, src_infos, closures_offset, var_number, pc_offset):
 	
 		self.src_infos := src_infos
 		self.closures_offset := closures_offset
@@ -278,13 +278,13 @@ class Instr_Is_Assigned(Instruction):
 
 
 
-	func bytecode_len_bytes():
+	func bytecode_len_bytes(self):
 	
 		return 2 * WORDSIZE
 
 
 
-	func to_bytecode():
+	func to_bytecode(self):
 	
 		return [b_8_12_12(INSTR_IS_ASSIGNED, self.closures_offset, self.var_number), b_8_s24(0, self.pc_offset)]
 
@@ -294,7 +294,7 @@ class Instr_Is_Assigned(Instruction):
 
 class Instr_Fail_Now(Instruction):
 
-	func to_bytecode():
+	func to_bytecode(self):
 	
 		return b_8(INSTR_FAIL_NOW)
 
@@ -303,7 +303,7 @@ class Instr_Fail_Now(Instruction):
 
 class Instr_Pop(Instruction):
 
-	func to_bytecode():
+	func to_bytecode(self):
 	
 		return b_8(INSTR_POP)
 
@@ -312,14 +312,14 @@ class Instr_Pop(Instruction):
 
 class Instr_List(Instruction):
 
-	func init(src_infos, num_elements):
+	func init(self, src_infos, num_elements):
 		
 		self.src_infos := src_infos
 		self.num_elements := num_elements
 
 
 
-	func to_bytecode():
+	func to_bytecode(self):
 	
 		return b_8_24(INSTR_LIST, self.num_elements)
 
@@ -329,20 +329,20 @@ class Instr_List(Instruction):
 class Instr_Slot_Lookup(Instruction):
 
 
-	func init(src_infos, slot_name):
+	func init(self, src_infos, slot_name):
 
 		self.src_infos := src_infos	
 		self.slot_name := slot_name
 
 
 
-	func bytecode_len_bytes():
+	func bytecode_len_bytes(self):
 	
 		return WORDSIZE + align(self.slot_name.len())
 
 
 
-	func to_bytecode():
+	func to_bytecode(self):
 	
 		return [b_8_24(INSTR_SLOT_LOOKUP, self.slot_name.len())] + b_aligned_string(self.slot_name)
 
@@ -352,14 +352,14 @@ class Instr_Slot_Lookup(Instruction):
 
 class Instr_Apply(Instruction):
 
-	func init(src_infos, num_args):
+	func init(self, src_infos, num_args):
 		
 		self.src_infos := src_infos
 		self.num_args := num_args
 
 
 
-	func to_bytecode():
+	func to_bytecode(self):
 	
 		return b_8_24(INSTR_APPLY, self.num_args)
 
@@ -368,14 +368,14 @@ class Instr_Apply(Instruction):
 
 class Instr_Func_Def(Instruction):
 
-	func init(src_infos, is_bound):
+	func init(self, src_infos, is_bound):
 		
 		self.src_infos := src_infos
 		self.is_bound := is_bound
 
 
 
-	func to_bytecode():
+	func to_bytecode(self):
 	
 		return b_8_1(INSTR_FUNC_DEF, self.is_bound)
 
@@ -384,7 +384,7 @@ class Instr_Func_Def(Instruction):
 
 class Instr_Return(Instruction):
 
-	func to_bytecode():
+	func to_bytecode(self):
 	
 		return b_8(INSTR_RETURN)
 
@@ -393,14 +393,14 @@ class Instr_Return(Instruction):
 
 class Instr_Branch(Instruction):
 
-	func init(src_infos, pc_offset):
+	func init(self, src_infos, pc_offset):
 		
 		self.src_infos := src_infos
 		self.pc_offset := pc_offset
 
 
 
-	func to_bytecode():
+	func to_bytecode(self):
 	
 		return b_8_s24(INSTR_BRANCH, self.pc_offset)
 
@@ -409,7 +409,7 @@ class Instr_Branch(Instruction):
 
 class Instr_Yield(Instruction):
 
-	func to_bytecode():
+	func to_bytecode(self):
 	
 		return b_8(INSTR_YIELD)
 
@@ -418,14 +418,14 @@ class Instr_Yield(Instruction):
 
 class Instr_Import(Instruction):
 
-	func init(src_infos, import_num):
+	func init(self, src_infos, import_num):
 		
 		self.src_infos := src_infos
 		self.import_num := import_num
 
 
 
-	func to_bytecode():
+	func to_bytecode(self):
 	
 		return b_8_24(INSTR_IMPORT, self.import_num)
 
@@ -434,14 +434,14 @@ class Instr_Import(Instruction):
 
 class Instr_Dict(Instruction):
 
-	func init(src_infos, num_elements):
+	func init(self, src_infos, num_elements):
 		
 		self.src_infos := src_infos
 		self.num_elements := num_elements
 
 
 
-	func to_bytecode():
+	func to_bytecode(self):
 	
 		return b_8_24(INSTR_DICT, self.num_elements)
 
@@ -450,7 +450,7 @@ class Instr_Dict(Instruction):
 
 class Instr_Dup(Instruction):
 
-	func to_bytecode():
+	func to_bytecode(self):
 	
 		return b_8(INSTR_DUP)
 
@@ -459,14 +459,14 @@ class Instr_Dup(Instruction):
 
 class Instr_Pull(Instruction):
 
-	func init(src_infos, num_entries):
+	func init(self, src_infos, num_entries):
 
 		self.src_infos := src_infos	
 		self.num_entries := num_entries
 
 
 
-	func to_bytecode():
+	func to_bytecode(self):
 	
 		return b_8_24(INSTR_PULL, self.num_entries)
 
@@ -475,20 +475,20 @@ class Instr_Pull(Instruction):
 
 class Instr_String(Instruction):
 
-	func init(src_infos, string):
+	func init(self, src_infos, string):
 
 		self.src_infos := src_infos	
 		self.string := string
 	
 
 
-	func bytecode_len_bytes():
+	func bytecode_len_bytes(self):
 	
 		return WORDSIZE + align(self.string.len())
 
 	
 	
-	func to_bytecode():
+	func to_bytecode(self):
 	
 		return [b_8_24(INSTR_STRING, self.string.len())] + b_aligned_string(self.string)
 
@@ -497,14 +497,14 @@ class Instr_String(Instruction):
 
 class Instr_Builtin_Lookup(Instruction):
 
-	func init(src_infos, builtin):
+	func init(self, src_infos, builtin):
 		
 		self.src_infos := src_infos
 		self.builtin := builtin
 
 
 
-	func to_bytecode():
+	func to_bytecode(self):
 	
 		return b_8_8(INSTR_BUILTIN_LOOKUP, self.builtin)
 
@@ -513,7 +513,7 @@ class Instr_Builtin_Lookup(Instruction):
 
 class Instr_EYield(Instruction):
 
-	func to_bytecode():
+	func to_bytecode(self):
 	
 		return b_8(INSTR_EYIELD)
 
@@ -523,20 +523,20 @@ class Instr_EYield(Instruction):
 class Instr_Assign_Slot(Instruction):
 
 
-	func init(src_infos, slot_name):
+	func init(self, src_infos, slot_name):
 
 		self.src_infos := src_infos	
 		self.slot_name := slot_name 
 
 
 
-	func bytecode_len_bytes():
+	func bytecode_len_bytes(self):
 	
 		return WORDSIZE + align(self.slot_name.len())
 
 	
 	
-	func to_bytecode():
+	func to_bytecode(self):
 	
 		return [b_8_24(INSTR_ASSIGN_SLOT, self.slot_name.len())] + b_aligned_string(self.slot_name)
 
@@ -545,7 +545,7 @@ class Instr_Assign_Slot(Instruction):
 
 class Instr_Raise(Instruction):
 
-	func to_bytecode():
+	func to_bytecode(self):
 	
 		return b_8(INSTR_RAISE)
 
@@ -554,7 +554,7 @@ class Instr_Raise(Instruction):
 
 class Instr_Unpack_Args(Instruction):
 
-	func init(src_infos, params_info, has_var_args):
+	func init(self, src_infos, params_info, has_var_args):
 		
 		self.src_infos := src_infos
 		self.params_info := params_info
@@ -562,13 +562,13 @@ class Instr_Unpack_Args(Instruction):
 
 
 
-	func bytecode_len_bytes():
+	func bytecode_len_bytes(self):
 	
 		return self.to_bytecode().len() * WORDSIZE
 
 
 
-	func to_bytecode():
+	func to_bytecode(self):
 	
 		if self.has_var_args == 1:
 			num_params := self.params_info.len() - 1
@@ -586,14 +586,14 @@ class Instr_Unpack_Args(Instruction):
 
 class Instr_Set(Instruction):
 
-	func init(src_infos, num_elements):
+	func init(self, src_infos, num_elements):
 		
 		self.src_infos := src_infos
 		self.num_elements := num_elements
 
 
 
-	func to_bytecode():
+	func to_bytecode(self):
 	
 		return b_8_24(INSTR_SET, self.num_elements)
 
@@ -602,14 +602,14 @@ class Instr_Set(Instruction):
 
 class Instr_Branch_If_Not_Fail(Instruction):
 
-	func init(src_infos, pc_offset):
+	func init(self, src_infos, pc_offset):
 	
 		self.src_infos := src_infos
 		self.pc_offset := pc_offset
 
 
 
-	func to_bytecode():
+	func to_bytecode(self):
 	
 		return b_8_s24(INSTR_BRANCH_IF_NOT_FAIL, self.pc_offset)
 
@@ -618,14 +618,14 @@ class Instr_Branch_If_Not_Fail(Instruction):
 
 class Instr_Branch_If_Fail(Instruction):
 
-	func init(src_infos, pc_offset):
+	func init(self, src_infos, pc_offset):
 	
 		self.src_infos := src_infos
 		self.pc_offset := pc_offset
 
 
 
-	func to_bytecode():
+	func to_bytecode(self):
 	
 		return b_8_s24(INSTR_BRANCH_IF_FAIL, self.pc_offset)
 
@@ -634,14 +634,14 @@ class Instr_Branch_If_Fail(Instruction):
 
 class Instr_Constant_Get(Instruction):
 
-	func init(src_infos, constant_num):
+	func init(self, src_infos, constant_num):
 	
 		self.src_infos := src_infos
 		self.constant_num := constant_num
 
 
 
-	func to_bytecode():
+	func to_bytecode(self):
 	
 		return b_8_24(INSTR_CONSTANT_GET, self.constant_num)
 
@@ -650,14 +650,14 @@ class Instr_Constant_Get(Instruction):
 
 class Instr_Constant_Set(Instruction):
 
-	func init(src_infos, constant_num):
+	func init(self, src_infos, constant_num):
 	
 		self.src_infos := src_infos
 		self.constant_num := constant_num
 
 
 
-	func to_bytecode():
+	func to_bytecode(self):
 	
 		return b_8_24(INSTR_CONSTANT_SET, self.constant_num)
 
@@ -666,20 +666,20 @@ class Instr_Constant_Set(Instruction):
 
 class Instr_Pre_Apply_Slot_Lookup(Instruction):
 
-	func init(src_infos, slot_name):
+	func init(self, src_infos, slot_name):
 	
 		self.src_infos := src_infos
 		self.slot_name := slot_name
 
 
 
-	func bytecode_len_bytes():
+	func bytecode_len_bytes(self):
 	
 		return WORDSIZE + align(self.slot_name.len())
 
 
 
-	func to_bytecode():
+	func to_bytecode(self):
 	
 		return [b_8_24(INSTR_PRE_APPLY_SLOT_LOOKUP, self.slot_name.len())] + b_aligned_string(self.slot_name)
 
@@ -688,7 +688,7 @@ class Instr_Pre_Apply_Slot_Lookup(Instruction):
 
 class Instr_Is(Instruction):
 
-	func to_bytecode():
+	func to_bytecode(self):
 	
 		return b_8(INSTR_IS)
 
@@ -697,14 +697,14 @@ class Instr_Is(Instruction):
 
 class Instr_Unpack_Assign(Instruction):
 
-	func init(src_infos, num_elements):
+	func init(self, src_infos, num_elements):
 	
 		self.src_infos := src_infos
 		self.num_elements := num_elements
 
 
 
-	func to_bytecode():
+	func to_bytecode(self):
 	
 		return b_8_24(INSTR_UNPACK_ASSIGN, self.num_elements)
 
@@ -713,7 +713,7 @@ class Instr_Unpack_Assign(Instruction):
 
 class Instr_EQ(Instruction):
 
-	func to_bytecode():
+	func to_bytecode(self):
 	
 		return b_8(INSTR_EQ)
 
@@ -722,7 +722,7 @@ class Instr_EQ(Instruction):
 
 class Instr_LE(Instruction):
 
-	func to_bytecode():
+	func to_bytecode(self):
 	
 		return b_8(INSTR_LE)
 
@@ -731,7 +731,7 @@ class Instr_LE(Instruction):
 
 class Instr_Add(Instruction):
 
-	func to_bytecode():
+	func to_bytecode(self):
 	
 		return b_8(INSTR_ADD)
 
@@ -740,7 +740,7 @@ class Instr_Add(Instruction):
 
 class Instr_Sub(Instruction):
 
-	func to_bytecode():
+	func to_bytecode(self):
 	
 		return b_8(INSTR_SUB)
 
@@ -749,7 +749,7 @@ class Instr_Sub(Instruction):
 
 class Instr_NEQ(Instruction):
 
-	func to_bytecode():
+	func to_bytecode(self):
 	
 		return b_8(INSTR_NEQ)
 
@@ -758,7 +758,7 @@ class Instr_NEQ(Instruction):
 
 class Instr_LEQ(Instruction):
 
-	func to_bytecode():
+	func to_bytecode(self):
 	
 		return b_8(INSTR_LEQ)
 
@@ -767,7 +767,7 @@ class Instr_LEQ(Instruction):
 
 class Instr_GEQ(Instruction):
 
-	func to_bytecode():
+	func to_bytecode(self):
 	
 		return b_8(INSTR_GEQ)
 
@@ -776,7 +776,7 @@ class Instr_GEQ(Instruction):
 
 class Instr_GE(Instruction):
 
-	func to_bytecode():
+	func to_bytecode(self):
 	
 		return b_8(INSTR_GE)
 
@@ -786,20 +786,20 @@ class Instr_GE(Instruction):
 class Instr_Module_Lookup(Instruction):
 
 
-	func init(src_infos, slot_name):
+	func init(self, src_infos, slot_name):
 
 		self.src_infos := src_infos	
 		self.slot_name := slot_name
 
 
 
-	func bytecode_len_bytes():
+	func bytecode_len_bytes(self):
 	
 		return WORDSIZE + align(self.slot_name.len())
 
 
 
-	func to_bytecode():
+	func to_bytecode(self):
 	
 		return [b_8_24(INSTR_MODULE_LOOKUP, self.slot_name.len())] + b_aligned_string(self.slot_name)
 

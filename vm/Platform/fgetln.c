@@ -31,11 +31,14 @@
  * Missing stuff from OS's
  */
 
+#include "Config.h"
+
 #include <sys/param.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "Config.h"
+
+#include "fgetln.h"
 
 
 static void removeCR(char *s)

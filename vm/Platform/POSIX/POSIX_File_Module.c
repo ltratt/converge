@@ -29,6 +29,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifndef CON_HAVE_NATIVE_FGETLN
+#	include "Platform/fgetln.h"
+#endif
+
 #include "Core.h"
 #include "Numbers.h"
 #include "Object.h"

@@ -349,7 +349,7 @@ AC_MSG_CHECKING([for sigsetjmp])
 AH_TEMPLATE(_POSIX_C_SOURCE,
   [Define if your platform needs _POSIX_C_SOURCE for sigsetjmp to be defined.])
 
-CFLAGS="-std=c99"
+CFLAGS="-std=c99 $extra_cflags"
 AC_TRY_RUN([
 #include <setjmp.h>
 
@@ -357,7 +357,7 @@ int main()
 {
 	sigjmp_buf return_env;
 	sigsetjmp(return_env, 0);
-}], [AC_MSG_RESULT(yes)], [CFLAGS="-std=c99 -D_POSIX_C_SOURCE"
+}], [AC_MSG_RESULT(yes)], [CFLAGS="-std=c99 $extra_cflags -D_POSIX_C_SOURCE"
 	AC_TRY_RUN([
 #include <setjmp.h>
 
@@ -370,14 +370,14 @@ int main()
 
 AC_MSG_CHECKING([for u_char etc])
 
-CFLAGS="-std=c99"
+CFLAGS="-std=c99 $extra_cflags"
 AC_TRY_RUN([
 #include <sys/types.h>
 
 int main()
 {
 	u_char *x;
-}], [AC_MSG_RESULT(yes)], [CFLAGS="-std=c99 -D_BSD_SOURCE"
+}], [AC_MSG_RESULT(yes)], [CFLAGS="-std=c99 $extra_cflags -D_BSD_SOURCE"
 	AC_TRY_RUN([
 #include <sys/types.h>
 

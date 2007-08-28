@@ -25,7 +25,7 @@ import Compiler_Vars, CV_Exec, CV_Module, CV_Library, Targets::Available
 
 
 
-func _useage(msg):
+func _usage(msg):
 	
 	Sys::stderr.writeln(Strings::format("Error: %s", msg))
 	Sys::stderr.writeln("Usage: convergel [-l] -o <output> <input> [... <input>]")
@@ -47,7 +47,7 @@ class Linker:
 	
 		self.includes := []
 	
-		options := Parse_Options::Options.new(_useage)
+		options := Parse_Options::Options.new(_usage)
 		options.add(Parse_Options::Option_Spec.new("output", "o", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ONE))
 		options.add(Parse_Options::Option_Spec.new("mk_shell_script", "s", Parse_Options::NONE, null, Parse_Options::FREQUENCY_ZERO_OR_ONE))
 		options.add(Parse_Options::Option_Spec.new("target", "T", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_ONE))
@@ -66,7 +66,7 @@ class Linker:
 				raise "XXX"
 		
 		if extra_args.len() == 0:
-			_useage("Not enough arguments.")
+			_usage("Not enough arguments.")
 
 		target := _target_name_to_target(target_name)
 
@@ -142,7 +142,7 @@ class Library_Linker:
 	
 		self.includes := []
 	
-		options := Parse_Options::Options.new(_useage)
+		options := Parse_Options::Options.new(_usage)
 		options.add(Parse_Options::Option_Spec.new("library_mode", "l", Parse_Options::NONE, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ONE))
 		options.add(Parse_Options::Option_Spec.new("output", "o", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ONE))
 		options.add(Parse_Options::Option_Spec.new("target", "T", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_ONE))
@@ -160,7 +160,7 @@ class Library_Linker:
 				raise "XXX"
 		
 		if extra_args.len() == 0:
-			_useage("Not enough arguments.")
+			_usage("Not enough arguments.")
 
 		target := _target_name_to_target(target_name)
 

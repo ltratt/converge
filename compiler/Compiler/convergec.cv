@@ -31,7 +31,7 @@ class Compiler:
 	
 		self.includes := []
 	
-		options := Parse_Options::Options.new(self._useage_callback)
+		options := Parse_Options::Options.new(self._usage_callback)
 		options.add(Parse_Options::Option_Spec.new("output", "o", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ONE))
 		options.add(Parse_Options::Option_Spec.new("bootstrap", "b", Parse_Options::NONE, Parse_Options::FREQUENCY_ZERO_OR_ONE))
 		options.add(Parse_Options::Option_Spec.new("includes", "I", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_MORE))
@@ -53,9 +53,9 @@ class Compiler:
 				target_name := option_val
 		
 		if extra.len() == 0:
-			self._useage_callback("Not enough arguments.")
+			self._usage_callback("Not enough arguments.")
 		elif extra.len() > 1:
-			self._useage_callback("Too many arguments.")
+			self._usage_callback("Too many arguments.")
 
 		self.target := self._target_name_to_target(target_name)
 		self.internal_target := self._target_name_to_target(internal_target_name)
@@ -157,7 +157,7 @@ class Compiler:
 		
 
 
-	func _useage_callback(self, msg):
+	func _usage_callback(self, msg):
 	
 		if not msg is null:
 			Sys::stderr.writeln(Strings::format("Error: %s", msg))

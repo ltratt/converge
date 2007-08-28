@@ -177,7 +177,6 @@ class Compiler:
 	func warning(self, msg, src_infos := null):
 	
 		self._print_msg("Warning", msg, src_infos)
-		Sys::exit(1)
 	
 	
 	

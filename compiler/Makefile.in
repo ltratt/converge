@@ -4,7 +4,7 @@ bindir = @bindir@
 libdir = @libdir@
 conlibdir = ${libdir}/converge-@CONVERGE_VERSION@
 
-BASE_OBJECT_FILES = Compiler/CV_Parser.cvb Compiler/Tokenizer.cvb Compiler/init.cvb \
+BASE_OBJECT_FILES = Compiler/CV_Parser.cvb Compiler/Tokenizer.cvb \
 	Compiler/convergec.cvb Compiler/convergep.cvb Compiler/IModule_Gen.cvb \
 	Compiler/ITree.cvb Compiler/Bytecode_Gen.cvb Compiler/Targets/Thirty_Two_Bit.cvb \
 	Compiler/Compiler_Vars.cvb Compiler/CV_Module.cvb \
@@ -12,8 +12,7 @@ BASE_OBJECT_FILES = Compiler/CV_Parser.cvb Compiler/Tokenizer.cvb Compiler/init.
 	Compiler/CEI.cvb Compiler/convergel.cvb Compiler/CV_Library.cvb \
 	Compiler/CV_Exec.cvb Compiler/Eval.cvb Compiler/convergei.cvb
 
-TARGET_OBJECT_FILES =Compiler/Targets/init.cvb  Compiler/Targets/Sixty_Four_Bit.cvb \
-	Compiler/Targets/Available.cvb
+TARGET_OBJECT_FILES = Compiler/Targets/Sixty_Four_Bit.cvb Compiler/Targets/Available.cvb
 
 OBJECT_FILES = ${BASE_OBJECT_FILES} ${TARGET_OBJECT_FILES}
 

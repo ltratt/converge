@@ -274,7 +274,7 @@ class IModule_Gen:
 		// definition ::= class_def
 		//            ::= func_def
 		//            ::= import
-		//            ::= var_def ( "," var_def )* ":=" expr
+		//            ::= name ( "," name )* ":=" expr
 		//            ::= splice
 		//            ::= insert
 
@@ -289,19 +289,19 @@ class IModule_Gen:
 			// definition ::= import
 			return self._preorder(node[1], extra_src_infos)
 		elif node.len() >= 4:
-			// definition ::= var_def ( "," var_def )* ":=" expr
+			// definition ::= name ( "," name )* ":=" expr
 			targets := []
 			i := 1
-			while node[i][0] == "var_def":
+			while node[i][0] == "name":
 				if node[i].len() == 2 & not Builtins::List.conformed_by(node[i][1]):
-					// var_def ::= "ID"
+					// name ::= "ID"
 					targets.append(ITree::IVar.new(node[i][1].value, extra_src_infos + node[i][1].src_infos))
 				elif node[i].len() == 3:
-					// var_def ::= "&" "ID"
+					// name ::= "&" "ID"
 					raise "XXX"
 				else:
-					// var_def ::= splice
-					//         ::= insert
+					// name ::= splice
+					//      ::= insert
 					raise "XXX"
 				i += 2
 			return [ITree::IAssignment.new(ITree::STD_ASSIGN, targets, self._preorder(node[-1], extra_src_infos), extra_src_infos + node[-2].src_infos)]
@@ -437,8 +437,8 @@ class IModule_Gen:
 					// func_name ::=
 					self._compiler.error("Functions as class fields can not be anonymous.", func_def[1][1].src_infos)
 				fields.append(self._preorder(func_def, extra_src_infos))
-			elif node[7][i].len() == 4 & node[7][i][1][0] == "var_def":
-				// class_field ::= var_def ":=" expr
+			elif node[7][i].len() == 4 & node[7][i][1][0] == "name":
+				// class_field ::= name ":=" expr
 				fields.append(ITree::IAssignment.new(ITree::STD_ASSIGN, [self._preorder(node[7][i][1], extra_src_infos)], self._preorder(node[7][i][3], extra_src_infos), extra_src_infos + node[7][i][2].src_infos))
 			elif node[7][i].len() == 2:
 				// class_field ::= splice
@@ -517,7 +517,7 @@ class IModule_Gen:
 			//             ::= func_varargs
 			var_args := null
 			if node[4][1][0] == "func_params_elems":
-				// func_params_elems  ::= var_def func_param_default { "," var_def func_param_default }*
+				// func_params_elems  ::= name func_param_default { "," name func_param_default }*
 				//                    ::= splice
 				//                    ::= insert
 				if node[4][1].len() == 2:
@@ -525,7 +525,7 @@ class IModule_Gen:
 					//                   ::= insert
 					raise "XXX"
 				else:
-					// func_params_elems  ::= var_def func_param_default { "," var_def func_param_default }*
+					// func_params_elems  ::= name func_param_default { "," name func_param_default }*
 					i := 1
 					while i < node[4][1].len():
 						if node[4][1][i + 1].len() > 1:
@@ -535,17 +535,17 @@ class IModule_Gen:
 							param_default := null
 						var_def := node[4][1][i]
 						if node[4][1][i].len() == 2 & not Builtins::List.conformed_by(node[4][1][i][1]):
-							// var_def ::= "ID"
+							// name ::= "ID"
 							params.append(ITree::IParam.new(ITree::IVar.new(node[4][1][i][1].value, extra_src_infos + node[4][1][i][1].src_infos), param_default, extra_src_infos + node[4][1][i][1].src_infos))
 						elif node[4][1][i].len() == 2:
-							// var_def ::= splice
-							//         ::= insert
+							// name ::= splice
+							//      ::= insert
 							if node[4][1][i][1][0] == "splice":
 								raise "XXX"
 							else:
 								params.append(self._preorder(node[4][1][i]))
 						else:
-							// var_def ::= "&" "ID"
+							// name ::= "&" "ID"
 							var := [| ITree::IVar.new(${ITree::IString.new(var_def[2].value, var_def[2].src_infos)}, ${CEI::lift(extra_src_infos + var_def[2].src_infos)}) |]
 							if param_default is null:
 								param := [| ITree::IParam.new(${var}, null, ${CEI::lift(extra_src_infos + var_def[2].src_infos)}) |]
@@ -555,11 +555,11 @@ class IModule_Gen:
 							params.append(ITree::IInsert.new(param, extra_src_infos + var_def[2].src_infos))
 						i += 3
 			if node[4][-1][0] == "func_varargs":
-				// func_varargs ::= "*" var_def
+				// func_varargs ::= "*" name
 				//              ::= "*" splice
 				//              ::= "*" insert
-				if node[4][-1][2][0] == "var_def":
-					// func_varargs ::= "*" var_def
+				if node[4][-1][2][0] == "name":
+					// func_varargs ::= "*" name
 					var_args := ITree::IVar.new(node[4][-1][2][1].value, extra_src_infos + node[4][-1][2][1].src_infos)
 				elif node[4][-1][2][0] == "splice":
 					// func_varargs ::= "*" splice
@@ -776,27 +776,27 @@ class IModule_Gen:
 
 
 
-	func _t_var_def(self, node, extra_src_infos):
+	func _t_name(self, node, extra_src_infos):
 	
-		// var_def ::= "ID"
-		//         ::= "&" "ID"
-		//         ::= splice
-		//         ::= insert
+		// name ::= "ID"
+		//      ::= "&" "ID"
+		//      ::= splice
+		//      ::= insert
 		
 		if node.len() == 2 & not Builtins::List.conformed_by(node[1]):
-			// var_def ::= "ID"
+			// name ::= "ID"
 			if node[1].value == SRC_INFO_VAR:
 				raise "XXX"
 			else:
 				return ITree::IVar.new(node[1].value, extra_src_infos + node[1].src_infos)
 		elif node.len() == 3:
-			// var_def ::= "&" "ID"
+			// name ::= "&" "ID"
 			raise "XXX"
 		elif node[1][0] == "splice":
-			// var_def ::= splice
+			// name ::= splice
 			raise "XXX"
 		else:
-			// var_def ::= insert
+			// name ::= insert
 			return self._preorder(node[1])
 
 
@@ -807,7 +807,7 @@ class IModule_Gen:
 		//            ::= "&" "ID"
 		
 		if node.len() == 2 & not Builtins::List.conformed_by(node[1]):
-			// var_def ::= "ID"
+			// name ::= "ID"
 			if node[1].value == SRC_INFO_VAR:
 				assert(node.src_infos.len() == 1)
 				src_path := ITree::IString.new(node[1].src_infos[0][0], extra_src_infos + node[1].src_infos)
@@ -816,7 +816,7 @@ class IModule_Gen:
 			else:
 				return ITree::IVar.new(node[1].value, extra_src_infos + node[1].src_infos)
 		elif node.len() == 3:
-			// var_def ::= "&" "ID"
+			// name ::= "&" "ID"
 			return ITree::IInsert.new([<node[2].src_infos>| ITree::IVar.new(${ITree::IString.new(node[2].value, node[2].src_infos)}, ${CEI::lift(node[2].src_infos)}) |], node[2].src_infos)
 
 
@@ -1055,13 +1055,13 @@ class IModule_Gen:
 		targets := []
 		i := 1
 		while node[i][0] == "assignment_target":
-			// assignment_target ::= var_def
+			// assignment_target ::= name
 			//                   ::= slot_lookup
 			//                   ::= lookup
 			//                   ::= slice
-			if node[i][1][0] == "var_def":
+			if node[i][1][0] == "name":
 				if node[i][1].len() == 2 & not Builtins::List.conformed_by(node[i][1][1]):
-					// var_def ::= "ID"
+					// name ::= "ID"
 					targets.append(self._preorder(node[i][1], extra_src_infos))
 				else:
 					Sys.println(node[i][1])

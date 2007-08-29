@@ -33,9 +33,15 @@ top_level ::= definition ( "NEWLINE" definition )*
 definition  ::= class_def
             ::= func_def
             ::= import
-            ::= var_def ( "," var_def )* ":=" expr
+            ::= name ( "," name )* ":=" expr
             ::= splice
 			::= insert
+
+
+name ::= "ID"
+     ::= "&" "ID"
+     ::= splice
+     ::= insert
 
 
 import      ::= "IMPORT" import_name import_as ( "," import_name import_as )*
@@ -56,7 +62,7 @@ class_metaclass ::= "METACLASS" expr
 class_fields    ::= class_field ( "NEWLINE" class_field )*
 class_field     ::= class_def
                 ::= func_def
-                ::= var_def ":=" expr
+                ::= name ":=" expr
                 ::= splice
 				::= insert
                 ::= "PASS"
@@ -85,10 +91,10 @@ func_params         ::= func_params_elems "," func_varargs
                     ::= func_params_elems
                     ::= func_varargs
                     ::=
-func_params_elems   ::= var_def func_param_default ( "," var_def func_param_default )*
+func_params_elems   ::= name func_param_default ( "," name func_param_default )*
 func_param_default  ::= ":=" expr
                     ::=
-func_varargs        ::= "*" var_def
+func_varargs        ::= "*" name
                     ::= "*" splice
 					::= "*" insert
 func_decls          ::= func_decl ( "NEWLINE" func_decl )*
@@ -160,7 +166,7 @@ for ::= "FOR" expr ":" "INDENT" expr_body "DEDENT" exhausted broken
 
 try           ::= "TRY" ":" "INDENT" expr_body "DEDENT" ( try_catch )* try_else
 try_catch     ::= "NEWLINE" "CATCH" expr try_catch_var ":" "INDENT" expr_body "DEDENT"
-try_catch_var ::= "INTO" var_def
+try_catch_var ::= "INTO" name
               ::=
 try_else      ::= "NEWLINE" "ELSE" ":" "INDENT" expr_body "DEDENT"
               ::=
@@ -172,11 +178,6 @@ broken ::= "NEWLINE" "BROKEN" ":" "INDENT" expr_body "DEDENT"
        ::=
 
 number ::= "INT"
-
-var_def ::= "ID"
-        ::= "&" "ID"
-    	::= splice
-		::= insert
 
 var_lookup ::= "ID"
            ::= "&" "ID"
@@ -230,7 +231,7 @@ conjunction ::= expr ( "&" expr )+
 alternation ::= expr ( "|" expr )+
 
 assignment        ::= assignment_target ( "," assignment_target )* assignment_type expr
-assignment_target ::= var_def
+assignment_target ::= name
                   ::= slot_lookup
                   ::= get
                   ::= slice

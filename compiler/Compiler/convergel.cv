@@ -94,7 +94,7 @@ class Linker:
 			else:
 				_error(Strings::format("File '%s' is not of a known type.", input_path))
 
-		linked_bytecode := Array::Array.new(target::ARRAY_TYPE)
+		linked_bytecode := Array::Array.new(target.ARRAY_TYPE)
 		linked_bytecode.extend_from_string(CV_Exec::EXEC_INIT_STRING)
 		linked_bytecode.append(0)  // Version
 		linked_bytecode.append(-1) // Number of modules
@@ -102,7 +102,7 @@ class Linker:
 		modules_stack := [first_module_id]
 		assert(modules.find(modules_stack[0]))
 		modules_offsets := []
-		modules_bytecode := Array::Array.new(target::ARRAY_TYPE)
+		modules_bytecode := Array::Array.new(target.ARRAY_TYPE)
 		i := 0
 		while i < modules_stack.len():
 			module_id := modules_stack[i]
@@ -117,9 +117,9 @@ class Linker:
 						modules_stack.append(import_module_id)
 			i += 1
 
-		linked_bytecode[target::LIBRARY_BYTECODE_NUM_MODULES] := modules_offsets.len()
+		linked_bytecode[target.LIBRARY_BYTECODE_NUM_MODULES] := modules_offsets.len()
 		
-		preamble_length := (linked_bytecode.len() + modules_offsets.len()) * target::WORDSIZE
+		preamble_length := (linked_bytecode.len() + modules_offsets.len()) * target.WORDSIZE
 		for module_offset := modules_offsets.iterate():
 			linked_bytecode.append(preamble_length + module_offset)
 
@@ -128,7 +128,7 @@ class Linker:
 		output_file := File::File.new(output_path, "w")
 		if mk_shell_script == 1:
 			sh_header := "#! /usr/bin/env converge\n"
-			output_file.write(sh_header + "\n" * (target::align(sh_header.len()) - sh_header.len()))
+			output_file.write(sh_header + "\n" * (target.align(sh_header.len()) - sh_header.len()))
 		output_file.write(linked_bytecode.serialize())
 
 
@@ -182,16 +182,16 @@ class Library_Linker:
 		// In one sense, the following should belong in CV_Library::CV_Library.serialize. But by
 		// doing it here we can forego the pointless string -> array -> string conversion.
 
-		library := Array::Array.new(target::ARRAY_TYPE)
+		library := Array::Array.new(target.ARRAY_TYPE)
 		library.extend_from_string(CV_Library::LIBRARY_INIT_STRING)
 		library.append(CV_Library::LIBRARY_VERSION)
 
 		library.append(modules.len())
 		
-		offsets := Array::Array.new(target::ARRAY_TYPE)
-		serialized_modules := Array::Array.new(target::ARRAY_TYPE)
+		offsets := Array::Array.new(target.ARRAY_TYPE)
+		serialized_modules := Array::Array.new(target.ARRAY_TYPE)
 		for module := modules.iterate():
-			offsets.append((library.len() + modules.len() + serialized_modules.len()) * target::WORDSIZE)
+			offsets.append((library.len() + modules.len() + serialized_modules.len()) * target.WORDSIZE)
 			serialized_modules.extend_from_string(module)
 		
 		library.extend(offsets)
@@ -208,7 +208,7 @@ func _target_name_to_target(target_name):
 	if not Available::TARGETS.find(target_name):
 		_error(Strings::format("No support yet for target '%s'.", target_name))
 
-	return Available::TARGETS[target_name]
+	return Available::TARGETS[target_name].new()
 
 
 

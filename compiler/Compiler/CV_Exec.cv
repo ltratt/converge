@@ -36,7 +36,7 @@ EXEC_BYTECODE_MODULE_OFFSETS := 4
 
 func serialize(target, modules):
 
-	exec := Array::Array.new(target::ARRAY_TYPE)
+	exec := Array::Array.new(target.ARRAY_TYPE)
 	exec.extend_from_string(EXEC_INIT_STRING)
 	exec.append(0)  // Version
 	exec.append(modules.len()) // Number of modules
@@ -53,18 +53,18 @@ func serialize(target, modules):
 
 func deserialize(target, exec_str):
 
-	exec_array := Array::Array.new(target::ARRAY_TYPE, exec_str)
+	exec_array := Array::Array.new(target.ARRAY_TYPE, exec_str)
 	
-	if exec_array[0 : EXEC_INIT_STRING.len() / target::WORDSIZE].to_str() != EXEC_INIT_STRING:
+	if exec_array[0 : EXEC_INIT_STRING.len() / target.WORDSIZE].to_str() != EXEC_INIT_STRING:
 		raise "XXX"
 	
 	modules := []
 	for i := 0.to(exec_array[EXEC_BYTECODE_NUM_MODULES]):
-		module_offset := exec_array[EXEC_BYTECODE_MODULE_OFFSETS + i] / target::WORDSIZE
-		to := module_offset + (exec_array[module_offset + CV_Module::MODULE_BYTECODE_SIZE] / target::WORDSIZE)
+		module_offset := exec_array[EXEC_BYTECODE_MODULE_OFFSETS + i] / target.WORDSIZE
+		to := module_offset + (exec_array[module_offset + CV_Module::MODULE_BYTECODE_SIZE] / target.WORDSIZE)
 		module := CV_Module::CV_Module.new(target)
 		module.deserialize_array(exec_array[module_offset : to])
-		modules.append([exec_str[module_offset * target::WORDSIZE : to * target::WORDSIZE], module])
-		assert module.serialize() == exec_str[module_offset * target::WORDSIZE : to * target::WORDSIZE]
+		modules.append([exec_str[module_offset * target.WORDSIZE : to * target.WORDSIZE], module])
+		assert module.serialize() == exec_str[module_offset * target.WORDSIZE : to * target.WORDSIZE]
 	
 	return modules

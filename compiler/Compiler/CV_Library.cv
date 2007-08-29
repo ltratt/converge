@@ -49,17 +49,17 @@ class CV_Library:
 
 	func deserialize(self, module_str):
 	
-		library := Array::Array.new(self._target::ARRAY_TYPE, module_str)
+		library := Array::Array.new(self._target.ARRAY_TYPE, module_str)
 	
 		self.modules := []
 		modules_and_str := []
-		for i := 0.to(library[self._target::LIBRARY_BYTECODE_NUM_MODULES]):
+		for i := 0.to(library[self._target.LIBRARY_BYTECODE_NUM_MODULES]):
 			module := CV_Module::CV_Module.new(self._target)
-			module_offset := library[self._target::LIBRARY_BYTECODE_MODULE_OFFSETS + i] / self._target::WORDSIZE
-			to := module_offset + library[module_offset + self._target::MODULE_BYTECODE_SIZE] / self._target::WORDSIZE
+			module_offset := library[self._target.LIBRARY_BYTECODE_MODULE_OFFSETS + i] / self._target.WORDSIZE
+			to := module_offset + library[module_offset + self._target.MODULE_BYTECODE_SIZE] / self._target.WORDSIZE
 			module.deserialize_array(library[module_offset : to])
 			self.modules.append(module)
-			modules_and_str.append([module_str[module_offset * self._target::WORDSIZE : to * self._target::WORDSIZE], module])
+			modules_and_str.append([module_str[module_offset * self._target.WORDSIZE : to * self._target.WORDSIZE], module])
 		
 		return modules_and_str
 
@@ -67,16 +67,16 @@ class CV_Library:
 
 	func serialize(self):
 	
-		library := Array::Array.new(self._target::ARRAY_TYPE)
+		library := Array::Array.new(self._target.ARRAY_TYPE)
 		library.extend_from_string(LIBRARY_INIT_STRING)
 		library.append(LIBRARY_VERSION)
 
 		library.append(self.modules.len())
 		library.append(-1) // Offset to modules offsets
 		
-		library[self._target::LIBRARY_BYTECODE_MODULE_OFFSETS] := library.len_bytes()
+		library[self._target.LIBRARY_BYTECODE_MODULE_OFFSETS] := library.len_bytes()
 		
-		serialized_modules := Array::Array.new(self._target::ARRAY_TYPE)
+		serialized_modules := Array::Array.new(self._target.ARRAY_TYPE)
 		for module := self.modules.iterate():
 			library.append(library.len_bytes() + serialized_modules.len_bytes())
 			serialized_modules.extend_from_string(module.serialize())

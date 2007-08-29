@@ -273,7 +273,7 @@ class Compiler:
 		if not Available::TARGETS.find(target_name):
 			self.error(Strings::format("No support yet for target '%s'.", target_name))
 
-		return Available::TARGETS[target_name]
+		return Available::TARGETS[target_name].new()
 
 
 

@@ -149,7 +149,7 @@ class Bytecode_Gen:
 		//
 		// At the same time we also populate the src_infos array.
 		
-		instructions_bytecode := Array::Array.new(self._target::ARRAY_TYPE)
+		instructions_bytecode := Array::Array.new(self._target.ARRAY_TYPE)
 		all_src_infos := []
 		last_src_infos := null
 		src_infos_count := 0
@@ -290,7 +290,7 @@ class Bytecode_Gen:
 			// Update our idea of what the import variable refers to.
 			self.closures[reversed_closures_offset][Compiler_Vars::CLOSURE_IMPORTS][var_name] := import_id
 		
-		self._instructions.append(self._target::Instr_Assign_Var.new(src_infos, closures_offset, var_num))
+		self._instructions.append(self._target.Instr_Assign_Var.new(src_infos, closures_offset, var_num))
 
 
 
@@ -298,7 +298,7 @@ class Bytecode_Gen:
 	
 		closures_offset, var_num := self._get_var_offsets(var_name, src_infos)
 		
-		self._instructions.append(self._target::Instr_Lookup_Var.new(src_infos, closures_offset, var_num))
+		self._instructions.append(self._target.Instr_Lookup_Var.new(src_infos, closures_offset, var_num))
 
 
 
@@ -316,13 +316,13 @@ class Bytecode_Gen:
 			self._compiler.error(Strings::format("Can't find module / package '%s'", Strings::join(defn_path, "::")), src_infos)
 
 		if import_num := self._imports.find(import_id):
-			self._instructions.append(self._target::Instr_Import.new(src_infos, import_num))
+			self._instructions.append(self._target.Instr_Import.new(src_infos, import_num))
 		else:
 			self._imports[import_id] := self._imports.len()
-			self._instructions.append(self._target::Instr_Import.new(src_infos, self._imports.len() - 1))
+			self._instructions.append(self._target.Instr_Import.new(src_infos, self._imports.len() - 1))
 		
 		for import_extra := import_extras.iterate():
-			self._instructions.append(self._target::Instr_Module_Lookup.new(src_infos, import_extra))
+			self._instructions.append(self._target.Instr_Module_Lookup.new(src_infos, import_extra))
 
 
 
@@ -334,7 +334,18 @@ class Bytecode_Gen:
 			self._compiler.error(Strings::format("Can't find module / package '%s'", module_path), src_infos)
 		
 		return [import_id, import_extras]
-		
+
+
+
+	func _get_original_name_mod_id(self, orig_name):
+
+		if self._compiler.bootstrap == 1 & orig_name.module_id.prefixed_by(self._compiler.original_lc_top_level_path):
+			// In bootstrapping mode we have to make sure that anything we output is entirely in
+			// terms of new module ids.
+			return File::join_names(self._compiler.top_level_path, orig_name.module_id[self._compiler.original_lc_top_level_path.len() : ])
+		else:
+			return orig_name.module_id
+
 
 
 	////////////////////////////////////////////////////////////////////////////////////////////////
@@ -352,13 +363,13 @@ class Bytecode_Gen:
 		for expr := node.exprs.iterate():
 			end_of_expr_label := self._create_label()
 			self._nesting.append([NEST_NORMAL])
-			self._instructions.append(self._target::Instr_Add_Failure_Frame.new(expr.src_infos, end_of_expr_label))
+			self._instructions.append(self._target.Instr_Add_Failure_Frame.new(expr.src_infos, end_of_expr_label))
 			if ITree::IFunc_Def.instantiated(expr):
 				self.preorder(ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(expr.func_name, expr.src_infos)], expr, expr.src_infos))
 			else:
 				self.preorder(expr)
 
-			self._instructions.append(self._target::Instr_Remove_Failure_Frame.new(expr.src_infos))
+			self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(expr.src_infos))
 			self._nesting.del(-1)
 			self._set_label(end_of_expr_label)
 
@@ -372,24 +383,24 @@ class Bytecode_Gen:
 
 		self._add_vars(node.bound_vars, Dict{}, node.import_vars)
 		
-		self._instructions.append(self._target::Instr_Pop.new(node.src_infos))
+		self._instructions.append(self._target.Instr_Pop.new(node.src_infos))
 		
 		self._add_assign_to_var("self_module", node.src_infos)
 
-		self._instructions.append(self._target::Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_FAIL_OBJ))
+		self._instructions.append(self._target.Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_FAIL_OBJ))
 		self._add_assign_to_var("fail", node.src_infos)
-		self._instructions.append(self._target::Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_NULL_OBJ))
+		self._instructions.append(self._target.Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_NULL_OBJ))
 		self._add_assign_to_var("null", node.src_infos)
 
 		for definition := node.definitions.iterate():
 			end_of_definition_label := self._create_label()
-			self._instructions.append(self._target::Instr_Add_Failure_Frame.new(node.src_infos, end_of_definition_label))
+			self._instructions.append(self._target.Instr_Add_Failure_Frame.new(node.src_infos, end_of_definition_label))
 			self.preorder(definition)
-			self._instructions.append(self._target::Instr_Remove_Failure_Frame.new(node.src_infos))
+			self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
 			self._set_label(end_of_definition_label)
 
-		self._instructions.append(self._target::Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_NULL_OBJ))
-		self._instructions.append(self._target::Instr_Return.new(node.src_infos))
+		self._instructions.append(self._target.Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_NULL_OBJ))
+		self._instructions.append(self._target.Instr_Return.new(node.src_infos))
 		
 		self._top_level_vars_map := self.closures[0][Compiler_Vars::CLOSURE_VARS]
 		
@@ -400,55 +411,55 @@ class Bytecode_Gen:
 	func _t_iclass_def(self, node):
 		
 		if node.metaclass_ is null:
-			self._instructions.append(self._target::Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_CLASS_CLASS))
+			self._instructions.append(self._target.Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_CLASS_CLASS))
 		else:
 			self.preorder(node.metaclass_)
-		self._instructions.append(self._target::Instr_Pre_Apply_Slot_Lookup.new(node.src_infos, "new"))
+		self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(node.src_infos, "new"))
 		
-		self._instructions.append(self._target::Instr_String.new(node.src_infos, node.class_name))
+		self._instructions.append(self._target.Instr_String.new(node.src_infos, node.class_name))
 		
 		if node.supers.len() > 0:
 			for super_ := node.supers.iterate():
 				self.preorder(super_)
-			self._instructions.append(self._target::Instr_List.new(node.src_infos, node.supers.len()))
+			self._instructions.append(self._target.Instr_List.new(node.src_infos, node.supers.len()))
 		else:
 			// Object is the default superclass
-			self._instructions.append(self._target::Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_OBJECT_CLASS))
-			self._instructions.append(self._target::Instr_List.new(node.src_infos, 1))
+			self._instructions.append(self._target.Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_OBJECT_CLASS))
+			self._instructions.append(self._target.Instr_List.new(node.src_infos, 1))
 		
 		// XXX this is wrong for nested classes
 		
 		self._add_lookup_var("self_module", node.src_infos)
 		
-		self._instructions.append(self._target::Instr_Apply.new(node.src_infos, 3))
+		self._instructions.append(self._target.Instr_Apply.new(node.src_infos, 3))
 
 		self._nesting.append([NEST_CLASS])
 		for field := node.fields.iterate():
 			if ITree::IPass.instantiated(field):
 				continue
 			
-			self._instructions.append(self._target::Instr_Dup.new(field.src_infos))
-			self._instructions.append(self._target::Instr_Pre_Apply_Slot_Lookup.new(field.src_infos, "set_field"))
+			self._instructions.append(self._target.Instr_Dup.new(field.src_infos))
+			self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(field.src_infos, "set_field"))
 		
 			if ITree::IFunc_Def.instantiated(field):
 				if field.func_name == "":
 					self._compiler.error("Functions as class fields can not be anonymous.", node.src_infos)
-				self._instructions.append(self._target::Instr_String.new(field.src_infos, field.func_name))
+				self._instructions.append(self._target.Instr_String.new(field.src_infos, field.func_name))
 				self.preorder(field)
 			elif ITree::IClass_Def.instantiated(field):
 				if field.class_name == "":
 					self._compiler.error("Classes as class fields can not be anonymous.", node.src_infos)
-				self._instructions.append(self._target::Instr_String.new(field.src_infos, field.class_name))
+				self._instructions.append(self._target.Instr_String.new(field.src_infos, field.class_name))
 				self.preorder(field)
 			elif ITree::IAssignment.instantiated(field):
 				assert field.targets.len() == 1
-				self._instructions.append(self._target::Instr_String.new(field.src_infos, field.targets[0].var_name))
+				self._instructions.append(self._target.Instr_String.new(field.src_infos, field.targets[0].var_name))
 				self.preorder(field.expr)
 			else:
 				Sys::println(field.pp(0))
 				raise "XXX"
-			self._instructions.append(self._target::Instr_Apply.new(field.src_infos, 2))
-			self._instructions.append(self._target::Instr_Pop.new(field.src_infos))
+			self._instructions.append(self._target.Instr_Apply.new(field.src_infos, 2))
+			self._instructions.append(self._target.Instr_Pop.new(field.src_infos))
 		self._nesting.del(-1)
 
 		if node.class_name == "":
@@ -478,12 +489,12 @@ class Bytecode_Gen:
 		
 		self._nesting.append([NEST_FUNC, node.is_bound])
 		
-		self._instructions.append(self._target::Instr_String.new(node.src_infos, node.func_name))
-		self._instructions.append(self._target::Instr_Int.new(node.src_infos, bound_vars.len() + node.is_bound))
-		self._instructions.append(self._target::Instr_Int.new(node.src_infos, node.params.len()))
-		self._instructions.append(self._target::Instr_Func_Def.new(node.src_infos, node.is_bound))
+		self._instructions.append(self._target.Instr_String.new(node.src_infos, node.func_name))
+		self._instructions.append(self._target.Instr_Int.new(node.src_infos, bound_vars.len() + node.is_bound))
+		self._instructions.append(self._target.Instr_Int.new(node.src_infos, node.params.len()))
+		self._instructions.append(self._target.Instr_Func_Def.new(node.src_infos, node.is_bound))
 		end_of_func_body_label := self._create_label()
-		self._instructions.append(self._target::Instr_Branch.new(node.src_infos, end_of_func_body_label))
+		self._instructions.append(self._target.Instr_Branch.new(node.src_infos, end_of_func_body_label))
 		
 		params_info := []
 		for param := node.params.iterate():
@@ -495,12 +506,12 @@ class Bytecode_Gen:
 				params_info.append([var_num, 1])
 		
 		if node.var_arg is null:
-			self._instructions.append(self._target::Instr_Unpack_Args.new(node.src_infos, params_info, 0))
+			self._instructions.append(self._target.Instr_Unpack_Args.new(node.src_infos, params_info, 0))
 		else:
 			closures_offset, var_num := self._get_var_offsets(node.var_arg.var_name, node.var_arg.src_infos)
 			assert(closures_offset == 0)
 			params_info.append([var_num, 0])
-			self._instructions.append(self._target::Instr_Unpack_Args.new(node.src_infos, params_info, 1))
+			self._instructions.append(self._target.Instr_Unpack_Args.new(node.src_infos, params_info, 1))
 		
 		for param := node.params.iterate():
 			if param.default is null:
@@ -508,11 +519,11 @@ class Bytecode_Gen:
 			next_param_label := self._create_label()
 			self._nesting.append([NEST_NORMAL])
 			closures_offset, var_num := self._get_var_offsets(param.var.var_name, param.var.src_infos)
-			self._instructions.append(self._target::Instr_Is_Assigned.new(node.src_infos, closures_offset, var_num, next_param_label))
-			self._instructions.append(self._target::Instr_Add_Failure_Frame.new(node.src_infos, next_param_label))
+			self._instructions.append(self._target.Instr_Is_Assigned.new(node.src_infos, closures_offset, var_num, next_param_label))
+			self._instructions.append(self._target.Instr_Add_Failure_Frame.new(node.src_infos, next_param_label))
 			self.preorder(param.default)
 			self._add_assign_to_var(param.var.var_name, node.src_infos)
-			self._instructions.append(self._target::Instr_Remove_Failure_Frame.new(node.src_infos))
+			self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
 			self._nesting.del(-1)
 			self._set_label(next_param_label)
 
@@ -520,8 +531,8 @@ class Bytecode_Gen:
 		self._pop_vars()
 		self._nesting.del(-1)
 
-		self._instructions.append(self._target::Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_NULL_OBJ))
-		self._instructions.append(self._target::Instr_Return.new(node.src_infos))
+		self._instructions.append(self._target.Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_NULL_OBJ))
+		self._instructions.append(self._target.Instr_Return.new(node.src_infos))
 		
 		self._set_label(end_of_func_body_label)
 		
@@ -551,17 +562,17 @@ class Bytecode_Gen:
 		for clause := node.clauses.iterate():
 			end_of_clause_label := self._create_label()
 			self._nesting.append([NEST_NORMAL])
-			self._instructions.append(self._target::Instr_Add_Failure_Frame.new(node.src_infos, end_of_clause_label))
+			self._instructions.append(self._target.Instr_Add_Failure_Frame.new(node.src_infos, end_of_clause_label))
 			self.preorder(clause.condition)
 			body_label := self._create_label()
-			self._instructions.append(self._target::Instr_Branch_If_Not_Fail.new(node.src_infos, body_label))
-			self._instructions.append(self._target::Instr_Remove_Failure_Frame.new(node.src_infos))
+			self._instructions.append(self._target.Instr_Branch_If_Not_Fail.new(node.src_infos, body_label))
+			self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
 			self._nesting.del(-1)
-			self._instructions.append(self._target::Instr_Branch.new(node.src_infos, end_of_clause_label))
+			self._instructions.append(self._target.Instr_Branch.new(node.src_infos, end_of_clause_label))
 			self._set_label(body_label)
-			self._instructions.append(self._target::Instr_Remove_Failure_Frame.new(node.src_infos))
+			self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
 			self.preorder(clause.body)
-			self._instructions.append(self._target::Instr_Branch.new(node.src_infos, end_of_if_label))
+			self._instructions.append(self._target.Instr_Branch.new(node.src_infos, end_of_if_label))
 			self._set_label(end_of_clause_label)
 		
 		if not node.else_body is null:
@@ -577,23 +588,23 @@ class Bytecode_Gen:
 		for clause := node.clauses.iterate():
 			end_of_clause_label := self._create_label()
 			self._nesting.append([NEST_NORMAL])
-			self._instructions.append(self._target::Instr_Add_Failure_Frame.new(node.src_infos, end_of_clause_label))
+			self._instructions.append(self._target.Instr_Add_Failure_Frame.new(node.src_infos, end_of_clause_label))
 			self.preorder(clause.condition)
 			body_label := self._create_label()
-			self._instructions.append(self._target::Instr_Branch_If_Not_Fail.new(node.src_infos, body_label))
-			self._instructions.append(self._target::Instr_Remove_Failure_Frame.new(node.src_infos))
+			self._instructions.append(self._target.Instr_Branch_If_Not_Fail.new(node.src_infos, body_label))
+			self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
 			self._nesting.del(-1)
-			self._instructions.append(self._target::Instr_Branch.new(node.src_infos, end_of_clause_label))
+			self._instructions.append(self._target.Instr_Branch.new(node.src_infos, end_of_clause_label))
 			self._set_label(body_label)
-			self._instructions.append(self._target::Instr_Remove_Failure_Frame.new(node.src_infos))
+			self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
 			self.preorder(clause.body)
-			self._instructions.append(self._target::Instr_Branch.new(node.src_infos, end_of_ndif_label))
+			self._instructions.append(self._target.Instr_Branch.new(node.src_infos, end_of_ndif_label))
 			self._set_label(end_of_clause_label)
 		
 		self._add_mod_def_lookup(["Exceptions", "NDIf_Exception"], node.src_infos)
-		self._instructions.append(self._target::Instr_Pre_Apply_Slot_Lookup.new(node.src_infos, "new"))
-		self._instructions.append(self._target::Instr_Apply.new(node.src_infos, 0))
-		self._instructions.append(self._target::Instr_Raise.new(node.src_infos))
+		self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(node.src_infos, "new"))
+		self._instructions.append(self._target.Instr_Apply.new(node.src_infos, 0))
+		self._instructions.append(self._target.Instr_Raise.new(node.src_infos))
 		
 		self._set_label(end_of_ndif_label)
 
@@ -604,13 +615,13 @@ class Bytecode_Gen:
 		import_id, import_extras := self._find_import_location(node.module_path, node.src_infos)
 
 		if import_num := self._imports.find(import_id):
-			self._instructions.append(self._target::Instr_Import.new(node.src_infos, import_num))
+			self._instructions.append(self._target.Instr_Import.new(node.src_infos, import_num))
 		else:
 			self._imports[import_id] := self._imports.len()
-			self._instructions.append(self._target::Instr_Import.new(node.src_infos, self._imports.len() - 1))
+			self._instructions.append(self._target.Instr_Import.new(node.src_infos, self._imports.len() - 1))
 		
 		for import_extra := import_extras.iterate():
-			self._instructions.append(self._target::Instr_Module_Lookup.new(node.src_infos, import_extra))
+			self._instructions.append(self._target.Instr_Module_Lookup.new(node.src_infos, import_extra))
 		
 		self._add_assign_to_var(node.var_name, node.src_infos, import_id)
 
@@ -630,11 +641,11 @@ class Bytecode_Gen:
 			label := self._create_label()
 			self._set_label(label, self._constants_instructions.len())
 			self._constants_labels.append(label)
-			self._constants_instructions.append(self._target::Instr_Int.new(node.src_infos, node.val))
-			self._constants_instructions.append(self._target::Instr_Constant_Set.new(node.src_infos, self._constants[constant_name]))
-			self._constants_instructions.append(self._target::Instr_Fail_Now.new(node.src_infos))
+			self._constants_instructions.append(self._target.Instr_Int.new(node.src_infos, node.val))
+			self._constants_instructions.append(self._target.Instr_Constant_Set.new(node.src_infos, self._constants[constant_name]))
+			self._constants_instructions.append(self._target.Instr_Fail_Now.new(node.src_infos))
 		
-		self._instructions.append(self._target::Instr_Constant_Get.new(node.src_infos, self._constants[constant_name]))
+		self._instructions.append(self._target.Instr_Constant_Get.new(node.src_infos, self._constants[constant_name]))
 
 
 
@@ -648,41 +659,41 @@ class Bytecode_Gen:
 		if not node.exhausted_body is null:
 			exhausted_body_label := self._create_label()
 			self._nesting.append([NEST_NORMAL])
-			self._instructions.append(self._target::Instr_Add_Failure_Frame.new(node.src_infos, exhausted_body_label))
+			self._instructions.append(self._target.Instr_Add_Failure_Frame.new(node.src_infos, exhausted_body_label))
 			self._set_label(start_of_while_label)
 			self.preorder(node.condition)
-			self._instructions.append(self._target::Instr_Branch_If_Not_Fail.new(node.src_infos, body_label))
-			self._instructions.append(self._target::Instr_Remove_Failure_Frame.new(node.src_infos))
-			self._instructions.append(self._target::Instr_Branch.new(node.src_infos, exhausted_body_label))
+			self._instructions.append(self._target.Instr_Branch_If_Not_Fail.new(node.src_infos, body_label))
+			self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
+			self._instructions.append(self._target.Instr_Branch.new(node.src_infos, exhausted_body_label))
 			self._nesting.del(-1)
 		else:
 			self._set_label(start_of_while_label)
 			self.preorder(node.condition)
-			self._instructions.append(self._target::Instr_Branch_If_Not_Fail.new(node.src_infos, body_label))
-			self._instructions.append(self._target::Instr_Remove_Failure_Frame.new(node.src_infos))
-			self._instructions.append(self._target::Instr_Fail_Now.new(node.src_infos))
+			self._instructions.append(self._target.Instr_Branch_If_Not_Fail.new(node.src_infos, body_label))
+			self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
+			self._instructions.append(self._target.Instr_Fail_Now.new(node.src_infos))
 		
 		self._set_label(body_label)
 		if not node.body is null:
 			self._nesting.append([NEST_WHILE, start_of_while_label, broken_body_label])
-			self._instructions.append(self._target::Instr_Add_Failure_Frame.new(node.src_infos, start_of_while_label))
+			self._instructions.append(self._target.Instr_Add_Failure_Frame.new(node.src_infos, start_of_while_label))
 			self.preorder(node.body)
-			self._instructions.append(self._target::Instr_Remove_Failure_Frame.new(node.src_infos))
+			self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
 			self._nesting.del(-1)
-		self._instructions.append(self._target::Instr_Branch.new(node.src_infos, start_of_while_label))
+		self._instructions.append(self._target.Instr_Branch.new(node.src_infos, start_of_while_label))
 		
 		if not node.exhausted_body is null:
 			self._set_label(exhausted_body_label)
 			self.preorder(node.exhausted_body)
-			self._instructions.append(self._target::Instr_Fail_Now.new(node.src_infos))
+			self._instructions.append(self._target.Instr_Fail_Now.new(node.src_infos))
 
 		self._set_label(broken_body_label)
-		self._instructions.append(self._target::Instr_Remove_Failure_Frame.new(node.src_infos))
+		self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
 		if not node.exhausted_body is null:
-			self._instructions.append(self._target::Instr_Remove_Failure_Frame.new(node.src_infos))
+			self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
 		if not node.broken_body is null:
 			self.preorder(node.broken_body)
-		self._instructions.append(self._target::Instr_Fail_Now.new(node.src_infos))
+		self._instructions.append(self._target.Instr_Fail_Now.new(node.src_infos))
 
 
 
@@ -693,47 +704,47 @@ class Bytecode_Gen:
 
 		if not node.exhausted_body is null:
 			exhausted_body_label := self._create_label()
-			self._instructions.append(self._target::Instr_Add_Failure_Frame.new(node.src_infos, exhausted_body_label))
-			self._instructions.append(self._target::Instr_Add_Fail_Up_Frame.new(node.src_infos))
+			self._instructions.append(self._target.Instr_Add_Failure_Frame.new(node.src_infos, exhausted_body_label))
+			self._instructions.append(self._target.Instr_Add_Fail_Up_Frame.new(node.src_infos))
 			self._nesting.append([NEST_NORMAL])
 			self.preorder(node.condition)
 			self._nesting.del(-1)
-			self._instructions.append(self._target::Instr_Branch_If_Not_Fail.new(node.src_infos, body_label))
-			self._instructions.append(self._target::Instr_Remove_Failure_Frame.new(node.src_infos))
-			self._instructions.append(self._target::Instr_Fail_Now.new(node.src_infos))
+			self._instructions.append(self._target.Instr_Branch_If_Not_Fail.new(node.src_infos, body_label))
+			self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
+			self._instructions.append(self._target.Instr_Fail_Now.new(node.src_infos))
 		else:
-			self._instructions.append(self._target::Instr_Add_Fail_Up_Frame.new(node.src_infos))
+			self._instructions.append(self._target.Instr_Add_Fail_Up_Frame.new(node.src_infos))
 			self._nesting.append([NEST_NORMAL])
 			self.preorder(node.condition)
 			self._nesting.del(-1)
-			self._instructions.append(self._target::Instr_Branch_If_Not_Fail.new(node.src_infos, body_label))
-			self._instructions.append(self._target::Instr_Remove_Failure_Frame.new(node.src_infos))
-			self._instructions.append(self._target::Instr_Fail_Now.new(node.src_infos))
+			self._instructions.append(self._target.Instr_Branch_If_Not_Fail.new(node.src_infos, body_label))
+			self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
+			self._instructions.append(self._target.Instr_Fail_Now.new(node.src_infos))
 		
 		self._set_label(body_label)
 		if not node.body is null:
 			fail_now_label := self._create_label()
 			self._nesting.append([NEST_FOR, broken_body_label])
-			self._instructions.append(self._target::Instr_Add_Failure_Frame.new(node.src_infos, fail_now_label))
+			self._instructions.append(self._target.Instr_Add_Failure_Frame.new(node.src_infos, fail_now_label))
 			self.preorder(node.body)
-			self._instructions.append(self._target::Instr_Remove_Failure_Frame.new(node.src_infos))
+			self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
 			self._nesting.del(-1)
 			self._set_label(fail_now_label)
-		self._instructions.append(self._target::Instr_Fail_Now.new(node.src_infos))
+		self._instructions.append(self._target.Instr_Fail_Now.new(node.src_infos))
 
 		if not node.exhausted_body is null:
 			self._set_label(exhausted_body_label)
 			self.preorder(node.exhausted_body)
-			self._instructions.append(self._target::Instr_Fail_Now.new(node.src_infos))
+			self._instructions.append(self._target.Instr_Fail_Now.new(node.src_infos))
 
 		self._set_label(broken_body_label)
-		self._instructions.append(self._target::Instr_Remove_Failure_Frame.new(node.src_infos))
-		self._instructions.append(self._target::Instr_Remove_Failure_Frame.new(node.src_infos))
+		self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
+		self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
 		if not node.exhausted_body is null:
-			self._instructions.append(self._target::Instr_Remove_Failure_Frame.new(node.src_infos))
+			self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
 		if not node.broken_body is null:
 			self.preorder(node.broken_body)
-		self._instructions.append(self._target::Instr_Fail_Now.new(node.src_infos))
+		self._instructions.append(self._target.Instr_Fail_Now.new(node.src_infos))
 
 
 
@@ -745,25 +756,42 @@ class Bytecode_Gen:
 			label := self._create_label()
 			self._set_label(label, self._constants_instructions.len())
 			self._constants_labels.append(label)
-			self._constants_instructions.append(self._target::Instr_String.new(node.src_infos, node.string))
-			self._constants_instructions.append(self._target::Instr_Constant_Set.new(node.src_infos, self._constants[constant_name]))
-			self._constants_instructions.append(self._target::Instr_Fail_Now.new(node.src_infos))
+			self._constants_instructions.append(self._target.Instr_String.new(node.src_infos, node.string))
+			self._constants_instructions.append(self._target.Instr_Constant_Set.new(node.src_infos, self._constants[constant_name]))
+			self._constants_instructions.append(self._target.Instr_Fail_Now.new(node.src_infos))
 		
-		self._instructions.append(self._target::Instr_Constant_Get.new(node.src_infos, self._constants[constant_name]))
+		self._instructions.append(self._target.Instr_Constant_Get.new(node.src_infos, self._constants[constant_name]))
 
 
 
 	func _t_islot_lookup(self, node):
 	
 		self.preorder(node.object_expr)
-		self._instructions.append(self._target::Instr_Slot_Lookup.new(node.src_infos, node.slot_name))
+		self._instructions.append(self._target.Instr_Slot_Lookup.new(node.src_infos, node.slot_name))
 
 
 
 	func _t_imodule_lookup(self, node):
 	
-		self.preorder(node.object_expr)
-		self._instructions.append(self._target::Instr_Module_Lookup.new(node.src_infos, node.def_name))
+		if ITree::IVar.instantiated(node.object_expr):
+			self.preorder(node.object_expr)
+			closures_offset, var_num := self._get_var_offsets(node.object_expr.var_name, node.src_infos)
+
+			reversed_closures_offset := self.closures.len() - closures_offset - 1
+			if existing_import_id := self.closures[reversed_closures_offset][Compiler_Vars::CLOSURE_IMPORTS].find(node.object_expr.var_name):
+				module_id := 1
+			else:
+				module_id := null
+		elif ITree::IOriginal_Name.instantiated(node.object_expr):
+			self.preorder(node.object_expr)
+			module_id := node.object_expr.module_id
+		else:
+			self.preorder(node.object_expr)
+			module_id := null
+		
+		if module_id is null:
+			self._compiler.warning("Unable to determine module referenced in lookup (use a plain variable lookup)", node.src_infos)
+		self._instructions.append(self._target.Instr_Module_Lookup.new(node.src_infos, node.def_name))
 
 
 
@@ -771,7 +799,7 @@ class Bytecode_Gen:
 	
 		for elem := node.elements.iterate():
 			self.preorder(elem)
-		self._instructions.append(self._target::Instr_List.new(node.src_infos, node.elements.len()))
+		self._instructions.append(self._target.Instr_List.new(node.src_infos, node.elements.len()))
 
 
 
@@ -780,7 +808,7 @@ class Bytecode_Gen:
 		for key, val := node.elements.iterate():
 			self.preorder(key)
 			self.preorder(val)
-		self._instructions.append(self._target::Instr_Dict.new(node.src_infos, node.elements.len()))
+		self._instructions.append(self._target.Instr_Dict.new(node.src_infos, node.elements.len()))
 
 
 
@@ -788,7 +816,7 @@ class Bytecode_Gen:
 	
 		for elem := node.elements.iterate():
 			self.preorder(elem)
-		self._instructions.append(self._target::Instr_Set.new(node.src_infos, node.elements.len()))
+		self._instructions.append(self._target.Instr_Set.new(node.src_infos, node.elements.len()))
 
 
 
@@ -796,42 +824,42 @@ class Bytecode_Gen:
 	
 		if ITree::ISlot_Lookup.instantiated(node.func_expr):
 			self.preorder(node.func_expr.object_expr)
-			self._instructions.append(self._target::Instr_Pre_Apply_Slot_Lookup.new(node.func_expr.src_infos, node.func_expr.slot_name))
+			self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(node.func_expr.src_infos, node.func_expr.slot_name))
 		else:
 			self.preorder(node.func_expr)
 			
 		for arg := node.args.iterate():
 			self.preorder(arg)
 			
-		self._instructions.append(self._target::Instr_Apply.new(node.src_infos, node.args.len()))
+		self._instructions.append(self._target.Instr_Apply.new(node.src_infos, node.args.len()))
 
 
 
 	func _t_iget(self, node):
 
 		self.preorder(node.get_object)
-		self._instructions.append(self._target::Instr_Pre_Apply_Slot_Lookup.new(node.src_infos, "get"))
+		self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(node.src_infos, "get"))
 		self.preorder(node.index)
-		self._instructions.append(self._target::Instr_Apply.new(node.src_infos, 1))
+		self._instructions.append(self._target.Instr_Apply.new(node.src_infos, 1))
 
 
 
 	func _t_islice(self, node):
 	
 		self.preorder(node.slice_object)
-		self._instructions.append(self._target::Instr_Pre_Apply_Slot_Lookup.new(node.src_infos, "get_slice"))
+		self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(node.src_infos, "get_slice"))
 		
 		if node.lower_bound is null:
-			self._instructions.append(self._target::Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_NULL_OBJ))
+			self._instructions.append(self._target.Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_NULL_OBJ))
 		else:
 			self.preorder(node.lower_bound)
 			
 		if node.upper_bound is null:
-			self._instructions.append(self._target::Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_NULL_OBJ))
+			self._instructions.append(self._target.Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_NULL_OBJ))
 		else:
 			self.preorder(node.upper_bound)
 			
-		self._instructions.append(self._target::Instr_Apply.new(node.src_infos, 2))
+		self._instructions.append(self._target.Instr_Apply.new(node.src_infos, 2))
 
 
 
@@ -847,40 +875,40 @@ class Bytecode_Gen:
 
 		self._add_lookup_var("self", node.src_infos)
 		self.preorder(node.object_expr)
-		self._instructions.append(self._target::Instr_EXBI.new(node.src_infos, node.field_name))
+		self._instructions.append(self._target.Instr_EXBI.new(node.src_infos, node.field_name))
 
 
 
 	func _t_ireturn(self, node):
 	
 		if node.return_expr is null:
-			self._instructions.append(self._target::Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_NULL_OBJ))
-			self._instructions.append(self._target::Instr_Return.new(node.src_infos))
+			self._instructions.append(self._target.Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_NULL_OBJ))
+			self._instructions.append(self._target.Instr_Return.new(node.src_infos))
 		else:
 			return_failed_label := self._create_label()
-			self._instructions.append(self._target::Instr_Add_Failure_Frame.new(node.src_infos, return_failed_label))
+			self._instructions.append(self._target.Instr_Add_Failure_Frame.new(node.src_infos, return_failed_label))
 			self._nesting.append([NEST_NORMAL])
 			self.preorder(node.return_expr)
 			self._nesting.del(-1)
-			self._instructions.append(self._target::Instr_Return.new(node.src_infos))
+			self._instructions.append(self._target.Instr_Return.new(node.src_infos))
 
 			self._set_label(return_failed_label)
-			self._instructions.append(self._target::Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_FAIL_OBJ))
-			self._instructions.append(self._target::Instr_Return.new(node.src_infos))
+			self._instructions.append(self._target.Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_FAIL_OBJ))
+			self._instructions.append(self._target.Instr_Return.new(node.src_infos))
 
 
 
 	func _t_iyield(self, node):
 	
 		self.preorder(node.yield_expr)
-		self._instructions.append(self._target::Instr_Yield.new(node.src_infos))
+		self._instructions.append(self._target.Instr_Yield.new(node.src_infos))
 
 
 
 	func _t_iraise(self, node):
 	
 		self.preorder(node.raise_expr)
-		self._instructions.append(self._target::Instr_Raise.new(node.src_infos))
+		self._instructions.append(self._target.Instr_Raise.new(node.src_infos))
 
 
 
@@ -891,17 +919,17 @@ class Bytecode_Gen:
 		
 		// XXX
 		//self._nesting.append([NEST_NORMAL])
-		//self.instructions.append(self._target::Instr_Add_Failure_Frame.new(node.src_infos, assert_failed_label))
+		//self.instructions.append(self._target.Instr_Add_Failure_Frame.new(node.src_infos, assert_failed_label))
 		//self.preorder(node.assert_expr)
-		//self.instructions.append(self._target::Instr_Remove_Failure_Frame.new(node.src_infos))
+		//self.instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
 		//self._nesting.del(-1)
-		//self.instructions.append(self._target::Instr_Branch.new(node.src_infos, assert_end_label))
+		//self.instructions.append(self._target.Instr_Branch.new(node.src_infos, assert_end_label))
 		//
 		//self._set_label(assert_failed_label)
 		//self.preorder(ITree::IOriginal_Name("Exceptions", Bytecode.IMPORT_BUILTIN, "Assert_Exception", node.src_infos))
-		//self.instructions.append(self._target::Instr_String.new(node.src_infos, "Assertion failed."))
-		//self.instructions.append(self._target::Instr_Apply.new(node.src_infos, 1))
-		//self.instructions.append(self._target::Instr_Raise.new(node.src_infos))
+		//self.instructions.append(self._target.Instr_String.new(node.src_infos, "Assertion failed."))
+		//self.instructions.append(self._target.Instr_Apply.new(node.src_infos, 1))
+		//self.instructions.append(self._target.Instr_Raise.new(node.src_infos))
 		
 		self._set_label(assert_end_label)
 
@@ -913,13 +941,13 @@ class Bytecode_Gen:
 		while not [NEST_FOR, NEST_WHILE].find(self._nesting[i][0]):
 			if [NEST_CLASS, NEST_FUNC].find(self._nesting[i][0]):
 				self._compiler.error("Trying to break whilst not in a 'while' or 'for' loop", node.src_infos)
-			self._instructions.append(self._target::Instr_Remove_Failure_Frame.new(node.src_infos))
+			self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
 			i -= 1
 		
 		if self._nesting[i][0] == NEST_WHILE:
-			self._instructions.append(self._target::Instr_Branch.new(node.src_infos, self._nesting[i][2]))
+			self._instructions.append(self._target.Instr_Branch.new(node.src_infos, self._nesting[i][2]))
 		elif self._nesting[i][0] == NEST_FOR:
-			self._instructions.append(self._target::Instr_Branch.new(node.src_infos, self._nesting[i][1]))
+			self._instructions.append(self._target.Instr_Branch.new(node.src_infos, self._nesting[i][1]))
 		else:
 			raise "XXX"
 
@@ -931,15 +959,15 @@ class Bytecode_Gen:
 		while not [NEST_FOR, NEST_WHILE].find(self._nesting[i][0]):
 			if [NEST_CLASS, NEST_FUNC].find(self._nesting[i][0]):
 				self._compiler.error("Trying to continue whilst not in a 'while' or 'for' loop", node.src_infos)
-			self._instructions.append(self._target::Instr_Remove_Failure_Frame.new(node.src_infos))
+			self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
 			i -= 1
 		
 		if self._nesting[i][0] == NEST_WHILE:
-			self._instructions.append(self._target::Instr_Remove_Failure_Frame.new(node.src_infos))
-			self._instructions.append(self._target::Instr_Branch.new(node.src_infos, self._nesting[i][1]))
+			self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
+			self._instructions.append(self._target.Instr_Branch.new(node.src_infos, self._nesting[i][1]))
 		elif self._nesting[i][0] == NEST_FOR:
-			self._instructions.append(self._target::Instr_Remove_Failure_Frame.new(node.src_infos))
-			self._instructions.append(self._target::Instr_Fail_Now.new(node.src_infos))
+			self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
+			self._instructions.append(self._target.Instr_Fail_Now.new(node.src_infos))
 
 
 
@@ -949,9 +977,9 @@ class Bytecode_Gen:
 			next_expr_label := self._create_label()
 			self.preorder(node.exprs[i])
 			if i + 1 == node.exprs.len():
-				self._instructions.append(self._target::Instr_Dup.new(node.src_infos))
-			self._instructions.append(self._target::Instr_Branch_If_Not_Fail.new(node.src_infos, next_expr_label))
-			self._instructions.append(self._target::Instr_Fail_Now.new(node.src_infos))
+				self._instructions.append(self._target.Instr_Dup.new(node.src_infos))
+			self._instructions.append(self._target.Instr_Branch_If_Not_Fail.new(node.src_infos, next_expr_label))
+			self._instructions.append(self._target.Instr_Fail_Now.new(node.src_infos))
 			self._set_label(next_expr_label)
 
 
@@ -962,13 +990,13 @@ class Bytecode_Gen:
 		for expr := node.exprs.iterate():
 			next_expr_label := self._create_label()
 			self._nesting.append([NEST_NORMAL])
-			self._instructions.append(self._target::Instr_Add_Failure_Frame.new(node.src_infos, next_expr_label))
+			self._instructions.append(self._target.Instr_Add_Failure_Frame.new(node.src_infos, next_expr_label))
 			self.preorder(expr)
-			self._instructions.append(self._target::Instr_EYield.new(node.src_infos))
+			self._instructions.append(self._target.Instr_EYield.new(node.src_infos))
 			self._nesting.del(-1)
-			self._instructions.append(self._target::Instr_Branch.new(node.src_infos, end_of_alternation_label))
+			self._instructions.append(self._target.Instr_Branch.new(node.src_infos, end_of_alternation_label))
 			self._set_label(next_expr_label)
-		self._instructions.append(self._target::Instr_Fail_Now.new(node.src_infos))
+		self._instructions.append(self._target.Instr_Fail_Now.new(node.src_infos))
 		
 		self._set_label(end_of_alternation_label)
 
@@ -990,46 +1018,46 @@ class Bytecode_Gen:
 		self.preorder(node.expr)
 		
 		if node.targets.len() > 1:
-			self._instructions.append(self._target::Instr_Unpack_Assign.new(node.src_infos, node.targets.len()))
+			self._instructions.append(self._target.Instr_Unpack_Assign.new(node.src_infos, node.targets.len()))
 		
 		for target := node.targets.iterate():
 			if node.type == ITree::ADD_ASSIGN:
-				self._instructions.append(self._target::Instr_Add.new(node.src_infos))
+				self._instructions.append(self._target.Instr_Add.new(node.src_infos))
 			elif node.type == ITree::SUB_ASSIGN:
-				self._instructions.append(self._target::Instr_Sub.new(node.src_infos))
+				self._instructions.append(self._target.Instr_Sub.new(node.src_infos))
 
 			if ITree::IVar.instantiated(target):
 				self._add_assign_to_var(target.var_name, target.src_infos)
 			elif ITree::ISlot_Lookup.instantiated(target):
 				self.preorder(target.object_expr)
-				self._instructions.append(self._target::Instr_Assign_Slot.new(target.src_infos, target.slot_name))
+				self._instructions.append(self._target.Instr_Assign_Slot.new(target.src_infos, target.slot_name))
 			elif ITree::IGet.instantiated(target):
 				self.preorder(target.get_object)
-				self._instructions.append(self._target::Instr_Pre_Apply_Slot_Lookup.new(target.src_infos, "set"))
+				self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(target.src_infos, "set"))
 				self.preorder(target.index)
-				self._instructions.append(self._target::Instr_Pull.new(target.src_infos, 2))
-				self._instructions.append(self._target::Instr_Apply.new(target.src_infos, 2))
+				self._instructions.append(self._target.Instr_Pull.new(target.src_infos, 2))
+				self._instructions.append(self._target.Instr_Apply.new(target.src_infos, 2))
 			elif ITree::ISlice.instantiated(target):
 				self.preorder(target.slice_object)
-				self._instructions.append(self._target::Instr_Pre_Apply_Slot_Lookup.new(target.src_infos, "set_slice"))
+				self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(target.src_infos, "set_slice"))
 
 				if target.lower_bound is null:
-					self._instructions.append(self._target::Instr_Builtin_Lookup.new(target.src_infos, _BUILTIN_NULL_OBJ))
+					self._instructions.append(self._target.Instr_Builtin_Lookup.new(target.src_infos, _BUILTIN_NULL_OBJ))
 				else:
 					self.preorder(target.lower_bound)
 
 				if target.upper_bound is null:
-					self._instructions.append(self._target::Instr_Builtin_Lookup.new(target.src_infos, _BUILTIN_NULL_OBJ))
+					self._instructions.append(self._target.Instr_Builtin_Lookup.new(target.src_infos, _BUILTIN_NULL_OBJ))
 				else:
 					self.preorder(target.upper_bound)
 
-				self._instructions.append(self._target::Instr_Pull.new(target.src_infos, 3))
-				self._instructions.append(self._target::Instr_Apply.new(target.src_infos, 3))
+				self._instructions.append(self._target.Instr_Pull.new(target.src_infos, 3))
+				self._instructions.append(self._target.Instr_Apply.new(target.src_infos, 3))
 			else:
 				raise "XXX"
 
 			if node.targets.len() > 1:
-				self._instructions.append(self._target::Instr_Pop.new(node.src_infos))
+				self._instructions.append(self._target.Instr_Pop.new(node.src_infos))
 
 
 
@@ -1037,15 +1065,15 @@ class Bytecode_Gen:
 	
 		success_label := self._create_label()
 		self._nesting.append([NEST_NORMAL])
-		self._instructions.append(self._target::Instr_Add_Failure_Frame.new(node.src_infos, success_label))
+		self._instructions.append(self._target.Instr_Add_Failure_Frame.new(node.src_infos, success_label))
 		self.preorder(node.expr)
-		self._instructions.append(self._target::Instr_Branch_If_Fail.new(node.src_infos, success_label))
-		self._instructions.append(self._target::Instr_Remove_Failure_Frame.new(node.src_infos))
+		self._instructions.append(self._target.Instr_Branch_If_Fail.new(node.src_infos, success_label))
+		self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
 		self._nesting.del(-1)
-		self._instructions.append(self._target::Instr_Fail_Now.new(node.src_infos))
+		self._instructions.append(self._target.Instr_Fail_Now.new(node.src_infos))
 		
 		self._set_label(success_label)
-		self._instructions.append(self._target::Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_NULL_OBJ))
+		self._instructions.append(self._target.Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_NULL_OBJ))
 
 
 	
@@ -1064,9 +1092,9 @@ class Bytecode_Gen:
 		elif node.type == ITree::BINARY_MOD:
 			slot_name := "%"
 
-		self._instructions.append(self._target::Instr_Pre_Apply_Slot_Lookup.new(node.src_infos, slot_name))
+		self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(node.src_infos, slot_name))
 		self.preorder(node.rhs)
-		self._instructions.append(self._target::Instr_Apply.new(node.src_infos, 1))
+		self._instructions.append(self._target.Instr_Apply.new(node.src_infos, 1))
 
 
 
@@ -1075,19 +1103,19 @@ class Bytecode_Gen:
 		self.preorder(node.lhs)
 		self.preorder(node.rhs)
 		if node.type == ITree::IS_COMPARISON:
-			self._instructions.append(self._target::Instr_Is.new(node.src_infos))
+			self._instructions.append(self._target.Instr_Is.new(node.src_infos))
 		elif node.type == ITree::EQ_COMPARISON:
-			self._instructions.append(self._target::Instr_EQ.new(node.src_infos))
+			self._instructions.append(self._target.Instr_EQ.new(node.src_infos))
 		elif node.type == ITree::NEQ_COMPARISON:
-			self._instructions.append(self._target::Instr_NEQ.new(node.src_infos))
+			self._instructions.append(self._target.Instr_NEQ.new(node.src_infos))
 		elif node.type == ITree::LEQ_COMPARISON:
-			self._instructions.append(self._target::Instr_LEQ.new(node.src_infos))
+			self._instructions.append(self._target.Instr_LEQ.new(node.src_infos))
 		elif node.type == ITree::GEQ_COMPARISON:
-			self._instructions.append(self._target::Instr_GEQ.new(node.src_infos))
+			self._instructions.append(self._target.Instr_GEQ.new(node.src_infos))
 		elif node.type == ITree::LE_COMPARISON:
-			self._instructions.append(self._target::Instr_LE.new(node.src_infos))
+			self._instructions.append(self._target.Instr_LE.new(node.src_infos))
 		else:
-			self._instructions.append(self._target::Instr_GE.new(node.src_infos))
+			self._instructions.append(self._target.Instr_GE.new(node.src_infos))
 
 
 
@@ -1105,17 +1133,12 @@ class Bytecode_Gen:
 
 	func _t_ioriginal_name(self, node):
 	
-		if self._compiler.bootstrap == 1 & node.module_id.prefixed_by(self._compiler.original_lc_top_level_path):
-			// In bootstrapping mode we have to make sure that anything we output is entirely in
-			// terms of new module ids.
-			module_id := File::join_names(self._compiler.top_level_path, node.module_id[self._compiler.original_lc_top_level_path.len() : ])
-		else:
-			module_id := node.module_id
+		module_id := self._get_original_name_mod_id(node)
 		
 		if import_num := self._imports.find(module_id):
-			self._instructions.append(self._target::Instr_Import.new(node.src_infos, import_num))
+			self._instructions.append(self._target.Instr_Import.new(node.src_infos, import_num))
 		else:
 			self._imports[module_id] := self._imports.len()
-			self._instructions.append(self._target::Instr_Import.new(node.src_infos, self._imports.len() - 1))
+			self._instructions.append(self._target.Instr_Import.new(node.src_infos, self._imports.len() - 1))
 
-		self._instructions.append(self._target::Instr_Module_Lookup.new(node.src_infos, node.def_name))
+		self._instructions.append(self._target.Instr_Module_Lookup.new(node.src_infos, node.def_name))

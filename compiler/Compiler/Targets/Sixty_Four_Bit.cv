@@ -928,3 +928,99 @@ func b_aligned_string(s):
 	aligned_str := Array::Array.new(ARRAY_TYPE, s + ("\0" * (align(s.len()) - s.len())))
 	
 	return aligned_str
+
+
+
+
+
+class Target:
+
+	WORDSIZE := WORDSIZE
+	ARRAY_TYPE := ARRAY_TYPE
+	MODULE_BYTECODE_HEADER := MODULE_BYTECODE_HEADER
+	MODULE_BYTECODE_VERSION := MODULE_BYTECODE_VERSION
+	MODULE_BYTECODE_NAME := MODULE_BYTECODE_NAME
+	MODULE_BYTECODE_NAME_SIZE := MODULE_BYTECODE_NAME_SIZE
+	MODULE_BYTECODE_ID := MODULE_BYTECODE_ID
+	MODULE_BYTECODE_ID_SIZE := MODULE_BYTECODE_ID_SIZE
+	MODULE_BYTECODE_INSTRUCTIONS := MODULE_BYTECODE_INSTRUCTIONS
+	MODULE_BYTECODE_INSTRUCTIONS_SIZE := MODULE_BYTECODE_INSTRUCTIONS_SIZE
+	MODULE_BYTECODE_IMPORTS := MODULE_BYTECODE_IMPORTS
+	MODULE_BYTECODE_IMPORTS_SIZE := MODULE_BYTECODE_IMPORTS_SIZE
+	MODULE_BYTECODE_NUM_IMPORTS := MODULE_BYTECODE_NUM_IMPORTS
+	MODULE_BYTECODE_SRC_INFOS := MODULE_BYTECODE_SRC_INFOS
+	MODULE_BYTECODE_SRC_INFOS_SIZE := MODULE_BYTECODE_SRC_INFOS_SIZE
+	MODULE_BYTECODE_NEWLINES := MODULE_BYTECODE_NEWLINES
+	MODULE_BYTECODE_NUM_NEWLINES := MODULE_BYTECODE_NUM_NEWLINES
+	MODULE_BYTECODE_TOP_LEVEL_VARS_MAP := MODULE_BYTECODE_TOP_LEVEL_VARS_MAP
+	MODULE_BYTECODE_TOP_LEVEL_VARS_MAP_SIZE := MODULE_BYTECODE_TOP_LEVEL_VARS_MAP_SIZE
+	MODULE_BYTECODE_NUM_TOP_LEVEL_VARS := MODULE_BYTECODE_NUM_TOP_LEVEL_VARS
+	MODULE_BYTECODE_NUM_CONSTANTS := MODULE_BYTECODE_NUM_CONSTANTS
+	MODULE_BYTECODE_CONSTANTS_OFFSETS := MODULE_BYTECODE_CONSTANTS_OFFSETS
+	MODULE_BYTECODE_SIZE := MODULE_BYTECODE_SIZE
+	MODULE_BYTECODE_MODULE_IMPORT_FULL_NAME_SIZE := MODULE_BYTECODE_MODULE_IMPORT_FULL_NAME_SIZE
+	MODULE_BYTECODE_MODULE_IMPORT_FULL_NAME := MODULE_BYTECODE_MODULE_IMPORT_FULL_NAME
+	BYTECODE_TOP_LEVEL_VAR_NUM := BYTECODE_TOP_LEVEL_VAR_NUM
+	BYTECODE_TOP_LEVEL_VAR_NAME_SIZE := BYTECODE_TOP_LEVEL_VAR_NAME_SIZE
+	BYTECODE_TOP_LEVEL_VAR_NAME := BYTECODE_TOP_LEVEL_VAR_NAME
+	LIBRARY_BYTECODE_HEADER := LIBRARY_BYTECODE_HEADER
+	LIBRARY_BYTECODE_FORMAT_VERSION := LIBRARY_BYTECODE_FORMAT_VERSION
+	LIBRARY_BYTECODE_NUM_MODULES := LIBRARY_BYTECODE_NUM_MODULES
+	LIBRARY_BYTECODE_MODULE_OFFSETS := LIBRARY_BYTECODE_MODULE_OFFSETS
+	Instr_EXBI := Instr_EXBI
+	Instr_Lookup_Var := Instr_Lookup_Var
+	Instr_Assign_Var := Instr_Assign_Var
+	Instr_Int := Instr_Int
+	Instr_Add_Failure_Frame := Instr_Add_Failure_Frame
+	Instr_Add_Fail_Up_Frame := Instr_Add_Fail_Up_Frame
+	Instr_Remove_Failure_Frame := Instr_Remove_Failure_Frame
+	Instr_Is_Assigned := Instr_Is_Assigned
+	Instr_Fail_Now := Instr_Fail_Now
+	Instr_Pop := Instr_Pop
+	Instr_List := Instr_List
+	Instr_Slot_Lookup := Instr_Slot_Lookup
+	Instr_Apply := Instr_Apply
+	Instr_Func_Def := Instr_Func_Def
+	Instr_Return := Instr_Return
+	Instr_Branch := Instr_Branch
+	Instr_Yield := Instr_Yield
+	Instr_Import := Instr_Import
+	Instr_Dict := Instr_Dict
+	Instr_Dup := Instr_Dup
+	Instr_Pull := Instr_Pull
+	Instr_String := Instr_String
+	Instr_Builtin_Lookup := Instr_Builtin_Lookup
+	Instr_EYield := Instr_EYield
+	Instr_Assign_Slot := Instr_Assign_Slot
+	Instr_Raise := Instr_Raise
+	Instr_Unpack_Args := Instr_Unpack_Args
+	Instr_Set := Instr_Set
+	Instr_Branch_If_Not_Fail := Instr_Branch_If_Not_Fail
+	Instr_Branch_If_Fail := Instr_Branch_If_Fail
+	Instr_Constant_Get := Instr_Constant_Get
+	Instr_Constant_Set := Instr_Constant_Set
+	Instr_Pre_Apply_Slot_Lookup := Instr_Pre_Apply_Slot_Lookup
+	Instr_Is := Instr_Is
+	Instr_Unpack_Assign := Instr_Unpack_Assign
+	Instr_EQ := Instr_EQ
+	Instr_LE := Instr_LE
+	Instr_Add := Instr_Add
+	Instr_Sub := Instr_Sub
+	Instr_NEQ := Instr_NEQ
+	Instr_LEQ := Instr_LEQ
+	Instr_GEQ := Instr_GEQ
+	Instr_GE := Instr_GE
+	Instr_Module_Lookup := Instr_Module_Lookup
+	encode_src_infos := encode_src_infos
+	decode_src_infos := decode_src_infos
+	align := align
+	b_8 := b_8
+	b_8_1 := b_8_1
+	b_8_8 := b_8_8
+	b_8_8_1 := b_8_8_1
+	b_8_8_8_8 := b_8_8_8_8
+	b_8_24 := b_8_24
+	b_8_s24 := b_8_s24
+	b_8_s56 := b_8_s56
+	b_8_12_12 := b_8_12_12
+	b_aligned_string := b_aligned_string

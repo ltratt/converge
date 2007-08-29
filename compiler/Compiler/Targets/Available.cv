@@ -28,4 +28,4 @@ import Thirty_Two_Bit, Sixty_Four_Bit
 
 
 
-TARGETS := Dict{"32bit" : Thirty_Two_Bit, "64bit" : Sixty_Four_Bit}
+TARGETS := Dict{"32bit" : Thirty_Two_Bit::Target, "64bit" : Sixty_Four_Bit::Target}

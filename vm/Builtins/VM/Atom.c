@@ -1303,13 +1303,10 @@ Con_Obj *_Con_Builtins_VM_Atom_execute(Con_Obj *thread)
 
 					if ((num_args > CON_INSTR_DECODE_UNPACK_ARGS_NUM_NORMAL_ARGS(instruction)) && !CON_INSTR_DECODE_UNPACK_ARGS_HAS_VAR_ARGS(instruction)) {
 						Con_Obj *msg = CON_NEW_STRING("Too many parameters (");
-						if (Con_Builtins_Func_Atom_is_bound(thread, func))
-							msg = CON_ADD(msg, CON_GET_SLOT_APPLY(CON_NEW_INT(num_args - 1), "to_str"));
-						else
-							msg = CON_ADD(msg, CON_GET_SLOT_APPLY(CON_NEW_INT(num_args), "to_str"));
+						msg = CON_ADD(msg, CON_GET_SLOT_APPLY(CON_NEW_INT(num_args), "to_str"));
 						msg = CON_ADD(msg, CON_NEW_STRING(" passed, but a maximum of "));
 						msg = CON_ADD(msg, CON_GET_SLOT_APPLY(CON_NEW_INT(CON_INSTR_DECODE_UNPACK_ARGS_NUM_NORMAL_ARGS(instruction)), "to_str"));
-						msg = CON_ADD(msg, CON_NEW_STRING(" allowed."));
+						msg = CON_ADD(msg, CON_NEW_STRING(" allowed)."));
 						CON_RAISE_EXCEPTION("Parameters_Exception", msg);
 					}
 

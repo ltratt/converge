@@ -242,7 +242,7 @@ class ITree_Format:
 
 	func _t_imodule_lookup(self, node):
 
-		return Strings::format("%s::%s", self._preorder(node.object_expr), node.def_name)
+		return Strings::join(Functional::map(self._preorder, node.names), "::")
 
 
 

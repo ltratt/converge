@@ -235,10 +235,9 @@ class ITree_TC:
 
 	func _t_imodule_lookup(self, node):
 	
-		self._check_expr(node, "object_expr", node.object_expr)
-		
-		if not (Builtins::String.instantiated(node.def_name) | ITree::IInsert.instantiated(node.def_name)):
-			self._type_error(node, "def_name", node.def_name, "[String, IInsert]")
+		for name := node.names.iterate():
+			if not (ITree::IVar.instantiated(name) | ITree::IInsert.instantiated(name) | ITree::IOriginal_Name.instantiated(name)):
+				self._type_error(node, "name", name, "[IVar, IInsert]")
 
 
 

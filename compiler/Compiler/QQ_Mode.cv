@@ -477,12 +477,15 @@ class QQ_Mode:
 
 	func _t_imodule_lookup(self, node):
 
-		if ITree::IInsert.instantiated(node.def_name):
-			def_name := node.def_name.expr
-		else:
-			def_name := ITree::IString.new(node.def_name, node.src_infos)
+		names := [self._preorder(node.names[0])]
+		for name := node.names.iterate(1):
+			if ITree::IInsert.instantiated(name):
+				qq_name := name.expr
+			else:
+				qq_name := self._qq("IVar", [ITree::IString.new(name.var_name, name.src_infos)], name.src_infos)
+			names.append(qq_name)
 
-		return self._qq("IModule_Lookup", [self._preorder(node.object_expr), def_name], node.src_infos)
+		return self._qq("IModule_Lookup", [ITree::IList.new(names, node.src_infos)], node.src_infos)
 
 
 

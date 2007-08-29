@@ -472,24 +472,21 @@ class ISlot_Lookup:
 
 class IModule_Lookup:
 
-	func init(self, object_expr, def_name, src_infos):
+	func init(self, names, src_infos):
 	
-		self.object_expr := object_expr
-		self.def_name := def_name
+		self.names := names
 		self.src_infos := src_infos
 
-		self.bound_vars := self.object_expr.bound_vars
-		self.import_vars := self.object_expr.import_vars
-		self.qq_bound_vars := self.object_expr.qq_bound_vars
-		self.free_vars := self.object_expr.free_vars
+		self.bound_vars := Set{}
+		self.import_vars := Set{}
+		self.qq_bound_vars := Set{}
+		self.free_vars := names[0].free_vars
 
 
 
 	func extended_src_infos(self, extra_src_infos):
 	
-		object_expr := self.object_expr.extended_src_infos(extra_src_infos)
-		
-		return IModule_Lookup.new(object_expr, self.def_name, self.src_infos + extra_src_infos)
+		return IModule_Lookup.new(_extended_collection_src_infos(self.names, extra_src_infos), self.src_infos + extra_src_infos)
 
 
 

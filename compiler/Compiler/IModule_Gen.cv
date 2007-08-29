@@ -847,19 +847,15 @@ class IModule_Gen:
 		
 	func _t_module_lookup(self, node, extra_src_infos):
 	
-		// module_lookup ::= expr "::" "ID"
-		//               ::= expr "::" splice
-		//               ::= expr "::" insert
+		// module_lookup ::= name ( "::" name )+
 		
-		if Builtins::List.conformed_by(node[3]):
-			if node[3][0] == "splice":	
-				raise "XXX"
-			else:
-				// module_lookup ::= expr "::" insert
-				return ITree::IModule_Lookup.new(self._preorder(node[1], extra_src_infos), self._preorder(node[3], extra_src_infos), extra_src_infos + node[2].src_infos)
-		else:
-			// module_lookup ::= expr "::" "ID"
-			return ITree::IModule_Lookup.new(self._preorder(node[1], extra_src_infos), node[3].value, extra_src_infos + node[2].src_infos)
+		names := []
+		i := 1
+		while i < node.len():
+			names.append(self._preorder(node[i], extra_src_infos))
+			i += 2
+
+		return ITree::IModule_Lookup.new(names, extra_src_infos + node[2].src_infos)
 
 
 

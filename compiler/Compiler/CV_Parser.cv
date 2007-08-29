@@ -184,9 +184,7 @@ var_lookup ::= "ID"
 
 string ::= "STRING"
 
-module_lookup ::= expr "::" "ID"
-              ::= expr "::" splice
-			  ::= expr "::" insert
+module_lookup ::= name ( "::" name )+
 
 slot_lookup ::= expr "." "ID"
             ::= expr "." splice

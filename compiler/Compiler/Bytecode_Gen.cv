@@ -773,25 +773,17 @@ class Bytecode_Gen:
 
 	func _t_imodule_lookup(self, node):
 	
-		if ITree::IVar.instantiated(node.object_expr):
-			self.preorder(node.object_expr)
-			closures_offset, var_num := self._get_var_offsets(node.object_expr.var_name, node.src_infos)
+		if not ITree::IOriginal_Name.instantiated(node.names[0]):
+			closures_offset, var_num := self._get_var_offsets(node.names[0].var_name, node.names[0].src_infos)
 
 			reversed_closures_offset := self.closures.len() - closures_offset - 1
-			if existing_import_id := self.closures[reversed_closures_offset][Compiler_Vars::CLOSURE_IMPORTS].find(node.object_expr.var_name):
-				module_id := 1
-			else:
-				module_id := null
-		elif ITree::IOriginal_Name.instantiated(node.object_expr):
-			self.preorder(node.object_expr)
-			module_id := node.object_expr.module_id
-		else:
-			self.preorder(node.object_expr)
-			module_id := null
+			if not (module_id := self.closures[reversed_closures_offset][Compiler_Vars::CLOSURE_IMPORTS].find(node.names[0].var_name)):
+				self._compiler.warning("Unable to determine module referenced in lookup (use a plain variable lookup)", node.src_infos)
+
+		self.preorder(node.names[0])
 		
-		if module_id is null:
-			self._compiler.warning("Unable to determine module referenced in lookup (use a plain variable lookup)", node.src_infos)
-		self._instructions.append(self._target.Instr_Module_Lookup.new(node.src_infos, node.def_name))
+		for name := node.names.iterate(1):
+			self._instructions.append(self._target.Instr_Module_Lookup.new(name.src_infos, name.var_name))
 
 
 

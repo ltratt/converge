@@ -97,7 +97,7 @@ class ITree_TC:
 
 	func _t_iclass_def(self, node):
 
-		if not Builtins::String.instantiated(node.class_name):
+		if not (Builtins::String.instantiated(node.class_name) | ITree::IInsert.instantiated(node.class_name)):
 			self._type_error(node, "class_name", node.class_name, "String")
 
 		if not Builtins::List.conformed_by(node.supers):

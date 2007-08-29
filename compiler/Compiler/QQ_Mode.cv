@@ -115,19 +115,7 @@ class QQ_Mode:
 				fresh_name := ITree::IApplication.new(fresh_name_func, [ITree::IString.new(var_name, node.src_infos)], node.src_infos)
 				return_exprs.append(ITree::IAssignment.new(ITree::STD_ASSIGN, [qq_bound_var], fresh_name, node.src_infos))
 
-			// When we evaluate the expression block inside the quasi-quotes, we don't know how
-			// many expressions it will return because if there is an insert lurking in there, it
-			// might expand into multiple definitions.
-
-			e := [<node.src_infos>|
-				func () {
-					exprs := ${self._eval_expr_block(node.body)}
-					if Builtins::List.instantiated(exprs) & exprs.len() == 1:
-						return exprs[0]
-					else:
-						return exprs
-				}()
-			|]
+			e := self._lift_func_call(_expr_block_magic, [self._eval_expr_block(node.body)], node.src_infos)
 			ITree_TC::tc(e)
 			return_exprs.append(e)
 
@@ -256,6 +244,22 @@ class QQ_Mode:
 
 
 	//
+	// Lift the function call "f.apply(args)". 'f' should be a reference to a real function, which
+	// must be a top-level definition in a module.
+	//
+
+	func _lift_func_call(self, f, args, src_infos):
+	
+		if not Builtins::Module.instantiated(f.container):
+			raise "XXX"
+		
+		func_ref := ITree::IOriginal_Name.new(f.container.module_id, f.name, src_infos)
+		
+		return ITree::IApplication.new(func_ref, args, src_infos)
+
+
+
+	//
 	// Return an ITree of a list of expressions representing the quasi-quoted expression block 'node'.
 	//
 
@@ -270,20 +274,7 @@ class QQ_Mode:
 				// to check if we've got a list, in which case we check that each element of the
 				// list is an expression; if it's not a list, we check that the returned element
 				// itself is an expression.
-				block.append([<expr.src_infos>|
-					func () {
-						expr := ${expr.expr}
-						if Builtins::List.instantiated(expr):
-							for e := expr.iterate():
-								if not ITree::IPass.instantiated(e):
-									ITree_TC::tc_expr(e, "in expression body", ${CEI::lift(expr.src_infos)})
-						else:
-							if not ITree::IPass.instantiated(expr):
-								ITree_TC::tc_expr(expr, "in expression body", ${CEI::lift(expr.src_infos)})
-
-						return expr
-					}()
-				|])
+				block.append(self._lift_func_call(_expr_block_insert, [expr.expr, CEI::lift(expr.src_infos)], expr.src_infos))
 				contains_iinsert := 1
 			else:
 				block.append(self._preorder(expr))
@@ -319,16 +310,7 @@ class QQ_Mode:
 			// "1 doesn't have a class_name slot" which wouldn't really help them track things down.
 			// To cope with this eventuality, we put a manual check in that catches such an error
 			// at the earliest possible stage.
-			class_name := [<node.src_infos>|
-				func () {
-					class_name := ${node.class_name.expr}
-
-					if not Builtins::String.instantiated(class_name):
-						ITree_TC::type_error("Class_Def", "name", class_name, "String", ${CEI::lift(node.src_infos)})
-
-					return class_name
-				}()
-			|]
+			class_name := self._lift_func_call(_class_name, [node.class_name.expr, CEI::lift(node.src_infos)], node.src_infos)
 		else:
 			if node.class_name == "":
 				class_name := ITree::IString.new("", node.src_infos)
@@ -374,16 +356,7 @@ class QQ_Mode:
 			// "1 doesn't have a func_name slot" which wouldn't really help them track things down.
 			// To cope with this eventuality, we put a manual check in that catches such an error
 			// at the earliest possible stage.
-			func_name := [<node.src_infos>|
-				func () {
-					func_name := ${node.func_name.expr}
-
-					if not Builtins::String.instantiated(func_name):
-						ITree_TC::type_error("Func_Def", "name", func_name, "String", ${CEI::lift(node.src_infos)})
-
-					return func_name
-				}()
-			|]
+			func_name := self._lift_func_call(_func_name, [node.func_name.expr, CEI::lift(node.src_infos)], node.src_infos)
 		else:
 			if node.func_name == "":
 				func_name := ITree::IString.new("", node.src_infos)
@@ -742,7 +715,7 @@ class QQ_Mode:
 
 	func _t_iinsert(self, node):
 	
-		return [<node.src_infos>| (expr := ${node.expr}) & ITree_TC::tc_expr(expr, "in expression", ${CEI::lift(node.src_infos)}) & expr |]
+		return self._lift_func_call(_insert_check, [node.expr, CEI::lift(node.src_infos)], node.src_infos)
 
 
 
@@ -755,3 +728,82 @@ class QQ_Mode:
 	func _t_ioriginal_name(self, node):
 	
 		return self._qq("IOriginal_Name", [ITree::IString.new(node.module_id, node.src_infos), ITree::IString.new(node.def_name, node.src_infos)], node.src_infos)
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Functions called from quasi-quoted generated code
+//
+// These functions are only called via _lift_func_call.
+//
+
+//
+// When we evaluate an expression block inside a quasi-quotes, we treat a list of length 1 as if it
+// was a single item. This may seem a bit like magic, but works "as you'd expect" in practice.
+//
+
+func _expr_block_magic(exprs):
+
+	if Builtins::List.instantiated(exprs) & exprs.len() == 1:
+		return exprs[0]
+	else:
+		return exprs
+
+
+
+//
+// Insertions in expression blocks can return either a single expression, or a list of expressions.
+// Furthermore it's acceptable for any of these expressions to be a pass statement (which wouldn't
+// normally count as an expression).
+//
+
+func _expr_block_insert(expr, src_infos):
+
+	if Builtins::List.instantiated(expr):
+		for e := expr.iterate():
+			if not ITree::IPass.instantiated(e):
+				ITree_TC::tc_expr(e, "in expression body", src_infos)
+	else:
+		if not ITree::IPass.instantiated(expr):
+			ITree_TC::tc_expr(expr, "in expression body", src_infos)
+
+	return expr
+
+
+
+//
+// For inserts that are used as bog-standard expressions, check that expr is a valid expression.
+//
+
+func _insert_check(expr, src_infos):
+
+	ITree_TC::tc_expr(expr, "in expression", src_infos)
+	
+	return expr
+
+
+
+//
+// Check that 'name' is valid for a class name.
+//
+
+func _class_name(name, src_infos):
+
+	if not Builtins::String.instantiated(name):
+		ITree_TC::type_error("Class_Def", "name", name, "String", src_infos)
+
+	return name
+
+
+
+//
+// Check that 'name' is valid for a function name.
+//
+
+func _func_name(name, src_infos):
+
+	if not Builtins::String.instantiated(name):
+		ITree_TC::type_error("Func_Def", "name", name, "String", src_infos)
+
+	return name

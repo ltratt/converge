@@ -372,7 +372,6 @@ class IModule_Gen:
 
 
 
-
 	//
 	// Returns an IClass_Def.
 	//

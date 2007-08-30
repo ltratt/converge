@@ -765,6 +765,3 @@ func iclause(*args):
 	ITree_TC::tc(elem)
 
 	return elem
-
-
-

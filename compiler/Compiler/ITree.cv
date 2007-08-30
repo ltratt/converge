@@ -982,7 +982,6 @@ class IBinary:
 
 
 
-
 class IComparison:
 
 	func init(self, type, lhs, rhs, src_infos):

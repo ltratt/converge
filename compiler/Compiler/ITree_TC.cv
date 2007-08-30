@@ -116,8 +116,6 @@ class ITree_TC:
 				self._type_error(node, Strings::format("fields[%d]", i), field, "[IAssignment, IFunc_Def, IClass_Def]")
 
 
-
-
 	
 	func _t_ifunc_def(self, node):
 	

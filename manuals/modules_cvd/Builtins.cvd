@@ -296,7 +296,7 @@ Successively generates, in reverse order, the starting index of each substring w
 
 <function name="suffixed_by">
 <argument name="s" />
-Succeeds if the string begins with <code>s</code> in its entirety.
+Succeeds if the string ends with <code>s</code> in its entirety.
 </function>
 
 <function name="replaced">

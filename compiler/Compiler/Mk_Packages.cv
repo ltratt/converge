@@ -1,0 +1,74 @@
+import File, Sys
+import Bytecode_Gen, Compiler_Vars, CV_Module, ITree
+
+
+
+
+class Mk_Packages:
+
+	func mk(self, mods, target):
+
+		// This is where we create the first-class package modules. Basically we go through the list
+		// of modules that the system needs, and then determine what packages it wishes to import.
+		// Then we go back and discover all the modules and sub-packages that are part of that
+		// package, and create a module which contains definitions pointing to them. This module
+		// "is" the package.
+
+		pkgs := []
+
+		pkg_ids := Set{}
+
+		// First, discover every reference to a package.
+
+		for module := mods.iterate():
+			for import_ := module.get_imports().iterate():
+				if not (Compiler_Vars::BUILTIN_MODULES.find(import_) | import_.suffixed_by(Compiler_Vars::CV_EXTENSION)):
+					pkg_ids.add(import_)
+		
+		for pkg_id := pkg_ids.iterate():
+			defns := Dict{}
+
+			// For a given package, discover which subpackages and modules it contains.
+
+			for sub_pkg_id := pkg_ids.iterate():
+				if sub_pkg_id == pkg_id:
+					continue
+				if File::is_entry_in_dir(pkg_id, sub_pkg_id):
+					defn_name := File::split_ext(sub_pkg_id)[1]
+					defns[defn_name] := sub_pkg_id
+
+			for mod := mods.iterate():
+				mod_id := mod.get_identifier()
+				if File::is_entry_in_dir(pkg_id, mod_id):
+					defn_name := File::split_ext(File::split_leaf(mod_id)[1])[0]
+					defns[defn_name] := mod_id
+
+			// XXX: It's not entirely clear what reasonable src infos for the ITree module are.
+
+			idefns := []
+			for defn_name, mod_id := defns.iterate():
+				mod_import := ITree::IMod_Id_Import.new(mod_id, [])
+				var_name := ITree::IVar.new(defn_name, [])
+				asgn := ITree::IAssignment.new(ITree::STD_ASSIGN, [var_name], mod_import, [])
+				idefns.append(asgn)
+			imod := ITree::IModule.new(File::split_ext(pkg_id)[1], idefns, [])
+
+			// We now setup a minimal compiler and compile the ITree into a CV_Module.
+
+			self.bootstrap := 0
+			self.module_id := pkg_id
+			self.newlines := []
+			Compiler_Vars::push_compiler(self)
+			pkg_as_mod := Bytecode_Gen::Bytecode_Gen.new().generate(imod, target)
+			Compiler_Vars::pop_compiler()
+			
+			pkgs.append(pkg_as_mod)
+
+		return pkgs
+
+
+
+
+func mk_packages(mods, target):
+
+	return Mk_Packages.new().mk(mods, target)

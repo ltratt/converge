@@ -20,7 +20,7 @@
 
 
 import Array, File, Maths, Parse_Options, Platform::Properties, Strings, Sys
-import Compiler_Vars, CV_Exec, CV_Module, CV_Library, Targets::Available
+import Bytecode_Gen, Compiler_Vars, CV_Exec, CV_Module, CV_Library, Mk_Packages, Targets::Available, VM
 
 
 
@@ -99,9 +99,18 @@ class Linker:
 		linked_bytecode.append(0)  // Version
 		linked_bytecode.append(-1) // Number of modules
 		
+		// Using the first module on the command line as a "seed", we now go through and try and
+		// pluck out all the imports that it refers to (directly and indirectly through other
+		// modules).
+		//
+		// This happens in two phases. First we try and find "normal" modules. Then we construct
+		// any packages required. Then we check to see if we're missing any files that would need
+		// to be imported.
+		
 		modules_stack := [first_module_id]
 		assert(modules.find(modules_stack[0]))
 		modules_offsets := []
+		linked_modules := []
 		modules_bytecode := Array::Array.new(target.ARRAY_TYPE)
 		i := 0
 		while i < modules_stack.len():
@@ -109,13 +118,28 @@ class Linker:
 			modules_offsets.append(modules_bytecode.len_bytes())
 			module_str, module := modules[module_id]
 			modules_bytecode.extend_from_string(module_str)
+			linked_modules.append(module)
 			for import_module_id := module.get_imports().iterate():
 				if not Compiler_Vars::BUILTIN_MODULES.find(import_module_id):
 					if not modules_stack.find(import_module_id):
-						if not modules.find(import_module_id):
-							_error(Strings::format("Module '%s' referenced in '%s' not found in input files.", import_module_id, module_id))
-						modules_stack.append(import_module_id)
+						if modules.find(import_module_id):
+							modules_stack.append(import_module_id)
 			i += 1
+
+		pkgs := Mk_Packages::mk_packages(linked_modules, target)
+		for pkg := pkgs.iterate():
+			linked_modules.append(pkg)
+			modules_offsets.append(modules_bytecode.len_bytes())
+			modules_bytecode.extend_from_string(pkg.serialize())
+
+		module_ids := Set{}
+		for module := linked_modules.iterate():
+			module_ids.add(module.get_identifier())
+		
+		for module := linked_modules.iterate():
+			for import_ := module.get_imports().iterate():
+				if not Compiler_Vars::BUILTIN_MODULES.find(import_) & not module_ids.find(import_):
+					_error(Strings::format("Module '%s' referenced in '%s' not found in input files.", import_, module_id))
 
 		linked_bytecode[target.LIBRARY_BYTECODE_NUM_MODULES] := modules_offsets.len()
 		

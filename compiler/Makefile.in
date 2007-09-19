@@ -10,7 +10,8 @@ BASE_OBJECT_FILES = Compiler/CV_Parser.cvb Compiler/Tokenizer.cvb \
 	Compiler/Compiler_Vars.cvb Compiler/CV_Module.cvb \
 	Compiler/QQ_Mode.cvb Compiler/ITree_Format.cvb Compiler/ITree_TC.cvb \
 	Compiler/CEI.cvb Compiler/convergel.cvb Compiler/CV_Library.cvb \
-	Compiler/CV_Exec.cvb Compiler/Eval.cvb Compiler/convergei.cvb
+	Compiler/CV_Exec.cvb Compiler/Eval.cvb Compiler/convergei.cvb \
+	Compiler/Mk_Packages.cvb
 
 TARGET_OBJECT_FILES = Compiler/Targets/Sixty_Four_Bit.cvb Compiler/Targets/Available.cvb
 

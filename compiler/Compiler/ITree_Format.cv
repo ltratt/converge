@@ -402,10 +402,7 @@ class ITree_Format:
 
 	func _t_imod_id_import(self, node):
 	
-		if node.module_id == Compiler_Vars::peek_compiler().module_id:
-			return "self_module" // XXX
-		else:
-			return node.module_id
+		return node.module_id
 
 
 

@@ -44,6 +44,7 @@ class _Eval_Compiler:
 		
 		self.tokenizer := Tokenizer::Tokenizer.new()
 		parse_tree := CV_Parser::parse_expr(self._str)
+		self.newlines := self.tokenizer.newlines
 
 		body := []
 		

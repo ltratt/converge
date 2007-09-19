@@ -208,7 +208,7 @@ class Bytecode_Gen:
 		module.set_instructions_bytecode(instructions_bytecode)
 		module.set_imports(module_imports)
 		module.set_src_infos(all_src_infos)
-		module.set_newlines(self._compiler.tokenizer.newlines)
+		module.set_newlines(self._compiler.newlines)
 		module.set_constants_offsets(constants_offsets)
 		
 		return module

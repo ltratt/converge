@@ -54,6 +54,12 @@ class ITree_Format:
 
 
 
+	func _t_imodule(self, node):
+	
+		return Strings::join(Functional::map(func (x) { return self._preorder(x) }, node.definitions), "\n")
+
+
+
 	func _t_iclass_def(self, node):
 
 		supers := Strings::join(Functional::map(func (x) { return self._preorder(x) }, node.supers), ", ")

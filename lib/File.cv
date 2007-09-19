@@ -144,6 +144,26 @@ func canon_path(path):
 
 
 
+//
+// Given two canonicalised pathnames, succeeds if path is (textually) an entry in dir_path. i.e.
+// ("/a", "/a/b") succeeds, but ("/a", "/c") and ("/a", "/a/b/c") both fail.
+//
+
+func is_entry_in_dir(dir_path, path):
+
+	if not path.prefixed_by(dir_path):
+		return fail
+	
+	i := dir_path.len()
+	while i < path.len() & path[i] == DIRECTORY_SEPARATOR:
+		i += 1
+	if path[i : ].find(DIRECTORY_SEPARATOR):
+		return fail
+	
+	return 1
+
+
+
 //func main():
 //
 //	Sys::println(split_leaf("a/b/c"))

@@ -194,7 +194,10 @@ class QQ_Mode:
 		if not mode is self:
 			// This variable is outside of the quasi-quotes.
 			if mode.parent_mode is null & i == 0:
-				return self._qq("IOriginal_Name", [ITree::IString.new(self._module_id, node_src_infos), ITree::IString.new(renamed_var_name, node_src_infos)], node_src_infos)
+				mod_id_import := self._qq("IMod_Id_Import", [ITree::IString.new(self._module_id, node_src_infos)], node_src_infos)
+				defn_name := self._qq("IVar", [ITree::IString.new(renamed_var_name, node_src_infos)], node_src_infos)
+				mod_lookup_names := ITree::IList.new([mod_id_import, defn_name], node_src_infos)
+				return self._qq("IModule_Lookup", [mod_lookup_names], node_src_infos)
 			else:
 				self._compiler.error(Strings::format("Trying to reference variable '%s' which is not defined in the outer-most scope.", var_name), node_src_infos)
 		
@@ -239,7 +242,8 @@ class QQ_Mode:
 		if import_extras.len() > 0:
 			raise "XXX"
 		
-		return ITree::IOriginal_Name.new(module_id, defn_name, src_infos)
+		mod_id_import := ITree::IMod_Id_Import.new(module_id, src_infos)
+		return ITree::IModule_Lookup.new([mod_id_import, ITree::IVar.new(defn_name, src_infos)], src_infos)
 
 
 
@@ -253,7 +257,8 @@ class QQ_Mode:
 		if not Builtins::Module.instantiated(f.container):
 			raise "XXX"
 		
-		func_ref := ITree::IOriginal_Name.new(f.container.module_id, f.name, src_infos)
+		mod_id_import := ITree::IMod_Id_Import.new(f.container.module_id, src_infos)
+		func_ref := ITree::IModule_Lookup.new([mod_id_import, ITree::IVar.new(f.name, src_infos)], src_infos)
 		
 		return ITree::IApplication.new(func_ref, args, src_infos)
 
@@ -477,7 +482,44 @@ class QQ_Mode:
 
 	func _t_imodule_lookup(self, node):
 
-		names := [self._preorder(node.names[0])]
+		assert(ITree::IVar.instantiated(node.names[0]))
+
+		names := []
+
+		if ITree::IInsert.instantiated(node.names[0]):
+			names.append(node.names[0].expr)
+		else:
+			// We need to process the first part of a module lookup differently. If we've got code along
+			// the lines of the following:
+			//
+			//   import Builtins
+			//
+			//   func f():
+			//     return [| Builtins::String |]
+			//
+			// then we want to unpack the quasi-quoted module lookup so that it becomes:
+			//
+			//   [Mod_Id_Import(Builtins), IVar(String)]
+			//
+			// This means we have to manually deal with the variable which constitutes the first entry in
+			// a module lookup.
+
+			var_name := node.names[0].var_name
+			renamed_var_name, mode, i := self._get_var_offset(var_name, node.src_infos)
+			if not mode is self:
+				// Variable is outside of the quasi-quotes.
+				if mode.parent_mode is null & i == 0:
+					// This is where we do the unpacking mentioned above.
+					names.append(self._qq("IMod_Id_Import", [ITree::IString.new(self._module_id, node.src_infos)], node.src_infos))
+					names.append(self._qq("IVar", [ITree::IString.new(renamed_var_name, node.src_infos)], node.src_infos))
+				else:
+					self._compiler.error(Strings::format("Trying to reference variable '%s' which is not defined in the outer-most scope.", var_name), node.src_infos)
+			else:
+				// Variable is inside the quasi-quotes.
+				names.append(self._qq("IVar", [ITree::IString.new(renamed_var_name, node.src_infos)], node.src_infos))
+
+		// Processing all
+
 		for name := node.names.iterate(1):
 			if ITree::IInsert.instantiated(name):
 				qq_name := name.expr
@@ -727,9 +769,9 @@ class QQ_Mode:
 
 
 
-	func _t_ioriginal_name(self, node):
+	func _t_imod_id_import(self, node):
 	
-		return self._qq("IOriginal_Name", [ITree::IString.new(node.module_id, node.src_infos), ITree::IString.new(node.def_name, node.src_infos)], node.src_infos)
+		return self._qq("IMod_Id_Import", [ITree::IString.new(node.module_id, node.src_infos)], node.src_infos)
 
 
 

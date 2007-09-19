@@ -394,12 +394,12 @@ class ITree_Format:
 
 
 
-	func _t_ioriginal_name(self, node):
+	func _t_imod_id_import(self, node):
 	
 		if node.module_id == Compiler_Vars::peek_compiler().module_id:
-			return node.def_name // XXX
+			return "self_module" // XXX
 		else:
-			return Strings::format("<%s>::%s", node.module_id, node.def_name)
+			return node.module_id
 
 
 

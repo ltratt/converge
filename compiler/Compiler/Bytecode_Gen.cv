@@ -773,7 +773,7 @@ class Bytecode_Gen:
 
 	func _t_imodule_lookup(self, node):
 	
-		if not ITree::IOriginal_Name.instantiated(node.names[0]):
+		if not ITree::IMod_Id_Import.instantiated(node.names[0]):
 			closures_offset, var_num := self._get_var_offsets(node.names[0].var_name, node.names[0].src_infos)
 
 			reversed_closures_offset := self.closures.len() - closures_offset - 1
@@ -1123,7 +1123,7 @@ class Bytecode_Gen:
 
 
 
-	func _t_ioriginal_name(self, node):
+	func _t_imod_id_import(self, node):
 	
 		module_id := self._get_original_name_mod_id(node)
 		
@@ -1132,5 +1132,3 @@ class Bytecode_Gen:
 		else:
 			self._imports[module_id] := self._imports.len()
 			self._instructions.append(self._target.Instr_Import.new(node.src_infos, self._imports.len() - 1))
-
-		self._instructions.append(self._target.Instr_Module_Lookup.new(node.src_infos, node.def_name))

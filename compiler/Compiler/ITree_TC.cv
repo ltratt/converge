@@ -25,7 +25,7 @@ import Compiler_Vars, ITree
 
 
 
-_EXPRS := [ITree::IClass_Def, ITree::IFunc_Def, ITree::IIf, ITree::INDIf, ITree::IVar, ITree::IImport, ITree::IWhile, ITree::IFor, ITree::IInt, ITree::IString, ITree::ISlot_Lookup, ITree::IModule_Lookup, ITree::IList, ITree::IDict, ITree::ISet, ITree::IApplication, ITree::IGet, ITree::ISlice, ITree::IEXBI, ITree::IReturn, ITree::IYield, ITree::IRaise, ITree::IAssert, ITree::IBreak, ITree::IContinue, ITree::IConjunction, ITree::IAlternation, ITree::IAssignment, ITree::INot, ITree::IBinary, ITree::IComparison, ITree::IInsert, ITree::IStandard_Quasi_Quotes, ITree::IOriginal_Name]
+_EXPRS := [ITree::IClass_Def, ITree::IFunc_Def, ITree::IIf, ITree::INDIf, ITree::IVar, ITree::IImport, ITree::IWhile, ITree::IFor, ITree::IInt, ITree::IString, ITree::ISlot_Lookup, ITree::IModule_Lookup, ITree::IList, ITree::IDict, ITree::ISet, ITree::IApplication, ITree::IGet, ITree::ISlice, ITree::IEXBI, ITree::IReturn, ITree::IYield, ITree::IRaise, ITree::IAssert, ITree::IBreak, ITree::IContinue, ITree::IConjunction, ITree::IAlternation, ITree::IAssignment, ITree::INot, ITree::IBinary, ITree::IComparison, ITree::IInsert, ITree::IStandard_Quasi_Quotes, ITree::IMod_Id_Import]
 
 
 
@@ -233,9 +233,13 @@ class ITree_TC:
 
 	func _t_imodule_lookup(self, node):
 	
-		for name := node.names.iterate():
-			if not (ITree::IVar.instantiated(name) | ITree::IInsert.instantiated(name) | ITree::IOriginal_Name.instantiated(name)):
-				self._type_error(node, "name", name, "[IVar, IInsert]")
+		name := node.names[0]
+		if not (ITree::IVar.instantiated(name) | ITree::IMod_Id_Import.instantiated(name) | ITree::IInsert.instantiated(name)):
+			self._type_error(node, "initial name", name, "[IVar, IMod_Id_Import, IInsert]")
+
+		for name := node.names.iterate(1):
+			if not (ITree::IVar.instantiated(name) | ITree::IInsert.instantiated(name)):
+				self._type_error(node, "second or later name", name, "[IVar, IInsert]")
 
 
 
@@ -424,13 +428,10 @@ class ITree_TC:
 
 
 
-	func _t_ioriginal_name(self, node):
+	func _t_imod_id_import(self, node):
 	
 		if not Builtins::String.instantiated(node.module_id):
 			self._type_error(node, "module_id", node.module_id, "String")
-
-		if not Builtins::String.instantiated(node.def_name):
-			self._type_error(node, "def_name", node.def_name, "String")
 	
 
 	

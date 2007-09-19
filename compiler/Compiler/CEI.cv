@@ -704,9 +704,9 @@ func istandard_quasi_quotes(*args):
 
 
 
-func ioriginal_name(*args):
+func imod_id_import(*args):
 
-	elem := ITree::IOriginal_Name
+	elem := ITree::IMod_Id_Import
 
 	if args.len() == elem.get_field("init").num_params - 1:
 		args := args[ : -1] + [(args[-1] + Thread::get_continuation_src_infos(2))]

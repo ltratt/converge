@@ -1089,12 +1089,11 @@ class IStandard_Quasi_Quotes:
 
 
 
-class IOriginal_Name:
+class IMod_Id_Import:
 
-	func init(self, module_id, def_name, src_infos):
+	func init(self, module_id, src_infos):
 	
 		self.module_id := module_id
-		self.def_name := def_name
 		self.src_infos := src_infos
 		
 		self.bound_vars := Set{}
@@ -1106,7 +1105,7 @@ class IOriginal_Name:
 
 	func extended_src_infos(self, extra_src_infos):
 	
-		return IOriginal_Name.new(self.module_id, self.def_name, self.src_infos + extra_src_infos)
+		return IMod_Id_Import.new(self.module_id, self.src_infos + extra_src_infos)
 
 
 

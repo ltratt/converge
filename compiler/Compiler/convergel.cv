@@ -20,7 +20,7 @@
 
 
 import Array, File, Maths, Parse_Options, Platform::Properties, Strings, Sys
-import Bytecode_Gen, Compiler_Vars, CV_Exec, CV_Module, CV_Library, Mk_Packages, Targets::Available, VM
+import Compiler_Vars, CV_Exec, CV_Module, CV_Library, Mk_Packages, Targets::Available, VM
 
 
 

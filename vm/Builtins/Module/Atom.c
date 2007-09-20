@@ -451,9 +451,9 @@ Con_Obj	*Con_Builtins_Module_Atom_get_definition(Con_Obj *thread, Con_Obj *modul
 		return CON_APPLY(CON_EXBI(CON_BUILTIN(CON_BUILTIN_OBJECT_CLASS), "get_slot", module), def_obj);
 	}
 	
-	Con_Obj *var_num = CON_GET_SLOT_APPLY_NO_FAIL(top_level_vars_map, "get", Con_Builtins_String_Atom_new_copy(thread, definition_name, definition_name_size, CON_STR_UTF_8));
+	Con_Obj *var_num = CON_GET_SLOT_APPLY_NO_FAIL(top_level_vars_map, "find", Con_Builtins_String_Atom_new_copy(thread, definition_name, definition_name_size, CON_STR_UTF_8));
 	if (var_num == NULL)
-		CON_XXX;
+		CON_RAISE_EXCEPTION("Mod_Defn_Exception", Con_Builtins_String_Atom_new_copy(thread, definition_name, definition_name_size, CON_STR_UTF_8));
 		
 	return Con_Builtins_Closure_Atom_get_var(thread, closure, 0, Con_Numbers_Number_to_Con_Int(thread, var_num));
 }

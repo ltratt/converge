@@ -47,6 +47,7 @@ Con_Obj *_Con_Modules_Exception_VM_Exception_init_func(Con_Obj *);
 
 Con_Obj *_Con_Modules_Exception_Apply_Exception_init_func(Con_Obj *);
 Con_Obj *_Con_Modules_Exception_Bounds_Exception_init_func(Con_Obj *);
+Con_Obj *_Con_Modules_Exception_Mod_Defn_Exception_init_func(Con_Obj *);
 Con_Obj *_Con_Modules_Exception_Field_Exception_init_func(Con_Obj *);
 Con_Obj *_Con_Modules_Exception_Import_Exception_init_func(Con_Obj *);
 Con_Obj *_Con_Modules_Exception_Indices_Exception_init_func(Con_Obj *);
@@ -129,6 +130,12 @@ Con_Obj *Con_Modules_Exceptions_init(Con_Obj *thread, Con_Obj *identifier)
 	Con_Obj *key_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("Key_Exception"), Con_Builtins_List_Atom_new_va(thread, user_exception, NULL), exceptions_mod);
 	CON_SET_FIELD(key_exception, "init", CON_NEW_BOUND_C_FUNC(_Con_Modules_Exception_Key_Exception_init_func, "init", exceptions_mod, key_exception));
 	CON_SET_SLOT(exceptions_mod, "Key_Exception", key_exception);
+
+	// class Mod_Defn_Exception
+
+	Con_Obj *defn_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("Mod_Defn_Exception"), Con_Builtins_List_Atom_new_va(thread, user_exception, NULL), exceptions_mod);
+	CON_SET_FIELD(defn_exception, "init", CON_NEW_BOUND_C_FUNC(_Con_Modules_Exception_Mod_Defn_Exception_init_func, "init", exceptions_mod, defn_exception));
+	CON_SET_SLOT(exceptions_mod, "Mod_Defn_Exception", defn_exception);
 
 	// class NDIf_Exception
 	
@@ -355,6 +362,26 @@ Con_Obj *_Con_Modules_Exception_Key_Exception_init_func(Con_Obj *thread)
 
 	Con_Obj *msg = CON_NEW_STRING("Key '");
 	msg = CON_ADD(msg, CON_GET_SLOT_APPLY(key, "to_str"));
+	msg = CON_ADD(msg, CON_NEW_STRING("' not found."));
+	
+	CON_SET_SLOT(self, "msg", msg);
+	
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
+}
+
+
+
+//
+// 'Mod_Defn_Exception.init(key)'.
+//
+
+Con_Obj *_Con_Modules_Exception_Mod_Defn_Exception_init_func(Con_Obj *thread)
+{
+	Con_Obj *key, *self;
+	CON_UNPACK_ARGS("OO", &self, &key);
+
+	Con_Obj *msg = CON_NEW_STRING("Definition '");
+	msg = CON_ADD(msg, key);
 	msg = CON_ADD(msg, CON_NEW_STRING("' not found."));
 	
 	CON_SET_SLOT(self, "msg", msg);

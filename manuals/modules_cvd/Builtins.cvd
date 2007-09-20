@@ -226,7 +226,7 @@ Returns a new set which contains every element of <code>self</code> which is not
 
 <function name="extend">
 <argument name="c" />
-Successively <ref name="Set#add" />'s each element returned by <code>c.iterate()</code>.
+Successively adds each element returned by <code>c.iterate()</code> to the set.
 </function>
 
 <function name="find">

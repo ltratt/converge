@@ -36,7 +36,7 @@ class _Eval_Compiler:
 		self.includes := includes
 		self.src_path := "<eval>"
 		self.module_id := Strings::format(Compiler_Vars::UNIQUE_EVAL_NAME_TEMPLATE, CEI::fresh_name())
-		self.target := Available::TARGETS[Strings::format("%dbit", Properties::word_bits)]
+		self.target := Available::TARGETS[Strings::format("%dbit", Properties::word_bits)].new()
 
 
 
@@ -50,7 +50,8 @@ class _Eval_Compiler:
 		
 		compiler_var_name := CEI::fresh_name()
 		compiler_var := ITree::IVar.new(compiler_var_name, [])
-		body.append(ITree::IAssignment.new(ITree::STD_ASSIGN, [compiler_var], ITree::IApplication.new(ITree::IOriginal_Name.new(Compiler_Vars.module_id, "peek_compiler", []), [], []), []))
+		peek_compiler := ITree::IModule_Lookup.new([ITree::IMod_Id_Import.new(Compiler_Vars.module_id, []), ITree::IVar.new("peek_compiler", [])], [])
+		body.append(ITree::IAssignment.new(ITree::STD_ASSIGN, [compiler_var], ITree::IApplication.new(peek_compiler, [], []), []))
 		
 		vars_val := ITree::ISlot_Lookup.new(compiler_var, "_vars", [])
 		for var_name, _ := self._vars.iterate():
@@ -93,6 +94,18 @@ class _Eval_Compiler:
 		module := VM::import_module(module_identifiers[0])
 		
 		return module.get_def(eval_name)()
+
+
+
+	func find_import_location(self, import_name_list):
+
+		if Compiler_Vars::BUILTIN_MODULES.find(import_name_list[0]):
+			import_full_name := import_name_list[0]
+			import_extras := import_name_list[1 : ]
+		else:
+			raise "XXX"
+
+		return [import_full_name, import_extras]
 
 
 

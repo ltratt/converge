@@ -1,5 +1,5 @@
 <module name="Array">
-This module provides an efficient mechanism for storing and manipulating large number of primitive machine types.
+This module provides an efficient mechanism for storing and manipulating large numbers of primitive machine types.
 
 <class name="Array">
 Array objects are created by calling the following function on the <code>Array</code> class object:

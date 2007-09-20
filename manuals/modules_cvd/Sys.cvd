@@ -27,7 +27,7 @@ Important functions and classes in this module are as follows:
 <argument name="code" type="Int" />
 Exits the program with exit code <code>code</code> which must be an integer.
 
-<p>More correctly this raises a <ref name="Exceptions::System_Exit_Exception">System_Exit_Exception</ref> which is caught as a special case by outer Converge program.</p>
+<p>More correctly this raises a <ref name="Exceptions::System_Exit_Exception">System_Exit_Exception</ref> which is caught as a special case by the "outer" Converge program.</p>
 </function>
 
 <function name="print">

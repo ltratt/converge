@@ -45,6 +45,8 @@
 
 
 
+Con_Obj *_Con_Builtins_Module_Class_new_object(Con_Obj *);
+
 Con_Obj *_Con_Builtins_Module_Class_to_str_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Module_Class_get_def_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Module_Class_get_slot_func(Con_Obj *);
@@ -68,7 +70,7 @@ void Con_Builtins_Module_Class_bootstrap(Con_Obj *thread)
 	class_atom->next_atom = (Con_Atom *) slots_atom;
 	slots_atom->next_atom = NULL;
 
-	Con_Builtins_Class_Atom_init_atom(thread, class_atom, CON_NEW_STRING("Module"), NULL, CON_BUILTIN(CON_BUILTIN_OBJECT_CLASS), NULL);
+	Con_Builtins_Class_Atom_init_atom(thread, class_atom, CON_NEW_STRING("Module"), CON_NEW_UNBOUND_C_FUNC(_Con_Builtins_Module_Class_new_object, "Module_new", CON_BUILTIN(CON_BUILTIN_NULL_OBJ)), CON_BUILTIN(CON_BUILTIN_OBJECT_CLASS), NULL);
 	Con_Builtins_Slots_Atom_Def_init_atom(thread, slots_atom);
 	
 	Con_Memory_change_chunk_type(thread, module_class, CON_MEMORY_CHUNK_OBJ);
@@ -79,6 +81,24 @@ void Con_Builtins_Module_Class_bootstrap(Con_Obj *thread)
 	CON_SET_FIELD(module_class, "get_slot", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Module_Class_get_slot_func, "get_slot", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), module_class));
 	CON_SET_FIELD(module_class, "path", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Module_Class_path_func, "path", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), module_class));
 	CON_SET_FIELD(module_class, "src_offset_to_line_column", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Module_Class_src_offset_to_line_column_func, "src_offset_to_line_column", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), module_class));
+}
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// func Module_new
+//
+
+Con_Obj *_Con_Builtins_Module_Class_new_object(Con_Obj *thread)
+{
+	Con_Obj *bc, *self;
+	CON_UNPACK_ARGS("CO", &self, &bc);
+
+	Con_Builtins_String_Atom *bc_str_atom = CON_FIND_ATOM(bc, CON_BUILTIN(CON_BUILTIN_STRING_ATOM_DEF_OBJECT));
+	if (bc_str_atom == NULL)
+		CON_XXX;
+
+	return Con_Builtins_Module_Atom_new_from_bytecode(thread, (u_char*) bc_str_atom->str);
 }
 
 

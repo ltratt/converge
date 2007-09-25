@@ -36,6 +36,7 @@
 #include "Builtins/Class/Atom.h"
 #include "Builtins/Closure/Atom.h"
 #include "Builtins/Con_Stack/Atom.h"
+#include "Builtins/Dict/Atom.h"
 #include "Builtins/Func/Atom.h"
 #include "Builtins/Int/Atom.h"
 #include "Builtins/List/Atom.h"
@@ -112,6 +113,48 @@ Con_Obj *Con_Builtins_Module_Atom_new_c(Con_Obj *thread, Con_Obj *identifier, Co
 	return new_module;
 }
 
+
+
+Con_Obj *Con_Builtins_Module_Atom_new_from_bytecode(Con_Obj *thread, u_char *bytecode)
+{
+	int j, imports_bytecode_offset;
+	Con_Obj *identifier, *imports, *init_func, *module, *name;
+
+#	define ID_MODULE_GET_WORD(x) (*(Con_Int*) (bytecode + (x)))
+#	define ID_MODULE_GET_OFFSET(x) ((void *) (bytecode + (ID_MODULE_GET_WORD(x))))
+
+	name = Con_Builtins_String_Atom_new_copy(thread, ID_MODULE_GET_OFFSET(CON_BYTECODE_MODULE_NAME), ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_NAME_SIZE), CON_STR_UTF_8);
+
+	identifier = Con_Builtins_String_Atom_new_copy(thread, ID_MODULE_GET_OFFSET(CON_BYTECODE_MODULE_IDENTIFIER), ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_IDENTIFIER_SIZE), CON_STR_UTF_8);
+
+	imports = Con_Builtins_List_Atom_new_sized(thread, ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_NUM_IMPORTS));
+	imports_bytecode_offset = ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_IMPORTS);
+	for (j = 0; j < ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_NUM_IMPORTS); j += 1) {
+		CON_GET_SLOT_APPLY(imports, "append", Con_Builtins_String_Atom_new_copy(thread, bytecode + imports_bytecode_offset + CON_BYTECODE_IMPORT_IDENTIFIER, ID_MODULE_GET_WORD(imports_bytecode_offset + CON_BYTECODE_IMPORT_IDENTIFIER_SIZE), CON_STR_UTF_8));
+		imports_bytecode_offset += CON_BYTECODE_IMPORT_IDENTIFIER + Con_Arch_align(thread, ID_MODULE_GET_WORD(imports_bytecode_offset + CON_BYTECODE_IMPORT_IDENTIFIER_SIZE));
+	}
+
+	Con_Obj *top_level_vars_map = Con_Builtins_Dict_Atom_new(thread);
+	Con_Int top_level_vars_map_bytecode_offset = ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_TOP_LEVEL_VARS_MAP);
+	for (j = 0; j < ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_NUM_TOP_LEVEL_VARS); j += 1) {
+		Con_Obj *var_name = Con_Builtins_String_Atom_new_copy(thread, bytecode + top_level_vars_map_bytecode_offset + CON_BYTECODE_TOP_LEVEL_VAR_NAME, ID_MODULE_GET_WORD(top_level_vars_map_bytecode_offset + CON_BYTECODE_TOP_LEVEL_VAR_NAME_SIZE), CON_STR_UTF_8);
+		CON_GET_SLOT_APPLY(top_level_vars_map, "set", var_name, CON_NEW_INT(ID_MODULE_GET_WORD(top_level_vars_map_bytecode_offset + CON_BYTECODE_TOP_LEVEL_VAR_NUM)));
+		top_level_vars_map_bytecode_offset += CON_BYTECODE_TOP_LEVEL_VAR_NAME + Con_Arch_align(thread, ID_MODULE_GET_WORD(top_level_vars_map_bytecode_offset + CON_BYTECODE_TOP_LEVEL_VAR_NAME_SIZE));
+	}
+
+	u_char *module_bytecode = Con_Memory_malloc(thread, ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_SIZE), CON_MEMORY_CHUNK_OPAQUE);
+	memmove(module_bytecode, bytecode, ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_SIZE));
+
+	Con_Int *constants_offsets = Con_Memory_malloc(thread, sizeof(Con_Int) * ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_NUM_CONSTANTS), CON_MEMORY_CHUNK_OPAQUE);
+	memmove(constants_offsets, ID_MODULE_GET_OFFSET(CON_BYTECODE_MODULE_CONSTANTS_CREATE_OFFSETS), sizeof(Con_Int) * ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_NUM_CONSTANTS));
+
+	module = Con_Builtins_Module_Atom_new(thread, identifier, module_bytecode, ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_SIZE), imports, top_level_vars_map, ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_NUM_CONSTANTS), constants_offsets, name, CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+
+	init_func = Con_Builtins_Func_Atom_new(thread, false, Con_Builtins_Func_Atom_make_con_pc_bytecode(thread, module, ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_INSTRUCTIONS)), 0,  ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_NUM_TOP_LEVEL_VARS), NULL, CON_NEW_STRING("$$init$$"), module);
+	Con_Builtins_Module_Atom_set_init_func(thread, module, init_func);
+
+	return module;
+}
 
 
 

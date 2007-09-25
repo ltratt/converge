@@ -47,6 +47,7 @@ void Con_Builtins_Module_Atom_bootstrap(Con_Obj *);
 
 Con_Obj *Con_Builtins_Module_Atom_new(Con_Obj *, Con_Obj *, u_char *, Con_Int, Con_Obj *, Con_Obj *, Con_Int, Con_Int *, Con_Obj *, Con_Obj *);
 Con_Obj *Con_Builtins_Module_Atom_new_c(Con_Obj *, Con_Obj *, Con_Obj *, Con_Obj *);
+Con_Obj *Con_Builtins_Module_Atom_new_from_bytecode(Con_Obj *, u_char *);
 void Con_Builtins_Module_Atom_init_atom(Con_Obj *, Con_Builtins_Module_Atom *, Con_Obj *, u_char *, Con_Int, Con_Obj *, Con_Obj *, Con_Int, Con_Int *, Con_Obj *, Con_Obj *);
 
 Con_Obj *Con_Builtins_Module_Atom_get_identifier(Con_Obj *, Con_Obj *);

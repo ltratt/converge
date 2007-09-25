@@ -185,6 +185,28 @@ Effectively deletes the elements from position <code>lower</code> (inclusive) to
 
 
 
+<class name="Module">
+The standard class <code>Module</code>.
+
+<function name="Module.new">
+<argument name="bc" type="String" />
+Creates a new module from the string <code>bc</code>, which should be the contents of a <code>.cvb</code> file.
+</function>
+
+Module objects have the following slots:
+
+<function name="def_names">
+Successively generates each definition name in the module.
+</function>
+
+<function name="get_def">
+<argument name="name" type="String" />
+Returns the definition named <code>name</code> in this module.
+</function>
+</class>
+
+
+
 <class name="Number">
 The standard class <code>Number</code>.
 </class>

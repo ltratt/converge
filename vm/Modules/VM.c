@@ -65,46 +65,37 @@ Con_Obj *Con_Modules_VM_init(Con_Obj *thread, Con_Obj *identifier)
 
 //
 // 'add_modules(modules)' adds / replaces modules in the running VM. 'modules' should be a list of
-// strings. A list of identifiers (one for each module in 'modules') will be returned.
-//
-// Note that this function does *not* import module objects, it merely adds them into the VM so that
-// they can then be imported; see the 'import_module' func.
+// modules. Note that this function does *not* import modules.
 //
 
 Con_Obj *_Con_Modules_VM_add_modules_func(Con_Obj *thread)
 {
-	Con_Obj *modules_bytecode;
-	CON_UNPACK_ARGS("L", &modules_bytecode);
+	Con_Obj *mods;
+	CON_UNPACK_ARGS("L", &mods);
 	
-	Con_Obj *module_identifiers = Con_Builtins_List_Atom_new(thread);
-
-	CON_PRE_GET_SLOT_APPLY_PUMP(modules_bytecode, "iterate");
+	CON_PRE_GET_SLOT_APPLY_PUMP(mods, "iterate");
 	while (1) {
-		Con_Obj *val = CON_APPLY_PUMP();
-		if (val == NULL)
+		Con_Obj *mod = CON_APPLY_PUMP();
+		if (mod == NULL)
 			break;
 		
-		Con_Builtins_String_Atom *val_string_atom = CON_FIND_ATOM(val, CON_BUILTIN(CON_BUILTIN_STRING_ATOM_DEF_OBJECT));
-		if (val_string_atom == NULL)
-			CON_XXX;
-		
-		Con_Obj *identifier = Con_Bytecode_add_module(thread, (u_char*) val_string_atom->str);
-		CON_GET_SLOT_APPLY(module_identifiers, "append", identifier);
+		Con_Obj *mod_id = CON_GET_SLOT(mod, "module_id");
+		CON_GET_SLOT_APPLY(CON_GET_SLOT(Con_Builtins_Thread_Atom_get_vm(thread), "modules"), "set", mod_id, mod);
 	}
 	
-	return module_identifiers;
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }
 
 
 
 //
-// 'import_module(identifier)' imports the module 'identifier'.
+// 'import_module(mod_id)' imports the module with identifier 'mod_id'.
 //
 
 Con_Obj *_Con_Modules_VM_import_module_func(Con_Obj *thread)
 {
-	Con_Obj *identifier;
-	CON_UNPACK_ARGS("O", &identifier);
+	Con_Obj *mod_id;
+	CON_UNPACK_ARGS("O", &mod_id);
 	
-	return Con_Builtins_Module_Atom_import(thread, identifier);
+	return Con_Builtins_Module_Atom_import(thread, mod_id);
 }

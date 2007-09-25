@@ -25,6 +25,5 @@
 #include "Core.h"
 
 Con_Obj *Con_Bytecode_add_executable(Con_Obj *, u_char *);
-Con_Obj *Con_Bytecode_add_module(Con_Obj *, u_char *);
 
 #endif

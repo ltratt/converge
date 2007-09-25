@@ -184,7 +184,7 @@ class IModule_Gen:
 			dummy_module.set_imports(new_imports)
 
 		modules_stack := [dummy_module]
-		modules_bytecode := [dummy_module.serialize()]
+		modules_to_add := [Builtins::Module.new(dummy_module.serialize())]
 		i := 0
 		known_module_names := Set{}
 		for known_module_names.add(VM::vm.modules.keys())
@@ -199,7 +199,7 @@ class IModule_Gen:
 				if not known_module_names.find(import_):
 					new_module_file := File::open(File::join_ext(File::split_ext(import_)[0], CV_Module::CVB_EXTENSION), "r")
 					new_module_data := new_module_file.read()
-					modules_bytecode.append(new_module_data)
+					modules_to_add.append(Builtins::Module.new(new_module_data))
 					new_module := CV_Module::CV_Module.new(self._compiler.internal_target)
 					new_module.deserialize_str(new_module_data)
 					modules_stack.append(new_module)
@@ -209,8 +209,8 @@ class IModule_Gen:
 
 		// Import all the modules into the VM.
 
-		module_identifiers := VM::add_modules(modules_bytecode)
-		module := VM::import_module(module_identifiers[0])
+		module_identifiers := VM::add_modules(modules_to_add)
+		module := VM::import_module(modules_to_add[0].module_id)
 		if not out_itree := module.get_def(splice_name)():
 			self._compiler.error("Splice did not return a value.", expr.src_infos)
 		if out_itree is null:

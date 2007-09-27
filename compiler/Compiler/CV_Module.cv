@@ -43,6 +43,10 @@ class CV_Module:
 	func init(self, target):
 	
 		self._target := target
+		
+		self._cached_imports := null
+		self._cached_top_level_vars_map := null
+		self._cached_mod_lookups := null
 
 
 
@@ -73,6 +77,11 @@ class CV_Module:
 		self._constants_offsets := []
 		for constant_offset := module[module[self._target.MODULE_BYTECODE_CONSTANTS_OFFSETS] / self._target.WORDSIZE : module[self._target.MODULE_BYTECODE_CONSTANTS_OFFSETS] / self._target.WORDSIZE + module[self._target.MODULE_BYTECODE_NUM_CONSTANTS]].iterate():
 			self._constants_offsets.append(constant_offset - module[self._target.MODULE_BYTECODE_INSTRUCTIONS])
+
+		self._mod_lookups := module[module[self._target.MODULE_BYTECODE_MOD_LOOKUPS] / self._target.WORDSIZE : (module[self._target.MODULE_BYTECODE_MOD_LOOKUPS] + module[self._target.MODULE_BYTECODE_MOD_LOOKUPS_SIZE]) / self._target.WORDSIZE]
+		self._num_mod_lookups := module[self._target.MODULE_BYTECODE_NUM_MOD_LOOKUPS]
+
+		self._import_defns := module[module[self._target.MODULE_BYTECODE_IMPORT_DEFNS] / self._target.WORDSIZE : (module[self._target.MODULE_BYTECODE_IMPORT_DEFNS] / self._target.WORDSIZE) + module[self._target.MODULE_BYTECODE_NUM_IMPORT_DEFNS] * 2]
 
 
 
@@ -113,7 +122,10 @@ class CV_Module:
 
 
 	func get_imports(self):
-	
+
+		if not self._cached_imports is null:
+			return self._cached_imports
+
 		i := 0
 		imports_pos := 0
 		imports := []
@@ -122,6 +134,8 @@ class CV_Module:
 			imports.append(self._decode_string(self._imports, imports_pos + self._target.MODULE_BYTECODE_MODULE_IMPORT_FULL_NAME * self._target.WORDSIZE, import_id_size))
 			imports_pos += self._target.align(import_id_size) + self._target.MODULE_BYTECODE_MODULE_IMPORT_FULL_NAME * self._target.WORDSIZE
 			i += 1
+		
+		self._cached_imports := imports
 		
 		return imports
 
@@ -163,14 +177,19 @@ class CV_Module:
 
 	func get_top_level_vars_map(self):
 
+		if not self._cached_top_level_vars_map is null:
+			return self._cached_top_level_vars_map
+
 		top_level_vars_map := Dict{}
 		top_level_vars_pos := 0
 		for i := 0.to(self._num_top_level_vars):
-			var_num := self._top_level_vars_map[top_level_vars_pos / self._target.WORDSIZE + self._target.BYTECODE_TOP_LEVEL_VAR_NUM]
-			var_name_size := self._top_level_vars_map[top_level_vars_pos / self._target.WORDSIZE + self._target.BYTECODE_TOP_LEVEL_VAR_NAME_SIZE]
+			var_num := self._top_level_vars_map[(top_level_vars_pos / self._target.WORDSIZE) + self._target.BYTECODE_TOP_LEVEL_VAR_NUM]
+			var_name_size := self._top_level_vars_map[(top_level_vars_pos / self._target.WORDSIZE) + self._target.BYTECODE_TOP_LEVEL_VAR_NAME_SIZE]
 			var_name := self._decode_string(self._top_level_vars_map, top_level_vars_pos + self._target.BYTECODE_TOP_LEVEL_VAR_NAME * self._target.WORDSIZE, var_name_size)
 			top_level_vars_map[var_name] := var_num
 			top_level_vars_pos += self._target.align(var_name_size) + self._target.BYTECODE_TOP_LEVEL_VAR_NAME * self._target.WORDSIZE
+		
+		self._cached_top_level_vars_map := top_level_vars_map
 		
 		return top_level_vars_map
 
@@ -199,6 +218,74 @@ class CV_Module:
 
 
 
+	func get_mod_lookups(self):
+
+		if not self._cached_mod_lookups is null:
+			return self._cached_mod_lookups
+
+		mod_lookups := []
+		i := 0
+		for 0.to(self._num_mod_lookups):
+			mod_num := self._mod_lookups[i / self._target.WORDSIZE]
+			i += self._target.WORDSIZE
+			defns := []
+			num_defns := self._mod_lookups[i / self._target.WORDSIZE]
+			i += self._target.WORDSIZE
+			for 0.to(num_defns):
+				defn_len := self._mod_lookups[i / self._target.WORDSIZE]
+				i += self._target.WORDSIZE
+				defns.append(self._decode_string(self._mod_lookups, i, defn_len))
+				i += self._target.align(defn_len)
+			src_infos := []
+			num_src_infos := self._mod_lookups[i / self._target.WORDSIZE]
+			i += self._target.WORDSIZE
+			for 0.to(num_src_infos):
+				src_infos.append([self._mod_lookups[i / self._target.WORDSIZE], self._mod_lookups[(i + self._target.WORDSIZE) / self._target.WORDSIZE]])
+				i += 2 * self._target.WORDSIZE
+			mod_lookups.append([mod_num, defns, src_infos])
+		
+		self._cached_mod_lookups := mod_lookups
+		
+		return mod_lookups
+
+
+
+	func set_mod_lookups(self, mod_lookups):
+
+		ar := Array::Array.new(self._target.ARRAY_TYPE)
+		for mod_num, defns, src_infos := mod_lookups.iterate():
+			ar.append(mod_num)
+			ar.append(defns.len())
+			for defn := defns.iterate():
+				ar.append(defn.len())
+				ar.extend(self._target.b_aligned_string(defn))
+			ar.append(src_infos.len())
+			ar.extend(src_infos.flattened())
+		
+		self._mod_lookups := ar
+		self._num_mod_lookups := mod_lookups.len()
+
+
+
+	func get_import_defns(self):
+	
+		import_defns := Dict{}
+		i := 0
+		while i < self._import_defns.len():
+			import_defns[self._import_defns[i]] := self._import_defns[i + 1]
+			i += 2
+		
+		return import_defns
+
+
+
+	func set_import_defns(self, import_defns):
+	
+		self._import_defns := Array::Array.new(self._target.ARRAY_TYPE)
+		for self._import_defns.extend(import_defns.iterate())
+
+
+
 	func serialize(self):
 	
 		module := Array::Array.new(self._target.ARRAY_TYPE)
@@ -221,8 +308,13 @@ class CV_Module:
 		module.append(-1) // Top level vars offset (in bytes)
 		module.append(-1) // Size of top level vars (in bytes)
 		module.append(-1) // Number of top level vars
-		module.append(-1) // Num constants
 		module.append(-1) // Absolute position of constants offsets (in bytes)
+		module.append(-1) // Num constants
+		module.append(-1) // Absolute position of module lookups (in bytes)
+		module.append(-1) // Size of module lookups (in bytes)
+		module.append(-1) // Number of module lookups
+		module.append(-1) // Absolute position of import definitions (in bytes)
+		module.append(-1) // Number of import definitions
 		module.append(-1) // Size of all of the bytecode (in bytes)
 
 		// Module name
@@ -276,6 +368,19 @@ class CV_Module:
 			module.append(constant_offset + module[self._target.MODULE_BYTECODE_INSTRUCTIONS])
 		module[self._target.MODULE_BYTECODE_NUM_CONSTANTS] := self._constants_offsets.len()
 		
+		// Module lookups
+		
+		module[self._target.MODULE_BYTECODE_MOD_LOOKUPS] := module.len_bytes()
+		module.extend(self._mod_lookups)
+		module[self._target.MODULE_BYTECODE_MOD_LOOKUPS_SIZE] := module.len_bytes() - module[self._target.MODULE_BYTECODE_MOD_LOOKUPS]
+		module[self._target.MODULE_BYTECODE_NUM_MOD_LOOKUPS] := self._num_mod_lookups
+
+		// Import definitions
+		
+		module[self._target.MODULE_BYTECODE_IMPORT_DEFNS] := module.len_bytes()
+		module.extend(self._import_defns)
+		module[self._target.MODULE_BYTECODE_NUM_IMPORT_DEFNS] := self._import_defns.len() / 2
+
 		module[self._target.MODULE_BYTECODE_SIZE] := module.len_bytes()
 
 		return module.to_str()

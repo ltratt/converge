@@ -61,7 +61,7 @@ func deserialize(target, exec_str):
 	modules := []
 	for i := 0.to(exec_array[EXEC_BYTECODE_NUM_MODULES]):
 		module_offset := exec_array[EXEC_BYTECODE_MODULE_OFFSETS + i] / target.WORDSIZE
-		to := module_offset + (exec_array[module_offset + CV_Module::MODULE_BYTECODE_SIZE] / target.WORDSIZE)
+		to := module_offset + (exec_array[module_offset + target.MODULE_BYTECODE_SIZE] / target.WORDSIZE)
 		module := CV_Module::CV_Module.new(target)
 		module.deserialize_array(exec_array[module_offset : to])
 		modules.append([exec_str[module_offset * target.WORDSIZE : to * target.WORDSIZE], module])

@@ -19,7 +19,7 @@
 // IN THE SOFTWARE.
 
 
-import Array, Builtins, File, Strings, Sys
+import Array, Builtins, File, Functional, Strings, Sys
 import CEI, Compiler_Vars, CV_Module, ITree, QQ_Mode
 
 
@@ -110,6 +110,13 @@ class Bytecode_Gen:
 		self._constants_instructions := []
 		self._constants_labels := []
 		
+		// _mod_lookups is a list of [<mod id>, <list of module lookups>, <src infos>] recording a
+		// module lookup. _mod_lookups_seen is a dictionary mapping mod ids to sets; the sets record
+		// which lookups within a given module have occurred earlier in a file.
+
+		self._mod_lookups := []
+		self._mod_lookups_seen := Dict{}
+		
 		// The next three slots are purely for convenience.
 		
 		self._compiler := CEI::compiler()
@@ -160,24 +167,7 @@ class Bytecode_Gen:
 			else:
 				instructions_bytecode.append(instruction_bytecode)
 			
-			src_infos := []
-			for module_id, src_offset := instruction.src_infos.iterate():
-				if module_id == self._module_id:
-					import_num := -1
-				else:
-					if self._compiler.bootstrap == 1 & module_id.prefixed_by(self._compiler.original_lc_top_level_path):
-						// In bootstrapping mode we have to make sure that anything we output is
-						// entirely in terms of new module ids.
-						module_id := File::join_names(self._compiler.top_level_path, module_id[self._compiler.original_lc_top_level_path.len() : ])
-					if not (import_num := self._imports.find(module_id)):
-						import_num := self._imports.len()
-						self._imports[module_id] := import_num
-				
-				if src_offset is null:
-					src_infos.append([import_num, -1])
-				else:
-					src_infos.append([import_num, src_offset])
-			
+			src_infos := self._tn_src_infos(instruction.src_infos)
 			if last_src_infos is null:
 				last_src_infos := src_infos
 				src_infos_count := 1
@@ -200,18 +190,62 @@ class Bytecode_Gen:
 		constants_offsets := []
 		for label := self._constants_labels.iterate():
 			constants_offsets.append(bytecode_offsets[self._labels[label]])
+
+		// For each definition that is an import, create a map from the variable number to the import
+		// number.
+
+		import_defns := Dict{}
+		for defn_name, mod_id := self.closures[0][Compiler_Vars::CLOSURE_IMPORTS].iterate():
+			import_defns[self.closures[0][Compiler_Vars::CLOSURE_VARS][defn_name]] := self._imports[mod_id]
+
+		// Calculate all the module lookups performed by this module.
+
+		mod_lookups := []
+		for mod_id, defn, src_infos := self._mod_lookups.iterate():
+			mod_lookups.append([self._imports[mod_id], Strings::split(defn, "::"), self._tn_src_infos(src_infos)])
 		
 		module := CV_Module::CV_Module.new(self._target)
 		module.set_name(imodule.module_name)
 		module.set_identifier(self._module_id)
-		module.set_top_level_vars_map(self._top_level_vars_map)
+		module.set_top_level_vars_map(self.closures[0][Compiler_Vars::CLOSURE_VARS])
 		module.set_instructions_bytecode(instructions_bytecode)
 		module.set_imports(module_imports)
 		module.set_src_infos(all_src_infos)
 		module.set_newlines(self._compiler.newlines)
 		module.set_constants_offsets(constants_offsets)
+		module.set_mod_lookups(mod_lookups)
+		module.set_import_defns(import_defns)
 		
 		return module
+
+
+
+	//
+	// Translates lists of proper src infos of the form [<mod id>, <offset>] to bytecode src infos
+	// of the form [<mod num>, <offset>].
+	//
+
+	func _tn_src_infos(self, src_infos):
+
+		tn_src_infos := []
+		for module_id, src_offset := src_infos.iterate():
+			if module_id == self._module_id:
+				import_num := -1
+			else:
+				if self._compiler.bootstrap == 1 & module_id.prefixed_by(self._compiler.original_lc_top_level_path):
+					// In bootstrapping mode we have to make sure that anything we output is
+					// entirely in terms of new module ids.
+					module_id := File::join_names(self._compiler.top_level_path, module_id[self._compiler.original_lc_top_level_path.len() : ])
+				if not (import_num := self._imports.find(module_id)):
+					import_num := self._imports.len()
+					self._imports[module_id] := import_num
+
+			if src_offset is null:
+				tn_src_infos.append([import_num, -1])
+			else:
+				tn_src_infos.append([import_num, src_offset])
+		
+		return tn_src_infos
 
 
 
@@ -402,9 +436,8 @@ class Bytecode_Gen:
 		self._instructions.append(self._target.Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_NULL_OBJ))
 		self._instructions.append(self._target.Instr_Return.new(node.src_infos))
 		
-		self._top_level_vars_map := self.closures[0][Compiler_Vars::CLOSURE_VARS]
-		
-		self._pop_vars()
+		// Note that we don't do a pop_vars here, because the init func needs to find out
+		// information about a modules definitions.
 
 
 
@@ -777,8 +810,17 @@ class Bytecode_Gen:
 			closures_offset, var_num := self._get_var_offsets(node.names[0].var_name, node.names[0].src_infos)
 
 			reversed_closures_offset := self.closures.len() - closures_offset - 1
-			if not (module_id := self.closures[reversed_closures_offset][Compiler_Vars::CLOSURE_IMPORTS].find(node.names[0].var_name)):
-				self._compiler.warning("Unable to determine module referenced in lookup (use a plain variable lookup)", node.src_infos)
+			if mod_id := self.closures[reversed_closures_offset][Compiler_Vars::CLOSURE_IMPORTS].find(node.names[0].var_name):
+				lookup := Strings::join(Functional::map(func (x) { return x.var_name }, node.names), "::")
+				if not (lookups := self._mod_lookups_seen.find(mod_id)):
+					lookups := Set{}
+					self._mod_lookups_seen[mod_id] := lookups
+				
+				if not lookups.find(lookup):
+					self._mod_lookups.append([mod_id, lookup, node.names[0].src_infos])
+					lookups.add(lookup)
+			else:
+				self._compiler.warning("Unable to determine module referenced in lookup (use a plain variable lookup instead)", node.src_infos)
 
 		self.preorder(node.names[0])
 		

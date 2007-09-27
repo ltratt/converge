@@ -19,35 +19,20 @@
 // IN THE SOFTWARE.
 
 
-import Array, File, Maths, Parse_Options, Platform::Properties, Strings, Sys
+import Array, Builtins, File, Maths, Parse_Options, Platform::Properties, Strings, Sys
 import Compiler_Vars, CV_Exec, CV_Module, CV_Library, Mk_Packages, Targets::Available, VM
 
 
 
 
-func _usage(msg):
-	
-	Sys::stderr.writeln(Strings::format("Error: %s", msg))
-	Sys::stderr.writeln("Usage: convergel [-l] -o <output> <input> [... <input>]")
-	Sys::exit(1)
-
-
-
-func _error(msg):
-	
-	Sys::stderr.writeln(Strings::format("Error: %s", msg))
-	Sys::exit(1)
-		
-
-
 
 class Linker:
 
-	func init(self):
+	func link(self):
 	
 		self.includes := []
 	
-		options := Parse_Options::Options.new(_usage)
+		options := Parse_Options::Options.new(self.usage)
 		options.add(Parse_Options::Option_Spec.new("output", "o", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ONE))
 		options.add(Parse_Options::Option_Spec.new("mk_shell_script", "s", Parse_Options::NONE, null, Parse_Options::FREQUENCY_ZERO_OR_ONE))
 		options.add(Parse_Options::Option_Spec.new("target", "T", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_ONE))
@@ -66,9 +51,9 @@ class Linker:
 				raise "XXX"
 		
 		if extra_args.len() == 0:
-			_usage("Not enough arguments.")
+			self.usage("Not enough arguments.")
 
-		target := _target_name_to_target(target_name)
+		target := self.target_name_to_target(target_name)
 
 		modules := Dict{}
 		first_module_id := null
@@ -92,7 +77,9 @@ class Linker:
 				if first_module_id is null:
 					first_module_id := module.get_identifier()
 			else:
-				_error(Strings::format("File '%s' is not of a known type.", input_path))
+				self.error(Strings::format("File '%s' is not of a known type.", input_path))
+
+		self.modules := modules
 
 		linked_bytecode := Array::Array.new(target.ARRAY_TYPE)
 		linked_bytecode.extend_from_string(CV_Exec::EXEC_INIT_STRING)
@@ -119,11 +106,52 @@ class Linker:
 			module_str, module := modules[module_id]
 			modules_bytecode.extend_from_string(module_str)
 			linked_modules.append(module)
+
 			for import_module_id := module.get_imports().iterate():
 				if not Compiler_Vars::BUILTIN_MODULES.find(import_module_id):
 					if not modules_stack.find(import_module_id):
 						if modules.find(import_module_id):
 							modules_stack.append(import_module_id)
+
+			for mod_num, defn_names, src_infos := module.get_mod_lookups().iterate():
+				lookedup_mod_id := module.get_imports()[mod_num]
+				j := 1
+				while j < defn_names.len():
+					defn_name := defn_names[j]
+					if lookedup_mod := modules.find(lookedup_mod_id)[1]:
+						if not (defn_num := lookedup_mod.get_top_level_vars_map().find(defn_name)):
+							// The requested definition definitely doesn't exist in the looked-up
+							// module, so raise an error.
+							self.error(Strings::format("Can't find definition '%s' in '%s'.", defn_name, Strings::join(defn_names[ : j], "::")), self._tn_src_infos(src_infos, modules[module_id][1]))
+
+						if lookedup_mod_num := lookedup_mod.get_import_defns().find(defn_num):
+							lookedup_mod_id := lookedup_mod.get_imports()[lookedup_mod_num]
+						else:
+							if j + 1 < defn_names.len():
+								// We can't trace the next definition in the current known
+								// module; it might exist at run-time, it might not. Print
+								// a warning, and give up further processing of this lookup,
+								// but do not halt the linking process.
+								msg := Strings::format("Unable to trace definition '%s' in '%s'.", defn_names[j + 1], Strings::join(defn_names[ : j + 1], "::"))
+								self.warning(msg, self._tn_src_infos(src_infos, modules[module_id][1]))
+								break
+					else:
+						if Compiler_Vars::BUILTIN_MODULES.find(lookedup_mod_id):
+							pass
+						elif not lookedup_mod_id.suffixed_by(Compiler_Vars::CV_EXTENSION):
+							// This must be an imported package. At this point in linking,
+							// packages don't exist. So we try and look up a sub-package or
+							// sub-module which has a correct identifier.
+							cnd_mod_id := File::join_names(lookedup_mod_id, defn_name)
+							if modules.find(cnd_mod_id):
+								lookedup_mod_id := cnd_mod_id
+							else:
+								cnd_mod_id := File::join_ext(cnd_mod_id, Compiler_Vars::CV_EXTENSION)
+								if modules.find(cnd_mod_id):
+									modules_stack.append(cnd_mod_id)
+									lookedup_mod_id := cnd_mod_id
+					j += 1
+
 			i += 1
 
 		pkgs := Mk_Packages::mk_packages(linked_modules, target)
@@ -139,7 +167,7 @@ class Linker:
 		for module := linked_modules.iterate():
 			for import_ := module.get_imports().iterate():
 				if not Compiler_Vars::BUILTIN_MODULES.find(import_) & not module_ids.find(import_):
-					_error(Strings::format("Module '%s' referenced in '%s' not found in input files.", import_, module_id))
+					self.error(Strings::format("Module '%s' referenced in '%s' not found in input files.", import_, module_id))
 
 		linked_bytecode[target.LIBRARY_BYTECODE_NUM_MODULES] := modules_offsets.len()
 		
@@ -157,16 +185,11 @@ class Linker:
 
 
 
-
-
-
-class Library_Linker:
-
-	func init(self):
+	func library_link(self):
 	
 		self.includes := []
 	
-		options := Parse_Options::Options.new(_usage)
+		options := Parse_Options::Options.new(self.usage)
 		options.add(Parse_Options::Option_Spec.new("library_mode", "l", Parse_Options::NONE, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ONE))
 		options.add(Parse_Options::Option_Spec.new("output", "o", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ONE))
 		options.add(Parse_Options::Option_Spec.new("target", "T", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_ONE))
@@ -184,9 +207,9 @@ class Library_Linker:
 				raise "XXX"
 		
 		if extra_args.len() == 0:
-			_usage("Not enough arguments.")
+			self.usage("Not enough arguments.")
 
-		target := _target_name_to_target(target_name)
+		target := self.target_name_to_target(target_name)
 
 		modules := []
 		for input_path := extra_args.iterate():
@@ -226,13 +249,67 @@ class Library_Linker:
 
 
 
+	func usage(self, msg):
 
-func _target_name_to_target(target_name):
+		Sys::stderr.writeln(Strings::format("Error: %s", msg))
+		Sys::stderr.writeln("Usage: convergel [-l] -o <output> <input> [... <input>]")
+		Sys::exit(1)
 
-	if not Available::TARGETS.find(target_name):
-		_error(Strings::format("No support yet for target '%s'.", target_name))
 
-	return Available::TARGETS[target_name].new()
+
+	func error(self, msg, src_infos := null):
+
+		self.print_msg("Error", msg, src_infos)
+		Sys::exit(1)
+
+
+
+	func warning(self, msg, src_infos := null):
+
+		self.print_msg("Warning", msg, src_infos)
+
+
+
+	func print_msg(self, pre_msg, msg, src_infos := null):
+
+		if not src_infos is null:
+			Sys::stderr.writeln(Strings::format("%s:", pre_msg))
+			for src_info := src_infos.iterate():
+				mod := Builtins::Module.new(self.modules[src_info[0]][1].serialize())
+				line, col := mod.src_offset_to_line_column(src_info[1])
+				
+				Sys::stderr.writeln(Strings::format("  %s, line %d, column %d", src_info[0], line, col))
+
+			Sys::stderr.writeln(msg)
+		else:
+			Sys::stderr.writeln(Strings::format("%s: %s", pre_msg, msg))
+
+
+
+	func target_name_to_target(self, target_name):
+
+		if not Available::TARGETS.find(target_name):
+			self.error(Strings::format("No support yet for target '%s'.", target_name))
+
+		return Available::TARGETS[target_name].new()
+
+
+
+	//
+	// Translates lists of bytecode src infos of the form [<import num>, <offset>] to proper src
+	// infos of the form [<module id>, <offset>].
+	//
+
+	func _tn_src_infos(self, src_infos, mod):
+	
+		new_src_infos := []
+		for mod_num, offset := src_infos.iterate():
+			if mod_num == -1:
+				new_src_infos.append([mod.get_identifier(), offset])
+			else:
+				new_src_infos.append([mod.get_imports()[mod_num], offset])
+
+		return new_src_infos
 
 
 
@@ -240,6 +317,6 @@ func _target_name_to_target(target_name):
 func main():
 
 	if Sys::argv.len() > 1 & Sys::argv[0] == "-l":
-		Library_Linker.new()
+		Linker.new().library_link()
 	else:
-		Linker.new()
+		Linker.new().link()

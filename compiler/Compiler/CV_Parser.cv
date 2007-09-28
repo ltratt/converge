@@ -21,7 +21,7 @@
 
 import File, Strings, Sys
 import CPK::Earley::Grammar, CPK::Earley::Parser, CPK::Tokens, CPK::Tree
-import CEI, Tokenizer
+import Compiler_Vars, Tokenizer
 
 
 
@@ -294,14 +294,14 @@ class CV_Parser(Parser::Parser):
 		else:
 			token_print := token.value
 		
-		CEI::compiler().error(Strings::format("Parsing error at or near `%s' token.", token_print), token.src_infos)
+		Compiler_Vars::peek_compiler().error(Strings::format("Parsing error at or near `%s' token.", token_print), token.src_infos)
 
 
 
 
 func parse(src_data):
 
-	compiler := CEI::compiler()
+	compiler := Compiler_Vars::peek_compiler()
 
 	compiler.tokenizer.tokenize(src_data, [[compiler.module_id, 0]], [], [])
 	tokens_map := Tokenizer::tokens_map([], [])
@@ -313,7 +313,7 @@ func parse(src_data):
 
 func parse_expr(src_data):
 
-	compiler := CEI::compiler()
+	compiler := Compiler_Vars::peek_compiler()
 
 	compiler.tokenizer.tokenize(src_data, [[compiler.src_path, 0]], [], [])
 	tokens_map := Tokenizer::tokens_map([], [])

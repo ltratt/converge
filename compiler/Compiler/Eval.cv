@@ -20,7 +20,7 @@
 
 
 import Platform::Properties
-import Builtins, Bytecode_Gen, CEI, Compiler_Vars, CV_Parser, IModule_Gen, ITree, Strings, Targets::Available, Tokenizer, VM
+import Builtins, Bytecode_Gen, Compiler_Vars, CV_Parser, IModule_Gen, ITree, Strings, Targets::Available, Tokenizer, VM
 
 
 
@@ -35,7 +35,7 @@ class _Eval_Compiler:
 		self.bootstrap := 0
 		self.includes := includes
 		self.src_path := "<eval>"
-		self.module_id := Strings::format(Compiler_Vars::UNIQUE_EVAL_NAME_TEMPLATE, CEI::fresh_name())
+		self.module_id := Strings::format(Compiler_Vars::UNIQUE_EVAL_NAME_TEMPLATE, Compiler_Vars::fresh_name())
 		self.target := Available::TARGETS[Strings::format("%dbit", Properties::word_bits)].new()
 
 
@@ -48,7 +48,7 @@ class _Eval_Compiler:
 
 		body := []
 		
-		compiler_var_name := CEI::fresh_name()
+		compiler_var_name := Compiler_Vars::fresh_name()
 		compiler_var := ITree::IVar.new(compiler_var_name, [])
 		peek_compiler := ITree::IModule_Lookup.new([ITree::IMod_Id_Import.new(Compiler_Vars.module_id, []), ITree::IVar.new("peek_compiler", [])], [])
 		body.append(ITree::IAssignment.new(ITree::STD_ASSIGN, [compiler_var], ITree::IApplication.new(peek_compiler, [], []), []))
@@ -83,7 +83,7 @@ class _Eval_Compiler:
 				return fail
 		|])
 
-		eval_name := CEI::fresh_name()		
+		eval_name := Compiler_Vars::fresh_name()		
 		dummy_func := ITree::IFunc_Def.new(0, eval_name, [], null, [], [], ITree::IExpr_Block.new(body, []), [])
 		dummy_definitions := [ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(eval_name, [])], dummy_func, [])]
 		dummy_imodule := ITree::IModule.new(eval_name, dummy_definitions, [])

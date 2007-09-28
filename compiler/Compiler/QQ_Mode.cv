@@ -20,7 +20,7 @@
 
 
 import Builtins, Strings
-import CEI, Compiler_Vars, ITree, ITree_TC
+import Compiler_Vars, ITree, ITree_TC, Lift
 
 
 
@@ -47,7 +47,7 @@ class QQ_Mode:
 		
 		// These next two slots are purely for convenience.
 
-		self._compiler := CEI::compiler()
+		self._compiler := Compiler_Vars::peek_compiler()
 		self._module_id := self._compiler.module_id
 		
 		// We need to track when we're dealing with class fields or not. So we track when we're nested
@@ -279,7 +279,7 @@ class QQ_Mode:
 				// to check if we've got a list, in which case we check that each element of the
 				// list is an expression; if it's not a list, we check that the returned element
 				// itself is an expression.
-				block.append(self._lift_func_call(_expr_block_insert, [expr.expr, CEI::lift(expr.src_infos)], expr.src_infos))
+				block.append(self._lift_func_call(_expr_block_insert, [expr.expr, Lift::lift(expr.src_infos)], expr.src_infos))
 				contains_iinsert := 1
 			else:
 				block.append(self._preorder(expr))
@@ -315,7 +315,7 @@ class QQ_Mode:
 			// "1 doesn't have a class_name slot" which wouldn't really help them track things down.
 			// To cope with this eventuality, we put a manual check in that catches such an error
 			// at the earliest possible stage.
-			class_name := self._lift_func_call(_class_name, [node.class_name.expr, CEI::lift(node.src_infos)], node.src_infos)
+			class_name := self._lift_func_call(_class_name, [node.class_name.expr, Lift::lift(node.src_infos)], node.src_infos)
 		else:
 			if node.class_name == "":
 				class_name := ITree::IString.new("", node.src_infos)
@@ -361,7 +361,7 @@ class QQ_Mode:
 			// "1 doesn't have a func_name slot" which wouldn't really help them track things down.
 			// To cope with this eventuality, we put a manual check in that catches such an error
 			// at the earliest possible stage.
-			func_name := self._lift_func_call(_func_name, [node.func_name.expr, CEI::lift(node.src_infos)], node.src_infos)
+			func_name := self._lift_func_call(_func_name, [node.func_name.expr, Lift::lift(node.src_infos)], node.src_infos)
 		else:
 			if node.func_name == "":
 				func_name := ITree::IString.new("", node.src_infos)
@@ -759,7 +759,7 @@ class QQ_Mode:
 
 	func _t_iinsert(self, node):
 	
-		return self._lift_func_call(_insert_check, [node.expr, CEI::lift(node.src_infos)], node.src_infos)
+		return self._lift_func_call(_insert_check, [node.expr, Lift::lift(node.src_infos)], node.src_infos)
 
 
 

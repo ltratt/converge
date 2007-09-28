@@ -20,7 +20,7 @@
 
 
 import Array, Builtins, File, Functional, Strings, Sys
-import CEI, Compiler_Vars, CV_Module, ITree, QQ_Mode
+import Compiler_Vars, CV_Module, ITree, QQ_Mode
 
 
 
@@ -119,7 +119,7 @@ class Bytecode_Gen:
 		
 		// The next three slots are purely for convenience.
 		
-		self._compiler := CEI::compiler()
+		self._compiler := Compiler_Vars::peek_compiler()
 		self._module_id := self._compiler.module_id
 		self._target := target
 		

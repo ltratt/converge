@@ -20,7 +20,7 @@
 
 
 import Builtins, Exceptions, File, Strings, Sys, VM
-import Bytecode_Gen, CEI, Compiler_Vars, CV_Module, ITree, ITree_TC
+import Bytecode_Gen, Compiler_Vars, CV_Module, ITree, ITree_TC, Lift
 
 
 
@@ -43,7 +43,7 @@ class IModule_Gen:
 
 		// These next two slots are purely for convenience.
 
-		self._compiler := CEI::compiler()
+		self._compiler := Compiler_Vars::peek_compiler()
 		self._module_id := self._compiler.module_id
 
 		itree := self._preorder(parse_tree)
@@ -130,7 +130,7 @@ class IModule_Gen:
 			
 			expr := ITree::IApplication.new(self._preorder(node[1][3], extra_src_infos), [dsl_block, src_infos], extra_src_infos + node[1][1].src_infos)
 
-		splice_name := CEI::fresh_name()
+		splice_name := Compiler_Vars::fresh_name()
 
 		// Determine all the definitions we've currently processed into ITree's.
 
@@ -544,11 +544,11 @@ class IModule_Gen:
 								params.append(self._preorder(node[4][1][i]))
 						else:
 							// name ::= "&" "ID"
-							var := [| ITree::IVar.new(${ITree::IString.new(var_def[2].value, var_def[2].src_infos)}, ${CEI::lift(extra_src_infos + var_def[2].src_infos)}) |]
+							var := [| ITree::IVar.new(${ITree::IString.new(var_def[2].value, var_def[2].src_infos)}, ${Lift::lift(extra_src_infos + var_def[2].src_infos)}) |]
 							if param_default is null:
-								param := [| ITree::IParam.new(${var}, null, ${CEI::lift(extra_src_infos + var_def[2].src_infos)}) |]
+								param := [| ITree::IParam.new(${var}, null, ${Lift::lift(extra_src_infos + var_def[2].src_infos)}) |]
 							else:
-								param := [| ITree::IParam.new(${var}, ${param_default}, ${CEI::lift(extra_src_infos + var_def[2].src_infos)}) |]
+								param := [| ITree::IParam.new(${var}, ${param_default}, ${Lift::lift(extra_src_infos + var_def[2].src_infos)}) |]
 							
 							params.append(ITree::IInsert.new(param, extra_src_infos + var_def[2].src_infos))
 						i += 3
@@ -815,7 +815,7 @@ class IModule_Gen:
 				return ITree::IVar.new(node[1].value, extra_src_infos + node[1].src_infos)
 		elif node.len() == 3:
 			// name ::= "&" "ID"
-			return ITree::IInsert.new([<node[2].src_infos>| ITree::IVar.new(${ITree::IString.new(node[2].value, node[2].src_infos)}, ${CEI::lift(node[2].src_infos)}) |], node[2].src_infos)
+			return ITree::IInsert.new([<node[2].src_infos>| ITree::IVar.new(${ITree::IString.new(node[2].value, node[2].src_infos)}, ${Lift::lift(node[2].src_infos)}) |], node[2].src_infos)
 
 
 

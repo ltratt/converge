@@ -21,7 +21,7 @@
 
 import Builtins, Exceptions, Strings, Thread
 import CPK::Earley::Grammar
-import Compiler_Vars, convergec, CV_Parser, Eval, ITree, ITree_Format, ITree_TC, Tokenizer
+import Compiler_Vars, CV_Parser, Eval, ITree, ITree_Format, ITree_TC, Tokenizer
 
 
 

@@ -93,13 +93,12 @@ class Compiler:
 				// Sanity checks failed.
 				raise "XXX"
 
-		self.src_path := extra[0]
-		if not File::exists(self.src_path):
-			self.error(Strings::format("Source file '%s' not found.", self.src_path))
+		if not File::exists(extra[0]):
+			self.error(Strings::format("Source file '%s' not found.", extra[0]))
 
 		self.module_id := File::canon_path(extra[0])
 
-		if (input_file_dir := File::split_leaf(self.src_path)[0]) == "":
+		if (input_file_dir := File::split_leaf(self.module_id)[0]) == "":
 			self.includes.insert(0, ".")
 		else:
 			self.includes.insert(0, input_file_dir)
@@ -108,7 +107,7 @@ class Compiler:
 		// extension). On platforms with non-case preserving filesystems, perhaps there is a need
 		// for a more sophisticated mechanism?
 		
-		self.src_module_name := File::split_ext(File::split_leaf(self.src_path)[1])[0]
+		self.src_module_name := File::split_ext(File::split_leaf(self.module_id)[1])[0]
 
 		// In order to make a good stab at finding the Converge library we check in order:
 		//
@@ -142,7 +141,7 @@ class Compiler:
 		exhausted:
 			self.error("Can't find Compiler package.")
 		
-		src_file := File::open(self.src_path, "r")
+		src_file := File::open(self.module_id, "r")
 		src_data := src_file.read()
 		src_file.close()
 		

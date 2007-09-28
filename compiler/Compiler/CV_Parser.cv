@@ -315,7 +315,7 @@ func parse_expr(src_data):
 
 	compiler := Compiler_Vars::peek_compiler()
 
-	compiler.tokenizer.tokenize(src_data, [[compiler.src_path, 0]], [], [])
+	compiler.tokenizer.tokenize(src_data, [[compiler.module_id, 0]], [], [])
 	tokens_map := Tokenizer::tokens_map([], [])
 	grammar, rule_names := Grammar::compile(GRAMMAR, "expr", tokens_map)
 

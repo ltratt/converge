@@ -34,7 +34,6 @@ class _Eval_Compiler:
 		
 		self.bootstrap := 0
 		self.includes := includes
-		self.src_path := "<eval>"
 		self.module_id := Strings::format(Compiler_Vars::UNIQUE_EVAL_NAME_TEMPLATE, Compiler_Vars::fresh_name())
 		self.target := Available::TARGETS[Strings::format("%dbit", Properties::word_bits)].new()
 

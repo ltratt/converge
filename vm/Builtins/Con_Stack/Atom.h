@@ -74,6 +74,7 @@ typedef struct {
 typedef struct {
 	Con_Int prev_ffp, prev_gfp, prev_xfp;
 	sigjmp_buf exception_env;
+	Con_PC except_pc;
 } Con_Builtins_Con_Stack_Class_Exception_Frame;
 
 typedef struct {
@@ -129,8 +130,8 @@ void Con_Builtins_Con_Stack_Atom_add_failure_fail_up_frame(Con_Obj *, Con_Obj *)
 void Con_Builtins_Con_Stack_Atom_read_failure_frame(Con_Obj *, Con_Obj *, bool *, bool *, Con_PC *);
 void Con_Builtins_Con_Stack_Atom_remove_failure_frame(Con_Obj *, Con_Obj *);
 
-void Con_Builtins_Con_Stack_Atom_add_exception_frame(Con_Obj *, Con_Obj *, sigjmp_buf);
-void Con_Builtins_Con_Stack_Atom_read_exception_frame(Con_Obj *, Con_Obj *, bool *, sigjmp_buf *);
+void Con_Builtins_Con_Stack_Atom_add_exception_frame(Con_Obj *, Con_Obj *, sigjmp_buf, Con_PC);
+void Con_Builtins_Con_Stack_Atom_read_exception_frame(Con_Obj *, Con_Obj *, bool *, sigjmp_buf *, Con_PC *);
 void Con_Builtins_Con_Stack_Atom_remove_exception_frame(Con_Obj *, Con_Obj *);
 
 void Con_Builtins_Con_Stack_Atom_push_n_object(Con_Obj *, Con_Obj *, Con_Obj *, Con_Int);

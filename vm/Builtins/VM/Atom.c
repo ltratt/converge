@@ -766,8 +766,6 @@ void Con_Builtins_VM_Atom_raise(Con_Obj *thread, Con_Obj *exception)
 	if (CON_FIND_ATOM(exception, CON_BUILTIN(CON_BUILTIN_EXCEPTION_ATOM_DEF_OBJECT)) == NULL)
 		CON_RAISE_EXCEPTION("Type_Exception", CON_BUILTIN(CON_BUILTIN_EXCEPTION_CLASS), exception, CON_NEW_STRING("exception"));
 
-	// Create a blank call chain with a fixed number of entries.
-	//
 	// We populate call_chain by reverse iterating over the con stack, gradually removing
 	// continuations. However we don't set 'exception's call chain until we've finished populating
 	// it. That means that potentially vital references (from a GC point of view) could be lost
@@ -775,10 +773,22 @@ void Con_Builtins_VM_Atom_raise(Con_Obj *thread, Con_Obj *exception)
 	// exceptions call chain. Thus 'call_chain' must be a conservatively garbage collected chunk
 	// of memory until the point that it is set as an exceptions call chain; after that point it
 	// can be marked as opaque as it's the exception's job to do the GC on it.
-	
-	Con_Int num_call_chain_entries = 0;
-	Con_Int num_call_chain_entries_allocated = 10;
+
+	Con_Int num_call_chain_entries, num_call_chain_entries_allocated = 10;
 	Con_Builtins_Exception_Class_Call_Chain_Entry *call_chain = Con_Memory_malloc(thread, sizeof(Con_Builtins_Exception_Class_Call_Chain_Entry) * num_call_chain_entries_allocated, CON_MEMORY_CHUNK_CONSERVATIVE);
+	
+	Con_Builtins_Exception_Atom_get_call_chain(thread, exception, &call_chain, &num_call_chain_entries, &num_call_chain_entries_allocated);
+	if (call_chain != NULL) {
+		// Because of the above "warning", we need to temporarily remark the call chain as being
+		// conservatively GC'd to ensure that new entries don't fall between the cracks.
+		Con_Memory_change_chunk_type(thread, call_chain, CON_MEMORY_CHUNK_CONSERVATIVE);
+	}
+	else {
+		// Create a blank call chain with a fixed number of entries.
+		num_call_chain_entries = 0;
+		num_call_chain_entries_allocated = 10;
+		call_chain = Con_Memory_malloc(thread, sizeof(Con_Builtins_Exception_Class_Call_Chain_Entry) * num_call_chain_entries_allocated, CON_MEMORY_CHUNK_CONSERVATIVE);
+	}
 
 	Con_Obj *con_stack = Con_Builtins_Thread_Atom_get_con_stack(thread);
 
@@ -805,14 +815,15 @@ void Con_Builtins_VM_Atom_raise(Con_Obj *thread, Con_Obj *exception)
 		
 		bool has_exception_frame;
 		sigjmp_buf exception_env;
-		Con_Builtins_Con_Stack_Atom_read_exception_frame(thread, con_stack, &has_exception_frame, &exception_env);
+		Con_PC except_pc;
+		Con_Builtins_Con_Stack_Atom_read_exception_frame(thread, con_stack, &has_exception_frame, &exception_env, &except_pc);
 		
 		if (has_exception_frame) {
 			// An exception frame is defined.
 			
 			CON_MUTEX_UNLOCK(&con_stack->mutex);
 			
-			Con_Builtins_Exception_Atom_set_call_chain(thread, exception, call_chain, num_call_chain_entries);
+			Con_Builtins_Exception_Atom_set_call_chain(thread, exception, call_chain, num_call_chain_entries, num_call_chain_entries_allocated);
 			
 			// Now that we've handed over responsibility (from a GC point of view) for 'call_chain'
 			// to 'exception' we can mark it as being on opaque chunk of memory.
@@ -834,6 +845,9 @@ void Con_Builtins_VM_Atom_raise(Con_Obj *thread, Con_Obj *exception)
 			CON_MUTEX_LOCK(&con_stack->mutex);
 			Con_Builtins_Con_Stack_Atom_remove_exception_frame(thread, con_stack);
 			CON_MUTEX_UNLOCK(&con_stack->mutex);
+			
+			if (except_pc.type != PC_TYPE_NULL)
+				Con_Builtins_Con_Stack_Atom_update_continuation_frame_pc(thread, con_stack, except_pc);
 			
 			// ...and then jump to its handler.
 			
@@ -1286,6 +1300,32 @@ Con_Obj *_Con_Builtins_VM_Atom_execute(Con_Obj *thread)
 					Con_Builtins_Con_stack_Atom_add_generator_eyield_frame(thread, con_stack, resumption_pc);
 					
 					Con_Builtins_Con_Stack_Atom_push_object(thread, con_stack, eyield_obj);
+					pc.pc.bytecode_offset += sizeof(Con_Int);
+					Con_Builtins_Con_Stack_Atom_update_continuation_frame_pc(thread, con_stack, pc);
+					break;
+				}
+				case CON_INSTR_ADD_EXCEPTION_FRAME: {
+					Con_PC new_pc = pc;
+					if (CON_INSTR_DECODE_ADD_EXCEPTION_FRAME_SIGN(instruction))
+						new_pc.pc.bytecode_offset -= CON_INSTR_DECODE_ADD_EXCEPTION_FRAME_OFFSET(instruction);
+					else
+						new_pc.pc.bytecode_offset += CON_INSTR_DECODE_ADD_EXCEPTION_FRAME_OFFSET(instruction);
+					sigjmp_buf except_env;
+					if (setjmp(except_env) == 0) {
+						Con_Builtins_Con_Stack_Atom_add_exception_frame(thread, con_stack, except_env, new_pc);
+						pc.pc.bytecode_offset += sizeof(Con_Int);
+						Con_Builtins_Con_Stack_Atom_update_continuation_frame_pc(thread, con_stack, pc);
+					}
+					else {
+						Con_Obj *e = Con_Builtins_VM_Atom_get_current_exception(thread);
+						Con_Builtins_VM_Atom_reset_current_exception(thread);
+						Con_Builtins_Con_Stack_Atom_push_object(thread, con_stack, e);
+						Con_Builtins_Con_Stack_Atom_read_continuation_frame(thread, con_stack, &func, NULL, &pc);
+					}
+					break;
+				}
+				case CON_INSTR_REMOVE_EXCEPTION_FRAME: {
+					Con_Builtins_Con_Stack_Atom_remove_exception_frame(thread, con_stack);
 					pc.pc.bytecode_offset += sizeof(Con_Int);
 					Con_Builtins_Con_Stack_Atom_update_continuation_frame_pc(thread, con_stack, pc);
 					break;

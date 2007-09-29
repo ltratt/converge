@@ -781,6 +781,37 @@ class Bytecode_Gen:
 
 
 
+	func _t_itry(self, node):
+	
+		catches_label := self._create_label()
+		self._instructions.append(self._target.Instr_Add_Exception_Frame.new(node.src_infos, catches_label))
+		self.preorder(node.body)
+		self._instructions.append(self._target.Instr_Remove_Exception_Frame.new(node.src_infos))
+		end_label := self._create_label()
+		self._instructions.append(self._target.Instr_Branch.new(node.src_infos, end_label))
+		
+		self._set_label(catches_label)
+		for catch_ := node.catches.iterate():
+			next_label := self._create_label()
+			self._instructions.append(self._target.Instr_Dup.new(catch_.src_infos))
+			self._instructions.append(self._target.Instr_Add_Failure_Frame.new(catch_.src_infos, next_label))
+			self.preorder(catch_.expr)
+			self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(catch_.expr.src_infos, "instantiated"))
+			self._instructions.append(self._target.Instr_Pull.new(catch_.expr.src_infos, 3))
+			self._instructions.append(self._target.Instr_Apply.new(catch_.expr.src_infos, 1))
+			self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(catch_.src_infos))
+			if not catch_.var is null:
+				self._add_assign_to_var(catch_.var.var_name, catch_.var.src_infos)
+			self._instructions.append(self._target.Instr_Pop.new(catch_.src_infos))
+			self.preorder(catch_.body)
+			self._instructions.append(self._target.Instr_Branch.new(node.src_infos, end_label))
+			self._set_label(next_label)
+		self._instructions.append(self._target.Instr_Raise.new(node.src_infos))
+		
+		self._set_label(end_label)
+
+
+
 	func _t_istring(self, node):
 	
 		constant_name := Strings::format(_CONSTANT_STRING_TEMPLATE, node.string)

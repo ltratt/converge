@@ -766,6 +766,30 @@ class IModule_Gen:
 
 
 
+	func _t_try(self, node, extra_src_infos):
+
+		// try ::= "TRY" ":" "INDENT" expr_body "DEDENT" ( try_catch )*
+		
+		body := self._eval_expr_body(node[4])
+
+		catches := []
+		i := 6
+		while i < node.len():
+			// try_catch ::= "NEWLINE" "CATCH" expr try_catch_var ":" "INDENT" expr_body "DEDENT"
+			catch_expr := self._preorder(node[i][3])
+			if node[i][4].len() > 1:
+				// try_catch_var ::= "INTO" name
+				catch_var := self._preorder(node[i][4][2])
+			else:
+				catch_var := null
+			catch_body := self._eval_expr_body(node[i][7])
+			catches.append(ITree::ICatch.new(catch_expr, catch_var, catch_body, node[i][2].src_infos))
+			i += 1
+		
+		return ITree::ITry.new(body, catches, extra_src_infos + node[1].src_infos)
+
+
+
 	func _t_number(self, node, extra_src_infos):
 	
 		// number ::= "INT"

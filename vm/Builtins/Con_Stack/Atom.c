@@ -922,7 +922,7 @@ void Con_Builtins_Con_Stack_Atom_remove_failure_frame(Con_Obj *thread, Con_Obj *
 // Add a failure frame, which will fail to 'fail_to_pc'.
 //
 
-void Con_Builtins_Con_Stack_Atom_add_exception_frame(Con_Obj *thread, Con_Obj *con_stack, sigjmp_buf exception_env)
+void Con_Builtins_Con_Stack_Atom_add_exception_frame(Con_Obj *thread, Con_Obj *con_stack, sigjmp_buf exception_env, Con_PC except_pc)
 {
 	CON_ASSERT_MUTEX_LOCKED(&con_stack->mutex);
 
@@ -932,6 +932,7 @@ void Con_Builtins_Con_Stack_Atom_add_exception_frame(Con_Obj *thread, Con_Obj *c
 
 	Con_Builtins_Con_Stack_Class_Exception_Frame *exception_frame = (Con_Builtins_Con_Stack_Class_Exception_Frame *) (con_stack_atom->stack + con_stack_atom->stackp);
 	memmove(exception_frame->exception_env, exception_env, sizeof(sigjmp_buf));
+	exception_frame->except_pc = except_pc;
 	exception_frame->prev_ffp = con_stack_atom->ffp;
 	exception_frame->prev_gfp = con_stack_atom->gfp;
 	exception_frame->prev_xfp = con_stack_atom->xfp;
@@ -953,7 +954,7 @@ void Con_Builtins_Con_Stack_Atom_add_exception_frame(Con_Obj *thread, Con_Obj *c
 // 'exception_env'.
 //
 
-void Con_Builtins_Con_Stack_Atom_read_exception_frame(Con_Obj *thread, Con_Obj *con_stack, bool *has_exception_frame, sigjmp_buf *exception_env)
+void Con_Builtins_Con_Stack_Atom_read_exception_frame(Con_Obj *thread, Con_Obj *con_stack, bool *has_exception_frame, sigjmp_buf *exception_env, Con_PC *except_pc)
 {
 	CON_ASSERT_MUTEX_LOCKED(&con_stack->mutex);
 
@@ -970,6 +971,7 @@ void Con_Builtins_Con_Stack_Atom_read_exception_frame(Con_Obj *thread, Con_Obj *
 
 	*has_exception_frame = true;
 	memmove(exception_env, exception_frame->exception_env, sizeof(sigjmp_buf));
+	*except_pc = exception_frame->except_pc;
 } 
 
 
@@ -1062,25 +1064,35 @@ Con_Obj *Con_Builtins_Con_Stack_Atom_pop_n_object(Con_Obj *thread, Con_Obj *con_
 
 	Con_Builtins_Con_Stack_Atom *con_stack_atom = CON_GET_ATOM(con_stack, CON_BUILTIN(CON_BUILTIN_CON_STACK_ATOM_DEF_OBJECT));
 
-	Con_Int obj_stackp = con_stack_atom->stackp;
-	for (int i = 0; i < num_objs_to_skip; i += 1) {
-		Con_Builtins_Con_Stack_Class_Type type = *(((Con_Builtins_Con_Stack_Class_Type *) (con_stack_atom->stack + obj_stackp)) - 1);
+	// XXX This is a hack: if it iterates over more than one failure frame, it'll over-correct
+	// con_stack_atom->ffp.
 
-		assert((type == CON_BUILTINS_CON_STACK_CLASS_OBJECT) || (type == CON_BUILTINS_CON_STACK_SLOT_LOOKUP_APPLY));
-		if (type == CON_BUILTINS_CON_STACK_CLASS_OBJECT)
-			obj_stackp -= sizeof(Con_Obj *) + sizeof(Con_Builtins_Con_Stack_Class_Type);
-		else
-			obj_stackp -= sizeof(Con_Builtins_Con_Stack_Class_Slot_Lookup_Apply) + sizeof(Con_Builtins_Con_Stack_Class_Type);
+	Con_Int obj_stackp = con_stack_atom->stackp;
+	for (Con_Int i = 0; i < num_objs_to_skip; i += 1) {
+		Con_Builtins_Con_Stack_Class_Type type = *(((Con_Builtins_Con_Stack_Class_Type *) (con_stack_atom->stack + obj_stackp)) - 1);
+		switch (type) {
+			case CON_BUILTINS_CON_STACK_CLASS_OBJECT:
+				obj_stackp -= sizeof(Con_Obj *) + sizeof(Con_Builtins_Con_Stack_Class_Type);
+				break;
+			case CON_BUILTINS_CON_STACK_SLOT_LOOKUP_APPLY:
+				obj_stackp -= sizeof(Con_Builtins_Con_Stack_Class_Slot_Lookup_Apply) + sizeof(Con_Builtins_Con_Stack_Class_Type);
+				break;
+			case CON_BUILTINS_CON_STACK_CLASS_FAILURE_FRAME:
+				obj_stackp -= sizeof(Con_Builtins_Con_Stack_Class_Failure_Frame) + sizeof(Con_Builtins_Con_Stack_Class_Type);
+				con_stack_atom->ffp -= sizeof(Con_Obj *) + sizeof(Con_Builtins_Con_Stack_Class_Type);
+				break;
+			default:
+				CON_XXX;
+		}
 	}
 	assert(obj_stackp >= 0);
 
 	assert(*(((Con_Builtins_Con_Stack_Class_Type *) (con_stack_atom->stack + obj_stackp)) - 1) == CON_BUILTINS_CON_STACK_CLASS_OBJECT);
-	
 	Con_Obj *obj = *(Con_Obj **) (con_stack_atom->stack + obj_stackp - sizeof(Con_Builtins_Con_Stack_Class_Type) - sizeof(Con_Obj *));
 	
 	memmove(con_stack_atom->stack + obj_stackp - sizeof(Con_Builtins_Con_Stack_Class_Type) - sizeof(Con_Obj *), con_stack_atom->stack + obj_stackp, con_stack_atom->stackp - obj_stackp);
 	con_stack_atom->stackp -= sizeof(Con_Obj *) + sizeof(Con_Builtins_Con_Stack_Class_Type);
-	
+
 	return obj;
 }
 
@@ -1161,19 +1173,31 @@ bool Con_Builtins_Con_Stack_Atom_pop_n_object_or_slot_lookup_apply(Con_Obj *thre
 
 	Con_Builtins_Con_Stack_Atom *con_stack_atom = CON_GET_ATOM(con_stack, CON_BUILTIN(CON_BUILTIN_CON_STACK_ATOM_DEF_OBJECT));
 
-#	ifndef NDEBUG
-	Con_Int stackp = con_stack_atom->stackp;
+	Con_Int obj_stackp = con_stack_atom->stackp;
 	for (int i = 0; i < num_objs_to_skip; i += 1) {
-		assert(*(((Con_Builtins_Con_Stack_Class_Type *) (con_stack_atom->stack + stackp)) - 1) == CON_BUILTINS_CON_STACK_CLASS_OBJECT);
-		stackp -= sizeof(Con_Obj *) + sizeof(Con_Builtins_Con_Stack_Class_Type);
+		Con_Builtins_Con_Stack_Class_Type type = *(((Con_Builtins_Con_Stack_Class_Type *) (con_stack_atom->stack + obj_stackp)) - 1);
+		switch (type) {
+			case CON_BUILTINS_CON_STACK_CLASS_OBJECT:
+				obj_stackp -= sizeof(Con_Obj *) + sizeof(Con_Builtins_Con_Stack_Class_Type);
+				break;
+			case CON_BUILTINS_CON_STACK_SLOT_LOOKUP_APPLY:
+				obj_stackp -= sizeof(Con_Builtins_Con_Stack_Class_Slot_Lookup_Apply) + sizeof(Con_Builtins_Con_Stack_Class_Type);
+				break;
+			case CON_BUILTINS_CON_STACK_CLASS_FAILURE_FRAME:
+				obj_stackp -= sizeof(Con_Builtins_Con_Stack_Class_Failure_Frame) + sizeof(Con_Builtins_Con_Stack_Class_Type);
+				break;
+			default:
+				CON_XXX;
+		}
 	}
-	assert(stackp >= 0);
-#	endif
+	assert(obj_stackp >= 0);
 
-	Con_Int obj_stackp = con_stack_atom->stackp - (sizeof(Con_Obj *) + sizeof(Con_Builtins_Con_Stack_Class_Type)) * num_objs_to_skip;
+	//Con_Int obj_stackp = con_stack_atom->stackp - (sizeof(Con_Obj *) + sizeof(Con_Builtins_Con_Stack_Class_Type)) * num_objs_to_skip;
 
 	Con_Builtins_Con_Stack_Class_Type type = *(((Con_Builtins_Con_Stack_Class_Type *) (con_stack_atom->stack + obj_stackp)) - 1);
 
+	if (!((type == CON_BUILTINS_CON_STACK_CLASS_OBJECT) || (type == CON_BUILTINS_CON_STACK_SLOT_LOOKUP_APPLY)))
+		printf("%d\n", type);
 	assert((type == CON_BUILTINS_CON_STACK_CLASS_OBJECT) || (type == CON_BUILTINS_CON_STACK_SLOT_LOOKUP_APPLY));
 	
 	if (type == CON_BUILTINS_CON_STACK_CLASS_OBJECT) {

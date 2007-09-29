@@ -77,8 +77,10 @@
 	if (setjmp(_con_except_env) == 0) { \
 		{ \
 			Con_Obj *con_stack = Con_Builtins_Thread_Atom_get_con_stack(thread); \
+			Con_PC except_pc; \
+			except_pc.type = PC_TYPE_NULL; \
 			CON_MUTEX_LOCK(&con_stack->mutex); \
-			Con_Builtins_Con_Stack_Atom_add_exception_frame(thread, con_stack, _con_except_env); \
+			Con_Builtins_Con_Stack_Atom_add_exception_frame(thread, con_stack, _con_except_env, except_pc); \
 			CON_MUTEX_UNLOCK(&con_stack->mutex); \
 		}
 

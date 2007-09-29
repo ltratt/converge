@@ -99,17 +99,36 @@ Con_Obj *Con_Builtins_Exception_Atom_strerror(Con_Obj *thread, int errnum)
 
 
 //
+// Reads the current call chain of this exception; *call_chain will be set to NULL if there is
+// currently no call chain.
+//
+
+void Con_Builtins_Exception_Atom_get_call_chain(Con_Obj *thread, Con_Obj *exception, Con_Builtins_Exception_Class_Call_Chain_Entry **call_chain, Con_Int *num_call_chain_entries, Con_Int *num_call_chain_entries_allocated)
+{
+	Con_Builtins_Exception_Atom *exception_atom = CON_GET_ATOM(exception, CON_BUILTIN(CON_BUILTIN_EXCEPTION_ATOM_DEF_OBJECT));
+	
+	CON_MUTEX_LOCK(&exception->mutex);
+	*call_chain = exception_atom->call_chain;
+	*num_call_chain_entries = exception_atom->num_call_chain_entries;
+	*num_call_chain_entries_allocated = exception_atom->num_call_chain_entries_allocated;
+	CON_MUTEX_UNLOCK(&exception->mutex);
+}
+
+
+
+//
 // Set the call chain of this exception. 'call_chain' should be a pointer to a memory chunk
 // containing 'num_call_chain_entries' entries.
 //
 
-void Con_Builtins_Exception_Atom_set_call_chain(Con_Obj *thread, Con_Obj *exception, Con_Builtins_Exception_Class_Call_Chain_Entry *call_chain, Con_Int num_call_chain_entries)
+void Con_Builtins_Exception_Atom_set_call_chain(Con_Obj *thread, Con_Obj *exception, Con_Builtins_Exception_Class_Call_Chain_Entry *call_chain, Con_Int num_call_chain_entries, Con_Int num_call_chain_entries_allocated)
 {
 	Con_Builtins_Exception_Atom *exception_atom = CON_GET_ATOM(exception, CON_BUILTIN(CON_BUILTIN_EXCEPTION_ATOM_DEF_OBJECT));
 	
 	CON_MUTEX_LOCK(&exception->mutex);
 	exception_atom->call_chain = call_chain;
 	exception_atom->num_call_chain_entries = num_call_chain_entries;
+	exception_atom->num_call_chain_entries_allocated = num_call_chain_entries_allocated;
 	CON_MUTEX_UNLOCK(&exception->mutex);
 }
 

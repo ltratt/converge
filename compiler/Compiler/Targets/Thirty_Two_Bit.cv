@@ -525,6 +525,31 @@ class Instr_EYield(Instruction):
 
 
 
+class Instr_Add_Exception_Frame(Instruction):
+
+	func init(self, src_infos, pc_offset):
+	
+		self.src_infos := src_infos
+		self.pc_offset := pc_offset
+
+
+
+	func to_bytecode(self):
+	
+		return b_8_s24(INSTR_ADD_EXCEPTION_FRAME, self.pc_offset)
+
+
+
+
+class Instr_Remove_Exception_Frame(Instruction):
+
+	func to_bytecode(self):
+	
+		return b_8(INSTR_REMOVE_EXCEPTION_FRAME)
+
+
+
+
 class Instr_Assign_Slot(Instruction):
 
 
@@ -994,6 +1019,8 @@ class Target:
 	Instr_String := Instr_String
 	Instr_Builtin_Lookup := Instr_Builtin_Lookup
 	Instr_EYield := Instr_EYield
+	Instr_Add_Exception_Frame := Instr_Add_Exception_Frame
+	Instr_Remove_Exception_Frame := Instr_Remove_Exception_Frame
 	Instr_Assign_Slot := Instr_Assign_Slot
 	Instr_Raise := Instr_Raise
 	Instr_Unpack_Args := Instr_Unpack_Args

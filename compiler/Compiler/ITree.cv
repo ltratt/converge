@@ -404,6 +404,36 @@ class IFor:
 
 
 
+class ITry:
+
+	func init(self, body, catches, src_infos):
+	
+		self.body := body
+		self.catches := catches
+		self.src_infos := src_infos
+
+		self.bound_vars := body.bound_vars.scopy()
+		self.import_vars := body.import_vars.scopy()
+		self.qq_bound_vars := body.qq_bound_vars.scopy()
+		self.free_vars := body.free_vars.scopy()
+		
+		for self.bound_vars.extend(catches.iterate().bound_vars)
+		for self.import_vars.extend(catches.iterate().import_vars)
+		for self.qq_bound_vars.extend(catches.iterate().qq_bound_vars)
+		for self.free_vars.extend(catches.iterate().free_vars)
+
+
+
+	func extended_src_infos(self, extra_src_infos):
+	
+		body := self.body.extended_src_infos(extra_src_infos)
+		catches := _extended_collection_src_infos(self.catches, extra_src_infos)
+	
+		return ITry.new(body, catches, self.src_infos + extra_src_infos)
+
+
+
+
 class IInt:
 
 	func init(self, val, src_infos):
@@ -1200,6 +1230,44 @@ class IClause:
 	
 		return IClause.new(condition, body, self.src_infos + extra_src_infos)
 
+
+
+
+class ICatch:
+
+	func init(self, expr, var, body, src_infos):
+	
+		self.expr := expr
+		self.var := var
+		self.body := body
+		self.src_infos := src_infos
+
+		self.bound_vars := expr.bound_vars.scopy()
+		self.import_vars := expr.import_vars.scopy()
+		self.qq_bound_vars := expr.qq_bound_vars.scopy()
+		self.free_vars := expr.free_vars.scopy()
+		
+		if not var is null:
+			self.bound_vars.add(var.var_name)
+			self.qq_bound_vars.add(var.var_name)
+		
+		self.bound_vars.extend(body.bound_vars)
+		self.import_vars.extend(body.import_vars)
+		self.qq_bound_vars.extend(body.qq_bound_vars)
+		self.free_vars.extend(body.free_vars)
+
+
+
+	func extended_src_infos(self, extra_src_infos):
+	
+		expr := self.expr.extended_src_infos(extra_src_infos)
+		if self.var is null:
+			var := null
+		else:
+			var := self.var.extended_src_infos(extra_src_infos)
+		body := self.body.extended_src_infos(extra_src_infos)
+	
+		return ICatch.new(expr, var, body, self.src_infos + extra_src_infos)
 
 
 

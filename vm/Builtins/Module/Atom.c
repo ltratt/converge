@@ -372,6 +372,8 @@ Con_Obj *Con_Builtins_Module_Atom_pc_to_src_locations(Con_Obj *thread, Con_PC pc
 			case CON_INSTR_PULL:
 			case CON_INSTR_BUILTIN_LOOKUP:
 			case CON_INSTR_EYIELD:
+			case CON_INSTR_ADD_EXCEPTION_FRAME:
+			case CON_INSTR_REMOVE_EXCEPTION_FRAME:
 			case CON_INSTR_RAISE:
 			case CON_INSTR_SET:
 			case CON_INSTR_BRANCH_IF_NOT_FAIL:

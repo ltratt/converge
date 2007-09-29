@@ -164,11 +164,9 @@ while ::= "WHILE" expr ":" "INDENT" expr_body "DEDENT" exhausted broken
 for ::= "FOR" expr ":" "INDENT" expr_body "DEDENT" exhausted broken
     ::= "FOR" expr
 
-try           ::= "TRY" ":" "INDENT" expr_body "DEDENT" ( try_catch )* try_else
+try           ::= "TRY" ":" "INDENT" expr_body "DEDENT" ( try_catch )*
 try_catch     ::= "NEWLINE" "CATCH" expr try_catch_var ":" "INDENT" expr_body "DEDENT"
 try_catch_var ::= "INTO" name
-              ::=
-try_else      ::= "NEWLINE" "ELSE" ":" "INDENT" expr_body "DEDENT"
               ::=
 
 exhausted ::= "NEWLINE" "EXHAUSTED" ":" "INDENT" expr_body "DEDENT"

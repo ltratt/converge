@@ -34,7 +34,7 @@ typedef struct {
 	// The call chain is expected to store entries in strict descending order of age i.e.:
 	//   [<newest call>, ... , <oldest call>]
 	Con_Builtins_Exception_Class_Call_Chain_Entry *call_chain;
-	Con_Int num_call_chain_entries;
+	Con_Int num_call_chain_entries, num_call_chain_entries_allocated;
 #	ifndef CON_THREADS_SINGLE_THREADED
 	Con_Obj *exception_thread;
 #	endif
@@ -44,7 +44,8 @@ typedef struct {
 void Con_Builtins_Exception_Atom_bootstrap(Con_Obj *);
 
 Con_Obj *Con_Builtins_Exception_Atom_strerror(Con_Obj *, int);
-void Con_Builtins_Exception_Atom_set_call_chain(Con_Obj *, Con_Obj *, Con_Builtins_Exception_Class_Call_Chain_Entry *, Con_Int);
+void Con_Builtins_Exception_Atom_get_call_chain(Con_Obj *, Con_Obj *, Con_Builtins_Exception_Class_Call_Chain_Entry **, Con_Int *, Con_Int *);
+void Con_Builtins_Exception_Atom_set_call_chain(Con_Obj *, Con_Obj *, Con_Builtins_Exception_Class_Call_Chain_Entry *, Con_Int, Con_Int);
 #ifndef CON_THREADS_SINGLE_THREADED
 void Con_Builtins_Exception_Atom_set_exception_thread(Con_Obj *, Con_Obj *, Con_Obj *);
 #endif

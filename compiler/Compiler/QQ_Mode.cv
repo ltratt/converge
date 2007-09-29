@@ -744,7 +744,30 @@ class QQ_Mode:
 			broken_body := self._preorder(node.broken_body)
 		
 		return self._qq("IFor", [condition, body, exhausted_body, broken_body], node.src_infos)
+
+
+
+	func _t_itry(self, node):
+
+		body := self._preorder(node.body)
+		catches := []
+		for catches.append(self._preorder(node.catches.iterate()))
 		
+		return self._qq("ITry", [body, ITree::IList.new(catches, node.src_infos)], node.src_infos)	
+
+
+
+	func _t_icatch(self, node):
+
+		expr := self._preorder(node.expr)
+		if node.var is null:
+			var := ITree::IVar.new("null", node.src_infos)
+		else:
+			var := self._process_assign_var(node.var.var_name, node.var.src_infos)
+		body := self._preorder(node.body)
+		
+		return self._qq("ICatch", [expr, var, body], node.src_infos)
+
 
 
 	//

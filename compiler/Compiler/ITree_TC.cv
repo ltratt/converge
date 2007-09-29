@@ -25,7 +25,7 @@ import Compiler_Vars, ITree
 
 
 
-_EXPRS := [ITree::IClass_Def, ITree::IFunc_Def, ITree::IIf, ITree::INDIf, ITree::IVar, ITree::IImport, ITree::IWhile, ITree::IFor, ITree::IInt, ITree::IString, ITree::ISlot_Lookup, ITree::IModule_Lookup, ITree::IList, ITree::IDict, ITree::ISet, ITree::IApplication, ITree::IGet, ITree::ISlice, ITree::IEXBI, ITree::IReturn, ITree::IYield, ITree::IRaise, ITree::IAssert, ITree::IBreak, ITree::IContinue, ITree::IConjunction, ITree::IAlternation, ITree::IAssignment, ITree::INot, ITree::IBinary, ITree::IComparison, ITree::IInsert, ITree::IStandard_Quasi_Quotes, ITree::IMod_Id_Import]
+_EXPRS := [ITree::IClass_Def, ITree::IFunc_Def, ITree::IIf, ITree::INDIf, ITree::IVar, ITree::IImport, ITree::IWhile, ITree::IFor, ITree::ITry, ITree::IInt, ITree::IString, ITree::ISlot_Lookup, ITree::IModule_Lookup, ITree::IList, ITree::IDict, ITree::ISet, ITree::IApplication, ITree::IGet, ITree::ISlice, ITree::IEXBI, ITree::IReturn, ITree::IYield, ITree::IRaise, ITree::IAssert, ITree::IBreak, ITree::IContinue, ITree::IConjunction, ITree::IAlternation, ITree::IAssignment, ITree::INot, ITree::IBinary, ITree::IComparison, ITree::IInsert, ITree::IStandard_Quasi_Quotes, ITree::IMod_Id_Import]
 
 
 
@@ -205,6 +205,14 @@ class ITree_TC:
 			self._check_expr_block(node, "exhausted_body", node.exhausted_body)
 		if not node.broken_body is null:
 			self._check_expr_block(node, "broken_body", node.broken_body)
+
+
+
+	func _t_itry(self, node):
+
+		self._check_expr_block(node, "body", node.body)
+		for catch_ := node.catches.iterate():
+			self._preorder(catch_)
 
 
 
@@ -457,6 +465,18 @@ class ITree_TC:
 	func _t_iclause(self, node):
 	
 		self._check_expr(node, "condition", node.condition)
+		self._check_expr_block(node, "body", node.body)
+
+
+
+	func _t_icatch(self, node):
+
+		self._check_expr(node, "expr", node.expr)
+		if not node.var is null:
+			if ITree::IVar.instantiated(node.var) | ITree::IInsert.instantiated(node.var):
+				self._preorder(node.var)
+			else:
+				self._type_error(node, "var", node.var, "[IVar, IInsert]")
 		self._check_expr_block(node, "body", node.body)
 
 

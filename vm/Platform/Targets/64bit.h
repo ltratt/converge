@@ -165,6 +165,9 @@
 
 #define CON_INSTR_DECODE_ASSIGN_SLOT_SIZE(instruction) ((instruction & 0xFFFFFF00) >> 8)
 
+#define CON_INSTR_DECODE_ADD_EXCEPTION_FRAME_OFFSET(instruction) ((instruction & 0x7FFFFF00) >> 8)
+#define CON_INSTR_DECODE_ADD_EXCEPTION_FRAME_SIGN(instruction) ((instruction & 0x80000000) >> 8)
+
 #define CON_INSTR_DECODE_UNPACK_ARGS_NUM_NORMAL_ARGS(instruction) ((instruction & 0x0000FF00) >> 8)
 #define CON_INSTR_DECODE_UNPACK_ARGS_HAS_VAR_ARGS(instruction) ((instruction & 0x00010000) >> 16)
 #define CON_INSTR_DECODE_UNPACK_ARGS_ARG_NUM(instruction) (instruction & 0x000000FF)

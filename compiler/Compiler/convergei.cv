@@ -19,20 +19,84 @@
 // IN THE SOFTWARE.
 
 
-import Eval, Sys
+import Exceptions, Strings, Sys
+import Compiler_Vars, Eval
+
+
+
+
+
+//
+// We use this "dummy" exception to signify to the interactive compiler that an error condition has
+// occurred, but we don't want to print out a backtrace. This is a nice hack.
+//
+
+class _Dummy_Exception(Exceptions::Exception):
+	pass
+
+
+
+
+class _Interactive_Compiler(Eval::Eval_Compiler):
+
+	func error(self, msg, src_infos := null):
+	
+		self._print_msg("Error", msg, src_infos)
+		
+		raise _Dummy_Exception.new()
+
+
+
+	func warning(self, msg, src_infos := null):
+	
+		self._print_msg("Warning", msg, src_infos)
+	
+	
+	
+	func _print_msg(self, pre_msg, msg, src_infos := null):
+
+		Sys::stderr.writeln(Strings::format("%s: %s", pre_msg, msg))
 
 
 
 
 func main():
 
+	includes := Compiler_Vars::find_std_includes()
+
 	Sys::println("Converge ", Sys::version)
 	d := Dict{}
 	while 1:
 		Sys::print(">>> ")
-		if not (line := Sys::stdin.readln()):
-			break
-		if r := Eval::eval(line, d):
-			Sys::println(r)
-		else:
-			Sys::println("fail")
+		input := []
+		while 1:
+			if not (line := Sys::stdin.readln()):
+				Sys::exit(0)
+
+			input.append(line)
+			st_line := line.stripped()
+			
+			if st_line == "":
+				break
+			
+			if input.len() == 1 & not (st_line[-1] == ":" | st_line[-1] == "\\"):
+				break
+			
+			Sys::print("... ")
+
+		input := Strings::join(input, "\n")
+		if input.stripped() == "":
+			continue
+
+		try:
+			compiler := _Interactive_Compiler.new(input, d, includes)
+			Compiler_Vars::push_compiler(compiler)
+			if rtn := compiler.eval():
+				Sys::println(rtn)
+			else:
+				Sys::println("fail")
+			Compiler_Vars::pop_compiler()
+		catch _Dummy_Exception into e:
+			pass
+		catch Exceptions::Exception into e:
+			Sys::stderr.writeln(Exceptions::backtrace(e))

@@ -382,6 +382,24 @@ class Bytecode_Gen:
 
 
 
+	func _prc_mod_lookup(self, mod_lookup):
+
+		closures_offset, var_num := self._get_var_offsets(mod_lookup.names[0].var_name, mod_lookup.names[0].src_infos)
+
+		reversed_closures_offset := self.closures.len() - closures_offset - 1
+		if mod_id := self.closures[reversed_closures_offset][Compiler_Vars::CLOSURE_IMPORTS].find(mod_lookup.names[0].var_name):
+			lookup := Strings::join(Functional::map(func (x) { return x.var_name }, mod_lookup.names), "::")
+			if not (lookups := self._mod_lookups_seen.find(mod_id)):
+				lookups := Set{}
+				self._mod_lookups_seen[mod_id] := lookups
+
+			if not lookups.find(lookup):
+				self._mod_lookups.append([mod_id, lookup, mod_lookup.names[0].src_infos])
+				lookups.add(lookup)
+		else:
+			self._compiler.warning("Unable to determine module referenced in lookup (use a plain variable lookup instead)", mod_lookup.names[0].src_infos)
+
+
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Traversal
 	//
@@ -838,20 +856,7 @@ class Bytecode_Gen:
 	func _t_imodule_lookup(self, node):
 	
 		if not ITree::IMod_Id_Import.instantiated(node.names[0]):
-			closures_offset, var_num := self._get_var_offsets(node.names[0].var_name, node.names[0].src_infos)
-
-			reversed_closures_offset := self.closures.len() - closures_offset - 1
-			if mod_id := self.closures[reversed_closures_offset][Compiler_Vars::CLOSURE_IMPORTS].find(node.names[0].var_name):
-				lookup := Strings::join(Functional::map(func (x) { return x.var_name }, node.names), "::")
-				if not (lookups := self._mod_lookups_seen.find(mod_id)):
-					lookups := Set{}
-					self._mod_lookups_seen[mod_id] := lookups
-				
-				if not lookups.find(lookup):
-					self._mod_lookups.append([mod_id, lookup, node.names[0].src_infos])
-					lookups.add(lookup)
-			else:
-				self._compiler.warning("Unable to determine module referenced in lookup (use a plain variable lookup instead)", node.src_infos)
+			self._prc_mod_lookup(node)
 
 		self.preorder(node.names[0])
 		

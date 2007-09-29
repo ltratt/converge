@@ -20,7 +20,7 @@
 
 
 import File, Parse_Options, Platform::Properties, Strings, Sys, VM
-import Bytecode_Gen, Compiler_Vars, CV_Module, CV_Parser, IModule_Gen, Targets::Available, Tokenizer
+import Bytecode_Gen, Compiler_Vars, CV_Module, CV_Parser, IModule_Gen, Targets, Tokenizer
 
 
 
@@ -240,10 +240,10 @@ class Compiler:
 
 	func _target_name_to_target(self, target_name):
 
-		if not Available::TARGETS.find(target_name):
+		if not Targets::Available::TARGETS.find(target_name):
 			self.error(Strings::format("No support yet for target '%s'.", target_name))
 
-		return Available::TARGETS[target_name].new()
+		return Targets::Available::TARGETS[target_name].new()
 
 
 

@@ -108,38 +108,8 @@ class Compiler:
 		// for a more sophisticated mechanism?
 		
 		self.src_module_name := File::split_ext(File::split_leaf(self.module_id)[1])[0]
-
-		// In order to make a good stab at finding the Converge library we check in order:
-		//
-		//   ../lib/converge-<version>
-		//   ../lib/converge
-		//   ../lib
-		//
-		// where ".." is relative to the directory convergec was contained in.
 		
-		bin_dir := File::split_leaf(Sys::program_path)[0]
-		lib_path_candidates := [File::join_names(bin_dir, "..", "lib", "converge-" + Sys::version), File::join_names(bin_dir, "..", "lib", "converge"), File::join_names(bin_dir, "..", "lib")]
-		for lib_path := lib_path_candidates.iterate():
-			if File::exists(lib_path):
-				self.includes.append(File::canon_path(lib_path))
-				break
-		exhausted:
-			self.error("Can't find Converge library.")
-
-		// In order to make a good stab at finding the Compiler package we check in order:
-		//
-		//   ./Compiler
-		//   ../lib/Compiler
-		//
-		// where ".." is relative to the directory convergec was contained in.
-		
-		compiler_path_candidates := [File::join_names(bin_dir, "Compiler"), File::join_names(lib_path, "Compiler")]
-		for lib_path := compiler_path_candidates.iterate():
-			if File::exists(lib_path):
-				self.includes.append(File::canon_path(File::join_names(lib_path, "..")))
-				break
-		exhausted:
-			self.error("Can't find Compiler package.")
+		self.includes.extend(Compiler_Vars::find_std_includes())
 		
 		src_file := File::open(self.module_id, "r")
 		src_data := src_file.read()

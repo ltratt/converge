@@ -70,6 +70,7 @@ func main():
 		Sys::print(">>> ")
 		input := []
 		while 1:
+			Sys::stdout.flush()
 			if not (line := Sys::stdin.readln()):
 				Sys::exit(0)
 

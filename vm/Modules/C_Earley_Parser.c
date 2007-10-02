@@ -336,6 +336,7 @@ Con_Obj *_Con_Modules_C_Earley_Parser_Parser_parse_func(Con_Obj *thread)
 
 void _Con_Modules_C_Earley_Parser_Parser_parse_func_new_lstate(Con_Obj *thread, parse_func_Parser_State *parser)
 {
+	assert(parser->num_lstates < parser->num_tokens + 1);
 	parser->lstates[parser->num_lstates].states = Con_Memory_malloc(thread, _DEFAULT_NUM_STATES * sizeof(parse_func_State), CON_MEMORY_CHUNK_OPAQUE);
 	parser->lstates[parser->num_lstates].num_states = 0;
 	parser->lstates[parser->num_lstates].num_states_allocated = _DEFAULT_NUM_STATES;

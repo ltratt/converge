@@ -140,9 +140,10 @@ AC_CHECK_SIZEOF(int)
 AC_CHECK_SIZEOF(long)
 
 AH_TEMPLATE(CON_INT, [The integer type equivalent to a machine word.])
+AH_TEMPLATE(CON_INT_FORMAT, [The format type equivalent to a machine word.])
 AC_CHECK_TYPE(ptrdiff_t)
 
-AC_MSG_CHECKING([integer type equivalent to a machine word])
+AC_MSG_CHECKING([integer and format types equivalent to a machine word])
 AC_TRY_RUN([
 #include <stddef.h>
 
@@ -153,8 +154,9 @@ int main()
 	else
 		return 1;
 }], 
-	[AC_MSG_RESULT(int)
+	[AC_MSG_RESULT(int %d)
 	AC_DEFINE(CON_INT, int)
+	AC_DEFINE(CON_INT_FORMAT, "%d")
 	],
 	[AC_TRY_RUN([
 #include <stddef.h>
@@ -166,8 +168,9 @@ int main()
 	else
 		return 1;
 }],
-		[AC_MSG_RESULT(long)
+		[AC_MSG_RESULT(long %ld)
 		AC_DEFINE(CON_INT, long)
+		AC_DEFINE(CON_INT_FORMAT, "%ld")
 		],
 		[AC_TRY_RUN([
 #include <stddef.h>
@@ -179,8 +182,9 @@ int main()
 	else
 		return 1;
 }],
-			[AC_MSG_RESULT(long long)
+			[AC_MSG_RESULT(long long %lld)
 			AC_DEFINE(CON_INT, long long)
+			AC_DEFINE(CON_INT_FORMAT, "%lld")
 			],
 			AC_MSG_FAILURE(Unknown word size)
 		)]

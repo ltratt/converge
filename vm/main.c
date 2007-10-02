@@ -33,6 +33,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "Arch.h"
 #include "Bootstrap.h"
 #include "Bytecode.h"
 #include "Core.h"
@@ -50,15 +51,27 @@
 
 extern char* __progname;
 
+int main_do(int, char **, u_char *);
 
 
-int main(int argc, char** argv) {
-#ifdef __GNUC__
-	u_char *root_stack_start = __builtin_frame_address(0);
-#else
-	CON_FATAL_ERROR("Unable to determine starting stack address.");
-#endif
 
+int main(int argc, char** argv)
+{
+	// Because we can't be sure exactly where in the local stack the root_stack_start variable would
+	// be if this function defined other variables, we stay on the safe side and call main_do; this
+	// means we can be confident that root_stack_start points close enough to the root of the stack
+	// for our purposes since it must reside before main_do's stack entry.
+
+	u_char *root_stack_start;
+	CON_ARCH_GET_STACKP(root_stack_start);
+	
+	return main_do(argc, argv, root_stack_start);
+}
+
+
+
+int main_do(int argc, char** argv, u_char *root_stack_start)
+{
 #if CON_FULL_DEBUG
 		printf("%s %s (%s) %s\n", CON_NAME, CON_VERSION, CON_DATE, CON_COPYRIGHT);
 		printf("stack root %p\n", root_stack_start);

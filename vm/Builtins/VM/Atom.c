@@ -1628,7 +1628,6 @@ Con_Obj *_Con_Builtins_VM_Atom_execute(Con_Obj *thread)
 					break;
 				}
 				default:
-					printf("%d [%d]\n", instruction & 0x000000FF, instruction);
 					CON_FATAL_ERROR("Unknown instruction");
 			}
 			// The continue statement forces execution of the next VM instruction, and means that

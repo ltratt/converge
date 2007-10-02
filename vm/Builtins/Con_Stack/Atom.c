@@ -509,7 +509,6 @@ void Con_Builtins_Con_Stack_Atom_prepare_to_return_from_generator(Con_Obj *threa
 		}
 		else {
 			// XXX is this branch even possible?
-			printf("%d %d [%d]\n", generator_frame->suspended_con_stack_size, suspended_con_stack_size, generator_frame->prev_gfp);
 			CON_XXX;
 		}
 	}
@@ -1196,8 +1195,6 @@ bool Con_Builtins_Con_Stack_Atom_pop_n_object_or_slot_lookup_apply(Con_Obj *thre
 
 	Con_Builtins_Con_Stack_Class_Type type = *(((Con_Builtins_Con_Stack_Class_Type *) (con_stack_atom->stack + obj_stackp)) - 1);
 
-	if (!((type == CON_BUILTINS_CON_STACK_CLASS_OBJECT) || (type == CON_BUILTINS_CON_STACK_SLOT_LOOKUP_APPLY)))
-		printf("%d\n", type);
 	assert((type == CON_BUILTINS_CON_STACK_CLASS_OBJECT) || (type == CON_BUILTINS_CON_STACK_SLOT_LOOKUP_APPLY));
 	
 	if (type == CON_BUILTINS_CON_STACK_CLASS_OBJECT) {
@@ -1439,7 +1436,6 @@ void Con_Builtins_Con_Stack_Atom_unpack_args(Con_Obj *thread, Con_Obj *con_stack
 	
 	if (args_processed < num_args) {
 		CON_MUTEX_UNLOCK(&con_stack->mutex);
-		printf("%d %d %p\n", args_processed, num_args, CON_GET_SLOT(CON_BUILTIN(CON_BUILTIN_EXCEPTIONS_MODULE), "Parameters_Exception"));
 		CON_RAISE_EXCEPTION("Parameters_Exception", CON_NEW_STRING("Too many parameters."));
 	}
 	

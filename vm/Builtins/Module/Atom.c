@@ -392,7 +392,6 @@ Con_Obj *Con_Builtins_Module_Atom_pc_to_src_locations(Con_Obj *thread, Con_PC pc
 				current_pc += sizeof(Con_Int);
 				break;
 			default:
-				printf("%d\n", instruction & 0x000000FF);
 				CON_XXX;
 		}
 		instruction_num += 1;
@@ -611,11 +610,8 @@ Con_Obj *Con_Builtins_Module_Atom_import(Con_Obj *thread, Con_Obj *identifier)
 			CON_GET_SLOT_APPLY(modules, "set", CON_NEW_STRING("PThreads"), module);
 		}
 #		endif
-		else {
-			CON_PRINTLN(modules);
-			printf("%.*s\n", ((Con_Builtins_String_Atom *) identifier->first_atom)->size, ((Con_Builtins_String_Atom *) identifier->first_atom)->str);
+		else
 			CON_RAISE_EXCEPTION("Import_Exception", identifier);
-		}
 		Con_Builtins_Module_Atom *module_atom = CON_GET_ATOM(module, CON_BUILTIN(CON_BUILTIN_MODULE_ATOM_DEF_OBJECT));
 		CON_MUTEX_LOCK(&module->mutex);
 		module_atom->state = CON_MODULE_INITIALIZED;

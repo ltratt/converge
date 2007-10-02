@@ -25,6 +25,6 @@
 #include "Core.h"
 #include "Memory.h"
 
-Con_Obj *Con_Bootstrap_do(u_char *, int, char **);
+Con_Obj *Con_Bootstrap_do(u_char *, int, char **, char *, char *);
 
 #endif

@@ -77,25 +77,85 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 		printf("stack root %p\n", root_stack_start);
 #endif
 
-	Con_Obj *thread = Con_Bootstrap_do(root_stack_start, argc, argv);
-	if (thread == NULL) {
-		fprintf(stderr, "%s: error when trying to initialize virtual machine.\n", __progname);
-		exit(1);
+	// We want to determine the path of the VM executable, when possible, to later populate
+	// Sys::vm_path. This is one of those areas where UNIX falls down badly. On Linux, we
+	// try reading the symlink /proc/self/exe which should point to the VM executable. On
+	// other UNIXes we accept the canonicalised version of argv[0] if it appears to be a real file;
+	// otherwise we search through $PATH and see if we can work out where we were called from. None
+	// of this seems particularly reliable, but it's not clear that there's any better mechanism.
+
+	struct stat tmp_stat;
+	char *vm_path = NULL;
+
+#ifdef READ_VM_PATH_FROM_PROC_SELF_EXE_SYMLINK
+	// On Linux we first try reading the symlink /proc/self/exe. Since this seems an inherently
+	// dodgy proposition, we don't rely on this definitely succeeding, and fall back on our
+	// other mechanism if it doesn't work.
+
+	vm_path = malloc(PATH_MAX);
+	if (readlink("/proc/self/exe", vm_path, PATH_MAX) == NULL || stat(vm_path, &tmp_stat) == 0)
+		vm_path = NULL;
+#endif
+
+	if (vm_path == NULL) {
+		vm_path = malloc(PATH_MAX);
+		if (realpath(argv[0], vm_path) == NULL || stat(vm_path, &tmp_stat) != 0) {
+			// Since realpath failed, we fall back on searching through $PATH and try and find
+			// the executable on it.
+			char *path;
+			// If getenv returns NULL, we're out of ideas.
+			if ((path = getenv("PATH")) != NULL) {
+				char *cnd = malloc(PATH_MAX);
+				size_t i = 0;
+				while (1) {
+					size_t j;
+					for (j = i; j < strlen(path); j += 1) {
+						if (path[j] == ':')
+							break;
+					}
+
+					memmove(cnd, path + i, j - i);
+					if (cnd[j - i - 1] != '/') {
+						cnd[j - i] = '/';
+						cnd[j - i + 1] = '\0';
+					}
+					else
+						cnd[j - i] = '\0';
+					strcat(cnd, argv[0]);
+
+					if (realpath(cnd, vm_path) != NULL && stat(vm_path, &tmp_stat) == 0)
+						break;
+
+					if (j == i)
+						break;
+
+					i = j + 1;
+				}
+				free(cnd);
+			}
+		}
 	}
 
+	char *prog_path = argv[1];
 	if (argc == 1) {
 		fprintf(stderr, "%s: too few options.\nusage: %s <file> [args]\n", __progname, __progname);
 		exit(1);
 	}
 	
 	struct stat con_binary_file_stat;
-	if (stat(argv[1], &con_binary_file_stat) == -1) {
-		err(1, ": trying to stat '%s'", argv[1]);
+	if (stat(prog_path, &con_binary_file_stat) == -1) {
+		err(1, ": trying to stat '%s'", prog_path);
 	}
 	
-	FILE *con_binary_file = fopen(argv[1], "rb");
+	FILE *con_binary_file = fopen(prog_path, "rb");
 	if (con_binary_file == NULL) {
-		err(1, ": unable to open '%s", argv[1]);
+		err(1, ": unable to open '%s", prog_path);
+		exit(1);
+	}
+
+	Con_Obj *thread = Con_Bootstrap_do(root_stack_start, argc, argv, vm_path, prog_path);
+	if (thread == NULL) {
+		fprintf(stderr, "%s: error when trying to initialize virtual machine.\n", __progname);
 		exit(1);
 	}
 	
@@ -111,14 +171,14 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 		bytecode_start += 1;
 	}
 	if (bytecode_size - bytecode_start < 8) {
-		fprintf(stderr, "%s: '%s' does not appear to be a valid Converge executeable.\n", __progname, argv[1]);
+		fprintf(stderr, "%s: '%s' does not appear to be a valid Converge executeable.\n", __progname, prog_path);
 		exit(1);
 	}
 	Con_Obj *main_module_identifier = Con_Bytecode_add_executable(thread, bytecode + bytecode_start);
 	free(bytecode);
 
 	if (fclose(con_binary_file) != 0) {
-		err(1, ": error closing '%s'", argv[1]);
+		err(1, ": error closing '%s'", prog_path);
 		exit(1);
 	}
 

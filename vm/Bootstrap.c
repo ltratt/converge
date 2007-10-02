@@ -68,12 +68,16 @@
 
 
 //
-// Create and initialize a new VM. 'argc' and 'argv' should be the values passed to main(...). This
-// function returns NULL if an error occurred during VM initialization; otherwise a Con_Thread object
-// is returned.
+// Create and initialize a new VM. 'argc' and 'argv' should be the values passed to main(...).
+// 'vm_path' should be the path of the VM executable, and 'prog_path' should be the path of the
+// bytecode; both paths can be set to NULL if they were not loaded from a conventional file, or if
+// the path can not be determined.
+//
+// This function returns NULL if an error occurred during VM initialization; otherwise a Con_Thread
+// object is returned.
 //
 
-Con_Obj *Con_Bootstrap_do(u_char *c_stack_start, int argc, char **argv)
+Con_Obj *Con_Bootstrap_do(u_char *c_stack_start, int argc, char **argv, char *vm_path, char *prog_path)
 {
 	// During the bootstrapping process, only the thread setting up the system may run, and garbage
 	// collection can not occur. These assumptions are implicit in most of the following.
@@ -209,7 +213,7 @@ Con_Obj *Con_Bootstrap_do(u_char *c_stack_start, int argc, char **argv)
 
 	// Create the real VM and root thread objects.
 
-	Con_Obj *vm = Con_Builtins_VM_Atom_new(bootstrap_thread, mem_store, argc, argv);
+	Con_Obj *vm = Con_Builtins_VM_Atom_new(bootstrap_thread, mem_store, argc, argv, vm_path, prog_path);
 	Con_Obj *thread = Con_Builtins_Thread_Atom_new_from_self(bootstrap_thread, c_stack_start, vm);
 
 	// The real VM object isn't quite properly filled in at this point: we need to copy over the

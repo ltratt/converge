@@ -39,6 +39,7 @@ typedef struct {
 	Con_Memory_Store *mem_store;
 	int argc;
 	char **argv;
+	char *vm_path, *prog_path;
 	Con_Obj *current_exception;
 	Con_Obj *builtins[CON_NUMBER_OF_BUILTINS];
 } Con_Builtins_VM_Atom;
@@ -46,11 +47,12 @@ typedef struct {
 
 void Con_Builtins_VM_Atom_bootstrap(Con_Obj *);
 
-Con_Obj *Con_Builtins_VM_Atom_new(Con_Obj *, Con_Memory_Store *, int, char **);
+Con_Obj *Con_Builtins_VM_Atom_new(Con_Obj *, Con_Memory_Store *, int, char **, char *, char *);
 
 Con_Atoms_VM_State Con_Builtins_VM_Atom_get_state(Con_Obj *);
 Con_Memory_Store *Con_Builtins_VM_Atom_get_mem_store(Con_Obj *);
 void Con_Builtins_VM_Atom_read_prog_args(Con_Obj *, int *, char ***);
+void Con_Builtins_VM_Atom_get_paths(Con_Obj *, char **, char **);
 Con_Obj *Con_Builtins_VM_Atom_get_builtin(Con_Obj*, Con_Int);
 Con_Obj *Con_Builtins_VM_Atom_get_functions_module(Con_Obj *);
 

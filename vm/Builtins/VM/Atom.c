@@ -102,7 +102,7 @@ void Con_Builtins_VM_Atom_bootstrap(Con_Obj *thread)
 
 void _Con_Builtins_VM_Atom_signal_trap(int);
 
-Con_Obj *Con_Builtins_VM_Atom_new(Con_Obj *thread, Con_Memory_Store *mem_store, int argc, char **argv)
+Con_Obj *Con_Builtins_VM_Atom_new(Con_Obj *thread, Con_Memory_Store *mem_store, int argc, char **argv, char *vm_path, char *prog_path)
 {
 	// It is expected that the first atom of a VM object is a Con_Builtins_VM_Atom.
 
@@ -118,6 +118,8 @@ Con_Obj *Con_Builtins_VM_Atom_new(Con_Obj *thread, Con_Memory_Store *mem_store, 
 	vm_atom->mem_store = mem_store;
 	vm_atom->argc = argc;
 	vm_atom->argv = argv;
+	vm_atom->vm_path = vm_path;
+	vm_atom->prog_path = prog_path;
 	vm_atom->current_exception = NULL;
 	
 	Con_Builtins_Slots_Atom_Def_init_atom(thread, slots_atom);
@@ -172,6 +174,17 @@ void Con_Builtins_VM_Atom_read_prog_args(Con_Obj *thread, int *argc, char ***arg
 	*argc = vm_atom->argc;
 	*argv = vm_atom->argv;
 }
+
+
+
+void Con_Builtins_VM_Atom_get_paths(Con_Obj *thread, char **vm_path, char **prog_path)
+{
+	Con_Builtins_VM_Atom *vm_atom = (Con_Builtins_VM_Atom *) ((Con_Builtins_Thread_Atom *) thread->first_atom)->vm->first_atom;
+
+	*vm_path = vm_atom->vm_path;
+	*prog_path = vm_atom->prog_path;
+}
+
 
 
 //

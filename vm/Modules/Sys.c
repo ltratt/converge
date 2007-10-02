@@ -65,35 +65,26 @@ Con_Obj *Con_Modules_Sys_init(Con_Obj *thread, Con_Obj *identifier)
 	CON_SET_SLOT(sys_mod, "stdin", CON_GET_SLOT_APPLY(CON_GET_MODULE_DEF(CON_BUILTIN(CON_BUILTIN_C_FILE_MODULE), "File"), "new", CON_NEW_INT(STDIN_FILENO), CON_NEW_STRING("r")));
 	CON_SET_SLOT(sys_mod, "stdout", CON_GET_SLOT_APPLY(CON_GET_MODULE_DEF(CON_BUILTIN(CON_BUILTIN_C_FILE_MODULE), "File"), "new", CON_NEW_INT(STDOUT_FILENO), CON_NEW_STRING("w")));
 	CON_SET_SLOT(sys_mod, "stderr", CON_GET_SLOT_APPLY(CON_GET_MODULE_DEF(CON_BUILTIN(CON_BUILTIN_C_FILE_MODULE), "File"), "new", CON_NEW_INT(STDERR_FILENO), CON_NEW_STRING("w")));
-	
+
+	// Read the path of the VM and the bytecode path.
+
+	char *vm_path, *prog_path;
+	Con_Builtins_VM_Atom_get_paths(thread, &vm_path, &prog_path);
+	if (vm_path == NULL)
+		CON_SET_SLOT(sys_mod, "vm_path", CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+	else
+		CON_SET_SLOT(sys_mod, "vm_path", Con_Builtins_String_Atom_new_no_copy(thread, (u_char *) vm_path, strlen(vm_path), CON_STR_UTF_8));
+
+	if (prog_path == NULL)
+		CON_SET_SLOT(sys_mod, "program_path", CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+	else
+		CON_SET_SLOT(sys_mod, "program_path", Con_Builtins_String_Atom_new_no_copy(thread, (u_char *) prog_path, strlen(prog_path), CON_STR_UTF_8));
+
 	// Do the necessary fiddlings with command line arguments.
 	
 	int argc;
 	char **argv;
 	Con_Builtins_VM_Atom_read_prog_args(thread, &argc, &argv);
-	
-	assert(argc > 1);
-
-	// Read the path of the VM from the command line arguments. To avoid potential problems we
-	// convert this into an absolute pathname straight away.
-
-	char *vm_path = Con_Memory_malloc(thread, MAXPATHLEN, CON_MEMORY_CHUNK_OPAQUE);
-	if (realpath(argv[0], vm_path) == NULL)
-		CON_SET_SLOT(sys_mod, "vm_path", CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
-	else
-		CON_SET_SLOT(sys_mod, "vm_path", Con_Builtins_String_Atom_new_no_copy(thread, (u_char *) vm_path, strlen(vm_path), CON_STR_UTF_8));
-	
-	if (argc >= 2) {
-		// Read the path of the Converge program from the command line arguments, converting it
-		// into an absolute pathname straight away.
-		char *program_path = Con_Memory_malloc(thread, MAXPATHLEN, CON_MEMORY_CHUNK_OPAQUE);
-		if (realpath(argv[1], program_path) == NULL)
-			CON_SET_SLOT(sys_mod, "program_path", CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
-		else
-			CON_SET_SLOT(sys_mod, "program_path", Con_Builtins_String_Atom_new_no_copy(thread, (u_char *) program_path, strlen(program_path), CON_STR_UTF_8));
-	}
-	else
-		CON_SET_SLOT(sys_mod, "program_path", CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
 	
 	// The command line arguments that users see do not include the VM or Converge program.
 	

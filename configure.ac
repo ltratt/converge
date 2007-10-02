@@ -96,6 +96,10 @@ case $operating_system in
 	*) AC_MSG_ERROR([Unknown platform "$operating_system"]);;
 esac
 
+case $operating_system in
+	Linux ) AC_DEFINE(READ_VM_PATH_FROM_PROC_SELF_EXE_SYMLINK, [], [Define if your operating system allows the location of the VM executable to be determined by reading the symlink /proc/self/exe.])
+esac
+
 
 
 ####################################################################################################

@@ -98,5 +98,7 @@ func main():
 			Compiler_Vars::pop_compiler()
 		catch _Dummy_Exception into e:
 			pass
+		catch Exceptions::System_Exit_Exception into e:
+			Sys::exit(e.code)
 		catch Exceptions::Exception into e:
 			Sys::stderr.writeln(Exceptions::backtrace(e))

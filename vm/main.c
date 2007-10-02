@@ -138,9 +138,39 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 
 	char *prog_path = argv[1];
 	if (argc == 1) {
-		fprintf(stderr, "%s: too few options.\nusage: %s <file> [args]\n", __progname, __progname);
-		exit(1);
+		// If we've been called without arguments, we try to load convergei.
+		prog_path = NULL;
+		if (vm_path != NULL) {
+			const char* cnds[] = {"convergei", "../compiler/convergei", NULL};
+			char *cnd = malloc(PATH_MAX);
+			char *canon_cnd = malloc(PATH_MAX);
+			int i;
+			for (i = 0; cnds[i] != NULL; i += 1) {
+				strcpy(cnd, vm_path);
+				int j;
+				for (j = strlen(cnd); j >= 0 && cnd[j] != '/'; j -= 1) {}
+				if (cnd[j] == '/')
+					strcpy(cnd + j + 1, cnds[i]);
+				else
+					strcpy(cnd + j, cnds[i]);
+				struct stat tmp_stat;
+				if (realpath(cnd, canon_cnd) != NULL && stat(canon_cnd, &tmp_stat) == 0)
+					break;
+			}
+			free(cnd);
+			if (cnds[i] == NULL)
+				free(canon_cnd);
+			else {
+				prog_path = canon_cnd;
+			}
+		}
+		if (prog_path == NULL) {
+			fprintf(stderr, "%s: too few options and unable to locate convergei.\n", __progname);
+			exit(1);
+		}
 	}
+	else
+		prog_path = argv[1];
 	
 	struct stat con_binary_file_stat;
 	if (stat(prog_path, &con_binary_file_stat) == -1) {

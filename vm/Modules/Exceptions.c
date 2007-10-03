@@ -22,6 +22,7 @@
 #include "Config.h"
 
 #include "Core.h"
+#include "Modules.h"
 #include "Numbers.h"
 #include "Object.h"
 #include "Shortcuts.h"
@@ -564,7 +565,7 @@ Con_Obj *_Con_Modules_Exception_backtrace_func(Con_Obj *thread)
 				Con_Obj *module_id = CON_GET_SLOT_APPLY(src_location, "get", CON_NEW_INT(0));
 				Con_Obj *src_offset = CON_GET_SLOT_APPLY(src_location, "get", CON_NEW_INT(1));
 				
-				Con_Obj *module = Con_Builtins_Module_Atom_import(thread, module_id);
+				Con_Obj *module = Con_Modules_import(thread, module_id);
 
 				Con_Int line, column;
 				Con_Builtins_Module_Atom_src_offset_to_line_column(thread, module, Con_Numbers_Number_to_Con_Int(thread, src_offset), &line, &column);

@@ -44,6 +44,7 @@ void *alloca (size_t);
 
 #include "Arch.h"
 #include "Core.h"
+#include "Modules.h"
 #include "Numbers.h"
 #include "Object.h"
 #include "Shortcuts.h"
@@ -1103,7 +1104,7 @@ Con_Obj *_Con_Builtins_VM_Atom_execute(Con_Obj *thread)
 				}
 				case CON_INSTR_IMPORT: {
 					CON_MUTEX_UNLOCK(&con_stack->mutex);
-					Con_Obj *new_module = Con_Builtins_Module_Atom_import_mod_from_bytecode(thread, CON_GET_SLOT(func, "container"), CON_INSTR_DECODE_IMPORT_MOD_NUM(instruction));
+					Con_Obj *new_module = Con_Modules_import_mod_from_bytecode(thread, CON_GET_SLOT(func, "container"), CON_INSTR_DECODE_IMPORT_MOD_NUM(instruction));
 					CON_MUTEX_LOCK(&con_stack->mutex);
 					Con_Builtins_Con_Stack_Atom_push_object(thread, con_stack, new_module);
 					pc.pc.bytecode_offset += sizeof(Con_Int);

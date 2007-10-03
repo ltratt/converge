@@ -37,6 +37,7 @@
 #include "Bootstrap.h"
 #include "Bytecode.h"
 #include "Core.h"
+#include "Modules.h"
 #include "Numbers.h"
 #include "Object.h"
 #include "Shortcuts.h"
@@ -214,7 +215,7 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 
 	Con_Obj *exception;
 	CON_TRY {
-		Con_Obj *main_module = Con_Builtins_Module_Atom_import(thread, main_module_identifier);
+		Con_Obj *main_module = Con_Modules_import(thread, main_module_identifier);
 		CON_APPLY(CON_GET_MODULE_DEF(main_module, "main"));
 	}
 	CON_CATCH(exception) {

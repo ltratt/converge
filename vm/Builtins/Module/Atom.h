@@ -62,7 +62,4 @@ Con_Obj *Con_Builtins_Module_Atom_pc_to_src_locations(Con_Obj *, Con_PC);
 void Con_Builtins_Module_Atom_src_offset_to_line_column(Con_Obj *, Con_Obj *, Con_Int, Con_Int *, Con_Int *);
 Con_Obj	*Con_Builtins_Module_Atom_get_definition(Con_Obj *, Con_Obj *, const u_char *, Con_Int);
 
-Con_Obj *Con_Builtins_Module_Atom_import_mod_from_bytecode(Con_Obj *, Con_Obj *, Con_Int);
-Con_Obj *Con_Builtins_Module_Atom_import(Con_Obj *, Con_Obj *);
-
 #endif

@@ -24,6 +24,7 @@
 #include "Bytecode.h"
 #include "Core.h"
 #include "Memory.h"
+#include "Modules.h"
 #include "Object.h"
 #include "Shortcuts.h"
 
@@ -97,5 +98,5 @@ Con_Obj *_Con_Modules_VM_import_module_func(Con_Obj *thread)
 	Con_Obj *mod_id;
 	CON_UNPACK_ARGS("O", &mod_id);
 	
-	return Con_Builtins_Module_Atom_import(thread, mod_id);
+	return Con_Modules_import(thread, mod_id);
 }

@@ -295,17 +295,15 @@ Con_Obj *Con_Object_get_slot_no_custom(Con_Obj *thread, Con_Obj *obj, const u_ch
 {
 	Con_Builtins_Slots_Atom *slots_atom = CON_FIND_ATOM(obj, CON_BUILTIN(CON_BUILTIN_SLOTS_ATOM_DEF_OBJECT));
 	if (slots_atom != NULL) {
-		Con_Obj *val = Con_Slots_get_slot(thread, &slots_atom->slots, slot_name, slot_name_size);
-		if (val != NULL) {
+		Con_Obj *val;
+		if (Con_Slots_get_slot(thread, &slots_atom->slots, slot_name, slot_name_size, &val))
 			return val;
-		}
 	}
 	
 	if (obj->creator_slots != NULL) {
-		Con_Obj *val = Con_Slots_get_slot(thread, obj->creator_slots, slot_name, slot_name_size);
-		if (val != NULL) {
+		Con_Obj *val;
+		if (Con_Slots_get_slot(thread, obj->creator_slots, slot_name, slot_name_size, &val))
 			return val;
-		}
 	}
 
 	if (memcmp(slot_name, "id", 2) == 0) {
@@ -385,17 +383,15 @@ Con_Obj *Con_Object_find_slot_no_custom(Con_Obj *thread, Con_Obj *obj, const u_c
 {
 	Con_Builtins_Slots_Atom *slots_atom = CON_FIND_ATOM(obj, CON_BUILTIN(CON_BUILTIN_SLOTS_ATOM_DEF_OBJECT));
 	if (slots_atom != NULL) {
-		Con_Obj *val = Con_Slots_get_slot(thread, &slots_atom->slots, slot_name, slot_name_size);
-		if (val != NULL) {
+		Con_Obj *val;
+		if (Con_Slots_get_slot(thread, &slots_atom->slots, slot_name, slot_name_size, &val))
 			return val;
-		}
 	}
 	
 	if (obj->creator_slots != NULL) {
-		Con_Obj *val = Con_Slots_get_slot(thread, obj->creator_slots, slot_name, slot_name_size);
-		if (val != NULL) {
+		Con_Obj *val;
+		if (Con_Slots_get_slot(thread, obj->creator_slots, slot_name, slot_name_size, &val))
 			return val;
-		}
 	}
 	
 	return NULL;

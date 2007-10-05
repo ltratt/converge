@@ -27,6 +27,7 @@
 #include "Numbers.h"
 #include "Object.h"
 #include "Shortcuts.h"
+#include "Slots.h"
 
 #include "Builtins/Con_Stack/Atom.h"
 #include "Builtins/Func/Atom.h"
@@ -36,19 +37,28 @@
 #include "Builtins/Thread/Atom.h"
 #include "Builtins/VM/Atom.h"
 
-#include "Modules/Thread.h"
 
 
+Con_Obj *Con_Module_Thread_init(Con_Obj *, Con_Obj *);
+Con_Obj *Con_Module_Thread_import(Con_Obj *, Con_Obj *);
 
 Con_Obj *_Con_Modules_Thread_get_continuation_src_infos_func(Con_Obj *);
 
 
 
-Con_Obj *Con_Modules_Thread_init(Con_Obj *thread, Con_Obj *identifier)
+
+Con_Obj *Con_Module_Thread_init(Con_Obj *thread, Con_Obj *identifier)
 {
-	Con_Obj *thread_mod = Con_Builtins_Module_Atom_new_c(thread, identifier, CON_NEW_STRING("Thread"), CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
-	
-	CON_SET_SLOT(thread_mod, "get_continuation_src_infos", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_Thread_get_continuation_src_infos_func, "get_continuation_src_infos", thread_mod));
+	const char* defn_names[] = {"get_continuation_src_infos", NULL};
+
+	return Con_Builtins_Module_Atom_new_c(thread, identifier, CON_NEW_STRING("Thread"), defn_names, CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+}
+
+
+
+Con_Obj *Con_Module_Thread_import(Con_Obj *thread, Con_Obj *thread_mod)
+{
+	CON_SET_MOD_DEF(thread_mod, "get_continuation_src_infos", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_Thread_get_continuation_src_infos_func, "get_continuation_src_infos", thread_mod));
 	
 	return thread_mod;
 }

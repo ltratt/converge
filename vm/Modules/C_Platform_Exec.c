@@ -27,6 +27,7 @@
 #include "Memory.h"
 #include "Object.h"
 #include "Shortcuts.h"
+#include "Slots.h"
 
 #include "Builtins/Con_Stack/Atom.h"
 #include "Builtins/Func/Atom.h"
@@ -37,19 +38,27 @@
 #include "Builtins/Thread/Atom.h"
 #include "Builtins/VM/Atom.h"
 
-#include "Modules/C_Platform_Exec.h"
 
 
+Con_Obj *Con_Module_C_Platform_Exec_init(Con_Obj *, Con_Obj *);
+Con_Obj *Con_Module_C_Platform_Exec_import(Con_Obj *, Con_Obj *);
 
 Con_Obj *Con_Modules_C_Platform_Exec_command(Con_Obj *);
 
 
 
-Con_Obj *Con_Modules_C_Platform_Exec_init(Con_Obj *thread, Con_Obj *identifier)
+Con_Obj *Con_Module_C_Platform_Exec_init(Con_Obj *thread, Con_Obj *identifier)
 {
-	Con_Obj *env_mod = Con_Builtins_Module_Atom_new_c(thread, identifier, CON_NEW_STRING("C_Platform_Exec"), CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+	const char* defn_names[] = {"command", NULL};
 
-	CON_SET_SLOT(env_mod, "command", CON_NEW_UNBOUND_C_FUNC(Con_Modules_C_Platform_Exec_command, "command", env_mod));
+	return Con_Builtins_Module_Atom_new_c(thread, identifier, CON_NEW_STRING("C_Platform_Exec"), defn_names, CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+}
+
+
+
+Con_Obj *Con_Module_C_Platform_Exec_import(Con_Obj *thread, Con_Obj *env_mod)
+{
+	CON_SET_MOD_DEF(env_mod, "command", CON_NEW_UNBOUND_C_FUNC(Con_Modules_C_Platform_Exec_command, "command", env_mod));
 
 	return env_mod;
 }

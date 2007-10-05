@@ -27,13 +27,9 @@ OBJECT_FILES = 	@CON_THREAD_ATOM_OBJ@ @CON_THREAD_CLASS_OBJ@ @CON_THREAD_MODULE_
 	Builtins/Slots_Atom_Def.o Builtins/String/Atom.o Builtins/String/Class.o \
 	Builtins/Unique_Atom_Def.o Builtins/VM/Atom.o Builtins/VM/Class.o Bytecode.o \
 	Builtins/Number/Class.o Builtins/Float/Atom.o Builtins/Float/Class.o \
-	Hash.o Memory.o Misc.o Modules/Array.o Modules/Builtins.o Modules/C_Earley_Parser.o \
-	Modules/C_Strings.o Modules/VM.o \
-	Modules/Exceptions.o Modules/PCRE.o Modules/Sys.o Numbers.o Object.o \
-	Platform/Arch/@CON_ARCH@/Arch.o @CON_MEMMOVE@ \
-	Platform/POSIX/POSIX_File_Module.o Slots.o main.o Modules/Thread.o Modules/libXML2.o \
-	Modules/Random.o Modules/C_Platform_Properties.o Modules/C_Platform_Env.o \
-	Modules/C_Platform_Exec.o @FGETLN@ Modules.o
+	Hash.o Memory.o Misc.o Numbers.o Object.o Platform/Arch/@CON_ARCH@/Arch.o @CON_MEMMOVE@ \
+	Slots.o main.o Modules/Thread.o Modules.o Builtin_Modules.o @FGETLN@\
+	@MODULES@
 	
 
 all: converge

@@ -35,23 +35,30 @@ typedef struct {
 	// this memory should be enforced by the OS / architecture.
 	u_char *module_bytecode;
 	Con_Int module_bytecode_offset;
-	Con_Obj *identifier, *name, *closure, *imports, *init_func, *top_level_vars_map, *container;
+	Con_Obj *identifier, *name, *closure, *imports, *init_func, *container;
+	
+	// If closures is NULL, then this is a straight forward mapping of definition names to values.
+	// If closures is not-NULL, then this is a mapping of definition names to variable numbers.
+	Con_Slots top_level_vars;
 	
 	Con_Int num_constants;
 	Con_Int *constants_create_offsets; // Can be NULL if num_constants == 0
 	Con_Obj **constants;               // Can be NULL if num_constants == 0
 } Con_Builtins_Module_Atom;
 
+typedef struct {
+	const u_char *key;
+	Con_Obj *val;
+} Con_Builtins_Module_Atom_C_Entry;
+
 
 void Con_Builtins_Module_Atom_bootstrap(Con_Obj *);
 
-Con_Obj *Con_Builtins_Module_Atom_new(Con_Obj *, Con_Obj *, u_char *, Con_Int, Con_Obj *, Con_Obj *, Con_Int, Con_Int *, Con_Obj *, Con_Obj *);
-Con_Obj *Con_Builtins_Module_Atom_new_c(Con_Obj *, Con_Obj *, Con_Obj *, Con_Obj *);
+Con_Obj *Con_Builtins_Module_Atom_new_c(Con_Obj *, Con_Obj *, Con_Obj *, const char* [], Con_Obj *);
 Con_Obj *Con_Builtins_Module_Atom_new_from_bytecode(Con_Obj *, u_char *);
-void Con_Builtins_Module_Atom_init_atom(Con_Obj *, Con_Builtins_Module_Atom *, Con_Obj *, u_char *, Con_Int, Con_Obj *, Con_Obj *, Con_Int, Con_Int *, Con_Obj *, Con_Obj *);
 
 Con_Obj *Con_Builtins_Module_Atom_get_identifier(Con_Obj *, Con_Obj *);
-void Con_Builtins_Module_Atom_set_init_func(Con_Obj *, Con_Obj *, Con_Obj *);
+void Con_Builtins_Module_Atom_set_definition(Con_Obj *, Con_Obj *, const u_char *, Con_Int, Con_Obj *);
 Con_Int Con_Builtins_Module_Atom_get_instruction(Con_Obj *, Con_Obj *, Con_Int);
 Con_Obj *Con_Builtins_Module_Atom_get_string(Con_Obj *, Con_Obj *, Con_Int, Con_Int);
 void Con_Builtins_Module_Atom_read_bytes(Con_Obj *, Con_Obj *, Con_Int, void *, Con_Int);

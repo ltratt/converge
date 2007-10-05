@@ -425,14 +425,14 @@ Con_Obj *_Con_Builtins_Class_Class_conformed_by_func(Con_Obj *thread)
 					break;
 
 				if (o_slots_atom != NULL) {
-					Con_Obj *val = Con_Slots_get_slot(thread, &o_slots_atom->slots, slot_name, slot_name_size);
-					if (val != NULL)
+					Con_Obj *val;
+					if (Con_Slots_get_slot(thread, &o_slots_atom->slots, slot_name, slot_name_size, &val))
 						continue;
 				}
 
 				if (o->creator_slots != NULL) {
-					Con_Obj *val = Con_Slots_get_slot(thread, o->creator_slots, slot_name, slot_name_size);
-					if (val != NULL)
+					Con_Obj *val;
+					if (Con_Slots_get_slot(thread, o->creator_slots, slot_name, slot_name_size, &val))
 						continue;
 				}
 

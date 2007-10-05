@@ -91,8 +91,12 @@ extra_libs="-L/usr/local/lib"
 
 AC_MSG_CHECKING(platform)
 operating_system=`uname -s`
+posix=0
 case $operating_system in
-	OpenBSD | FreeBSD | NetBSD | Linux | Darwin | CYGWIN_NT*) AC_MSG_RESULT(POSiX); AC_DEFINE(CON_PLATFORM_POSIX, [], [Define if you are running on a POSiX platform. Note that you can can only define one CON_PLATFORM_* variable.]);;
+	OpenBSD | FreeBSD | NetBSD | Linux | Darwin | CYGWIN_NT*)
+		AC_MSG_RESULT(POSiX);
+		posix=1;
+		AC_DEFINE(CON_PLATFORM_POSIX, [], [Define if you are running on a POSiX platform. Note that you can can only define one CON_PLATFORM_* variable.]);;
 	*) AC_MSG_ERROR([Unknown platform "$operating_system"]);;
 esac
 
@@ -243,7 +247,7 @@ fi
 
 
 ####################################################################################################
-# Package / header file checks
+# Package / header file checks & module inclusions
 #
 
 CFLAGS="$extra_cflags"
@@ -261,6 +265,52 @@ if [[ "$xml2_config" = "fail" ]]; then
 fi
 extra_cflags="$extra_cflags `$xml2_config --cflags`"
 extra_libs="$extra_libs `$xml2_config --libs`"
+
+AC_MSG_CHECKING([checking which modules to compile])
+mod_paths=`ls vm/Modules/*.c | sed "s/c$/o/"`
+if [[ posix -eq 1 ]]; then
+	mod_paths="$mod_paths vm/Platform/POSIX/Modules/POSIX_File.o"
+fi
+mod_names=""
+for path in $mod_paths; do
+	mod_names="$mod_names `echo $path | sed "s/.*\///" | sed "s/\.o//"`"
+done
+sorted_mod_names=""
+for mod_name in `echo $mod_names | sed "y/ /\n/" | sort -f | sed "y/\n/ /"`; do
+	sorted_mod_names="$sorted_mod_names $mod_name"
+done
+sorted_mod_names=`echo $sorted_mod_names | sed "s/^ //"`
+AC_MSG_RESULT($sorted_mod_names)
+AC_SUBST(MODULES, [`echo $mod_paths | sed "s/vm\///g"`])
+
+externs=""
+modules_list=""
+i=0
+for mod_name in $sorted_mod_names; do
+	if [[ $i -gt 0 ]]; then
+		modules_list="$modules_list, "
+	fi
+	externs="${externs} extern _Con_Modules_get_init_t Con_Module_${mod_name}_init; extern _Con_Modules_get_import_t Con_Module_${mod_name}_import;"
+	modules_list="$modules_list{ \"$mod_name\", Con_Module_${mod_name}_init, Con_Module_${mod_name}_import }"
+	i=$(($i + 1))
+done
+AC_SUBST(MODULES_LIST, $modules_list)
+
+cat << EOF > vm/Builtin_Modules.c
+// This file is auto-generated.
+//
+// Any changes you make are likely to be lost.
+
+#include "Config.h"
+
+#include "Core.h"
+#include "Modules.h"
+
+$externs
+
+Con_Modules_Spec Con_Builtin_Modules[[]] = {$modules_list, { NULL, NULL, NULL }};
+
+EOF
 
 
 

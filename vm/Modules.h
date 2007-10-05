@@ -22,6 +22,17 @@
 #ifndef _CON_MODULES_H
 #define _CON_MODULES_H
 
+typedef Con_Obj* _Con_Modules_get_init_t(Con_Obj *, Con_Obj *);
+typedef Con_Obj* _Con_Modules_get_import_t(Con_Obj *, Con_Obj *);
+
+typedef struct {
+	const u_char *mod_name;
+	_Con_Modules_get_init_t *init_func;
+	_Con_Modules_get_import_t *import_func;
+} Con_Modules_Spec;
+
+Con_Obj *Con_Modules_find(Con_Obj *, Con_Obj *);
+Con_Obj *Con_Modules_get(Con_Obj *, Con_Obj *);
 Con_Obj *Con_Modules_import_mod_from_bytecode(Con_Obj *, Con_Obj *, Con_Int);
 Con_Obj *Con_Modules_import(Con_Obj *, Con_Obj *);
 

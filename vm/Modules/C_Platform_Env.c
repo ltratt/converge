@@ -27,6 +27,7 @@
 #include "Memory.h"
 #include "Object.h"
 #include "Shortcuts.h"
+#include "Slots.h"
 
 #include "Builtins/Con_Stack/Atom.h"
 #include "Builtins/Func/Atom.h"
@@ -37,9 +38,9 @@
 #include "Builtins/Thread/Atom.h"
 #include "Builtins/VM/Atom.h"
 
-#include "Modules/C_Platform_Env.h"
 
-
+Con_Obj *Con_Module_C_Platform_Env_init(Con_Obj *, Con_Obj *);
+Con_Obj *Con_Module_C_Platform_Env_import(Con_Obj *, Con_Obj *);
 
 Con_Obj *Con_Modules_C_Platform_Env_find_var(Con_Obj *);
 Con_Obj *Con_Modules_C_Platform_Env_get_var(Con_Obj *);
@@ -47,13 +48,20 @@ Con_Obj *Con_Modules_C_Platform_Env_set_var(Con_Obj *);
 
 
 
-Con_Obj *Con_Modules_C_Platform_Env_init(Con_Obj *thread, Con_Obj *identifier)
+Con_Obj *Con_Module_C_Platform_Env_init(Con_Obj *thread, Con_Obj *identifier)
 {
-	Con_Obj *env_mod = Con_Builtins_Module_Atom_new_c(thread, identifier, CON_NEW_STRING("C_Platform_Env"), CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+	const char* defn_names[] = {"find_var", "get_var", "set_var", NULL};
 
-	CON_SET_SLOT(env_mod, "find_var", CON_NEW_UNBOUND_C_FUNC(Con_Modules_C_Platform_Env_find_var, "find_var", env_mod));
-	CON_SET_SLOT(env_mod, "get_var", CON_NEW_UNBOUND_C_FUNC(Con_Modules_C_Platform_Env_get_var, "get_var", env_mod));
-	CON_SET_SLOT(env_mod, "set_var", CON_NEW_UNBOUND_C_FUNC(Con_Modules_C_Platform_Env_set_var, "set_var", env_mod));
+	return Con_Builtins_Module_Atom_new_c(thread, identifier, CON_NEW_STRING("C_Platform_Env"), defn_names, CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+}
+
+
+
+Con_Obj *Con_Module_C_Platform_Env_import(Con_Obj *thread, Con_Obj *env_mod)
+{
+	CON_SET_MOD_DEF(env_mod, "find_var", CON_NEW_UNBOUND_C_FUNC(Con_Modules_C_Platform_Env_find_var, "find_var", env_mod));
+	CON_SET_MOD_DEF(env_mod, "get_var", CON_NEW_UNBOUND_C_FUNC(Con_Modules_C_Platform_Env_get_var, "get_var", env_mod));
+	CON_SET_MOD_DEF(env_mod, "set_var", CON_NEW_UNBOUND_C_FUNC(Con_Modules_C_Platform_Env_set_var, "set_var", env_mod));
 
 	return env_mod;
 }

@@ -21,6 +21,7 @@
 
 #include "Config.h"
 
+#include <dlfcn.h>
 #include <string.h>
 
 #include "Arch.h"
@@ -50,6 +51,40 @@
 
 
 
+extern Con_Modules_Spec Con_Builtin_Modules[];
+
+
+
+Con_Obj *Con_Modules_find(Con_Obj *thread, Con_Obj *mod_id)
+{
+	Con_Obj *modules = CON_GET_SLOT(Con_Builtins_Thread_Atom_get_vm(thread), "modules");
+
+	Con_Obj *mod = CON_GET_SLOT_APPLY_NO_FAIL(modules, "get", mod_id, CON_BUILTIN(CON_BUILTIN_FAIL_OBJ));
+	if (mod == NULL) {
+		for (int i = 0; Con_Builtin_Modules[i].mod_name != NULL; i += 1) {
+			if (Con_Builtins_String_Atom_c_string_eq(thread, Con_Builtin_Modules[i].mod_name, strlen(Con_Builtin_Modules[i].mod_name), mod_id)) {
+				mod = Con_Builtin_Modules[i].init_func(thread, mod_id);
+			}
+		}
+	}
+		
+	return mod;
+}
+
+
+
+Con_Obj *Con_Modules_get(Con_Obj *thread, Con_Obj *mod_id)
+{
+	Con_Obj *mod = Con_Modules_find(thread, mod_id);
+	
+	if (mod == NULL)
+		CON_RAISE_EXCEPTION("Import_Exception", mod_id);
+		
+	return mod;
+}
+
+
+
 Con_Obj *Con_Modules_import_mod_from_bytecode(Con_Obj *thread, Con_Obj *module, Con_Int import_num)
 {
 	Con_Builtins_Module_Atom *module_atom = CON_GET_ATOM(module, CON_BUILTIN(CON_BUILTIN_MODULE_ATOM_DEF_OBJECT));
@@ -58,130 +93,47 @@ Con_Obj *Con_Modules_import_mod_from_bytecode(Con_Obj *thread, Con_Obj *module, 
 	Con_Obj *imports = module_atom->imports;
 	CON_MUTEX_UNLOCK(&module->mutex);
 
-	return Con_Modules_import(thread, CON_GET_SLOT_APPLY(imports, "get", CON_NEW_INT(import_num)));
+	Con_Obj *mod = Con_Modules_get(thread, CON_GET_SLOT_APPLY(imports, "get", CON_NEW_INT(import_num)));
+
+	return Con_Modules_import(thread, mod);
 }
 
 
 
-extern Con_Obj *Con_Modules_Builtins_init(Con_Obj *, Con_Obj*);
-extern Con_Obj *Con_Modules_Exceptions_init(Con_Obj *, Con_Obj*);
-extern Con_Obj *Con_Modules_Sys_init(Con_Obj *, Con_Obj*);
-extern Con_Obj *Con_Modules_POSIX_File_Module_init(Con_Obj *, Con_Obj*);
-extern Con_Obj *Con_Modules_PThreads_init(Con_Obj *, Con_Obj*);
-extern Con_Obj *Con_Modules_PCRE_init(Con_Obj *, Con_Obj*);
-extern Con_Obj *Con_Modules_Array_init(Con_Obj *, Con_Obj*);
-extern Con_Obj *Con_Modules_C_Earley_Parser_init(Con_Obj *, Con_Obj*);
-extern Con_Obj *Con_Modules_C_Strings_init(Con_Obj *, Con_Obj*);
-extern Con_Obj *Con_Modules_VM_init(Con_Obj *, Con_Obj*);
-extern Con_Obj *Con_Modules_Thread_init(Con_Obj *, Con_Obj*);
-extern Con_Obj *Con_Modules_libXML2_init(Con_Obj *, Con_Obj*);
-extern Con_Obj *Con_Modules_Random_init(Con_Obj *, Con_Obj*);
-extern Con_Obj *Con_Modules_C_Platform_Properties_init(Con_Obj *, Con_Obj*);
-extern Con_Obj *Con_Modules_C_Platform_Env_init(Con_Obj *, Con_Obj*);
-extern Con_Obj *Con_Modules_C_Platform_Exec_init(Con_Obj *, Con_Obj*);
-
-Con_Obj *Con_Modules_import(Con_Obj *thread, Con_Obj *identifier)
+Con_Obj *Con_Modules_import(Con_Obj *thread, Con_Obj *module)
 {
-	Con_Obj *modules = CON_GET_SLOT(Con_Builtins_Thread_Atom_get_vm(thread), "modules");
-
-	Con_Obj *module = CON_GET_SLOT_APPLY_NO_FAIL(modules, "get", identifier, CON_BUILTIN(CON_BUILTIN_FAIL_OBJ));
-	if (module == NULL) {
-		if (CON_C_STRING_EQ("Sys", identifier)) {
-			module = Con_Modules_Sys_init(thread, CON_NEW_STRING("Sys"));
-			CON_GET_SLOT_APPLY(modules, "set", CON_NEW_STRING("Sys"), module);
-		}
-		else if (CON_C_STRING_EQ("Exceptions", identifier)) {
-			module = Con_Modules_Exceptions_init(thread, CON_NEW_STRING("Exceptions"));
-			CON_GET_SLOT_APPLY(modules, "set", CON_NEW_STRING("Exceptions"), module);
-		}
-		else if (CON_C_STRING_EQ("Builtins", identifier)) {
-			module = Con_Modules_Builtins_init(thread, CON_NEW_STRING("Builtins"));
-			CON_GET_SLOT_APPLY(modules, "set", CON_NEW_STRING("Builtins"), module);
-		}
-		else if (CON_C_STRING_EQ("POSIX_File", identifier)) {
-			module = Con_Modules_POSIX_File_Module_init(thread, CON_NEW_STRING("POSIX_File"));
-			CON_GET_SLOT_APPLY(modules, "set", CON_NEW_STRING("POSIX_File"), module);
-		}
-		else if (CON_C_STRING_EQ("PCRE", identifier)) {
-			module = Con_Modules_PCRE_init(thread, CON_NEW_STRING("PCRE"));
-			CON_GET_SLOT_APPLY(modules, "set", CON_NEW_STRING("PCRE"), module);
-		}
-		else if (CON_C_STRING_EQ("Array", identifier)) {
-			module = Con_Modules_Array_init(thread, CON_NEW_STRING("Array"));
-			CON_GET_SLOT_APPLY(modules, "set", CON_NEW_STRING("Array"), module);
-		}
-		else if (CON_C_STRING_EQ("VM", identifier)) {
-			module = Con_Modules_VM_init(thread, CON_NEW_STRING("VM"));
-			CON_GET_SLOT_APPLY(modules, "set", CON_NEW_STRING("VM"), module);
-		}
-		else if (CON_C_STRING_EQ("C_Earley_Parser", identifier)) {
-			module = Con_Modules_C_Earley_Parser_init(thread, CON_NEW_STRING("C_Earley_Parser"));
-			CON_GET_SLOT_APPLY(modules, "set", CON_NEW_STRING("C_Earley_Parser"), module);
-		}
-		else if (CON_C_STRING_EQ("C_Strings", identifier)) {
-			module = Con_Modules_C_Strings_init(thread, CON_NEW_STRING("C_Strings"));
-			CON_GET_SLOT_APPLY(modules, "set", CON_NEW_STRING("C_Strings"), module);
-		}
-		else if (CON_C_STRING_EQ("Thread", identifier)) {
-			module = Con_Modules_Thread_init(thread, CON_NEW_STRING("Thread"));
-			CON_GET_SLOT_APPLY(modules, "set", CON_NEW_STRING("Thread"), module);
-		}
-		else if (CON_C_STRING_EQ("libXML2", identifier)) {
-			module = Con_Modules_libXML2_init(thread, CON_NEW_STRING("libXML2"));
-			CON_GET_SLOT_APPLY(modules, "set", CON_NEW_STRING("libXML2"), module);
-		}
-		else if (CON_C_STRING_EQ("Random", identifier)) {
-			module = Con_Modules_Random_init(thread, CON_NEW_STRING("Random"));
-			CON_GET_SLOT_APPLY(modules, "set", CON_NEW_STRING("Random"), module);
-		}
-		else if (CON_C_STRING_EQ("C_Platform_Properties", identifier)) {
-			module = Con_Modules_C_Platform_Properties_init(thread, CON_NEW_STRING("C_Platform_Properties"));
-			CON_GET_SLOT_APPLY(modules, "set", CON_NEW_STRING("C_Platform_Properties"), module);
-		}
-		else if (CON_C_STRING_EQ("C_Platform_Env", identifier)) {
-			module = Con_Modules_C_Platform_Env_init(thread, CON_NEW_STRING("C_Platform_Env"));
-			CON_GET_SLOT_APPLY(modules, "set", CON_NEW_STRING("C_Platform_Env"), module);
-		}
-		else if (CON_C_STRING_EQ("C_Platform_Exec", identifier)) {
-			module = Con_Modules_C_Platform_Exec_init(thread, CON_NEW_STRING("C_Platform_Exec"));
-			CON_GET_SLOT_APPLY(modules, "set", CON_NEW_STRING("C_Platform_Exec"), module);
-		}
-#		ifdef CON_THREADS_PTHREADS
-		else if (CON_C_STRING_EQ("PThreads", identifier)) {
-			module = Con_Modules_PThreads_init(thread, CON_NEW_STRING("PThreads"));
-			CON_GET_SLOT_APPLY(modules, "set", CON_NEW_STRING("PThreads"), module);
-		}
-#		endif
-		else
-			CON_RAISE_EXCEPTION("Import_Exception", identifier);
-		Con_Builtins_Module_Atom *module_atom = CON_GET_ATOM(module, CON_BUILTIN(CON_BUILTIN_MODULE_ATOM_DEF_OBJECT));
-		CON_MUTEX_LOCK(&module->mutex);
-		module_atom->state = CON_MODULE_INITIALIZED;
-		CON_MUTEX_UNLOCK(&module->mutex);
-		return module;
-	}
-	
 	Con_Builtins_Module_Atom *module_atom = CON_GET_ATOM(module, CON_BUILTIN(CON_BUILTIN_MODULE_ATOM_DEF_OBJECT));
 	CON_MUTEX_LOCK(&module->mutex);
 	if (module_atom->state == CON_MODULE_UNINITIALIZED) {
 		module_atom->state = CON_MODULE_INITIALIZING;
-		Con_Obj *init_func = module_atom->init_func;
 		CON_MUTEX_UNLOCK(&module->mutex);
 		
-		if (init_func == NULL)
-			CON_XXX;
-		
-		Con_Int num_closure_vars = Con_Builtins_Func_Atom_get_num_closure_vars(thread, init_func);
-		Con_Obj *container_closure = Con_Builtins_Func_Atom_get_container_closure(thread, init_func);
-		Con_Obj *closure = NULL;
-		if ((num_closure_vars > 0) || (container_closure != NULL))
-			closure = Con_Builtins_Closure_Atom_new(thread, num_closure_vars, container_closure);
-		
-		CON_MUTEX_LOCK(&module->mutex);
-		module_atom->closure = closure;
-		CON_MUTEX_UNLOCK(&module->mutex);
-		
-		Con_Builtins_VM_Atom_apply_with_closure(thread, init_func, closure, false, module, NULL);
+		if (module_atom->module_bytecode == NULL) {
+			for (int i = 0; Con_Builtin_Modules[i].mod_name != NULL; i += 1) {
+				if (Con_Builtins_String_Atom_c_string_eq(thread, Con_Builtin_Modules[i].mod_name, strlen(Con_Builtin_Modules[i].mod_name), module_atom->identifier)) {
+					Con_Builtin_Modules[i].import_func(thread, module);
+				}
+			}
+		}
+		else {
+			Con_Obj *init_func = module_atom->init_func;
+			CON_MUTEX_UNLOCK(&module->mutex);
+
+			if (init_func == NULL)
+				CON_XXX;
+
+			Con_Int num_closure_vars = Con_Builtins_Func_Atom_get_num_closure_vars(thread, init_func);
+			Con_Obj *container_closure = Con_Builtins_Func_Atom_get_container_closure(thread, init_func);
+			Con_Obj *closure = NULL;
+			if ((num_closure_vars > 0) || (container_closure != NULL))
+				closure = Con_Builtins_Closure_Atom_new(thread, num_closure_vars, container_closure);
+
+			CON_MUTEX_LOCK(&module->mutex);
+			module_atom->closure = closure;
+			CON_MUTEX_UNLOCK(&module->mutex);
+
+			Con_Builtins_VM_Atom_apply_with_closure(thread, init_func, closure, false, module, NULL);
+		}
 
 		CON_MUTEX_LOCK(&module->mutex);
 		module_atom->state = CON_MODULE_INITIALIZED;

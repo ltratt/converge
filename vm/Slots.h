@@ -45,7 +45,7 @@ struct Con_Slots {
 };
 
 void Con_Slots_init(Con_Obj *, Con_Slots *);
-Con_Obj *Con_Slots_get_slot(Con_Obj *, Con_Slots *, const u_char *, Con_Int);
+bool Con_Slots_get_slot(Con_Obj *, Con_Slots *, const u_char *, Con_Int, Con_Obj **);
 void Con_Slots_set_slot(Con_Obj *, Con_Mutex *, Con_Slots *, const u_char *, Con_Int, Con_Obj *);
 bool Con_Slots_read_slot(Con_Obj *, Con_Slots *, Con_Int *, const u_char **, Con_Int *, Con_Obj **);
 

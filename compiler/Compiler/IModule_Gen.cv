@@ -210,7 +210,7 @@ class IModule_Gen:
 		// Import all the modules into the VM.
 
 		module_identifiers := VM::add_modules(modules_to_add)
-		module := VM::import_module(modules_to_add[0].module_id)
+		module := VM::import_module(modules_to_add[0])
 		if not out_itree := module.get_def(splice_name)():
 			self._compiler.error("Splice did not return a value.", expr.src_infos)
 		if out_itree is null:

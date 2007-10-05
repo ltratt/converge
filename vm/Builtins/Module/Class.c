@@ -92,11 +92,9 @@ void Con_Builtins_Module_Class_bootstrap(Con_Obj *thread)
 Con_Obj *_Con_Builtins_Module_Class_new_object(Con_Obj *thread)
 {
 	Con_Obj *bc, *self;
-	CON_UNPACK_ARGS("CO", &self, &bc);
+	CON_UNPACK_ARGS("CS", &self, &bc);
 
-	Con_Builtins_String_Atom *bc_str_atom = CON_FIND_ATOM(bc, CON_BUILTIN(CON_BUILTIN_STRING_ATOM_DEF_OBJECT));
-	if (bc_str_atom == NULL)
-		CON_XXX;
+	Con_Builtins_String_Atom *bc_str_atom = CON_GET_ATOM(bc, CON_BUILTIN(CON_BUILTIN_STRING_ATOM_DEF_OBJECT));
 
 	return Con_Builtins_Module_Atom_new_from_bytecode(thread, (u_char*) bc_str_atom->str);
 }
@@ -140,7 +138,35 @@ Con_Obj *_Con_Builtins_Module_Class_def_names_func(Con_Obj *thread)
 	Con_Obj *self;
 	CON_UNPACK_ARGS("M", &self);
 
-	Con_Builtins_Module_Atom *module_atom = CON_FIND_ATOM(self, CON_BUILTIN(CON_BUILTIN_MODULE_ATOM_DEF_OBJECT));
+CON_XXX;
+/*	Con_Builtins_Module_Atom *module_atom = CON_FIND_ATOM(self, CON_BUILTIN(CON_BUILTIN_MODULE_ATOM_DEF_OBJECT));
+
+		Con_Int slot_name_buffer_size = 16;
+		u_char *slot_name_buffer = Con_Memory_malloc(thread, slot_name_buffer_size, CON_MEMORY_CHUNK_OPAQUE);
+		Con_Int j = 0;
+		while (1) {
+			Con_Obj *val;
+			Con_Int old_j = j;
+			const u_char *slot_name;
+			Con_Int slot_name_size;
+			CON_MUTEX_LOCK(&obj->mutex);
+			if (!Con_Slots_read_slot(thread, &slots_atom->slots, &j, &slot_name, &slot_name_size, &val))
+				break;
+			if (slot_name_size > slot_name_buffer_size) {
+				CON_MUTEX_UNLOCK(&obj->mutex);
+				slot_name_buffer_size = slot_name_size;
+				slot_name = Con_Memory_malloc(thread, slot_name_buffer_size, CON_MEMORY_CHUNK_OPAQUE);
+				j = old_j;
+				CON_MUTEX_LOCK(&obj->mutex);
+				continue;
+			}
+			
+			memmove(slot_name_buffer, slot_name, slot_name_size);
+			
+			CON_MUTEX_UNLOCK(&obj->mutex);
+			CON_GET_SLOT_APPLY(slots, "add", Con_Builtins_String_Atom_new_copy(thread, slot_name, slot_name_size, CON_STR_UTF_8));
+		}
+
 
 	CON_MUTEX_LOCK(&self->mutex);
 	Con_Obj *top_level_vars_map = module_atom->top_level_vars_map;
@@ -154,7 +180,7 @@ Con_Obj *_Con_Builtins_Module_Class_def_names_func(Con_Obj *thread)
 		CON_YIELD(def_name);
 	}
 
-	return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
+	return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);*/
 }
 
 

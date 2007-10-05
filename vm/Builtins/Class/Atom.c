@@ -166,10 +166,11 @@ Con_Obj *Con_Builtins_Class_Atom_get_field(Con_Obj *thread, Con_Obj *class_, con
 	Con_Builtins_Class_Atom *class_atom = CON_GET_ATOM(class_, CON_BUILTIN(CON_BUILTIN_CLASS_ATOM_DEF_OBJECT));
 
 	CON_MUTEX_LOCK(&class_->mutex);
-	Con_Obj *val = Con_Slots_get_slot(thread, &class_atom->fields, slot_name, slot_name_size);
+	Con_Obj *val;
+	bool got = Con_Slots_get_slot(thread, &class_atom->fields, slot_name, slot_name_size, &val);
 	CON_MUTEX_UNLOCK(&class_->mutex);
 
-	if (val == NULL)
+	if (!got)
 		CON_RAISE_EXCEPTION("Field_Exception", Con_Builtins_String_Atom_new_copy(thread, slot_name, slot_name_size, CON_STR_UTF_8), class_);
 	
 	return val;

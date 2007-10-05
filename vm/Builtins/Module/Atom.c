@@ -22,6 +22,7 @@
 #include "Config.h"
 
 #include <string.h>
+#include <dlfcn.h>
 
 #include "Arch.h"
 #include "Bytecode.h"
@@ -79,7 +80,7 @@ void Con_Builtins_Module_Atom_bootstrap(Con_Obj *thread)
 // Module creation functions
 //
 
-Con_Obj *Con_Builtins_Module_Atom_new(Con_Obj *thread, Con_Obj *identifier, u_char *module_bytecode, Con_Int module_bytecode_offset, Con_Obj *imports, Con_Obj *top_level_vars_map, Con_Int num_constants, Con_Int *constants_create_offsets, Con_Obj *name, Con_Obj *container)
+Con_Obj *Con_Builtins_Module_Atom_new_c(Con_Obj *thread, Con_Obj *identifier, Con_Obj *name, const char* defn_names[], Con_Obj *container)
 {
 	Con_Obj *new_module = Con_Object_new_from_class(thread, sizeof(Con_Obj) + sizeof(Con_Builtins_Module_Atom) + sizeof(Con_Builtins_Slots_Atom), CON_BUILTIN(CON_BUILTIN_MODULE_CLASS));
 	Con_Builtins_Module_Atom *module_atom = (Con_Builtins_Module_Atom *) new_module->first_atom;
@@ -87,25 +88,25 @@ Con_Obj *Con_Builtins_Module_Atom_new(Con_Obj *thread, Con_Obj *identifier, u_ch
 	module_atom->next_atom = (Con_Atom *) slots_atom;
 	slots_atom->next_atom = NULL;
 	
-	Con_Builtins_Module_Atom_init_atom(thread, module_atom, identifier, module_bytecode, module_bytecode_offset, imports, top_level_vars_map, num_constants, constants_create_offsets, name, container);
-	Con_Builtins_Slots_Atom_Def_init_atom(thread, slots_atom);
-
-	Con_Memory_change_chunk_type(thread, new_module, CON_MEMORY_CHUNK_OBJ);
+	module_atom->atom_type = CON_BUILTIN(CON_BUILTIN_MODULE_ATOM_DEF_OBJECT);
+	module_atom->state = CON_MODULE_UNINITIALIZED;
+	module_atom->identifier = identifier;
+	module_atom->name = name;
+	module_atom->module_bytecode = NULL;
+	module_atom->module_bytecode_offset = -1;
+	module_atom->closure = NULL;
+	module_atom->init_func = NULL;
+	module_atom->imports = Con_Builtins_List_Atom_new_sized(thread, 0);
+	module_atom->container = container;
+	module_atom->num_constants = 0;
+	module_atom->constants_create_offsets = 0;
+	module_atom->constants = NULL;
 	
-	return new_module;
-}
+	Con_Slots_init(thread, &module_atom->top_level_vars);
+	for (int i = 0; defn_names[i] != NULL; i += 1) {
+		Con_Slots_set_slot(thread, &new_module->mutex, &module_atom->top_level_vars, defn_names[i], strlen(defn_names[i]), NULL);
+	}
 
-
-
-Con_Obj *Con_Builtins_Module_Atom_new_c(Con_Obj *thread, Con_Obj *identifier, Con_Obj *name, Con_Obj *container)
-{
-	Con_Obj *new_module = Con_Object_new_from_class(thread, sizeof(Con_Obj) + sizeof(Con_Builtins_Module_Atom) + sizeof(Con_Builtins_Slots_Atom), CON_BUILTIN(CON_BUILTIN_MODULE_CLASS));
-	Con_Builtins_Module_Atom *module_atom = (Con_Builtins_Module_Atom *) new_module->first_atom;
-	Con_Builtins_Slots_Atom *slots_atom = (Con_Builtins_Slots_Atom *) (module_atom + 1);
-	module_atom->next_atom = (Con_Atom *) slots_atom;
-	slots_atom->next_atom = NULL;
-	
-	Con_Builtins_Module_Atom_init_atom(thread, module_atom, identifier, NULL, -1, Con_Builtins_List_Atom_new_sized(thread, 0), NULL, 0, NULL, name, container);
 	Con_Builtins_Slots_Atom_Def_init_atom(thread, slots_atom);
 	
 	Con_Memory_change_chunk_type(thread, new_module, CON_MEMORY_CHUNK_OBJ);
@@ -118,67 +119,53 @@ Con_Obj *Con_Builtins_Module_Atom_new_c(Con_Obj *thread, Con_Obj *identifier, Co
 Con_Obj *Con_Builtins_Module_Atom_new_from_bytecode(Con_Obj *thread, u_char *bytecode)
 {
 	int j, imports_bytecode_offset;
-	Con_Obj *identifier, *imports, *init_func, *module, *name;
+
+	Con_Obj *module = Con_Object_new_from_class(thread, sizeof(Con_Obj) + sizeof(Con_Builtins_Module_Atom) + sizeof(Con_Builtins_Slots_Atom), CON_BUILTIN(CON_BUILTIN_MODULE_CLASS));
+	Con_Builtins_Module_Atom *module_atom = (Con_Builtins_Module_Atom *) module->first_atom;
+	Con_Builtins_Slots_Atom *slots_atom = (Con_Builtins_Slots_Atom *) (module_atom + 1);
+	module_atom->next_atom = (Con_Atom *) slots_atom;
+	slots_atom->next_atom = NULL;
+
+	module_atom->atom_type = CON_BUILTIN(CON_BUILTIN_MODULE_ATOM_DEF_OBJECT);
+	module_atom->state = CON_MODULE_UNINITIALIZED;
 
 #	define ID_MODULE_GET_WORD(x) (*(Con_Int*) (bytecode + (x)))
 #	define ID_MODULE_GET_OFFSET(x) ((void *) (bytecode + (ID_MODULE_GET_WORD(x))))
 
-	name = Con_Builtins_String_Atom_new_copy(thread, ID_MODULE_GET_OFFSET(CON_BYTECODE_MODULE_NAME), ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_NAME_SIZE), CON_STR_UTF_8);
+	module_atom->identifier = Con_Builtins_String_Atom_new_copy(thread, ID_MODULE_GET_OFFSET(CON_BYTECODE_MODULE_IDENTIFIER), ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_IDENTIFIER_SIZE), CON_STR_UTF_8);
+	module_atom->name = Con_Builtins_String_Atom_new_copy(thread, ID_MODULE_GET_OFFSET(CON_BYTECODE_MODULE_NAME), ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_NAME_SIZE), CON_STR_UTF_8);
 
-	identifier = Con_Builtins_String_Atom_new_copy(thread, ID_MODULE_GET_OFFSET(CON_BYTECODE_MODULE_IDENTIFIER), ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_IDENTIFIER_SIZE), CON_STR_UTF_8);
-
-	imports = Con_Builtins_List_Atom_new_sized(thread, ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_NUM_IMPORTS));
+	module_atom->imports = Con_Builtins_List_Atom_new_sized(thread, ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_NUM_IMPORTS));
 	imports_bytecode_offset = ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_IMPORTS);
 	for (j = 0; j < ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_NUM_IMPORTS); j += 1) {
-		CON_GET_SLOT_APPLY(imports, "append", Con_Builtins_String_Atom_new_copy(thread, bytecode + imports_bytecode_offset + CON_BYTECODE_IMPORT_IDENTIFIER, ID_MODULE_GET_WORD(imports_bytecode_offset + CON_BYTECODE_IMPORT_IDENTIFIER_SIZE), CON_STR_UTF_8));
+		CON_GET_SLOT_APPLY(module_atom->imports, "append", Con_Builtins_String_Atom_new_copy(thread, bytecode + imports_bytecode_offset + CON_BYTECODE_IMPORT_IDENTIFIER, ID_MODULE_GET_WORD(imports_bytecode_offset + CON_BYTECODE_IMPORT_IDENTIFIER_SIZE), CON_STR_UTF_8));
 		imports_bytecode_offset += CON_BYTECODE_IMPORT_IDENTIFIER + Con_Arch_align(thread, ID_MODULE_GET_WORD(imports_bytecode_offset + CON_BYTECODE_IMPORT_IDENTIFIER_SIZE));
 	}
 
-	Con_Obj *top_level_vars_map = Con_Builtins_Dict_Atom_new(thread);
+	Con_Slots_init(thread, &module_atom->top_level_vars);
 	Con_Int top_level_vars_map_bytecode_offset = ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_TOP_LEVEL_VARS_MAP);
 	for (j = 0; j < ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_NUM_TOP_LEVEL_VARS); j += 1) {
-		Con_Obj *var_name = Con_Builtins_String_Atom_new_copy(thread, bytecode + top_level_vars_map_bytecode_offset + CON_BYTECODE_TOP_LEVEL_VAR_NAME, ID_MODULE_GET_WORD(top_level_vars_map_bytecode_offset + CON_BYTECODE_TOP_LEVEL_VAR_NAME_SIZE), CON_STR_UTF_8);
-		CON_GET_SLOT_APPLY(top_level_vars_map, "set", var_name, CON_NEW_INT(ID_MODULE_GET_WORD(top_level_vars_map_bytecode_offset + CON_BYTECODE_TOP_LEVEL_VAR_NUM)));
+		Con_Slots_set_slot(thread, &module->mutex, &module_atom->top_level_vars, bytecode + top_level_vars_map_bytecode_offset + CON_BYTECODE_TOP_LEVEL_VAR_NAME, ID_MODULE_GET_WORD(top_level_vars_map_bytecode_offset + CON_BYTECODE_TOP_LEVEL_VAR_NAME_SIZE), CON_NEW_INT(ID_MODULE_GET_WORD(top_level_vars_map_bytecode_offset + CON_BYTECODE_TOP_LEVEL_VAR_NUM)));
 		top_level_vars_map_bytecode_offset += CON_BYTECODE_TOP_LEVEL_VAR_NAME + Con_Arch_align(thread, ID_MODULE_GET_WORD(top_level_vars_map_bytecode_offset + CON_BYTECODE_TOP_LEVEL_VAR_NAME_SIZE));
 	}
 
-	u_char *module_bytecode = Con_Memory_malloc(thread, ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_SIZE), CON_MEMORY_CHUNK_OPAQUE);
-	memmove(module_bytecode, bytecode, ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_SIZE));
+	module_atom->module_bytecode = Con_Memory_malloc(thread, ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_SIZE), CON_MEMORY_CHUNK_OPAQUE);
+	memmove(module_atom->module_bytecode, bytecode, ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_SIZE));
+	module_atom->module_bytecode_offset = ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_SIZE);
 
-	Con_Int *constants_offsets = Con_Memory_malloc(thread, sizeof(Con_Int) * ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_NUM_CONSTANTS), CON_MEMORY_CHUNK_OPAQUE);
-	memmove(constants_offsets, ID_MODULE_GET_OFFSET(CON_BYTECODE_MODULE_CONSTANTS_CREATE_OFFSETS), sizeof(Con_Int) * ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_NUM_CONSTANTS));
+	module_atom->num_constants = ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_NUM_CONSTANTS);
+	module_atom->constants_create_offsets = Con_Memory_malloc(thread, sizeof(Con_Int) * ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_NUM_CONSTANTS), CON_MEMORY_CHUNK_OPAQUE);
+	memmove(module_atom->constants_create_offsets, ID_MODULE_GET_OFFSET(CON_BYTECODE_MODULE_CONSTANTS_CREATE_OFFSETS), sizeof(Con_Int) * ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_NUM_CONSTANTS));
+	module_atom->constants = Con_Memory_malloc(thread, ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_NUM_CONSTANTS) * sizeof(Con_Obj *), CON_MEMORY_CHUNK_OPAQUE);
+	bzero(module_atom->constants, ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_NUM_CONSTANTS) * sizeof(Con_Obj *));
+	
+	module_atom->init_func = Con_Builtins_Func_Atom_new(thread, false, Con_Builtins_Func_Atom_make_con_pc_bytecode(thread, module, ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_INSTRUCTIONS)), 0,  ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_NUM_TOP_LEVEL_VARS), NULL, CON_NEW_STRING("$$init$$"), module);
 
-	module = Con_Builtins_Module_Atom_new(thread, identifier, module_bytecode, ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_SIZE), imports, top_level_vars_map, ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_NUM_CONSTANTS), constants_offsets, name, CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+	Con_Builtins_Slots_Atom_Def_init_atom(thread, slots_atom);
 
-	init_func = Con_Builtins_Func_Atom_new(thread, false, Con_Builtins_Func_Atom_make_con_pc_bytecode(thread, module, ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_INSTRUCTIONS)), 0,  ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_NUM_TOP_LEVEL_VARS), NULL, CON_NEW_STRING("$$init$$"), module);
-	Con_Builtins_Module_Atom_set_init_func(thread, module, init_func);
+	Con_Memory_change_chunk_type(thread, module, CON_MEMORY_CHUNK_OBJ);
 
 	return module;
-}
-
-
-
-void Con_Builtins_Module_Atom_init_atom(Con_Obj *thread, Con_Builtins_Module_Atom *module_atom, Con_Obj *identifier, u_char *module_bytecode, Con_Int module_bytecode_offset, Con_Obj *imports, Con_Obj *top_level_vars_map, Con_Int num_constants, Con_Int *constants_create_offsets, Con_Obj *name, Con_Obj *container)
-{	
-	module_atom->atom_type = CON_BUILTIN(CON_BUILTIN_MODULE_ATOM_DEF_OBJECT);
-	module_atom->state = CON_MODULE_UNINITIALIZED;
-	module_atom->identifier = identifier;
-	module_atom->name = name;
-	module_atom->module_bytecode = module_bytecode;
-	module_atom->module_bytecode_offset = module_bytecode_offset;
-	module_atom->closure = NULL;
-	module_atom->init_func = NULL;
-	module_atom->imports = imports;
-	module_atom->top_level_vars_map = top_level_vars_map;
-	module_atom->container = container;
-	module_atom->num_constants = num_constants;
-	module_atom->constants_create_offsets = constants_create_offsets;
-	if (num_constants == 0)
-		module_atom->constants = NULL;
-	else {
-		module_atom->constants = Con_Memory_malloc(thread, num_constants * sizeof(Con_Obj *), CON_MEMORY_CHUNK_OPAQUE);
-		bzero(module_atom->constants, num_constants * sizeof(Con_Obj *));
-	}
 }
 
 
@@ -186,18 +173,6 @@ void Con_Builtins_Module_Atom_init_atom(Con_Obj *thread, Con_Builtins_Module_Ato
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Module functions
 //
-
-void Con_Builtins_Module_Atom_set_init_func(Con_Obj *thread, Con_Obj *module, Con_Obj *init_func)
-{
-	Con_Builtins_Module_Atom *module_atom = CON_GET_ATOM(module, CON_BUILTIN(CON_BUILTIN_MODULE_ATOM_DEF_OBJECT));
-	
-	CON_MUTEX_LOCK(&module->mutex);
-	assert(module_atom->init_func == NULL);
-	module_atom->init_func = init_func;
-	CON_MUTEX_UNLOCK(&module->mutex);
-}
-
-
 
 //
 // Return the instruction at position 'offset' in 'module's bytecode.
@@ -473,10 +448,8 @@ void Con_Builtins_Module_Atom_src_offset_to_line_column(Con_Obj *thread, Con_Obj
 
 
 
-Con_Obj	*Con_Builtins_Module_Atom_get_definition(Con_Obj *thread, Con_Obj *module, const u_char *definition_name, Con_Int definition_name_size)
+Con_Obj	*Con_Builtins_Module_Atom_get_definition(Con_Obj *thread, Con_Obj *module, const u_char *defn_name, Con_Int defn_name_size)
 {
-	// This routine is somewhat temporary.
-
 	Con_Builtins_Module_Atom *module_atom = CON_FIND_ATOM(module, CON_BUILTIN(CON_BUILTIN_MODULE_ATOM_DEF_OBJECT));
 	
 	if (module_atom == NULL) {
@@ -486,20 +459,53 @@ Con_Obj	*Con_Builtins_Module_Atom_get_definition(Con_Obj *thread, Con_Obj *modul
 
 	CON_MUTEX_LOCK(&module->mutex);
 	Con_Obj *closure = module_atom->closure;
-	Con_Obj *top_level_vars_map = module_atom->top_level_vars_map;
-	CON_MUTEX_UNLOCK(&module->mutex);
+	Con_Obj *slot_val;
+	if (!Con_Slots_get_slot(thread, &module_atom->top_level_vars, defn_name, defn_name_size, &slot_val))
+		CON_XXX;
 	
 	if (closure == NULL) {
-		// Builtin modules. Temporary hack.
-		Con_Obj *def_obj = Con_Builtins_String_Atom_new_copy(thread, definition_name, definition_name_size, CON_STR_UTF_8);
-		return CON_APPLY(CON_EXBI(CON_BUILTIN(CON_BUILTIN_OBJECT_CLASS), "get_slot", module), def_obj);
+		// Builtin module.
+		if (slot_val == NULL)
+			CON_XXX;
+		return slot_val;
 	}
+	else { 
+		// User module.
+		return Con_Builtins_Closure_Atom_get_var(thread, closure, 0, Con_Numbers_Number_to_Con_Int(thread, slot_val));
+	}
+}
+
+
+
+void Con_Builtins_Module_Atom_set_definition(Con_Obj *thread, Con_Obj *module, const u_char *defn_name, Con_Int defn_name_size, Con_Obj *val)
+{
+	Con_Builtins_Module_Atom *module_atom = CON_FIND_ATOM(module, CON_BUILTIN(CON_BUILTIN_MODULE_ATOM_DEF_OBJECT));
 	
-	Con_Obj *var_num = CON_GET_SLOT_APPLY_NO_FAIL(top_level_vars_map, "find", Con_Builtins_String_Atom_new_copy(thread, definition_name, definition_name_size, CON_STR_UTF_8));
-	if (var_num == NULL)
-		CON_RAISE_EXCEPTION("Mod_Defn_Exception", Con_Builtins_String_Atom_new_copy(thread, definition_name, definition_name_size, CON_STR_UTF_8));
-		
-	return Con_Builtins_Closure_Atom_get_var(thread, closure, 0, Con_Numbers_Number_to_Con_Int(thread, var_num));
+	if (module_atom == NULL) {
+		Con_Obj *msg = CON_NEW_STRING("Trying to lookup a definition in a non-module.");
+		CON_RAISE_EXCEPTION("VM_Exception", msg);
+	}
+
+	CON_MUTEX_LOCK(&module->mutex);
+	Con_Obj *closure = module_atom->closure;
+	
+	if (closure == NULL) {
+		// Builtin module.
+		CON_MUTEX_UNLOCK(&module->mutex);
+#		ifndef NDEBUG
+		Con_Obj *dummy;
+		Con_Slots_get_slot(thread, &module_atom->top_level_vars, defn_name, defn_name_size, &dummy);
+#		endif
+		Con_Slots_set_slot(thread, &module->mutex, &module_atom->top_level_vars, defn_name, defn_name_size, val);
+	}
+	else { 
+		// User module.
+		Con_Obj *slot_val;
+		if (!Con_Slots_get_slot(thread, &module_atom->top_level_vars, defn_name, defn_name_size, &slot_val))
+			CON_XXX;
+		CON_MUTEX_UNLOCK(&module->mutex);
+		Con_Builtins_Closure_Atom_set_var(thread, closure, 0, Con_Numbers_Number_to_Con_Int(thread, slot_val), val);
+	}
 }
 
 
@@ -521,8 +527,7 @@ void _Con_Builtins_Module_Class_gc_scan_func(Con_Obj *thread, Con_Obj *obj, Con_
 	Con_Memory_gc_push(thread, module_atom->imports);
 	if (module_atom->init_func != NULL)
 		Con_Memory_gc_push(thread, module_atom->init_func);
-	if (module_atom->top_level_vars_map != NULL)
-		Con_Memory_gc_push(thread, module_atom->top_level_vars_map);
+	Con_Slots_gc_scan_slots(thread, &module_atom->top_level_vars);
 	
 	if (module_atom->constants_create_offsets != NULL)
 		Con_Memory_gc_push(thread, module_atom->constants_create_offsets);

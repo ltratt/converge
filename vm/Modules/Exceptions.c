@@ -39,9 +39,10 @@
 #include "Builtins/Thread/Atom.h"
 #include "Builtins/VM/Atom.h"
 
-#include "Modules/Exceptions.h"
 
 
+Con_Obj *Con_Module_Exceptions_init(Con_Obj *, Con_Obj *);
+Con_Obj *Con_Module_Exceptions_import(Con_Obj *, Con_Obj *);
 
 Con_Obj *_Con_Modules_Exception_System_Exit_Exception_init_func(Con_Obj *);
 Con_Obj *_Con_Modules_Exception_VM_Exception_init_func(Con_Obj *);
@@ -62,23 +63,30 @@ Con_Obj *_Con_Modules_Exception_backtrace_func(Con_Obj *);
 
 
 
-Con_Obj *Con_Modules_Exceptions_init(Con_Obj *thread, Con_Obj *identifier)
+Con_Obj *Con_Module_Exceptions_init(Con_Obj *thread, Con_Obj *identifier)
 {
-	Con_Obj *exceptions_mod = Con_Builtins_Module_Atom_new_c(thread, identifier, CON_NEW_STRING("Sys"), CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+	const char* defn_names[] = {"Exception", "Internal_Exception", "User_Exception", "System_Exit_Exception", "VM_Exception", "Apply_Exception", "Bounds_Exception", "Field_Exception", "Import_Exception", "Indices_Exception", "Key_Exception", "Mod_Defn_Exception", "NDIf_Exception", "Number_Exception", "Parameters_Exception", "Slot_Exception", "Type_Exception", "Unpack_Exception", "Unassigned_Var_Exception", "IO_Exception", "File_Exception", "backtrace", NULL};
 
+	return Con_Builtins_Module_Atom_new_c(thread, identifier, CON_NEW_STRING("Exceptions"), defn_names, CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+}
+
+
+
+Con_Obj *Con_Module_Exceptions_import(Con_Obj *thread, Con_Obj *exceptions_mod)
+{
 	// First we setup the main Exception class, and its "category" subclasses.
 
-	CON_SET_SLOT(exceptions_mod, "Exception", CON_BUILTIN(CON_BUILTIN_EXCEPTION_CLASS));
+	CON_SET_MOD_DEF(exceptions_mod, "Exception", CON_BUILTIN(CON_BUILTIN_EXCEPTION_CLASS));
 
 	// class Internal_Exception
 
 	Con_Obj *internal_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("Internal_Exception"), Con_Builtins_List_Atom_new_va(thread, CON_BUILTIN(CON_BUILTIN_EXCEPTION_CLASS), NULL), exceptions_mod);
-	CON_SET_SLOT(exceptions_mod, "Internal_Exception", internal_exception);
+	CON_SET_MOD_DEF(exceptions_mod, "Internal_Exception", internal_exception);
 
 	// class User_Exception
 
 	Con_Obj *user_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("User_Exception"), Con_Builtins_List_Atom_new_va(thread, CON_BUILTIN(CON_BUILTIN_EXCEPTION_CLASS), NULL), exceptions_mod);
-	CON_SET_SLOT(exceptions_mod, "User_Exception", user_exception);
+	CON_SET_MOD_DEF(exceptions_mod, "User_Exception", user_exception);
 
 	// Setup internal exceptions.
 
@@ -86,13 +94,13 @@ Con_Obj *Con_Modules_Exceptions_init(Con_Obj *thread, Con_Obj *identifier)
 
 	Con_Obj *system_exit_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("System_Exit_Exception"), Con_Builtins_List_Atom_new_va(thread, internal_exception, NULL), exceptions_mod);
 	CON_SET_FIELD(system_exit_exception, "init", CON_NEW_BOUND_C_FUNC(_Con_Modules_Exception_System_Exit_Exception_init_func, "init", exceptions_mod, system_exit_exception));
-	CON_SET_SLOT(exceptions_mod, "System_Exit_Exception", system_exit_exception);
+	CON_SET_MOD_DEF(exceptions_mod, "System_Exit_Exception", system_exit_exception);
 
 	// class VM_Exception
 
 	Con_Obj *vm_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("VM_Exception"), Con_Builtins_List_Atom_new_va(thread, internal_exception, NULL), exceptions_mod);
 	CON_SET_FIELD(vm_exception, "init", CON_NEW_BOUND_C_FUNC(_Con_Modules_Exception_VM_Exception_init_func, "init", exceptions_mod, vm_exception));
-	CON_SET_SLOT(exceptions_mod, "VM_Exception", vm_exception);
+	CON_SET_MOD_DEF(exceptions_mod, "VM_Exception", vm_exception);
 
 	// Setup the standard user exceptions.
 
@@ -100,98 +108,98 @@ Con_Obj *Con_Modules_Exceptions_init(Con_Obj *thread, Con_Obj *identifier)
 
 	Con_Obj *apply_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("Apply_Exception"), Con_Builtins_List_Atom_new_va(thread, user_exception, NULL), exceptions_mod);
 	CON_SET_FIELD(apply_exception, "init", CON_NEW_BOUND_C_FUNC(_Con_Modules_Exception_Apply_Exception_init_func, "init", exceptions_mod, apply_exception));
-	CON_SET_SLOT(exceptions_mod, "Apply_Exception", apply_exception);
+	CON_SET_MOD_DEF(exceptions_mod, "Apply_Exception", apply_exception);
 
 	// class Bounds_Exception
 
 	Con_Obj *bounds_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("Bounds_Exception"), Con_Builtins_List_Atom_new_va(thread, user_exception, NULL), exceptions_mod);
 	CON_SET_FIELD(bounds_exception, "init", CON_NEW_BOUND_C_FUNC(_Con_Modules_Exception_Bounds_Exception_init_func, "init", exceptions_mod, bounds_exception));
-	CON_SET_SLOT(exceptions_mod, "Bounds_Exception", bounds_exception);
+	CON_SET_MOD_DEF(exceptions_mod, "Bounds_Exception", bounds_exception);
 
 	// class Field_Exception
 
 	Con_Obj *field_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("Field_Exception"), Con_Builtins_List_Atom_new_va(thread, user_exception, NULL), exceptions_mod);
 	CON_SET_FIELD(field_exception, "init", CON_NEW_BOUND_C_FUNC(_Con_Modules_Exception_Field_Exception_init_func, "init", exceptions_mod, field_exception));
-	CON_SET_SLOT(exceptions_mod, "Field_Exception", field_exception);
+	CON_SET_MOD_DEF(exceptions_mod, "Field_Exception", field_exception);
 
 	// class Import_Exception
 
 	Con_Obj *import_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("Import_Exception"), Con_Builtins_List_Atom_new_va(thread, user_exception, NULL), exceptions_mod);
 	CON_SET_FIELD(import_exception, "init", CON_NEW_BOUND_C_FUNC(_Con_Modules_Exception_Import_Exception_init_func, "init", exceptions_mod, import_exception));
-	CON_SET_SLOT(exceptions_mod, "Import_Exception", import_exception);
+	CON_SET_MOD_DEF(exceptions_mod, "Import_Exception", import_exception);
 
 	// class Indices_Exception
 
 	Con_Obj *indices_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("Indices_Exception"), Con_Builtins_List_Atom_new_va(thread, user_exception, NULL), exceptions_mod);
 	CON_SET_FIELD(indices_exception, "init", CON_NEW_BOUND_C_FUNC(_Con_Modules_Exception_Indices_Exception_init_func, "init", exceptions_mod, indices_exception));
-	CON_SET_SLOT(exceptions_mod, "Indices_Exception", indices_exception);
+	CON_SET_MOD_DEF(exceptions_mod, "Indices_Exception", indices_exception);
 
 	// class Key_Exception
 
 	Con_Obj *key_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("Key_Exception"), Con_Builtins_List_Atom_new_va(thread, user_exception, NULL), exceptions_mod);
 	CON_SET_FIELD(key_exception, "init", CON_NEW_BOUND_C_FUNC(_Con_Modules_Exception_Key_Exception_init_func, "init", exceptions_mod, key_exception));
-	CON_SET_SLOT(exceptions_mod, "Key_Exception", key_exception);
+	CON_SET_MOD_DEF(exceptions_mod, "Key_Exception", key_exception);
 
 	// class Mod_Defn_Exception
 
 	Con_Obj *defn_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("Mod_Defn_Exception"), Con_Builtins_List_Atom_new_va(thread, user_exception, NULL), exceptions_mod);
 	CON_SET_FIELD(defn_exception, "init", CON_NEW_BOUND_C_FUNC(_Con_Modules_Exception_Mod_Defn_Exception_init_func, "init", exceptions_mod, defn_exception));
-	CON_SET_SLOT(exceptions_mod, "Mod_Defn_Exception", defn_exception);
+	CON_SET_MOD_DEF(exceptions_mod, "Mod_Defn_Exception", defn_exception);
 
 	// class NDIf_Exception
 	
 	Con_Obj *ndif_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("NDIf_Exception"), Con_Builtins_List_Atom_new_va(thread, user_exception, NULL), exceptions_mod);
-	CON_SET_SLOT(exceptions_mod, "NDIf_Exception", ndif_exception);
+	CON_SET_MOD_DEF(exceptions_mod, "NDIf_Exception", ndif_exception);
 
 	// class Number_Exception
 
 	Con_Obj *number_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("Number_Exception"), Con_Builtins_List_Atom_new_va(thread, user_exception, NULL), exceptions_mod);
 	CON_SET_FIELD(number_exception, "init", CON_NEW_BOUND_C_FUNC(_Con_Modules_Exception_Number_Exception_init_func, "init", exceptions_mod, number_exception));
-	CON_SET_SLOT(exceptions_mod, "Number_Exception", number_exception);
+	CON_SET_MOD_DEF(exceptions_mod, "Number_Exception", number_exception);
 
 	// class Parameters_Exception
 
 	Con_Obj *parameters_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("Parameters_Exception"), Con_Builtins_List_Atom_new_va(thread, user_exception, NULL), exceptions_mod);
-	CON_SET_SLOT(exceptions_mod, "Parameters_Exception", parameters_exception);
+	CON_SET_MOD_DEF(exceptions_mod, "Parameters_Exception", parameters_exception);
 
 	// class Slot_Exception
 
 	Con_Obj *slot_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("Slot_Exception"), Con_Builtins_List_Atom_new_va(thread, user_exception, NULL), exceptions_mod);
 	CON_SET_FIELD(slot_exception, "init", CON_NEW_BOUND_C_FUNC(_Con_Modules_Exception_Slot_Exception_init_func, "init", exceptions_mod, slot_exception));
-	CON_SET_SLOT(exceptions_mod, "Slot_Exception", slot_exception);
+	CON_SET_MOD_DEF(exceptions_mod, "Slot_Exception", slot_exception);
 
 	// class Type_Exception
 	
 	Con_Obj *type_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("Type_Exception"), Con_Builtins_List_Atom_new_va(thread, user_exception, NULL), exceptions_mod);
 	CON_SET_FIELD(type_exception, "init", CON_NEW_BOUND_C_FUNC(_Con_Modules_Exception_Type_Exception_init_func, "init", exceptions_mod, type_exception));
-	CON_SET_SLOT(exceptions_mod, "Type_Exception", type_exception);
+	CON_SET_MOD_DEF(exceptions_mod, "Type_Exception", type_exception);
 
 	// class Unpack_Exception
 	
 	Con_Obj *unpack_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("Unpack_Exception"), Con_Builtins_List_Atom_new_va(thread, user_exception, NULL), exceptions_mod);
 	CON_SET_FIELD(unpack_exception, "init", CON_NEW_BOUND_C_FUNC(_Con_Modules_Exception_Unpack_Exception_init_func, "init", exceptions_mod, unpack_exception));
-	CON_SET_SLOT(exceptions_mod, "Unpack_Exception", unpack_exception);
+	CON_SET_MOD_DEF(exceptions_mod, "Unpack_Exception", unpack_exception);
 
 	// class Unassigned_Var_Exception
 	
 	Con_Obj *unassigned_var_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("Unassigned_Var_Exception"), Con_Builtins_List_Atom_new_va(thread, user_exception, NULL), exceptions_mod);
-	CON_SET_SLOT(exceptions_mod, "Unassigned_Var_Exception", unassigned_var_exception);
+	CON_SET_MOD_DEF(exceptions_mod, "Unassigned_Var_Exception", unassigned_var_exception);
 	
 	// IO exceptions
 	
 	// class IO_Exception
 	
 	Con_Obj *io_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("IO_Exception"), Con_Builtins_List_Atom_new_va(thread, user_exception, NULL), exceptions_mod);
-	CON_SET_SLOT(exceptions_mod, "IO_Exception", io_exception);
+	CON_SET_MOD_DEF(exceptions_mod, "IO_Exception", io_exception);
 
 	// class File_Exception
 	
 	Con_Obj *file_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("File_Exception"), Con_Builtins_List_Atom_new_va(thread, io_exception, NULL), exceptions_mod);
-	CON_SET_SLOT(exceptions_mod, "File_Exception", file_exception);
+	CON_SET_MOD_DEF(exceptions_mod, "File_Exception", file_exception);
 	
 	// func backtrace
 	
-	CON_SET_SLOT(exceptions_mod, "backtrace", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_Exception_backtrace_func, "unbound", exceptions_mod));
+	CON_SET_MOD_DEF(exceptions_mod, "backtrace", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_Exception_backtrace_func, "unbound", exceptions_mod));
 	
 	return exceptions_mod;
 }
@@ -565,7 +573,7 @@ Con_Obj *_Con_Modules_Exception_backtrace_func(Con_Obj *thread)
 				Con_Obj *module_id = CON_GET_SLOT_APPLY(src_location, "get", CON_NEW_INT(0));
 				Con_Obj *src_offset = CON_GET_SLOT_APPLY(src_location, "get", CON_NEW_INT(1));
 				
-				Con_Obj *module = Con_Modules_import(thread, module_id);
+				Con_Obj *module = Con_Modules_get(thread, module_id);
 
 				Con_Int line, column;
 				Con_Builtins_Module_Atom_src_offset_to_line_column(thread, module, Con_Numbers_Number_to_Con_Int(thread, src_offset), &line, &column);

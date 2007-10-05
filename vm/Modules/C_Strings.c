@@ -27,6 +27,7 @@
 #include "Numbers.h"
 #include "Object.h"
 #include "Shortcuts.h"
+#include "Slots.h"
 
 #include "Builtins/Con_Stack/Atom.h"
 #include "Builtins/Func/Atom.h"
@@ -36,21 +37,27 @@
 #include "Builtins/Thread/Atom.h"
 #include "Builtins/VM/Atom.h"
 
-#include "Modules/Sys.h"
 
 
-
-Con_Obj *Con_Modules_C_Strings_init(Con_Obj *, Con_Obj *);
+Con_Obj *Con_Module_C_Strings_init(Con_Obj *, Con_Obj *);
+Con_Obj *Con_Module_C_Strings_import(Con_Obj *, Con_Obj *);
 
 Con_Obj *_Con_Modules_C_Strings_join_func(Con_Obj *);
 
 
 
-Con_Obj *Con_Modules_C_Strings_init(Con_Obj *thread, Con_Obj *identifier)
+Con_Obj *Con_Module_C_Strings_init(Con_Obj *thread, Con_Obj *identifier)
 {
-	Con_Obj *c_strings_mod = Con_Builtins_Module_Atom_new_c(thread, identifier, CON_NEW_STRING("C_Strings"), CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
-	
-	CON_SET_SLOT(c_strings_mod, "join", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_C_Strings_join_func, "join", c_strings_mod));
+	const char* defn_names[] = {"join", NULL};
+
+	return Con_Builtins_Module_Atom_new_c(thread, identifier, CON_NEW_STRING("C_Strings"), defn_names, CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+}
+
+
+
+Con_Obj *Con_Module_C_Strings_import(Con_Obj *thread, Con_Obj *c_strings_mod)
+{
+	CON_SET_MOD_DEF(c_strings_mod, "join", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_C_Strings_join_func, "join", c_strings_mod));
 	
 	return c_strings_mod;
 }

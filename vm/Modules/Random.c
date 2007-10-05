@@ -38,6 +38,7 @@
 #include "Numbers.h"
 #include "Object.h"
 #include "Shortcuts.h"
+#include "Slots.h"
 
 #include "Builtins/Con_Stack/Atom.h"
 #include "Builtins/Dict/Atom.h"
@@ -49,9 +50,10 @@
 #include "Builtins/Thread/Atom.h"
 #include "Builtins/VM/Atom.h"
 
-#include "Modules/Random.h"
 
 
+Con_Obj *Con_Module_Random_init(Con_Obj *, Con_Obj *);
+Con_Obj *Con_Module_Random_import(Con_Obj *, Con_Obj *);
 
 Con_Obj *_Con_Modules_Random_pluck_func(Con_Obj *);
 Con_Obj *_Con_Modules_Random_random_func(Con_Obj *);
@@ -59,13 +61,20 @@ Con_Obj *_Con_Modules_Random_shuffle_func(Con_Obj *);
 
 
 
-Con_Obj *Con_Modules_Random_init(Con_Obj *thread, Con_Obj *identifier)
+Con_Obj *Con_Module_Random_init(Con_Obj *thread, Con_Obj *identifier)
 {
-	Con_Obj *random_mod = Con_Builtins_Module_Atom_new_c(thread, identifier, CON_NEW_STRING("Random"), CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
-	
-	CON_SET_SLOT(random_mod, "pluck", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_Random_pluck_func, "pluck", random_mod));
-	CON_SET_SLOT(random_mod, "random", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_Random_random_func, "random", random_mod));
-	CON_SET_SLOT(random_mod, "shuffle", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_Random_shuffle_func, "shuffle", random_mod));
+	const char* defn_names[] = {"pluck", "random", "shuffle", NULL};
+
+	return Con_Builtins_Module_Atom_new_c(thread, identifier, CON_NEW_STRING("Random"), defn_names, CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+}
+
+
+
+Con_Obj *Con_Module_Random_import(Con_Obj *thread, Con_Obj *random_mod)
+{
+	CON_SET_MOD_DEF(random_mod, "pluck", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_Random_pluck_func, "pluck", random_mod));
+	CON_SET_MOD_DEF(random_mod, "random", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_Random_random_func, "random", random_mod));
+	CON_SET_MOD_DEF(random_mod, "shuffle", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_Random_shuffle_func, "shuffle", random_mod));
 
 #	ifdef CON_HAVE_SRANDOMDEV
 	srandomdev();

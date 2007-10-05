@@ -34,6 +34,7 @@
 #include "Numbers.h"
 #include "Object.h"
 #include "Shortcuts.h"
+#include "Slots.h"
 
 #include "Builtins/Con_Stack/Atom.h"
 #include "Builtins/Dict/Atom.h"
@@ -46,23 +47,31 @@
 #include "Builtins/Thread/Atom.h"
 #include "Builtins/VM/Atom.h"
 
-#include "Modules/libXML2.h"
 
 
+Con_Obj *Con_Module_libXML2_init(Con_Obj *, Con_Obj *);
+Con_Obj *Con_Module_libXML2_import(Con_Obj *, Con_Obj *);
 
 Con_Obj *_Con_Modules_libXML2_parse_func(Con_Obj *);
 
 
 
-Con_Obj *Con_Modules_libXML2_init(Con_Obj *thread, Con_Obj *identifier)
+Con_Obj *Con_Module_libXML2_init(Con_Obj *thread, Con_Obj *identifier)
 {
-	Con_Obj *libxml2_mod = Con_Builtins_Module_Atom_new_c(thread, identifier, CON_NEW_STRING("XML"), CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
-	
+	const char* defn_names[] = {"XML_Exception", "parse", NULL};
+
+	return Con_Builtins_Module_Atom_new_c(thread, identifier, CON_NEW_STRING("libXML"), defn_names, CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+}
+
+
+
+Con_Obj *Con_Module_libXML2_import(Con_Obj *thread, Con_Obj *libxml2_mod)
+{
 	Con_Obj *user_exception = CON_GET_MODULE_DEF(CON_BUILTIN(CON_BUILTIN_EXCEPTIONS_MODULE), "User_Exception");
 	Con_Obj *xml_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("XML_Exception"), Con_Builtins_List_Atom_new_va(thread, user_exception, NULL), libxml2_mod);
-	CON_SET_SLOT(libxml2_mod, "XML_Exception", xml_exception);
+	CON_SET_MOD_DEF(libxml2_mod, "XML_Exception", xml_exception);
 	
-	CON_SET_SLOT(libxml2_mod, "parse", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_libXML2_parse_func, "parse", libxml2_mod));
+	CON_SET_MOD_DEF(libxml2_mod, "parse", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_libXML2_parse_func, "parse", libxml2_mod));
 
 	return libxml2_mod;
 }

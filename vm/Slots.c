@@ -97,17 +97,19 @@ Con_Int _Con_Slots_find_pos(Con_Obj *thread, Con_Slots_Hash_Entry *hash_entries,
 // Assumes the relevant mutex for 'slots' is locked by the caller if necessary.
 //
 
-Con_Obj *Con_Slots_get_slot(Con_Obj *thread, Con_Slots *slots, const u_char *slot_name, Con_Int slot_name_size)
+bool Con_Slots_get_slot(Con_Obj *thread, Con_Slots *slots, const u_char *slot_name, Con_Int slot_name_size, Con_Obj **val)
 {
 	if (slots->hash_entries == NULL)
 		return NULL;
 
 	Con_Int pos = _Con_Slots_find_pos(thread, slots->hash_entries, slots->num_hash_entries_allocated, slots->full_entries, slot_name, slot_name_size);
 	Con_Int offset = slots->hash_entries[pos].full_entry_offset;
-	if (offset != -1)
-		return ((Con_Slots_Full_Entry *) (slots->full_entries + offset))->value;
+	if (offset != -1) {
+		*val = ((Con_Slots_Full_Entry *) (slots->full_entries + offset))->value;
+		return true;
+	}
 	else
-		return NULL;
+		return false;
 }
 
 
@@ -258,6 +260,8 @@ void Con_Slots_gc_scan_slots(Con_Obj *thread, Con_Slots *slots)
 		Con_Slots_Hash_Entry *hash_entry = &slots->hash_entries[i];
 		if (hash_entry->full_entry_offset == -1)
 			continue;
-		Con_Memory_gc_push(thread, ((Con_Slots_Full_Entry *) (slots->full_entries + hash_entry->full_entry_offset))->value);
+		Con_Obj *val = ((Con_Slots_Full_Entry *) (slots->full_entries + hash_entry->full_entry_offset))->value;
+		if (val != NULL)
+			Con_Memory_gc_push(thread, val);
 	}
 }

@@ -25,6 +25,7 @@
 #include "Memory.h"
 #include "Object.h"
 #include "Shortcuts.h"
+#include "Slots.h"
 
 #include "Builtins/Con_Stack/Atom.h"
 #include "Builtins/Func/Atom.h"
@@ -35,24 +36,34 @@
 #include "Builtins/Thread/Atom.h"
 #include "Builtins/VM/Atom.h"
 
-#include "Modules/C_Platform_Properties.h"
+
+
+Con_Obj *Con_Module_C_Platform_Properties_init(Con_Obj *, Con_Obj *);
+Con_Obj *Con_Module_C_Platform_Properties_import(Con_Obj *, Con_Obj *);
 
 
 
-Con_Obj *Con_Modules_C_Platform_Properties_init(Con_Obj *thread, Con_Obj *identifier)
+Con_Obj *Con_Module_C_Platform_Properties_init(Con_Obj *thread, Con_Obj *identifier)
 {
-	Con_Obj *properties_mod = Con_Builtins_Module_Atom_new_c(thread, identifier, CON_NEW_STRING("C_Platform_Properties"), CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+	const char* defn_names[] = {"word_bits", "LITTLE_ENDIAN", "BIG_ENDIAN", "endianness", "endianness", NULL};
 
-	CON_SET_SLOT(properties_mod, "word_bits", CON_NEW_INT(sizeof(Con_Int) * 8));
+	return Con_Builtins_Module_Atom_new_c(thread, identifier, CON_NEW_STRING("C_Platform_Properties"), defn_names, CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+}
+
+
+
+Con_Obj *Con_Module_C_Platform_Properties_import(Con_Obj *thread, Con_Obj *properties_mod)
+{
+	CON_SET_MOD_DEF(properties_mod, "word_bits", CON_NEW_INT(sizeof(Con_Int) * 8));
 
 	// Endianness
 
-	CON_SET_SLOT(properties_mod, "LITTLE_ENDIAN", CON_NEW_INT(0));
-	CON_SET_SLOT(properties_mod, "BIG_ENDIAN", CON_NEW_INT(1));
+	CON_SET_MOD_DEF(properties_mod, "LITTLE_ENDIAN", CON_NEW_INT(0));
+	CON_SET_MOD_DEF(properties_mod, "BIG_ENDIAN", CON_NEW_INT(1));
 #	if CON_BYTEORDER == CON_LITTLE_ENDIAN
-	CON_SET_SLOT(properties_mod, "endianness", CON_GET_SLOT(properties_mod, "LITTLE_ENDIAN"));
+	CON_SET_MOD_DEF(properties_mod, "endianness", CON_GET_MODULE_DEF(properties_mod, "LITTLE_ENDIAN"));
 #	elif CON_BYTEORDER == CON_BIG_ENDIAN
-	CON_SET_SLOT(properties_mod, "endianness", CON_GET_SLOT(properties_mod, "BIG_ENDIAN"));
+	CON_SET_MOD_DEF(properties_mod, "endianness", CON_GET_MODULE_DEF(properties_mod, "BIG_ENDIAN"));
 #	endif
 
 	return properties_mod;

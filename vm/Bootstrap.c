@@ -311,13 +311,13 @@ Con_Obj *Con_Bootstrap_do(u_char *c_stack_start, int argc, char **argv, char *vm
 	// be created properly.
 
 #	ifdef CON_PLATFORM_POSIX
-	vm_atom->builtins[CON_BUILTIN_C_FILE_MODULE] = Con_Modules_import(thread, CON_NEW_STRING("POSIX_File"));
+	vm_atom->builtins[CON_BUILTIN_C_FILE_MODULE] = Con_Modules_import(thread, Con_Modules_get(thread, CON_NEW_STRING("POSIX_File")));
 #	else
 	XXX;
 #	endif
 
-	vm_atom->builtins[CON_BUILTIN_SYS_MODULE] = Con_Modules_import(thread, CON_NEW_STRING("Sys"));
-	vm_atom->builtins[CON_BUILTIN_EXCEPTIONS_MODULE] = Con_Modules_import(thread, CON_NEW_STRING("Exceptions"));
+	vm_atom->builtins[CON_BUILTIN_SYS_MODULE] = Con_Modules_import(thread, Con_Modules_get(thread, CON_NEW_STRING("Sys")));
+	vm_atom->builtins[CON_BUILTIN_EXCEPTIONS_MODULE] = Con_Modules_import(thread, Con_Modules_get(thread, CON_NEW_STRING("Exceptions")));
 	
 	return thread;
 }

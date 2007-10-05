@@ -119,6 +119,7 @@
 #define CON_SET_SLOT(obj, slot_name, val) Con_Object_set_slot(thread, obj, NULL, (u_char *) slot_name, sizeof(slot_name) - 1, val)
 
 #define CON_GET_MODULE_DEF(obj, definition_name) Con_Builtins_Module_Atom_get_definition(thread, obj, (u_char *) definition_name, sizeof(definition_name) - 1)
+#define CON_SET_MOD_DEF(obj, defn_name, val) Con_Builtins_Module_Atom_set_definition(thread, obj, (u_char *) defn_name, sizeof(defn_name) - 1, val)
 
 #define CON_SET_FIELD(_class, field_name, val) Con_Builtins_Class_Atom_set_field(thread, _class, (u_char *) field_name, sizeof(field_name) - 1, val)
 
@@ -145,7 +146,7 @@
 		abort(); \
 	}
 
-#	define CON_PRINTLN(...) CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_SYS_MODULE), "println", ## __VA_ARGS__, NULL)
+#	define CON_PRINTLN(...) CON_APPLY(CON_GET_MODULE_DEF(CON_BUILTIN(CON_BUILTIN_SYS_MODULE), "println"), ## __VA_ARGS__, NULL)
 #else
 #	error "Unsupported compiler"
 #endif

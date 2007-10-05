@@ -29,6 +29,7 @@
 #include "Memory.h"
 #include "Object.h"
 #include "Shortcuts.h"
+#include "Slots.h"
 #include "Target.h"
 
 #include "Builtins/Dict/Atom.h"

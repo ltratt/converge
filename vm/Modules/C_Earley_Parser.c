@@ -43,20 +43,28 @@
 
 
 
-Con_Obj *Con_Modules_C_Earley_Parser_init(Con_Obj *thread, Con_Obj *);
+Con_Obj *Con_Module_C_Earley_Parser_init(Con_Obj *thread, Con_Obj *);
+Con_Obj *Con_Module_C_Earley_Parser_import(Con_Obj *thread, Con_Obj *);
 
 Con_Obj *_Con_Modules_C_Earley_Parser_Parser_parse_func(Con_Obj *);
 
 
 
-Con_Obj *Con_Modules_C_Earley_Parser_init(Con_Obj *thread, Con_Obj *identifier)
+Con_Obj *Con_Module_C_Earley_Parser_init(Con_Obj *thread, Con_Obj *identifier)
 {
-	Con_Obj *c_earley_parser_mod = Con_Builtins_Module_Atom_new_c(thread, identifier, CON_NEW_STRING("C_Earley_Parser"), CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+	const char* defn_names[] = {"Parser", "parse", NULL};
 
+	return Con_Builtins_Module_Atom_new_c(thread, identifier, CON_NEW_STRING("C_Earley_Parser"), defn_names, CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+}
+
+
+
+Con_Obj *Con_Module_C_Earley_Parser_import(Con_Obj *thread, Con_Obj *c_earley_parser_mod)
+{
 	// Array.Array
 	
 	Con_Obj *parser_class = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("Parser"), Con_Builtins_List_Atom_new_va(thread, CON_BUILTIN(CON_BUILTIN_OBJECT_CLASS), NULL), c_earley_parser_mod);
-	CON_SET_SLOT(c_earley_parser_mod, "Parser", parser_class);
+	CON_SET_MOD_DEF(c_earley_parser_mod, "Parser", parser_class);
 	
 	CON_SET_FIELD(parser_class, "parse", CON_NEW_BOUND_C_FUNC(_Con_Modules_C_Earley_Parser_Parser_parse_func, "parse", c_earley_parser_mod, parser_class));
 

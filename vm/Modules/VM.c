@@ -27,6 +27,7 @@
 #include "Modules.h"
 #include "Object.h"
 #include "Shortcuts.h"
+#include "Slots.h"
 
 #include "Builtins/Con_Stack/Atom.h"
 #include "Builtins/Func/Atom.h"
@@ -36,23 +37,33 @@
 #include "Builtins/Thread/Atom.h"
 #include "Builtins/VM/Atom.h"
 
-#include "Modules/VM.h"
 
 
+Con_Obj *Con_Module_VM_init(Con_Obj *, Con_Obj *);
+Con_Obj *Con_Module_VM_import(Con_Obj *, Con_Obj *);
 
 Con_Obj *_Con_Modules_VM_add_modules_func(Con_Obj *);
+Con_Obj *_Con_Modules_VM_find_module_func(Con_Obj *);
 Con_Obj *_Con_Modules_VM_import_module_func(Con_Obj *);
 
 
 
-Con_Obj *Con_Modules_VM_init(Con_Obj *thread, Con_Obj *identifier)
+Con_Obj *Con_Module_VM_init(Con_Obj *thread, Con_Obj *identifier)
 {
-	Con_Obj *vm_mod = Con_Builtins_Module_Atom_new_c(thread, identifier, CON_NEW_STRING("VM"), CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+	const char* defn_names[] = {"add_modules", "find_module", "import_module", "vm", NULL};
+
+	return Con_Builtins_Module_Atom_new_c(thread, identifier, CON_NEW_STRING("VM"), defn_names, CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+}
+
+
+
+Con_Obj *Con_Module_VM_import(Con_Obj *thread, Con_Obj *vm_mod)
+{
+	CON_SET_MOD_DEF(vm_mod, "add_modules", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_VM_add_modules_func, "add_modules", vm_mod));
+	CON_SET_MOD_DEF(vm_mod, "find_module", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_VM_find_module_func, "find_module", vm_mod));
+	CON_SET_MOD_DEF(vm_mod, "import_module", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_VM_import_module_func, "import_module", vm_mod));
 	
-	CON_SET_SLOT(vm_mod, "add_modules", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_VM_add_modules_func, "add_modules", vm_mod));
-	CON_SET_SLOT(vm_mod, "import_module", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_VM_import_module_func, "import_module", vm_mod));
-	
-	CON_SET_SLOT(vm_mod, "vm", Con_Builtins_Thread_Atom_get_vm(thread));
+	CON_SET_MOD_DEF(vm_mod, "vm", Con_Builtins_Thread_Atom_get_vm(thread));
 	
 	return vm_mod;
 }
@@ -90,13 +101,31 @@ Con_Obj *_Con_Modules_VM_add_modules_func(Con_Obj *thread)
 
 
 //
-// 'import_module(mod_id)' imports the module with identifier 'mod_id'.
+// 'find_module(mod_id)' attempts to find the module with id 'mod_id'.
+//
+
+Con_Obj *_Con_Modules_VM_find_module_func(Con_Obj *thread)
+{
+	Con_Obj *mod_id;
+	CON_UNPACK_ARGS("S", &mod_id);
+	
+	Con_Obj *mod = Con_Modules_find(thread, mod_id);
+	if (mod == NULL)
+		return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
+	else
+		return mod;
+}
+
+
+
+//
+// 'import_module(mod)' imports the module 'mod'.
 //
 
 Con_Obj *_Con_Modules_VM_import_module_func(Con_Obj *thread)
 {
-	Con_Obj *mod_id;
-	CON_UNPACK_ARGS("O", &mod_id);
+	Con_Obj *mod;
+	CON_UNPACK_ARGS("M", &mod);
 	
-	return Con_Modules_import(thread, mod_id);
+	return Con_Modules_import(thread, mod);
 }

@@ -24,6 +24,7 @@
 #include "Core.h"
 #include "Object.h"
 #include "Shortcuts.h"
+#include "Slots.h"
 
 #include "Builtins/Module/Atom.h"
 #include "Builtins/String/Atom.h"
@@ -32,31 +33,39 @@
 
 
 
-Con_Obj *Con_Modules_Builtins_init(Con_Obj *thread, Con_Obj *);
+Con_Obj *Con_Module_Builtins_init(Con_Obj *thread, Con_Obj *);
+Con_Obj *Con_Module_Builtins_import(Con_Obj *thread, Con_Obj *);
 
 
 
-Con_Obj *Con_Modules_Builtins_init(Con_Obj *thread, Con_Obj *identifier)
+Con_Obj *Con_Module_Builtins_init(Con_Obj *thread, Con_Obj *identifier)
 {
-	Con_Obj *builtins_mod = Con_Builtins_Module_Atom_new_c(thread, identifier, CON_NEW_STRING("Builtins"), CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+	const char* defn_names[] = {"Object", "Class", "VM", "Thread", "Func", "String", "Con_Stack", "List", "Dict", "Module", "Int", "Closure", "Partial_Application", "Exception", "Set", "Number", "Float", NULL};
 
-	CON_SET_SLOT(builtins_mod, "Object", CON_BUILTIN(CON_BUILTIN_OBJECT_CLASS));
-	CON_SET_SLOT(builtins_mod, "Class", CON_BUILTIN(CON_BUILTIN_CLASS_CLASS));
-	CON_SET_SLOT(builtins_mod, "VM", CON_BUILTIN(CON_BUILTIN_VM_CLASS));
-	CON_SET_SLOT(builtins_mod, "Thread", CON_BUILTIN(CON_BUILTIN_THREAD_CLASS));
-	CON_SET_SLOT(builtins_mod, "Func", CON_BUILTIN(CON_BUILTIN_FUNC_CLASS));
-	CON_SET_SLOT(builtins_mod, "String", CON_BUILTIN(CON_BUILTIN_STRING_CLASS));
-	CON_SET_SLOT(builtins_mod, "Con_Stack", CON_BUILTIN(CON_BUILTIN_CON_STACK_CLASS));
-	CON_SET_SLOT(builtins_mod, "List", CON_BUILTIN(CON_BUILTIN_LIST_CLASS));
-	CON_SET_SLOT(builtins_mod, "Dict", CON_BUILTIN(CON_BUILTIN_DICT_CLASS));
-	CON_SET_SLOT(builtins_mod, "Module", CON_BUILTIN(CON_BUILTIN_MODULE_CLASS));
-	CON_SET_SLOT(builtins_mod, "Int", CON_BUILTIN(CON_BUILTIN_INT_CLASS));
-	CON_SET_SLOT(builtins_mod, "Closure", CON_BUILTIN(CON_BUILTIN_CLOSURE_CLASS));
-	CON_SET_SLOT(builtins_mod, "Partial_Application", CON_BUILTIN(CON_BUILTIN_PARTIAL_APPLICATION_CLASS));
-	CON_SET_SLOT(builtins_mod, "Exception", CON_BUILTIN(CON_BUILTIN_EXCEPTION_CLASS));
-	CON_SET_SLOT(builtins_mod, "Set", CON_BUILTIN(CON_BUILTIN_SET_CLASS));
-	CON_SET_SLOT(builtins_mod, "Number", CON_BUILTIN(CON_BUILTIN_NUMBER_CLASS));
-	CON_SET_SLOT(builtins_mod, "Float", CON_BUILTIN(CON_BUILTIN_FLOAT_CLASS));
+	return Con_Builtins_Module_Atom_new_c(thread, identifier, CON_NEW_STRING("Builtins"), defn_names, CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+}
+
+
+
+Con_Obj *Con_Module_Builtins_import(Con_Obj *thread, Con_Obj *builtins_mod)
+{
+	CON_SET_MOD_DEF(builtins_mod, "Object", CON_BUILTIN(CON_BUILTIN_OBJECT_CLASS));
+	CON_SET_MOD_DEF(builtins_mod, "Class", CON_BUILTIN(CON_BUILTIN_CLASS_CLASS));
+	CON_SET_MOD_DEF(builtins_mod, "VM", CON_BUILTIN(CON_BUILTIN_VM_CLASS));
+	CON_SET_MOD_DEF(builtins_mod, "Thread", CON_BUILTIN(CON_BUILTIN_THREAD_CLASS));
+	CON_SET_MOD_DEF(builtins_mod, "Func", CON_BUILTIN(CON_BUILTIN_FUNC_CLASS));
+	CON_SET_MOD_DEF(builtins_mod, "String", CON_BUILTIN(CON_BUILTIN_STRING_CLASS));
+	CON_SET_MOD_DEF(builtins_mod, "Con_Stack", CON_BUILTIN(CON_BUILTIN_CON_STACK_CLASS));
+	CON_SET_MOD_DEF(builtins_mod, "List", CON_BUILTIN(CON_BUILTIN_LIST_CLASS));
+	CON_SET_MOD_DEF(builtins_mod, "Dict", CON_BUILTIN(CON_BUILTIN_DICT_CLASS));
+	CON_SET_MOD_DEF(builtins_mod, "Module", CON_BUILTIN(CON_BUILTIN_MODULE_CLASS));
+	CON_SET_MOD_DEF(builtins_mod, "Int", CON_BUILTIN(CON_BUILTIN_INT_CLASS));
+	CON_SET_MOD_DEF(builtins_mod, "Closure", CON_BUILTIN(CON_BUILTIN_CLOSURE_CLASS));
+	CON_SET_MOD_DEF(builtins_mod, "Partial_Application", CON_BUILTIN(CON_BUILTIN_PARTIAL_APPLICATION_CLASS));
+	CON_SET_MOD_DEF(builtins_mod, "Exception", CON_BUILTIN(CON_BUILTIN_EXCEPTION_CLASS));
+	CON_SET_MOD_DEF(builtins_mod, "Set", CON_BUILTIN(CON_BUILTIN_SET_CLASS));
+	CON_SET_MOD_DEF(builtins_mod, "Number", CON_BUILTIN(CON_BUILTIN_NUMBER_CLASS));
+	CON_SET_MOD_DEF(builtins_mod, "Float", CON_BUILTIN(CON_BUILTIN_FLOAT_CLASS));
 	
 	return builtins_mod;
 }

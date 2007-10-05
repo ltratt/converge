@@ -326,7 +326,7 @@ Con_Obj *Con_Builtins_VM_Atom_apply(Con_Obj *thread, Con_Obj *func, bool suppres
 // a failure. When C code is calling a function it is probably generally not expecting failure to
 // happen; this function can be a highly useful convenience.
 //
-// This function is of limited use, and is probably only needed by Con_Builtins_Module_import.
+// This function is of limited use, and is probably only needed by Con_Modules_import.
 //
 
 Con_Obj *Con_Builtins_VM_Atom_apply_with_closure(Con_Obj *thread, Con_Obj *func, Con_Obj *closure, bool suppress_fail, ...)
@@ -874,6 +874,7 @@ void Con_Builtins_VM_Atom_raise(Con_Obj *thread, Con_Obj *exception)
 			// only conclusion is that something seriously bad has happened and the best course of
 			// action is to halt the VM.
 			
+			printf("%s\n", Con_Builtins_String_Atom_to_c_string(thread, CON_GET_SLOT_APPLY(exception, "to_str")));
 			CON_FATAL_ERROR("Exception percolated to top of call stack but no exception handler found.");
 		}
 		

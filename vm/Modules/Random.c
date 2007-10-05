@@ -55,9 +55,9 @@
 Con_Obj *Con_Module_Random_init(Con_Obj *, Con_Obj *);
 Con_Obj *Con_Module_Random_import(Con_Obj *, Con_Obj *);
 
-Con_Obj *_Con_Modules_Random_pluck_func(Con_Obj *);
-Con_Obj *_Con_Modules_Random_random_func(Con_Obj *);
-Con_Obj *_Con_Modules_Random_shuffle_func(Con_Obj *);
+Con_Obj *_Con_Module_Random_pluck_func(Con_Obj *);
+Con_Obj *_Con_Module_Random_random_func(Con_Obj *);
+Con_Obj *_Con_Module_Random_shuffle_func(Con_Obj *);
 
 
 
@@ -72,9 +72,9 @@ Con_Obj *Con_Module_Random_init(Con_Obj *thread, Con_Obj *identifier)
 
 Con_Obj *Con_Module_Random_import(Con_Obj *thread, Con_Obj *random_mod)
 {
-	CON_SET_MOD_DEF(random_mod, "pluck", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_Random_pluck_func, "pluck", random_mod));
-	CON_SET_MOD_DEF(random_mod, "random", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_Random_random_func, "random", random_mod));
-	CON_SET_MOD_DEF(random_mod, "shuffle", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_Random_shuffle_func, "shuffle", random_mod));
+	CON_SET_MOD_DEF(random_mod, "pluck", CON_NEW_UNBOUND_C_FUNC(_Con_Module_Random_pluck_func, "pluck", random_mod));
+	CON_SET_MOD_DEF(random_mod, "random", CON_NEW_UNBOUND_C_FUNC(_Con_Module_Random_random_func, "random", random_mod));
+	CON_SET_MOD_DEF(random_mod, "shuffle", CON_NEW_UNBOUND_C_FUNC(_Con_Module_Random_shuffle_func, "shuffle", random_mod));
 
 #	ifdef CON_HAVE_SRANDOMDEV
 	srandomdev();
@@ -98,7 +98,7 @@ Con_Obj *Con_Module_Random_import(Con_Obj *thread, Con_Obj *random_mod)
 // 'pluck(c)' returns a random element from 'c'.
 //
 
-Con_Obj *_Con_Modules_Random_pluck_func(Con_Obj *thread)
+Con_Obj *_Con_Module_Random_pluck_func(Con_Obj *thread)
 {
 	Con_Obj *collection;
 
@@ -122,7 +122,7 @@ Con_Obj *_Con_Modules_Random_pluck_func(Con_Obj *thread)
 // Return a random number between 0 and the maximum size of an integer.
 //
 
-Con_Obj *_Con_Modules_Random_random_func(Con_Obj *thread)
+Con_Obj *_Con_Module_Random_random_func(Con_Obj *thread)
 {
 	CON_UNPACK_ARGS("");
 
@@ -135,7 +135,7 @@ Con_Obj *_Con_Modules_Random_random_func(Con_Obj *thread)
 // 'shuffle(c)' sorts 'c' into a semi-random order.
 //
 
-Con_Obj *_Con_Modules_Random_shuffle_func(Con_Obj *thread)
+Con_Obj *_Con_Module_Random_shuffle_func(Con_Obj *thread)
 {
 	Con_Obj *collection;
 	

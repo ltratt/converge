@@ -52,7 +52,7 @@
 Con_Obj *Con_Module_libXML2_init(Con_Obj *, Con_Obj *);
 Con_Obj *Con_Module_libXML2_import(Con_Obj *, Con_Obj *);
 
-Con_Obj *_Con_Modules_libXML2_parse_func(Con_Obj *);
+Con_Obj *_Con_Module_libXML2_parse_func(Con_Obj *);
 
 
 
@@ -71,7 +71,7 @@ Con_Obj *Con_Module_libXML2_import(Con_Obj *thread, Con_Obj *libxml2_mod)
 	Con_Obj *xml_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("XML_Exception"), Con_Builtins_List_Atom_new_va(thread, user_exception, NULL), libxml2_mod);
 	CON_SET_MOD_DEF(libxml2_mod, "XML_Exception", xml_exception);
 	
-	CON_SET_MOD_DEF(libxml2_mod, "parse", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_libXML2_parse_func, "parse", libxml2_mod));
+	CON_SET_MOD_DEF(libxml2_mod, "parse", CON_NEW_UNBOUND_C_FUNC(_Con_Module_libXML2_parse_func, "parse", libxml2_mod));
 
 	return libxml2_mod;
 }
@@ -82,12 +82,12 @@ Con_Obj *Con_Module_libXML2_import(Con_Obj *thread, Con_Obj *libxml2_mod)
 // Functions in libXML2 module
 //
 
-void _Con_Modules_libXML2_parse_func_characters(void *, const xmlChar *, int);
-void _Con_Modules_libXML2_parse_error(void *, const char *, ...);
-void _Con_Modules_libXML2_parse_start_element(void *, const xmlChar *, const xmlChar *, const xmlChar *, int, const xmlChar **, int, int, const xmlChar **);
-void _Con_Modules_libXML2_parse_end_element(void *, const xmlChar *, const xmlChar *, const xmlChar *);
+void _Con_Module_libXML2_parse_func_characters(void *, const xmlChar *, int);
+void _Con_Module_libXML2_parse_error(void *, const char *, ...);
+void _Con_Module_libXML2_parse_start_element(void *, const xmlChar *, const xmlChar *, const xmlChar *, int, const xmlChar **, int, int, const xmlChar **);
+void _Con_Module_libXML2_parse_end_element(void *, const xmlChar *, const xmlChar *, const xmlChar *);
 
-static xmlSAXHandler _Con_Modules_libXML2_parse_func_handler = {
+static xmlSAXHandler _Con_Module_libXML2_parse_func_handler = {
 	NULL,
 	NULL,
 	NULL,
@@ -105,20 +105,20 @@ static xmlSAXHandler _Con_Modules_libXML2_parse_func_handler = {
 	NULL,
 	NULL,
 	NULL,
-	_Con_Modules_libXML2_parse_func_characters,
+	_Con_Module_libXML2_parse_func_characters,
 	NULL,
 	NULL,
 	NULL,
 	NULL,
-	_Con_Modules_libXML2_parse_error,
+	_Con_Module_libXML2_parse_error,
 	NULL,
 	NULL,
 	NULL,
 	NULL,
 	XML_SAX2_MAGIC,
 	NULL,
-	_Con_Modules_libXML2_parse_start_element,
-	_Con_Modules_libXML2_parse_end_element,
+	_Con_Module_libXML2_parse_start_element,
+	_Con_Module_libXML2_parse_end_element,
 	NULL
 };
 
@@ -127,9 +127,9 @@ typedef struct {
 	Con_Obj *libxml2_mod;
 	Con_Obj *elements_stack;
 	Con_Obj *nodes_module;
-} _Con_Modules_libXML2_parse_func_state;
+} _Con_Module_libXML2_parse_func_state;
 
-Con_Obj *_Con_Modules_libXML2_parse_func(Con_Obj *thread)
+Con_Obj *_Con_Module_libXML2_parse_func(Con_Obj *thread)
 {
 	Con_Obj *libxml2_mod = Con_Builtins_VM_Atom_get_functions_module(thread);
 
@@ -147,14 +147,14 @@ Con_Obj *_Con_Modules_libXML2_parse_func(Con_Obj *thread)
 	xmlSAXHandler handler;
 	bzero(&handler, sizeof(xmlSAXHandler));
 	
-	_Con_Modules_libXML2_parse_func_state state;
+	_Con_Module_libXML2_parse_func_state state;
 	state.thread = thread;
 	Con_Obj *document_elems = Con_Builtins_List_Atom_new(thread);
 	state.elements_stack = Con_Builtins_List_Atom_new_va(thread, document_elems, NULL);
 	state.nodes_module = nodes_module;
 	state.libxml2_mod = libxml2_mod;
 	
-	if (xmlSAXUserParseMemory(&_Con_Modules_libXML2_parse_func_handler, &state, (char *) xml_string_atom->str, xml_string_atom->size) < 0)
+	if (xmlSAXUserParseMemory(&_Con_Module_libXML2_parse_func_handler, &state, (char *) xml_string_atom->str, xml_string_atom->size) < 0)
 		CON_XXX;
 	
 	if (Con_Numbers_Number_to_Con_Int(thread, CON_GET_SLOT_APPLY(state.elements_stack, "len")) != 1)
@@ -165,9 +165,9 @@ Con_Obj *_Con_Modules_libXML2_parse_func(Con_Obj *thread)
 
 
 
-void _Con_Modules_libXML2_parse_func_characters(void *user_data, const xmlChar *ch, int len)
+void _Con_Module_libXML2_parse_func_characters(void *user_data, const xmlChar *ch, int len)
 {
-	_Con_Modules_libXML2_parse_func_state *state = (_Con_Modules_libXML2_parse_func_state *) user_data;
+	_Con_Module_libXML2_parse_func_state *state = (_Con_Module_libXML2_parse_func_state *) user_data;
 	Con_Obj *thread = state->thread;
 	Con_Obj *current_elem = CON_GET_SLOT_APPLY(state->elements_stack, "get", CON_NEW_INT(-1));
 	
@@ -181,9 +181,9 @@ void _Con_Modules_libXML2_parse_func_characters(void *user_data, const xmlChar *
 
 #define ERROR_BUF_SIZE 1024
 
-void _Con_Modules_libXML2_parse_error(void *user_data, const char *msg, ...)
+void _Con_Module_libXML2_parse_error(void *user_data, const char *msg, ...)
 {
-	_Con_Modules_libXML2_parse_func_state *state = (_Con_Modules_libXML2_parse_func_state *) user_data;
+	_Con_Module_libXML2_parse_func_state *state = (_Con_Module_libXML2_parse_func_state *) user_data;
 	Con_Obj *thread = state->thread;
 
 	char *buf = Con_Memory_malloc(thread, ERROR_BUF_SIZE, CON_MEMORY_CHUNK_OPAQUE);
@@ -200,9 +200,9 @@ void _Con_Modules_libXML2_parse_error(void *user_data, const char *msg, ...)
 
 
 
-void _Con_Modules_libXML2_parse_start_element(void *user_data, const xmlChar *localname, const xmlChar *prefix, const xmlChar *URI, int nb_namespaces, const xmlChar **namespaces, int nb_attributes, int nb_defaulted, const xmlChar **attributes)
+void _Con_Module_libXML2_parse_start_element(void *user_data, const xmlChar *localname, const xmlChar *prefix, const xmlChar *URI, int nb_namespaces, const xmlChar **namespaces, int nb_attributes, int nb_defaulted, const xmlChar **attributes)
 {
-	_Con_Modules_libXML2_parse_func_state *state = (_Con_Modules_libXML2_parse_func_state *) user_data;
+	_Con_Module_libXML2_parse_func_state *state = (_Con_Module_libXML2_parse_func_state *) user_data;
 	Con_Obj *thread = state->thread;
 	Con_Obj *current_elem = CON_GET_SLOT_APPLY(state->elements_stack, "get", CON_NEW_INT(-1));
 	
@@ -247,9 +247,9 @@ void _Con_Modules_libXML2_parse_start_element(void *user_data, const xmlChar *lo
 
 
 
-void _Con_Modules_libXML2_parse_end_element(void *user_data, const xmlChar *localname, const xmlChar *prefix, const xmlChar *URI)
+void _Con_Module_libXML2_parse_end_element(void *user_data, const xmlChar *localname, const xmlChar *prefix, const xmlChar *URI)
 {
-	_Con_Modules_libXML2_parse_func_state *state = (_Con_Modules_libXML2_parse_func_state *) user_data;
+	_Con_Module_libXML2_parse_func_state *state = (_Con_Module_libXML2_parse_func_state *) user_data;
 	Con_Obj *thread = state->thread;
 	
 	CON_GET_SLOT_APPLY(state->elements_stack, "pop");

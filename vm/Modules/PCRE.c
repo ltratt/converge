@@ -52,9 +52,9 @@ typedef struct {
 	
 	pcre* compiled_re;
 	int num_captures;
-} Con_Modules_PCRE_Pattern_Atom;
+} _Con_Module_PCRE_Pattern_Atom;
 
-void _Con_Modules_PCRE_Module_Pattern_Atom_gc_clean_up(Con_Obj *, Con_Obj *, Con_Atom *);
+void _Con_Module_PCRE_Pattern_Atom_gc_clean_up(Con_Obj *, Con_Obj *, Con_Atom *);
 
 // Matches are immutable.
 
@@ -64,22 +64,22 @@ typedef struct {
 	int* ovector;
 	int num_captures;
 	Con_Obj *string;
-} Con_Modules_PCRE_Match_Atom;
+} _Con_Module_PCRE_Match_Atom;
 
-void _Con_Modules_PCRE_Module_Match_Atom_gc_scan(Con_Obj *, Con_Obj *, Con_Atom *);
+void _Con_Module_PCRE_Match_Atom_gc_scan(Con_Obj *, Con_Obj *, Con_Atom *);
 
 
 Con_Obj *Con_Module_PCRE_init(Con_Obj *thread, Con_Obj *);
 Con_Obj *Con_Module_PCRE_import(Con_Obj *thread, Con_Obj *);
 
-Con_Obj *_Con_Modules_PCRE_compile_func(Con_Obj *);
+Con_Obj *_Con_Module_PCRE_compile_func(Con_Obj *);
 
-Con_Obj *_Con_Modules_PCRE_Pattern_new(Con_Obj *);
-Con_Obj *_Con_Modules_PCRE_Pattern_match_func(Con_Obj *);
-Con_Obj *_Con_Modules_PCRE_Pattern_search_func(Con_Obj *);
+Con_Obj *_Con_Module_PCRE_Pattern_new(Con_Obj *);
+Con_Obj *_Con_Module_PCRE_Pattern_match_func(Con_Obj *);
+Con_Obj *_Con_Module_PCRE_Pattern_search_func(Con_Obj *);
 
-Con_Obj *_Con_Modules_PCRE_Match_get_func(Con_Obj *);
-Con_Obj *_Con_Modules_PCRE_Match_get_indexes_func(Con_Obj *);
+Con_Obj *_Con_Module_PCRE_Match_get_func(Con_Obj *);
+Con_Obj *_Con_Module_PCRE_Match_get_indexes_func(Con_Obj *);
 
 
 
@@ -102,31 +102,31 @@ Con_Obj *Con_Module_PCRE_import(Con_Obj *thread, Con_Obj *pcre_mod)
 
 	// Pattern_Atom_Def
 	
-	CON_SET_MOD_DEF(pcre_mod, "Pattern_Atom_Def", Con_Builtins_Atom_Def_Atom_new(thread, NULL, _Con_Modules_PCRE_Module_Pattern_Atom_gc_clean_up));
+	CON_SET_MOD_DEF(pcre_mod, "Pattern_Atom_Def", Con_Builtins_Atom_Def_Atom_new(thread, NULL, _Con_Module_PCRE_Pattern_Atom_gc_clean_up));
 
 	// PCRE.Pattern
 	
-	Con_Obj *pattern_class = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("Pattern"), Con_Builtins_List_Atom_new_va(thread, CON_BUILTIN(CON_BUILTIN_OBJECT_CLASS), NULL), pcre_mod, CON_NEW_UNBOUND_C_FUNC(_Con_Modules_PCRE_Pattern_new, "Pattern_new", pcre_mod));
+	Con_Obj *pattern_class = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("Pattern"), Con_Builtins_List_Atom_new_va(thread, CON_BUILTIN(CON_BUILTIN_OBJECT_CLASS), NULL), pcre_mod, CON_NEW_UNBOUND_C_FUNC(_Con_Module_PCRE_Pattern_new, "Pattern_new", pcre_mod));
 	CON_SET_MOD_DEF(pcre_mod, "Pattern", pattern_class);
 	
-	CON_SET_FIELD(pattern_class, "match", CON_NEW_BOUND_C_FUNC(_Con_Modules_PCRE_Pattern_match_func, "match", pcre_mod, pattern_class));
-	CON_SET_FIELD(pattern_class, "search", CON_NEW_BOUND_C_FUNC(_Con_Modules_PCRE_Pattern_search_func, "search", pcre_mod, pattern_class));
+	CON_SET_FIELD(pattern_class, "match", CON_NEW_BOUND_C_FUNC(_Con_Module_PCRE_Pattern_match_func, "match", pcre_mod, pattern_class));
+	CON_SET_FIELD(pattern_class, "search", CON_NEW_BOUND_C_FUNC(_Con_Module_PCRE_Pattern_search_func, "search", pcre_mod, pattern_class));
 
 	// Match_Atom_Def
 	
-	CON_SET_MOD_DEF(pcre_mod, "Match_Atom_Def", Con_Builtins_Atom_Def_Atom_new(thread, _Con_Modules_PCRE_Module_Match_Atom_gc_scan, NULL));
+	CON_SET_MOD_DEF(pcre_mod, "Match_Atom_Def", Con_Builtins_Atom_Def_Atom_new(thread, _Con_Module_PCRE_Match_Atom_gc_scan, NULL));
 
 	// PCRE.Match
 	
 	Con_Obj *match_class = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("Match"), Con_Builtins_List_Atom_new_va(thread, CON_BUILTIN(CON_BUILTIN_OBJECT_CLASS), NULL), pcre_mod);
 	CON_SET_MOD_DEF(pcre_mod, "Match", match_class);
 	
-	CON_SET_FIELD(match_class, "get", CON_NEW_BOUND_C_FUNC(_Con_Modules_PCRE_Match_get_func, "get", pcre_mod, match_class));
-	CON_SET_FIELD(match_class, "get_indexes", CON_NEW_BOUND_C_FUNC(_Con_Modules_PCRE_Match_get_indexes_func, "get_indexes", pcre_mod, match_class));
+	CON_SET_FIELD(match_class, "get", CON_NEW_BOUND_C_FUNC(_Con_Module_PCRE_Match_get_func, "get", pcre_mod, match_class));
+	CON_SET_FIELD(match_class, "get_indexes", CON_NEW_BOUND_C_FUNC(_Con_Module_PCRE_Match_get_indexes_func, "get_indexes", pcre_mod, match_class));
 	
 	// PCRE module
 	
-	CON_SET_MOD_DEF(pcre_mod, "compile", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_PCRE_compile_func, "compile", pcre_mod));
+	CON_SET_MOD_DEF(pcre_mod, "compile", CON_NEW_UNBOUND_C_FUNC(_Con_Module_PCRE_compile_func, "compile", pcre_mod));
 	
 	return pcre_mod;
 }
@@ -137,18 +137,18 @@ Con_Obj *Con_Module_PCRE_import(Con_Obj *thread, Con_Obj *pcre_mod)
 // Garbage collection
 //
 
-void _Con_Modules_PCRE_Module_Pattern_Atom_gc_clean_up(Con_Obj *thread, Con_Obj *obj, Con_Atom *atom)
+void _Con_Module_PCRE_Pattern_Atom_gc_clean_up(Con_Obj *thread, Con_Obj *obj, Con_Atom *atom)
 {
-	Con_Modules_PCRE_Pattern_Atom *pattern_atom = (Con_Modules_PCRE_Pattern_Atom *) atom;
+	_Con_Module_PCRE_Pattern_Atom *pattern_atom = (_Con_Module_PCRE_Pattern_Atom *) atom;
 
 	free(pattern_atom->compiled_re);
 }
 
 
 
-void _Con_Modules_PCRE_Module_Match_Atom_gc_scan(Con_Obj *thread, Con_Obj *obj, Con_Atom *atom)
+void _Con_Module_PCRE_Match_Atom_gc_scan(Con_Obj *thread, Con_Obj *obj, Con_Atom *atom)
 {
-	Con_Modules_PCRE_Match_Atom *match_atom = (Con_Modules_PCRE_Match_Atom *) atom;
+	_Con_Module_PCRE_Match_Atom *match_atom = (_Con_Module_PCRE_Match_Atom *) atom;
 
 	Con_Memory_gc_push(thread, match_atom->ovector);
 	Con_Memory_gc_push(thread, match_atom->string);
@@ -160,7 +160,7 @@ void _Con_Modules_PCRE_Module_Match_Atom_gc_scan(Con_Obj *thread, Con_Obj *obj, 
 // Top-level module functions
 //
 
-Con_Obj *_Con_Modules_PCRE_compile_func(Con_Obj *thread)
+Con_Obj *_Con_Module_PCRE_compile_func(Con_Obj *thread)
 {
 	Con_Obj *pattern;
 	CON_UNPACK_ARGS("O", &pattern);
@@ -178,15 +178,15 @@ Con_Obj *_Con_Modules_PCRE_compile_func(Con_Obj *thread)
 // 'Pattern_new(class_, pattern)' pre-compiles a new pattern object.
 //
 
-Con_Obj *_Con_Modules_PCRE_Pattern_new(Con_Obj *thread)
+Con_Obj *_Con_Module_PCRE_Pattern_new(Con_Obj *thread)
 {
 	Con_Obj *pcre_mod = Con_Builtins_VM_Atom_get_functions_module(thread);
 
 	Con_Obj *class, *pattern;
 	CON_UNPACK_ARGS("CO", &class, &pattern);
 
-	Con_Obj *new_pattern = Con_Object_new_from_class(thread, sizeof(Con_Obj) + sizeof(Con_Modules_PCRE_Pattern_Atom) + sizeof(Con_Builtins_Slots_Atom), class);
-	Con_Modules_PCRE_Pattern_Atom *pattern_atom = (Con_Modules_PCRE_Pattern_Atom *) new_pattern->first_atom;
+	Con_Obj *new_pattern = Con_Object_new_from_class(thread, sizeof(Con_Obj) + sizeof(_Con_Module_PCRE_Pattern_Atom) + sizeof(Con_Builtins_Slots_Atom), class);
+	_Con_Module_PCRE_Pattern_Atom *pattern_atom = (_Con_Module_PCRE_Pattern_Atom *) new_pattern->first_atom;
 	Con_Builtins_Slots_Atom *slots_atom = (Con_Builtins_Slots_Atom *) (pattern_atom + 1);
 	pattern_atom->next_atom = (Con_Atom *) slots_atom;
 	slots_atom->next_atom = NULL;
@@ -225,7 +225,7 @@ Con_Obj *_Con_Modules_PCRE_Pattern_new(Con_Obj *thread)
 // returns fail otherwise.
 //
 
-Con_Obj *_Con_Modules_PCRE_Pattern_match_func(Con_Obj *thread)
+Con_Obj *_Con_Module_PCRE_Pattern_match_func(Con_Obj *thread)
 {
 	Con_Obj *pcre_mod = Con_Builtins_VM_Atom_get_functions_module(thread);
 	Con_Obj *pattern_atom_def = CON_GET_MOD_DEFN(pcre_mod, "Pattern_Atom_Def");
@@ -233,7 +233,7 @@ Con_Obj *_Con_Modules_PCRE_Pattern_match_func(Con_Obj *thread)
 	Con_Obj *self, *start_pos_obj, *string;
 	CON_UNPACK_ARGS("OS;n", &self, &string, &start_pos_obj);
 	
-	Con_Modules_PCRE_Pattern_Atom *pattern_atom = CON_GET_ATOM(self, pattern_atom_def);
+	_Con_Module_PCRE_Pattern_Atom *pattern_atom = CON_GET_ATOM(self, pattern_atom_def);
 	Con_Builtins_String_Atom *string_atom = CON_FIND_ATOM(string, CON_BUILTIN(CON_BUILTIN_STRING_ATOM_DEF_OBJECT));
 	
 	if (string_atom->encoding != CON_STR_UTF_8)
@@ -259,8 +259,8 @@ Con_Obj *_Con_Modules_PCRE_Pattern_match_func(Con_Obj *thread)
 	
 	// We've matched successfully, so create a match object.
 	
-	Con_Obj *new_match = Con_Object_new_from_class(thread, sizeof(Con_Obj) + sizeof(Con_Modules_PCRE_Match_Atom), CON_GET_MOD_DEFN(pcre_mod, "Match"));
-	Con_Modules_PCRE_Match_Atom *match_atom = (Con_Modules_PCRE_Match_Atom *) new_match->first_atom;
+	Con_Obj *new_match = Con_Object_new_from_class(thread, sizeof(Con_Obj) + sizeof(_Con_Module_PCRE_Match_Atom), CON_GET_MOD_DEFN(pcre_mod, "Match"));
+	_Con_Module_PCRE_Match_Atom *match_atom = (_Con_Module_PCRE_Match_Atom *) new_match->first_atom;
 	match_atom->next_atom = NULL;
 	
 	match_atom->atom_type = CON_GET_MOD_DEFN(pcre_mod, "Match_Atom_Def");
@@ -280,7 +280,7 @@ Con_Obj *_Con_Modules_PCRE_Pattern_match_func(Con_Obj *thread)
 // after 'start_pos'; it fails otherwise.
 //
 
-Con_Obj *_Con_Modules_PCRE_Pattern_search_func(Con_Obj *thread)
+Con_Obj *_Con_Module_PCRE_Pattern_search_func(Con_Obj *thread)
 {
 	Con_Obj *pcre_mod = Con_Builtins_VM_Atom_get_functions_module(thread);
 	Con_Obj *pattern_atom_def = CON_GET_MOD_DEFN(pcre_mod, "Pattern_Atom_Def");
@@ -288,7 +288,7 @@ Con_Obj *_Con_Modules_PCRE_Pattern_search_func(Con_Obj *thread)
 	Con_Obj *self, *start_pos_obj, *string;
 	CON_UNPACK_ARGS("OS;n", &self, &string, &start_pos_obj);
 	
-	Con_Modules_PCRE_Pattern_Atom *pattern_atom = CON_GET_ATOM(self, pattern_atom_def);
+	_Con_Module_PCRE_Pattern_Atom *pattern_atom = CON_GET_ATOM(self, pattern_atom_def);
 	Con_Builtins_String_Atom *string_atom = CON_FIND_ATOM(string, CON_BUILTIN(CON_BUILTIN_STRING_ATOM_DEF_OBJECT));
 	
 	if (string_atom->encoding != CON_STR_UTF_8)
@@ -314,8 +314,8 @@ Con_Obj *_Con_Modules_PCRE_Pattern_search_func(Con_Obj *thread)
 	
 	// We've matched successfully, so create a match object.
 	
-	Con_Obj *new_match = Con_Object_new_from_class(thread, sizeof(Con_Obj) + sizeof(Con_Modules_PCRE_Match_Atom), CON_GET_MOD_DEFN(pcre_mod, "Match"));
-	Con_Modules_PCRE_Match_Atom *match_atom = (Con_Modules_PCRE_Match_Atom *) new_match->first_atom;
+	Con_Obj *new_match = Con_Object_new_from_class(thread, sizeof(Con_Obj) + sizeof(_Con_Module_PCRE_Match_Atom), CON_GET_MOD_DEFN(pcre_mod, "Match"));
+	_Con_Module_PCRE_Match_Atom *match_atom = (_Con_Module_PCRE_Match_Atom *) new_match->first_atom;
 	match_atom->next_atom = NULL;
 	
 	match_atom->atom_type = CON_GET_MOD_DEFN(pcre_mod, "Match_Atom_Def");
@@ -338,14 +338,14 @@ Con_Obj *_Con_Modules_PCRE_Pattern_search_func(Con_Obj *thread)
 // 'get(i)'
 //
 
-Con_Obj *_Con_Modules_PCRE_Match_get_func(Con_Obj *thread)
+Con_Obj *_Con_Module_PCRE_Match_get_func(Con_Obj *thread)
 {
 	Con_Obj *pcre_mod = Con_Builtins_VM_Atom_get_functions_module(thread);
 
 	Con_Obj *group_num_obj, *self;
 	CON_UNPACK_ARGS("ON", &self, &group_num_obj);
 	
-	Con_Modules_PCRE_Match_Atom *match_atom = CON_GET_ATOM(self, CON_GET_MOD_DEFN(pcre_mod, "Match_Atom_Def"));
+	_Con_Module_PCRE_Match_Atom *match_atom = CON_GET_ATOM(self, CON_GET_MOD_DEFN(pcre_mod, "Match_Atom_Def"));
 	
 	// Group 0 in the match is the entire match, so when translating indices, we need to add 1 onto
 	// num_captures.
@@ -360,14 +360,14 @@ Con_Obj *_Con_Modules_PCRE_Match_get_func(Con_Obj *thread)
 // 'get_indexes(i)'
 //
 
-Con_Obj *_Con_Modules_PCRE_Match_get_indexes_func(Con_Obj *thread)
+Con_Obj *_Con_Module_PCRE_Match_get_indexes_func(Con_Obj *thread)
 {
 	Con_Obj *pcre_mod = Con_Builtins_VM_Atom_get_functions_module(thread);
 
 	Con_Obj *group_num_obj, *self;
 	CON_UNPACK_ARGS("ON", &self, &group_num_obj);
 	
-	Con_Modules_PCRE_Match_Atom *match_atom = CON_GET_ATOM(self, CON_GET_MOD_DEFN(pcre_mod, "Match_Atom_Def"));
+	_Con_Module_PCRE_Match_Atom *match_atom = CON_GET_ATOM(self, CON_GET_MOD_DEFN(pcre_mod, "Match_Atom_Def"));
 	
 	// Group 0 in the match is the entire match, so when translating indices, we need to add 1 onto
 	// num_captures.

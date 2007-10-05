@@ -43,7 +43,7 @@
 Con_Obj *Con_Module_C_Platform_Exec_init(Con_Obj *, Con_Obj *);
 Con_Obj *Con_Module_C_Platform_Exec_import(Con_Obj *, Con_Obj *);
 
-Con_Obj *Con_Modules_C_Platform_Exec_command(Con_Obj *);
+Con_Obj *_Con_Module_C_Platform_Exec_command(Con_Obj *);
 
 
 
@@ -58,7 +58,7 @@ Con_Obj *Con_Module_C_Platform_Exec_init(Con_Obj *thread, Con_Obj *identifier)
 
 Con_Obj *Con_Module_C_Platform_Exec_import(Con_Obj *thread, Con_Obj *env_mod)
 {
-	CON_SET_MOD_DEF(env_mod, "command", CON_NEW_UNBOUND_C_FUNC(Con_Modules_C_Platform_Exec_command, "command", env_mod));
+	CON_SET_MOD_DEF(env_mod, "command", CON_NEW_UNBOUND_C_FUNC(_Con_Module_C_Platform_Exec_command, "command", env_mod));
 
 	return env_mod;
 }
@@ -73,7 +73,7 @@ Con_Obj *Con_Module_C_Platform_Exec_import(Con_Obj *thread, Con_Obj *env_mod)
 // 'command(cmd)' passes 'cmd' to the shell for execution, returning the exit code.
 //
 
-Con_Obj *Con_Modules_C_Platform_Exec_command(Con_Obj *thread)
+Con_Obj *_Con_Module_C_Platform_Exec_command(Con_Obj *thread)
 {
 	Con_Obj *cmd;
 	CON_UNPACK_ARGS("S", &cmd);

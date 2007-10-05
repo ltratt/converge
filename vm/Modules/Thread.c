@@ -42,7 +42,7 @@
 Con_Obj *Con_Module_Thread_init(Con_Obj *, Con_Obj *);
 Con_Obj *Con_Module_Thread_import(Con_Obj *, Con_Obj *);
 
-Con_Obj *_Con_Modules_Thread_get_continuation_src_infos_func(Con_Obj *);
+Con_Obj *_Con_Module_Thread_get_continuation_src_infos_func(Con_Obj *);
 
 
 
@@ -58,7 +58,7 @@ Con_Obj *Con_Module_Thread_init(Con_Obj *thread, Con_Obj *identifier)
 
 Con_Obj *Con_Module_Thread_import(Con_Obj *thread, Con_Obj *thread_mod)
 {
-	CON_SET_MOD_DEF(thread_mod, "get_continuation_src_infos", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_Thread_get_continuation_src_infos_func, "get_continuation_src_infos", thread_mod));
+	CON_SET_MOD_DEF(thread_mod, "get_continuation_src_infos", CON_NEW_UNBOUND_C_FUNC(_Con_Module_Thread_get_continuation_src_infos_func, "get_continuation_src_infos", thread_mod));
 	
 	return thread_mod;
 }
@@ -70,7 +70,7 @@ Con_Obj *Con_Module_Thread_import(Con_Obj *thread, Con_Obj *thread_mod)
 //
 
 
-Con_Obj *_Con_Modules_Thread_get_continuation_src_infos_func(Con_Obj *thread)
+Con_Obj *_Con_Module_Thread_get_continuation_src_infos_func(Con_Obj *thread)
 {
 	Con_Obj *levels_back_obj;
 	CON_UNPACK_ARGS("I", &levels_back_obj);

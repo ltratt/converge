@@ -44,22 +44,22 @@
 Con_Obj *Con_Module_Exceptions_init(Con_Obj *, Con_Obj *);
 Con_Obj *Con_Module_Exceptions_import(Con_Obj *, Con_Obj *);
 
-Con_Obj *_Con_Modules_Exception_System_Exit_Exception_init_func(Con_Obj *);
-Con_Obj *_Con_Modules_Exception_VM_Exception_init_func(Con_Obj *);
+Con_Obj *_Con_Module_Exception_System_Exit_Exception_init_func(Con_Obj *);
+Con_Obj *_Con_Module_Exception_VM_Exception_init_func(Con_Obj *);
 
-Con_Obj *_Con_Modules_Exception_Apply_Exception_init_func(Con_Obj *);
-Con_Obj *_Con_Modules_Exception_Bounds_Exception_init_func(Con_Obj *);
-Con_Obj *_Con_Modules_Exception_Mod_Defn_Exception_init_func(Con_Obj *);
-Con_Obj *_Con_Modules_Exception_Field_Exception_init_func(Con_Obj *);
-Con_Obj *_Con_Modules_Exception_Import_Exception_init_func(Con_Obj *);
-Con_Obj *_Con_Modules_Exception_Indices_Exception_init_func(Con_Obj *);
-Con_Obj *_Con_Modules_Exception_Key_Exception_init_func(Con_Obj *);
-Con_Obj *_Con_Modules_Exception_Number_Exception_init_func(Con_Obj *);
-Con_Obj *_Con_Modules_Exception_Slot_Exception_init_func(Con_Obj *);
-Con_Obj *_Con_Modules_Exception_Type_Exception_init_func(Con_Obj *);
-Con_Obj *_Con_Modules_Exception_Unpack_Exception_init_func(Con_Obj *);
+Con_Obj *_Con_Module_Exception_Apply_Exception_init_func(Con_Obj *);
+Con_Obj *_Con_Module_Exception_Bounds_Exception_init_func(Con_Obj *);
+Con_Obj *_Con_Module_Exception_Mod_Defn_Exception_init_func(Con_Obj *);
+Con_Obj *_Con_Module_Exception_Field_Exception_init_func(Con_Obj *);
+Con_Obj *_Con_Module_Exception_Import_Exception_init_func(Con_Obj *);
+Con_Obj *_Con_Module_Exception_Indices_Exception_init_func(Con_Obj *);
+Con_Obj *_Con_Module_Exception_Key_Exception_init_func(Con_Obj *);
+Con_Obj *_Con_Module_Exception_Number_Exception_init_func(Con_Obj *);
+Con_Obj *_Con_Module_Exception_Slot_Exception_init_func(Con_Obj *);
+Con_Obj *_Con_Module_Exception_Type_Exception_init_func(Con_Obj *);
+Con_Obj *_Con_Module_Exception_Unpack_Exception_init_func(Con_Obj *);
 
-Con_Obj *_Con_Modules_Exception_backtrace_func(Con_Obj *);
+Con_Obj *_Con_Module_Exception_backtrace_func(Con_Obj *);
 
 
 
@@ -93,13 +93,13 @@ Con_Obj *Con_Module_Exceptions_import(Con_Obj *thread, Con_Obj *exceptions_mod)
 	// class System_Exit_Exception
 
 	Con_Obj *system_exit_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("System_Exit_Exception"), Con_Builtins_List_Atom_new_va(thread, internal_exception, NULL), exceptions_mod);
-	CON_SET_FIELD(system_exit_exception, "init", CON_NEW_BOUND_C_FUNC(_Con_Modules_Exception_System_Exit_Exception_init_func, "init", exceptions_mod, system_exit_exception));
+	CON_SET_FIELD(system_exit_exception, "init", CON_NEW_BOUND_C_FUNC(_Con_Module_Exception_System_Exit_Exception_init_func, "init", exceptions_mod, system_exit_exception));
 	CON_SET_MOD_DEF(exceptions_mod, "System_Exit_Exception", system_exit_exception);
 
 	// class VM_Exception
 
 	Con_Obj *vm_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("VM_Exception"), Con_Builtins_List_Atom_new_va(thread, internal_exception, NULL), exceptions_mod);
-	CON_SET_FIELD(vm_exception, "init", CON_NEW_BOUND_C_FUNC(_Con_Modules_Exception_VM_Exception_init_func, "init", exceptions_mod, vm_exception));
+	CON_SET_FIELD(vm_exception, "init", CON_NEW_BOUND_C_FUNC(_Con_Module_Exception_VM_Exception_init_func, "init", exceptions_mod, vm_exception));
 	CON_SET_MOD_DEF(exceptions_mod, "VM_Exception", vm_exception);
 
 	// Setup the standard user exceptions.
@@ -107,43 +107,43 @@ Con_Obj *Con_Module_Exceptions_import(Con_Obj *thread, Con_Obj *exceptions_mod)
 	// class Apply_Exception
 
 	Con_Obj *apply_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("Apply_Exception"), Con_Builtins_List_Atom_new_va(thread, user_exception, NULL), exceptions_mod);
-	CON_SET_FIELD(apply_exception, "init", CON_NEW_BOUND_C_FUNC(_Con_Modules_Exception_Apply_Exception_init_func, "init", exceptions_mod, apply_exception));
+	CON_SET_FIELD(apply_exception, "init", CON_NEW_BOUND_C_FUNC(_Con_Module_Exception_Apply_Exception_init_func, "init", exceptions_mod, apply_exception));
 	CON_SET_MOD_DEF(exceptions_mod, "Apply_Exception", apply_exception);
 
 	// class Bounds_Exception
 
 	Con_Obj *bounds_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("Bounds_Exception"), Con_Builtins_List_Atom_new_va(thread, user_exception, NULL), exceptions_mod);
-	CON_SET_FIELD(bounds_exception, "init", CON_NEW_BOUND_C_FUNC(_Con_Modules_Exception_Bounds_Exception_init_func, "init", exceptions_mod, bounds_exception));
+	CON_SET_FIELD(bounds_exception, "init", CON_NEW_BOUND_C_FUNC(_Con_Module_Exception_Bounds_Exception_init_func, "init", exceptions_mod, bounds_exception));
 	CON_SET_MOD_DEF(exceptions_mod, "Bounds_Exception", bounds_exception);
 
 	// class Field_Exception
 
 	Con_Obj *field_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("Field_Exception"), Con_Builtins_List_Atom_new_va(thread, user_exception, NULL), exceptions_mod);
-	CON_SET_FIELD(field_exception, "init", CON_NEW_BOUND_C_FUNC(_Con_Modules_Exception_Field_Exception_init_func, "init", exceptions_mod, field_exception));
+	CON_SET_FIELD(field_exception, "init", CON_NEW_BOUND_C_FUNC(_Con_Module_Exception_Field_Exception_init_func, "init", exceptions_mod, field_exception));
 	CON_SET_MOD_DEF(exceptions_mod, "Field_Exception", field_exception);
 
 	// class Import_Exception
 
 	Con_Obj *import_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("Import_Exception"), Con_Builtins_List_Atom_new_va(thread, user_exception, NULL), exceptions_mod);
-	CON_SET_FIELD(import_exception, "init", CON_NEW_BOUND_C_FUNC(_Con_Modules_Exception_Import_Exception_init_func, "init", exceptions_mod, import_exception));
+	CON_SET_FIELD(import_exception, "init", CON_NEW_BOUND_C_FUNC(_Con_Module_Exception_Import_Exception_init_func, "init", exceptions_mod, import_exception));
 	CON_SET_MOD_DEF(exceptions_mod, "Import_Exception", import_exception);
 
 	// class Indices_Exception
 
 	Con_Obj *indices_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("Indices_Exception"), Con_Builtins_List_Atom_new_va(thread, user_exception, NULL), exceptions_mod);
-	CON_SET_FIELD(indices_exception, "init", CON_NEW_BOUND_C_FUNC(_Con_Modules_Exception_Indices_Exception_init_func, "init", exceptions_mod, indices_exception));
+	CON_SET_FIELD(indices_exception, "init", CON_NEW_BOUND_C_FUNC(_Con_Module_Exception_Indices_Exception_init_func, "init", exceptions_mod, indices_exception));
 	CON_SET_MOD_DEF(exceptions_mod, "Indices_Exception", indices_exception);
 
 	// class Key_Exception
 
 	Con_Obj *key_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("Key_Exception"), Con_Builtins_List_Atom_new_va(thread, user_exception, NULL), exceptions_mod);
-	CON_SET_FIELD(key_exception, "init", CON_NEW_BOUND_C_FUNC(_Con_Modules_Exception_Key_Exception_init_func, "init", exceptions_mod, key_exception));
+	CON_SET_FIELD(key_exception, "init", CON_NEW_BOUND_C_FUNC(_Con_Module_Exception_Key_Exception_init_func, "init", exceptions_mod, key_exception));
 	CON_SET_MOD_DEF(exceptions_mod, "Key_Exception", key_exception);
 
 	// class Mod_Defn_Exception
 
 	Con_Obj *defn_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("Mod_Defn_Exception"), Con_Builtins_List_Atom_new_va(thread, user_exception, NULL), exceptions_mod);
-	CON_SET_FIELD(defn_exception, "init", CON_NEW_BOUND_C_FUNC(_Con_Modules_Exception_Mod_Defn_Exception_init_func, "init", exceptions_mod, defn_exception));
+	CON_SET_FIELD(defn_exception, "init", CON_NEW_BOUND_C_FUNC(_Con_Module_Exception_Mod_Defn_Exception_init_func, "init", exceptions_mod, defn_exception));
 	CON_SET_MOD_DEF(exceptions_mod, "Mod_Defn_Exception", defn_exception);
 
 	// class NDIf_Exception
@@ -154,7 +154,7 @@ Con_Obj *Con_Module_Exceptions_import(Con_Obj *thread, Con_Obj *exceptions_mod)
 	// class Number_Exception
 
 	Con_Obj *number_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("Number_Exception"), Con_Builtins_List_Atom_new_va(thread, user_exception, NULL), exceptions_mod);
-	CON_SET_FIELD(number_exception, "init", CON_NEW_BOUND_C_FUNC(_Con_Modules_Exception_Number_Exception_init_func, "init", exceptions_mod, number_exception));
+	CON_SET_FIELD(number_exception, "init", CON_NEW_BOUND_C_FUNC(_Con_Module_Exception_Number_Exception_init_func, "init", exceptions_mod, number_exception));
 	CON_SET_MOD_DEF(exceptions_mod, "Number_Exception", number_exception);
 
 	// class Parameters_Exception
@@ -165,19 +165,19 @@ Con_Obj *Con_Module_Exceptions_import(Con_Obj *thread, Con_Obj *exceptions_mod)
 	// class Slot_Exception
 
 	Con_Obj *slot_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("Slot_Exception"), Con_Builtins_List_Atom_new_va(thread, user_exception, NULL), exceptions_mod);
-	CON_SET_FIELD(slot_exception, "init", CON_NEW_BOUND_C_FUNC(_Con_Modules_Exception_Slot_Exception_init_func, "init", exceptions_mod, slot_exception));
+	CON_SET_FIELD(slot_exception, "init", CON_NEW_BOUND_C_FUNC(_Con_Module_Exception_Slot_Exception_init_func, "init", exceptions_mod, slot_exception));
 	CON_SET_MOD_DEF(exceptions_mod, "Slot_Exception", slot_exception);
 
 	// class Type_Exception
 	
 	Con_Obj *type_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("Type_Exception"), Con_Builtins_List_Atom_new_va(thread, user_exception, NULL), exceptions_mod);
-	CON_SET_FIELD(type_exception, "init", CON_NEW_BOUND_C_FUNC(_Con_Modules_Exception_Type_Exception_init_func, "init", exceptions_mod, type_exception));
+	CON_SET_FIELD(type_exception, "init", CON_NEW_BOUND_C_FUNC(_Con_Module_Exception_Type_Exception_init_func, "init", exceptions_mod, type_exception));
 	CON_SET_MOD_DEF(exceptions_mod, "Type_Exception", type_exception);
 
 	// class Unpack_Exception
 	
 	Con_Obj *unpack_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("Unpack_Exception"), Con_Builtins_List_Atom_new_va(thread, user_exception, NULL), exceptions_mod);
-	CON_SET_FIELD(unpack_exception, "init", CON_NEW_BOUND_C_FUNC(_Con_Modules_Exception_Unpack_Exception_init_func, "init", exceptions_mod, unpack_exception));
+	CON_SET_FIELD(unpack_exception, "init", CON_NEW_BOUND_C_FUNC(_Con_Module_Exception_Unpack_Exception_init_func, "init", exceptions_mod, unpack_exception));
 	CON_SET_MOD_DEF(exceptions_mod, "Unpack_Exception", unpack_exception);
 
 	// class Unassigned_Var_Exception
@@ -199,7 +199,7 @@ Con_Obj *Con_Module_Exceptions_import(Con_Obj *thread, Con_Obj *exceptions_mod)
 	
 	// func backtrace
 	
-	CON_SET_MOD_DEF(exceptions_mod, "backtrace", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_Exception_backtrace_func, "unbound", exceptions_mod));
+	CON_SET_MOD_DEF(exceptions_mod, "backtrace", CON_NEW_UNBOUND_C_FUNC(_Con_Module_Exception_backtrace_func, "unbound", exceptions_mod));
 	
 	return exceptions_mod;
 }
@@ -218,7 +218,7 @@ Con_Obj *Con_Module_Exceptions_import(Con_Obj *thread, Con_Obj *exceptions_mod)
 // 'System_Exit_Exception.init(func)'.
 //
 
-Con_Obj *_Con_Modules_Exception_System_Exit_Exception_init_func(Con_Obj *thread)
+Con_Obj *_Con_Module_Exception_System_Exit_Exception_init_func(Con_Obj *thread)
 {
 	Con_Obj *code_obj, *self;
 	CON_UNPACK_ARGS("OO", &self, &code_obj);
@@ -235,7 +235,7 @@ Con_Obj *_Con_Modules_Exception_System_Exit_Exception_init_func(Con_Obj *thread)
 // 'VM_Exception.init(func)'.
 //
 
-Con_Obj *_Con_Modules_Exception_VM_Exception_init_func(Con_Obj *thread)
+Con_Obj *_Con_Module_Exception_VM_Exception_init_func(Con_Obj *thread)
 {
 	Con_Obj *msg, *self;
 	CON_UNPACK_ARGS("OO", &self, &msg);
@@ -255,7 +255,7 @@ Con_Obj *_Con_Modules_Exception_VM_Exception_init_func(Con_Obj *thread)
 // 'Apply_Exception.init(func)'.
 //
 
-Con_Obj *_Con_Modules_Exception_Apply_Exception_init_func(Con_Obj *thread)
+Con_Obj *_Con_Module_Exception_Apply_Exception_init_func(Con_Obj *thread)
 {
 	Con_Obj *self, *obj;
 	CON_UNPACK_ARGS("OO", &self, &obj);
@@ -275,7 +275,7 @@ Con_Obj *_Con_Modules_Exception_Apply_Exception_init_func(Con_Obj *thread)
 // 'Bounds_Exception.init(i, upper_bound)'.
 //
 
-Con_Obj *_Con_Modules_Exception_Bounds_Exception_init_func(Con_Obj *thread)
+Con_Obj *_Con_Module_Exception_Bounds_Exception_init_func(Con_Obj *thread)
 {
 	Con_Obj *index, *self, *upper_bound;
 	CON_UNPACK_ARGS("OOO", &self, &index, &upper_bound);
@@ -300,7 +300,7 @@ Con_Obj *_Con_Modules_Exception_Bounds_Exception_init_func(Con_Obj *thread)
 // 'Field_Exception.init(name, o)'.
 //
 
-Con_Obj *_Con_Modules_Exception_Field_Exception_init_func(Con_Obj *thread)
+Con_Obj *_Con_Module_Exception_Field_Exception_init_func(Con_Obj *thread)
 {
 	Con_Obj *self, *field_name, *class_;
 	CON_UNPACK_ARGS("OOO", &self, &field_name, &class_);
@@ -322,7 +322,7 @@ Con_Obj *_Con_Modules_Exception_Field_Exception_init_func(Con_Obj *thread)
 // 'Import_Exception.init(identifier)'.
 //
 
-Con_Obj *_Con_Modules_Exception_Import_Exception_init_func(Con_Obj *thread)
+Con_Obj *_Con_Module_Exception_Import_Exception_init_func(Con_Obj *thread)
 {
 	Con_Obj *identifier, *self;
 	CON_UNPACK_ARGS("OO", &self, &identifier);
@@ -342,7 +342,7 @@ Con_Obj *_Con_Modules_Exception_Import_Exception_init_func(Con_Obj *thread)
 // 'Indices_Exception.init(lower, upper)'.
 //
 
-Con_Obj *_Con_Modules_Exception_Indices_Exception_init_func(Con_Obj *thread)
+Con_Obj *_Con_Module_Exception_Indices_Exception_init_func(Con_Obj *thread)
 {
 	Con_Obj *lower_bound, *self, *upper_bound;
 	CON_UNPACK_ARGS("OOO", &self, &lower_bound, &upper_bound);
@@ -364,7 +364,7 @@ Con_Obj *_Con_Modules_Exception_Indices_Exception_init_func(Con_Obj *thread)
 // 'Key_Exception.init(key)'.
 //
 
-Con_Obj *_Con_Modules_Exception_Key_Exception_init_func(Con_Obj *thread)
+Con_Obj *_Con_Module_Exception_Key_Exception_init_func(Con_Obj *thread)
 {
 	Con_Obj *key, *self;
 	CON_UNPACK_ARGS("OO", &self, &key);
@@ -384,7 +384,7 @@ Con_Obj *_Con_Modules_Exception_Key_Exception_init_func(Con_Obj *thread)
 // 'Mod_Defn_Exception.init(key)'.
 //
 
-Con_Obj *_Con_Modules_Exception_Mod_Defn_Exception_init_func(Con_Obj *thread)
+Con_Obj *_Con_Module_Exception_Mod_Defn_Exception_init_func(Con_Obj *thread)
 {
 	Con_Obj *key, *self;
 	CON_UNPACK_ARGS("OO", &self, &key);
@@ -404,7 +404,7 @@ Con_Obj *_Con_Modules_Exception_Mod_Defn_Exception_init_func(Con_Obj *thread)
 // 'Number_Exception.init(num)'.
 //
 
-Con_Obj *_Con_Modules_Exception_Number_Exception_init_func(Con_Obj *thread)
+Con_Obj *_Con_Module_Exception_Number_Exception_init_func(Con_Obj *thread)
 {
 	Con_Obj *num, *self;
 	CON_UNPACK_ARGS("OO", &self, &num);
@@ -424,7 +424,7 @@ Con_Obj *_Con_Modules_Exception_Number_Exception_init_func(Con_Obj *thread)
 // 'Slot_Exception.init(name, o)'.
 //
 
-Con_Obj *_Con_Modules_Exception_Slot_Exception_init_func(Con_Obj *thread)
+Con_Obj *_Con_Module_Exception_Slot_Exception_init_func(Con_Obj *thread)
 {
 	Con_Obj *self, *slot_name, *obj;
 	CON_UNPACK_ARGS("OOO", &self, &slot_name, &obj);
@@ -446,7 +446,7 @@ Con_Obj *_Con_Modules_Exception_Slot_Exception_init_func(Con_Obj *thread)
 // 'Type_Exception.init(should_be, obj, extra := null)'.
 //
 
-Con_Obj *_Con_Modules_Exception_Type_Exception_init_func(Con_Obj *thread)
+Con_Obj *_Con_Module_Exception_Type_Exception_init_func(Con_Obj *thread)
 {
 	Con_Obj *extra, *o, *self, *should_be;
 	CON_UNPACK_ARGS("OOO;O", &self, &should_be, &o, &extra);
@@ -474,7 +474,7 @@ Con_Obj *_Con_Modules_Exception_Type_Exception_init_func(Con_Obj *thread)
 // 'Unpack_Exception.init(num_elements_expected, num_elements_got)'.
 //
 
-Con_Obj *_Con_Modules_Exception_Unpack_Exception_init_func(Con_Obj *thread)
+Con_Obj *_Con_Module_Exception_Unpack_Exception_init_func(Con_Obj *thread)
 {
 	Con_Obj *num_elements_expected, *num_elements_got, *self;
 	CON_UNPACK_ARGS("OOO", &self, &num_elements_expected, &num_elements_got);
@@ -497,7 +497,7 @@ Con_Obj *_Con_Modules_Exception_Unpack_Exception_init_func(Con_Obj *thread)
 //
 //
 
-Con_Obj *_Con_Modules_Exception_backtrace_func(Con_Obj *thread)
+Con_Obj *_Con_Module_Exception_backtrace_func(Con_Obj *thread)
 {
 	Con_Obj *exception;
 	CON_UNPACK_ARGS("E", &exception);

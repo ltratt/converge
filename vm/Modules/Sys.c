@@ -48,9 +48,9 @@
 Con_Obj *Con_Module_Sys_init(Con_Obj *, Con_Obj *);
 Con_Obj *Con_Module_Sys_import(Con_Obj *, Con_Obj *);
 
-Con_Obj *_Con_Modules_Sys_exit_func(Con_Obj *);
-Con_Obj *_Con_Modules_Sys_print_func(Con_Obj *);
-Con_Obj *_Con_Modules_Sys_println_func(Con_Obj *);
+Con_Obj *_Con_Module_Sys_exit_func(Con_Obj *);
+Con_Obj *_Con_Module_Sys_print_func(Con_Obj *);
+Con_Obj *_Con_Module_Sys_println_func(Con_Obj *);
 
 
 
@@ -65,9 +65,9 @@ Con_Obj *Con_Module_Sys_init(Con_Obj *thread, Con_Obj *identifier)
 
 Con_Obj *Con_Module_Sys_import(Con_Obj *thread, Con_Obj *sys_mod)
 {
-	CON_SET_MOD_DEF(sys_mod, "exit", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_Sys_exit_func, "exit", sys_mod));
-	CON_SET_MOD_DEF(sys_mod, "print", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_Sys_print_func, "print", sys_mod));
-	CON_SET_MOD_DEF(sys_mod, "println", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_Sys_println_func, "println", sys_mod));
+	CON_SET_MOD_DEF(sys_mod, "exit", CON_NEW_UNBOUND_C_FUNC(_Con_Module_Sys_exit_func, "exit", sys_mod));
+	CON_SET_MOD_DEF(sys_mod, "print", CON_NEW_UNBOUND_C_FUNC(_Con_Module_Sys_print_func, "print", sys_mod));
+	CON_SET_MOD_DEF(sys_mod, "println", CON_NEW_UNBOUND_C_FUNC(_Con_Module_Sys_println_func, "println", sys_mod));
 	
 	// Setup stdin, stdout, and stderr.
 	
@@ -121,7 +121,7 @@ Con_Obj *Con_Module_Sys_import(Con_Obj *thread, Con_Obj *sys_mod)
 // 'exit(code)' causes the VM to exit with code 'code'.
 //
 
-Con_Obj *_Con_Modules_Sys_exit_func(Con_Obj *thread)
+Con_Obj *_Con_Module_Sys_exit_func(Con_Obj *thread)
 {
 	Con_Obj *code_obj;
 	CON_UNPACK_ARGS("O", &code_obj);
@@ -131,7 +131,7 @@ Con_Obj *_Con_Modules_Sys_exit_func(Con_Obj *thread)
 
 
 
-Con_Obj *_Con_Modules_Sys_print_func(Con_Obj *thread)
+Con_Obj *_Con_Module_Sys_print_func(Con_Obj *thread)
 {
 	Con_Obj *sys_mod = Con_Builtins_VM_Atom_get_functions_module(thread);
 
@@ -157,7 +157,7 @@ Con_Obj *_Con_Modules_Sys_print_func(Con_Obj *thread)
 
 
 
-Con_Obj *_Con_Modules_Sys_println_func(Con_Obj *thread)
+Con_Obj *_Con_Module_Sys_println_func(Con_Obj *thread)
 {
 	Con_Obj *sys_mod = Con_Builtins_VM_Atom_get_functions_module(thread);
 

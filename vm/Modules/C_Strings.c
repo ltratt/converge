@@ -42,7 +42,7 @@
 Con_Obj *Con_Module_C_Strings_init(Con_Obj *, Con_Obj *);
 Con_Obj *Con_Module_C_Strings_import(Con_Obj *, Con_Obj *);
 
-Con_Obj *_Con_Modules_C_Strings_join_func(Con_Obj *);
+Con_Obj *_Con_Module_C_Strings_join_func(Con_Obj *);
 
 
 
@@ -57,7 +57,7 @@ Con_Obj *Con_Module_C_Strings_init(Con_Obj *thread, Con_Obj *identifier)
 
 Con_Obj *Con_Module_C_Strings_import(Con_Obj *thread, Con_Obj *c_strings_mod)
 {
-	CON_SET_MOD_DEF(c_strings_mod, "join", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_C_Strings_join_func, "join", c_strings_mod));
+	CON_SET_MOD_DEF(c_strings_mod, "join", CON_NEW_UNBOUND_C_FUNC(_Con_Module_C_Strings_join_func, "join", c_strings_mod));
 	
 	return c_strings_mod;
 }
@@ -68,7 +68,7 @@ Con_Obj *Con_Module_C_Strings_import(Con_Obj *thread, Con_Obj *c_strings_mod)
 // Functions in Sys module
 //
 
-Con_Obj *_Con_Modules_C_Strings_join_func(Con_Obj *thread)
+Con_Obj *_Con_Module_C_Strings_join_func(Con_Obj *thread)
 {
 	Con_Obj *list, *separator_obj;
 	CON_UNPACK_ARGS("OS", &list, &separator_obj);

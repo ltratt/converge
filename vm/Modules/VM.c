@@ -42,9 +42,9 @@
 Con_Obj *Con_Module_VM_init(Con_Obj *, Con_Obj *);
 Con_Obj *Con_Module_VM_import(Con_Obj *, Con_Obj *);
 
-Con_Obj *_Con_Modules_VM_add_modules_func(Con_Obj *);
-Con_Obj *_Con_Modules_VM_find_module_func(Con_Obj *);
-Con_Obj *_Con_Modules_VM_import_module_func(Con_Obj *);
+Con_Obj *_Con_Module_VM_add_modules_func(Con_Obj *);
+Con_Obj *_Con_Module_VM_find_module_func(Con_Obj *);
+Con_Obj *_Con_Module_VM_import_module_func(Con_Obj *);
 
 
 
@@ -59,9 +59,9 @@ Con_Obj *Con_Module_VM_init(Con_Obj *thread, Con_Obj *identifier)
 
 Con_Obj *Con_Module_VM_import(Con_Obj *thread, Con_Obj *vm_mod)
 {
-	CON_SET_MOD_DEF(vm_mod, "add_modules", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_VM_add_modules_func, "add_modules", vm_mod));
-	CON_SET_MOD_DEF(vm_mod, "find_module", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_VM_find_module_func, "find_module", vm_mod));
-	CON_SET_MOD_DEF(vm_mod, "import_module", CON_NEW_UNBOUND_C_FUNC(_Con_Modules_VM_import_module_func, "import_module", vm_mod));
+	CON_SET_MOD_DEF(vm_mod, "add_modules", CON_NEW_UNBOUND_C_FUNC(_Con_Module_VM_add_modules_func, "add_modules", vm_mod));
+	CON_SET_MOD_DEF(vm_mod, "find_module", CON_NEW_UNBOUND_C_FUNC(_Con_Module_VM_find_module_func, "find_module", vm_mod));
+	CON_SET_MOD_DEF(vm_mod, "import_module", CON_NEW_UNBOUND_C_FUNC(_Con_Module_VM_import_module_func, "import_module", vm_mod));
 	
 	CON_SET_MOD_DEF(vm_mod, "vm", Con_Builtins_Thread_Atom_get_vm(thread));
 	
@@ -80,7 +80,7 @@ Con_Obj *Con_Module_VM_import(Con_Obj *thread, Con_Obj *vm_mod)
 // modules. Note that this function does *not* import modules.
 //
 
-Con_Obj *_Con_Modules_VM_add_modules_func(Con_Obj *thread)
+Con_Obj *_Con_Module_VM_add_modules_func(Con_Obj *thread)
 {
 	Con_Obj *mods;
 	CON_UNPACK_ARGS("L", &mods);
@@ -104,7 +104,7 @@ Con_Obj *_Con_Modules_VM_add_modules_func(Con_Obj *thread)
 // 'find_module(mod_id)' attempts to find the module with id 'mod_id'.
 //
 
-Con_Obj *_Con_Modules_VM_find_module_func(Con_Obj *thread)
+Con_Obj *_Con_Module_VM_find_module_func(Con_Obj *thread)
 {
 	Con_Obj *mod_id;
 	CON_UNPACK_ARGS("S", &mod_id);
@@ -122,7 +122,7 @@ Con_Obj *_Con_Modules_VM_find_module_func(Con_Obj *thread)
 // 'import_module(mod)' imports the module 'mod'.
 //
 
-Con_Obj *_Con_Modules_VM_import_module_func(Con_Obj *thread)
+Con_Obj *_Con_Module_VM_import_module_func(Con_Obj *thread)
 {
 	Con_Obj *mod;
 	CON_UNPACK_ARGS("M", &mod);

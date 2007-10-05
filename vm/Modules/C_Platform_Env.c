@@ -42,9 +42,9 @@
 Con_Obj *Con_Module_C_Platform_Env_init(Con_Obj *, Con_Obj *);
 Con_Obj *Con_Module_C_Platform_Env_import(Con_Obj *, Con_Obj *);
 
-Con_Obj *Con_Modules_C_Platform_Env_find_var(Con_Obj *);
-Con_Obj *Con_Modules_C_Platform_Env_get_var(Con_Obj *);
-Con_Obj *Con_Modules_C_Platform_Env_set_var(Con_Obj *);
+Con_Obj *_Con_Module_C_Platform_Env_find_var(Con_Obj *);
+Con_Obj *_Con_Module_C_Platform_Env_get_var(Con_Obj *);
+Con_Obj *_Con_Module_C_Platform_Env_set_var(Con_Obj *);
 
 
 
@@ -59,9 +59,9 @@ Con_Obj *Con_Module_C_Platform_Env_init(Con_Obj *thread, Con_Obj *identifier)
 
 Con_Obj *Con_Module_C_Platform_Env_import(Con_Obj *thread, Con_Obj *env_mod)
 {
-	CON_SET_MOD_DEF(env_mod, "find_var", CON_NEW_UNBOUND_C_FUNC(Con_Modules_C_Platform_Env_find_var, "find_var", env_mod));
-	CON_SET_MOD_DEF(env_mod, "get_var", CON_NEW_UNBOUND_C_FUNC(Con_Modules_C_Platform_Env_get_var, "get_var", env_mod));
-	CON_SET_MOD_DEF(env_mod, "set_var", CON_NEW_UNBOUND_C_FUNC(Con_Modules_C_Platform_Env_set_var, "set_var", env_mod));
+	CON_SET_MOD_DEF(env_mod, "find_var", CON_NEW_UNBOUND_C_FUNC(_Con_Module_C_Platform_Env_find_var, "find_var", env_mod));
+	CON_SET_MOD_DEF(env_mod, "get_var", CON_NEW_UNBOUND_C_FUNC(_Con_Module_C_Platform_Env_get_var, "get_var", env_mod));
+	CON_SET_MOD_DEF(env_mod, "set_var", CON_NEW_UNBOUND_C_FUNC(_Con_Module_C_Platform_Env_set_var, "set_var", env_mod));
 
 	return env_mod;
 }
@@ -76,7 +76,7 @@ Con_Obj *Con_Module_C_Platform_Env_import(Con_Obj *thread, Con_Obj *env_mod)
 // 'find_var(name)' returns the value of 'name' in the environment, failing if 'name' is not found.
 //
 
-Con_Obj *Con_Modules_C_Platform_Env_find_var(Con_Obj *thread)
+Con_Obj *_Con_Module_C_Platform_Env_find_var(Con_Obj *thread)
 {
 	Con_Obj *name;
 	CON_UNPACK_ARGS("S", &name);
@@ -95,7 +95,7 @@ Con_Obj *Con_Modules_C_Platform_Env_find_var(Con_Obj *thread)
 // not found.
 //
 
-Con_Obj *Con_Modules_C_Platform_Env_get_var(Con_Obj *thread)
+Con_Obj *_Con_Module_C_Platform_Env_get_var(Con_Obj *thread)
 {
 	Con_Obj *name;
 	CON_UNPACK_ARGS("S", &name);
@@ -113,7 +113,7 @@ Con_Obj *Con_Modules_C_Platform_Env_get_var(Con_Obj *thread)
 // 'set_var(name, val)' sets the value of 'name' to 'val' in the environment.
 //
 
-Con_Obj *Con_Modules_C_Platform_Env_set_var(Con_Obj *thread)
+Con_Obj *_Con_Module_C_Platform_Env_set_var(Con_Obj *thread)
 {
 	Con_Obj *name, *val;
 	CON_UNPACK_ARGS("SS", &name, &val);

@@ -44,37 +44,37 @@
 
 
 
-typedef enum {_CON_MODULES_ARRAY_TYPE_INT32, _CON_MODULES_ARRAY_TYPE_INT64} _Con_Modules_Array_Type;
+typedef enum {_CON_MODULES_ARRAY_TYPE_INT32, _CON_MODULES_ARRAY_TYPE_INT64} _Con_Module_Array_Type;
 
 typedef struct {
 	CON_ATOM_HEAD
 
-	_Con_Modules_Array_Type type; // Immutable.
+	_Con_Module_Array_Type type; // Immutable.
 	Con_Obj *type_name; // A pretty-printable name representing the type.
 	size_t entry_size; // Immutable.
 	u_char *entries;
 	Con_Int num_entries, num_entries_allocated;
-} Con_Modules_Array_Array_Atom;
+} _Con_Module_Array_Array_Atom;
 
-void _Con_Modules_Array_Module_Array_Atom_gc_scan(Con_Obj *, Con_Obj *, Con_Atom *);
+void _Con_Module_Array_Array_Atom_gc_scan(Con_Obj *, Con_Obj *, Con_Atom *);
 
 
 Con_Obj *Con_Module_Array_init(Con_Obj *thread, Con_Obj *);
 Con_Obj *Con_Module_Array_import(Con_Obj *thread, Con_Obj *);
 
-Con_Obj *_Con_Modules_Array_Array_new(Con_Obj *);
+Con_Obj *_Con_Module_Array_Array_new(Con_Obj *);
 
-Con_Obj *_Con_Modules_Array_Array_append_func(Con_Obj *);
-Con_Obj *_Con_Modules_Array_Array_extend_func(Con_Obj *);
-Con_Obj *_Con_Modules_Array_Array_extend_from_string_func(Con_Obj *);
-Con_Obj *_Con_Modules_Array_Array_get_func(Con_Obj *);
-Con_Obj *_Con_Modules_Array_Array_get_slice_func(Con_Obj *);
-Con_Obj *_Con_Modules_Array_Array_iterate_func(Con_Obj *);
-Con_Obj *_Con_Modules_Array_Array_len_func(Con_Obj *);
-Con_Obj *_Con_Modules_Array_Array_len_bytes_func(Con_Obj *);
-Con_Obj *_Con_Modules_Array_Array_serialize_func(Con_Obj *);
-Con_Obj *_Con_Modules_Array_Array_set_func(Con_Obj *);
-Con_Obj *_Con_Modules_Array_Array_to_str_func(Con_Obj *);
+Con_Obj *_Con_Module_Array_Array_append_func(Con_Obj *);
+Con_Obj *_Con_Module_Array_Array_extend_func(Con_Obj *);
+Con_Obj *_Con_Module_Array_Array_extend_from_string_func(Con_Obj *);
+Con_Obj *_Con_Module_Array_Array_get_func(Con_Obj *);
+Con_Obj *_Con_Module_Array_Array_get_slice_func(Con_Obj *);
+Con_Obj *_Con_Module_Array_Array_iterate_func(Con_Obj *);
+Con_Obj *_Con_Module_Array_Array_len_func(Con_Obj *);
+Con_Obj *_Con_Module_Array_Array_len_bytes_func(Con_Obj *);
+Con_Obj *_Con_Module_Array_Array_serialize_func(Con_Obj *);
+Con_Obj *_Con_Module_Array_Array_set_func(Con_Obj *);
+Con_Obj *_Con_Module_Array_Array_to_str_func(Con_Obj *);
 
 #define _ALIGNMENT_EXCEPTION(l, array_atom) do { \
 		Con_Obj *msg = CON_NEW_STRING("Data of len "); \
@@ -109,24 +109,24 @@ Con_Obj *Con_Module_Array_import(Con_Obj *thread, Con_Obj *array_mod)
 
 	// Array_Atom_Def
 	
-	CON_SET_MOD_DEF(array_mod, "Array_Atom_Def", Con_Builtins_Atom_Def_Atom_new(thread, _Con_Modules_Array_Module_Array_Atom_gc_scan, NULL));
+	CON_SET_MOD_DEF(array_mod, "Array_Atom_Def", Con_Builtins_Atom_Def_Atom_new(thread, _Con_Module_Array_Array_Atom_gc_scan, NULL));
 
 	// Array.Array
 	
-	Con_Obj *array_class = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("Array"), Con_Builtins_List_Atom_new_va(thread, CON_BUILTIN(CON_BUILTIN_OBJECT_CLASS), NULL), array_mod, CON_NEW_UNBOUND_C_FUNC(_Con_Modules_Array_Array_new, "Array_new", array_mod));
+	Con_Obj *array_class = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("Array"), Con_Builtins_List_Atom_new_va(thread, CON_BUILTIN(CON_BUILTIN_OBJECT_CLASS), NULL), array_mod, CON_NEW_UNBOUND_C_FUNC(_Con_Module_Array_Array_new, "Array_new", array_mod));
 	CON_SET_MOD_DEF(array_mod, "Array", array_class);
 	
-	CON_SET_FIELD(array_class, "append", CON_NEW_BOUND_C_FUNC(_Con_Modules_Array_Array_append_func, "append", array_mod, array_class));
-	CON_SET_FIELD(array_class, "extend", CON_NEW_BOUND_C_FUNC(_Con_Modules_Array_Array_extend_func, "extend", array_mod, array_class));
-	CON_SET_FIELD(array_class, "extend_from_string", CON_NEW_BOUND_C_FUNC(_Con_Modules_Array_Array_extend_from_string_func, "extend_from_string", array_mod, array_class));
-	CON_SET_FIELD(array_class, "get", CON_NEW_BOUND_C_FUNC(_Con_Modules_Array_Array_get_func, "get", array_mod, array_class));
-	CON_SET_FIELD(array_class, "get_slice", CON_NEW_BOUND_C_FUNC(_Con_Modules_Array_Array_get_slice_func, "get_slice", array_mod, array_class));
-	CON_SET_FIELD(array_class, "iterate", CON_NEW_BOUND_C_FUNC(_Con_Modules_Array_Array_iterate_func, "iterate", array_mod, array_class));
-	CON_SET_FIELD(array_class, "len", CON_NEW_BOUND_C_FUNC(_Con_Modules_Array_Array_len_func, "len", array_mod, array_class));
-	CON_SET_FIELD(array_class, "len_bytes", CON_NEW_BOUND_C_FUNC(_Con_Modules_Array_Array_len_bytes_func, "len_bytes", array_mod, array_class));
-	CON_SET_FIELD(array_class, "serialize", CON_NEW_BOUND_C_FUNC(_Con_Modules_Array_Array_serialize_func, "serialize", array_mod, array_class));
-	CON_SET_FIELD(array_class, "set", CON_NEW_BOUND_C_FUNC(_Con_Modules_Array_Array_set_func, "set", array_mod, array_class));
-	CON_SET_FIELD(array_class, "to_str", CON_NEW_BOUND_C_FUNC(_Con_Modules_Array_Array_to_str_func, "to_str", array_mod, array_class));
+	CON_SET_FIELD(array_class, "append", CON_NEW_BOUND_C_FUNC(_Con_Module_Array_Array_append_func, "append", array_mod, array_class));
+	CON_SET_FIELD(array_class, "extend", CON_NEW_BOUND_C_FUNC(_Con_Module_Array_Array_extend_func, "extend", array_mod, array_class));
+	CON_SET_FIELD(array_class, "extend_from_string", CON_NEW_BOUND_C_FUNC(_Con_Module_Array_Array_extend_from_string_func, "extend_from_string", array_mod, array_class));
+	CON_SET_FIELD(array_class, "get", CON_NEW_BOUND_C_FUNC(_Con_Module_Array_Array_get_func, "get", array_mod, array_class));
+	CON_SET_FIELD(array_class, "get_slice", CON_NEW_BOUND_C_FUNC(_Con_Module_Array_Array_get_slice_func, "get_slice", array_mod, array_class));
+	CON_SET_FIELD(array_class, "iterate", CON_NEW_BOUND_C_FUNC(_Con_Module_Array_Array_iterate_func, "iterate", array_mod, array_class));
+	CON_SET_FIELD(array_class, "len", CON_NEW_BOUND_C_FUNC(_Con_Module_Array_Array_len_func, "len", array_mod, array_class));
+	CON_SET_FIELD(array_class, "len_bytes", CON_NEW_BOUND_C_FUNC(_Con_Module_Array_Array_len_bytes_func, "len_bytes", array_mod, array_class));
+	CON_SET_FIELD(array_class, "serialize", CON_NEW_BOUND_C_FUNC(_Con_Module_Array_Array_serialize_func, "serialize", array_mod, array_class));
+	CON_SET_FIELD(array_class, "set", CON_NEW_BOUND_C_FUNC(_Con_Module_Array_Array_set_func, "set", array_mod, array_class));
+	CON_SET_FIELD(array_class, "to_str", CON_NEW_BOUND_C_FUNC(_Con_Module_Array_Array_to_str_func, "to_str", array_mod, array_class));
 	
 	Con_Builtins_Class_Atom_mark_as_virgin(thread, array_class);
 
@@ -139,9 +139,9 @@ Con_Obj *Con_Module_Array_import(Con_Obj *thread, Con_Obj *array_mod)
 // Garbage collection
 //
 
-void _Con_Modules_Array_Module_Array_Atom_gc_scan(Con_Obj *thread, Con_Obj *obj, Con_Atom *atom)
+void _Con_Module_Array_Array_Atom_gc_scan(Con_Obj *thread, Con_Obj *obj, Con_Atom *atom)
 {
-	Con_Modules_Array_Array_Atom *array_atom = (Con_Modules_Array_Array_Atom *) atom;
+	_Con_Module_Array_Array_Atom *array_atom = (_Con_Module_Array_Array_Atom *) atom;
 
 	Con_Memory_gc_push(thread, array_atom->type_name);
 	Con_Memory_gc_push(thread, array_atom->entries);
@@ -162,15 +162,15 @@ void _Con_Modules_Array_Module_Array_Atom_gc_scan(Con_Obj *thread, Con_Obj *obj,
 //   'i64' : array of 32-bit integers
 //
 
-Con_Obj *_Con_Modules_Array_Array_new(Con_Obj *thread)
+Con_Obj *_Con_Module_Array_Array_new(Con_Obj *thread)
 {
 	Con_Obj *array_mod = Con_Builtins_VM_Atom_get_functions_module(thread);
 
 	Con_Obj *class, *initial_data, *type;
 	CON_UNPACK_ARGS("CO;O", &class, &type, &initial_data);
 
-	Con_Obj *new_array = Con_Object_new_from_class(thread, sizeof(Con_Obj) + sizeof(Con_Modules_Array_Array_Atom) + sizeof(Con_Builtins_Slots_Atom), class);
-	Con_Modules_Array_Array_Atom *array_atom = (Con_Modules_Array_Array_Atom *) new_array->first_atom;
+	Con_Obj *new_array = Con_Object_new_from_class(thread, sizeof(Con_Obj) + sizeof(_Con_Module_Array_Array_Atom) + sizeof(Con_Builtins_Slots_Atom), class);
+	_Con_Module_Array_Array_Atom *array_atom = (_Con_Module_Array_Array_Atom *) new_array->first_atom;
 	Con_Builtins_Slots_Atom *slots_atom = (Con_Builtins_Slots_Atom *) (array_atom + 1);
 	array_atom->next_atom = (Con_Atom *) slots_atom;
 	slots_atom->next_atom = NULL;
@@ -263,14 +263,14 @@ Con_Obj *_Con_Modules_Array_Array_new(Con_Obj *thread)
 // 'append(o)'.
 //
 
-Con_Obj *_Con_Modules_Array_Array_append_func(Con_Obj *thread)
+Con_Obj *_Con_Module_Array_Array_append_func(Con_Obj *thread)
 {
 	Con_Obj *array_atom_def = CON_GET_MOD_DEFN(Con_Builtins_VM_Atom_get_functions_module(thread), "Array_Atom_Def");
 
 	Con_Obj *o, *self;
 	CON_UNPACK_ARGS("UO", array_atom_def, &self, &o);
 	
-	Con_Modules_Array_Array_Atom *array_atom = CON_GET_ATOM(self, array_atom_def);
+	_Con_Module_Array_Array_Atom *array_atom = CON_GET_ATOM(self, array_atom_def);
 	
 	if (array_atom->type == _CON_MODULES_ARRAY_TYPE_INT32) {
 		int32_t val = Con_Numbers_Number_to_Con_Int(thread, o);
@@ -298,7 +298,7 @@ Con_Obj *_Con_Modules_Array_Array_append_func(Con_Obj *thread)
 // 'extend(container)'.
 //
 
-Con_Obj *_Con_Modules_Array_Array_extend_func(Con_Obj *thread)
+Con_Obj *_Con_Module_Array_Array_extend_func(Con_Obj *thread)
 {
 	Con_Obj *array_atom_def = CON_GET_MOD_DEFN(Con_Builtins_VM_Atom_get_functions_module(thread), "Array_Atom_Def");
 
@@ -307,8 +307,8 @@ Con_Obj *_Con_Modules_Array_Array_extend_func(Con_Obj *thread)
 	
 	CON_MUTEX_LOCK(&container->mutex);
 	if (container->virgin && container->first_atom->atom_type == array_atom_def) {
-		Con_Modules_Array_Array_Atom *self_array_atom = CON_GET_ATOM(self, array_atom_def);
-		Con_Modules_Array_Array_Atom *container_array_atom = (Con_Modules_Array_Array_Atom *) container->first_atom;
+		_Con_Module_Array_Array_Atom *self_array_atom = CON_GET_ATOM(self, array_atom_def);
+		_Con_Module_Array_Array_Atom *container_array_atom = (_Con_Module_Array_Array_Atom *) container->first_atom;
 
 		if (self_array_atom->type == container_array_atom->type) {
 			Con_Int container_num_entries = container_array_atom->num_entries;
@@ -347,7 +347,7 @@ Con_Obj *_Con_Modules_Array_Array_extend_func(Con_Obj *thread)
 // 'extend_from_string(container)'.
 //
 
-Con_Obj *_Con_Modules_Array_Array_extend_from_string_func(Con_Obj *thread)
+Con_Obj *_Con_Module_Array_Array_extend_from_string_func(Con_Obj *thread)
 {
 	Con_Obj *array_mod = Con_Builtins_VM_Atom_get_functions_module(thread);
 	Con_Obj *array_atom_def = CON_GET_MOD_DEFN(array_mod, "Array_Atom_Def");
@@ -357,7 +357,7 @@ Con_Obj *_Con_Modules_Array_Array_extend_from_string_func(Con_Obj *thread)
 	
 	CON_MUTEX_LOCK(&str_obj->mutex);
 	if (str_obj->virgin && str_obj->first_atom->atom_type == CON_BUILTIN(CON_BUILTIN_STRING_ATOM_DEF_OBJECT)) {
-		Con_Modules_Array_Array_Atom *self_array_atom = CON_GET_ATOM(self, array_atom_def);
+		_Con_Module_Array_Array_Atom *self_array_atom = CON_GET_ATOM(self, array_atom_def);
 		Con_Builtins_String_Atom *str_atom = (Con_Builtins_String_Atom *) str_obj->first_atom;
 		
 		CON_MUTEX_UNLOCK(&str_obj->mutex);
@@ -384,14 +384,14 @@ Con_Obj *_Con_Modules_Array_Array_extend_from_string_func(Con_Obj *thread)
 // 'get(i)'.
 //
 
-Con_Obj *_Con_Modules_Array_Array_get_func(Con_Obj *thread)
+Con_Obj *_Con_Module_Array_Array_get_func(Con_Obj *thread)
 {
 	Con_Obj *array_atom_def = CON_GET_MOD_DEFN(Con_Builtins_VM_Atom_get_functions_module(thread), "Array_Atom_Def");
 
 	Con_Obj *i_obj, *self;
 	CON_UNPACK_ARGS("UN", array_atom_def, &self, &i_obj);
 	
-	Con_Modules_Array_Array_Atom *array_atom = CON_GET_ATOM(self, array_atom_def);
+	_Con_Module_Array_Array_Atom *array_atom = CON_GET_ATOM(self, array_atom_def);
 	
 	Con_Int i_val = Con_Numbers_Number_to_Con_Int(thread, i_obj);
 	
@@ -432,7 +432,7 @@ Con_Obj *_Con_Modules_Array_Array_get_func(Con_Obj *thread)
 // 'get_slice(i)'.
 //
 
-Con_Obj *_Con_Modules_Array_Array_get_slice_func(Con_Obj *thread)
+Con_Obj *_Con_Module_Array_Array_get_slice_func(Con_Obj *thread)
 {
 	Con_Obj *array_mod = Con_Builtins_VM_Atom_get_functions_module(thread);
 	Con_Obj *array_atom_def = CON_GET_MOD_DEFN(array_mod, "Array_Atom_Def");
@@ -440,15 +440,15 @@ Con_Obj *_Con_Modules_Array_Array_get_slice_func(Con_Obj *thread)
 	Con_Obj *lower_obj, *self, *upper_obj;
 	CON_UNPACK_ARGS("UOO", array_atom_def, &self, &lower_obj, &upper_obj);
 	
-	Con_Modules_Array_Array_Atom *self_array_atom = CON_GET_ATOM(self, array_atom_def);
+	_Con_Module_Array_Array_Atom *self_array_atom = CON_GET_ATOM(self, array_atom_def);
 
 	CON_MUTEX_LOCK(&self->mutex);
 	Con_Int lower, upper;
 	Con_Misc_translate_slice_indices(thread, &self->mutex, lower_obj, upper_obj, &lower, &upper, self_array_atom->num_entries);
 	CON_MUTEX_UNLOCK(&self->mutex);
 
-	Con_Obj *new_array = Con_Object_new_from_class(thread, sizeof(Con_Obj) + sizeof(Con_Modules_Array_Array_Atom) + sizeof(Con_Builtins_Slots_Atom), CON_GET_MOD_DEFN(array_mod, "Array"));
-	Con_Modules_Array_Array_Atom *new_array_atom = (Con_Modules_Array_Array_Atom *) new_array->first_atom;
+	Con_Obj *new_array = Con_Object_new_from_class(thread, sizeof(Con_Obj) + sizeof(_Con_Module_Array_Array_Atom) + sizeof(Con_Builtins_Slots_Atom), CON_GET_MOD_DEFN(array_mod, "Array"));
+	_Con_Module_Array_Array_Atom *new_array_atom = (_Con_Module_Array_Array_Atom *) new_array->first_atom;
 	Con_Builtins_Slots_Atom *new_slots_atom = (Con_Builtins_Slots_Atom *) (new_array_atom + 1);
 	new_array_atom->next_atom = (Con_Atom *) new_slots_atom;
 	new_slots_atom->next_atom = NULL;
@@ -483,14 +483,14 @@ Con_Obj *_Con_Modules_Array_Array_get_slice_func(Con_Obj *thread)
 // 'iterate(lower := 0, upper := -1)'.
 //
 
-Con_Obj *_Con_Modules_Array_Array_iterate_func(Con_Obj *thread)
+Con_Obj *_Con_Module_Array_Array_iterate_func(Con_Obj *thread)
 {
 	Con_Obj *array_atom_def = CON_GET_MOD_DEFN(Con_Builtins_VM_Atom_get_functions_module(thread), "Array_Atom_Def");
 
 	Con_Obj *lower_obj, *self, *upper_obj;
 	CON_UNPACK_ARGS("U;OO", array_atom_def, &self, &lower_obj, &upper_obj);
 	
-	Con_Modules_Array_Array_Atom *array_atom = CON_GET_ATOM(self, array_atom_def);
+	_Con_Module_Array_Array_Atom *array_atom = CON_GET_ATOM(self, array_atom_def);
 	
 	CON_MUTEX_LOCK(&self->mutex);
 	Con_Int lower, upper;
@@ -541,14 +541,14 @@ Con_Obj *_Con_Modules_Array_Array_iterate_func(Con_Obj *thread)
 // 'len()' returns the number of entries in this array.
 //
 
-Con_Obj *_Con_Modules_Array_Array_len_func(Con_Obj *thread)
+Con_Obj *_Con_Module_Array_Array_len_func(Con_Obj *thread)
 {
 	Con_Obj *array_atom_def = CON_GET_MOD_DEFN(Con_Builtins_VM_Atom_get_functions_module(thread), "Array_Atom_Def");
 
 	Con_Obj *self;
 	CON_UNPACK_ARGS("U", array_atom_def, &self);
 	
-	Con_Modules_Array_Array_Atom *array_atom = CON_GET_ATOM(self, array_atom_def);
+	_Con_Module_Array_Array_Atom *array_atom = CON_GET_ATOM(self, array_atom_def);
 	
 	CON_MUTEX_LOCK(&self->mutex);
 	Con_Int len = array_atom->num_entries;
@@ -563,14 +563,14 @@ Con_Obj *_Con_Modules_Array_Array_len_func(Con_Obj *thread)
 // 'len_bytes()' returns the length of this array in bytes.
 //
 
-Con_Obj *_Con_Modules_Array_Array_len_bytes_func(Con_Obj *thread)
+Con_Obj *_Con_Module_Array_Array_len_bytes_func(Con_Obj *thread)
 {
 	Con_Obj *array_atom_def = CON_GET_MOD_DEFN(Con_Builtins_VM_Atom_get_functions_module(thread), "Array_Atom_Def");
 
 	Con_Obj *self;
 	CON_UNPACK_ARGS("U", array_atom_def, &self);
 	
-	Con_Modules_Array_Array_Atom *array_atom = CON_GET_ATOM(self, array_atom_def);
+	_Con_Module_Array_Array_Atom *array_atom = CON_GET_ATOM(self, array_atom_def);
 	
 	CON_MUTEX_LOCK(&self->mutex);
 	Con_Int len_bytes = array_atom->entry_size * array_atom->num_entries;
@@ -585,14 +585,14 @@ Con_Obj *_Con_Modules_Array_Array_len_bytes_func(Con_Obj *thread)
 // 'serialize()' returns a string representing this array.
 //
 
-Con_Obj *_Con_Modules_Array_Array_serialize_func(Con_Obj *thread)
+Con_Obj *_Con_Module_Array_Array_serialize_func(Con_Obj *thread)
 {
 	Con_Obj *array_atom_def = CON_GET_MOD_DEFN(Con_Builtins_VM_Atom_get_functions_module(thread), "Array_Atom_Def");
 
 	Con_Obj *self;
 	CON_UNPACK_ARGS("U", array_atom_def, &self);
 	
-	Con_Modules_Array_Array_Atom *array_atom = CON_GET_ATOM(self, array_atom_def);
+	_Con_Module_Array_Array_Atom *array_atom = CON_GET_ATOM(self, array_atom_def);
 	
 	CON_MUTEX_LOCK(&self->mutex);
 	Con_Int str_size = array_atom->num_entries * array_atom->entry_size;
@@ -611,14 +611,14 @@ Con_Obj *_Con_Modules_Array_Array_serialize_func(Con_Obj *thread)
 // 'set(i, o)'.
 //
 
-Con_Obj *_Con_Modules_Array_Array_set_func(Con_Obj *thread)
+Con_Obj *_Con_Module_Array_Array_set_func(Con_Obj *thread)
 {
 	Con_Obj *array_atom_def = CON_GET_MOD_DEFN(Con_Builtins_VM_Atom_get_functions_module(thread), "Array_Atom_Def");
 
 	Con_Obj *i_obj, *o, *self;
 	CON_UNPACK_ARGS("UNO", array_atom_def, &self, &i_obj, &o);
 	
-	Con_Modules_Array_Array_Atom *array_atom = CON_GET_ATOM(self, array_atom_def);
+	_Con_Module_Array_Array_Atom *array_atom = CON_GET_ATOM(self, array_atom_def);
 	
 	Con_Int i_val = Con_Numbers_Number_to_Con_Int(thread, i_obj);
 	
@@ -646,14 +646,14 @@ Con_Obj *_Con_Modules_Array_Array_set_func(Con_Obj *thread)
 // 'to_str()'.
 //
 
-Con_Obj *_Con_Modules_Array_Array_to_str_func(Con_Obj *thread)
+Con_Obj *_Con_Module_Array_Array_to_str_func(Con_Obj *thread)
 {
 	Con_Obj *array_atom_def = CON_GET_MOD_DEFN(Con_Builtins_VM_Atom_get_functions_module(thread), "Array_Atom_Def");
 
 	Con_Obj *self;
 	CON_UNPACK_ARGS("U", array_atom_def, &self);
 	
-	Con_Modules_Array_Array_Atom *array_atom = CON_GET_ATOM(self, array_atom_def);
+	_Con_Module_Array_Array_Atom *array_atom = CON_GET_ATOM(self, array_atom_def);
 	
 	CON_MUTEX_LOCK(&self->mutex);
 	u_char *str_mem = Con_Memory_malloc_no_gc(thread, array_atom->num_entries * array_atom->entry_size, CON_MEMORY_CHUNK_OPAQUE);

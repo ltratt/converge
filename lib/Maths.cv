@@ -19,7 +19,7 @@
 // IN THE SOFTWARE.
 
 
-import Exceptions
+import Builtins, Exceptions
 
 
 
@@ -49,3 +49,26 @@ func min(*objs):
 			current_min := objs[i]
 
 	return current_min
+
+
+
+func powerset(s):
+
+	array := [0] * s.len()
+	sl := Builtins::List.new(s)
+	while 1:
+		ss := Set{} // Subset
+		
+		for i := 0.to(s.len()):
+			if array[i] == 1:
+				ss.add(sl[i])
+		yield ss
+
+		for i := (s.len() - 1).to(-1, -1):
+			if array[i] == 0:
+				array[i] := 1
+				break
+			else:
+				array[i] := 0
+		exhausted:
+			return fail

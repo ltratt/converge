@@ -96,7 +96,7 @@ Con_Obj *Con_Module_PCRE_import(Con_Obj *thread, Con_Obj *pcre_mod)
 {
 	// PCRE_Exception
 
-	Con_Obj *user_exception = CON_GET_MODULE_DEF(CON_BUILTIN(CON_BUILTIN_EXCEPTIONS_MODULE), "User_Exception");
+	Con_Obj *user_exception = CON_GET_MOD_DEFN(CON_BUILTIN(CON_BUILTIN_EXCEPTIONS_MODULE), "User_Exception");
 	Con_Obj *pcre_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("PCRE_Exception"), Con_Builtins_List_Atom_new_va(thread, user_exception, NULL), pcre_mod);
 	CON_SET_MOD_DEF(pcre_mod, "PCRE_Exception", pcre_exception);
 
@@ -165,7 +165,7 @@ Con_Obj *_Con_Modules_PCRE_compile_func(Con_Obj *thread)
 	Con_Obj *pattern;
 	CON_UNPACK_ARGS("O", &pattern);
 	
-	return CON_GET_SLOT_APPLY(CON_GET_MODULE_DEF(Con_Builtins_VM_Atom_get_functions_module(thread), "Pattern"), "new", pattern);
+	return CON_GET_SLOT_APPLY(CON_GET_MOD_DEFN(Con_Builtins_VM_Atom_get_functions_module(thread), "Pattern"), "new", pattern);
 }
 
 
@@ -191,7 +191,7 @@ Con_Obj *_Con_Modules_PCRE_Pattern_new(Con_Obj *thread)
 	pattern_atom->next_atom = (Con_Atom *) slots_atom;
 	slots_atom->next_atom = NULL;
 
-	pattern_atom->atom_type = CON_GET_MODULE_DEF(pcre_mod, "Pattern_Atom_Def");
+	pattern_atom->atom_type = CON_GET_MOD_DEFN(pcre_mod, "Pattern_Atom_Def");
 	const char *errptr;
 	int erroffset;
 	if ((pattern_atom->compiled_re = pcre_compile(Con_Builtins_String_Atom_to_c_string(thread, pattern), PCRE_DOTALL | PCRE_MULTILINE, &errptr, &erroffset, NULL)) == NULL) {
@@ -199,7 +199,7 @@ Con_Obj *_Con_Modules_PCRE_Pattern_new(Con_Obj *thread)
 		msg = CON_ADD(msg, CON_NEW_STRING(" at pattern position "));
 		msg = CON_ADD(msg, CON_GET_SLOT_APPLY(CON_NEW_INT(erroffset), "to_str"));
 		msg = CON_ADD(msg, CON_NEW_STRING("."));
-		Con_Obj *exception = CON_GET_SLOT_APPLY(CON_GET_MODULE_DEF(pcre_mod, "PCRE_Exception"), "new", msg);
+		Con_Obj *exception = CON_GET_SLOT_APPLY(CON_GET_MOD_DEFN(pcre_mod, "PCRE_Exception"), "new", msg);
 	Con_Builtins_VM_Atom_raise(thread, exception);
 		CON_XXX;
 	}
@@ -228,7 +228,7 @@ Con_Obj *_Con_Modules_PCRE_Pattern_new(Con_Obj *thread)
 Con_Obj *_Con_Modules_PCRE_Pattern_match_func(Con_Obj *thread)
 {
 	Con_Obj *pcre_mod = Con_Builtins_VM_Atom_get_functions_module(thread);
-	Con_Obj *pattern_atom_def = CON_GET_MODULE_DEF(pcre_mod, "Pattern_Atom_Def");
+	Con_Obj *pattern_atom_def = CON_GET_MOD_DEFN(pcre_mod, "Pattern_Atom_Def");
 
 	Con_Obj *self, *start_pos_obj, *string;
 	CON_UNPACK_ARGS("OS;n", &self, &string, &start_pos_obj);
@@ -259,11 +259,11 @@ Con_Obj *_Con_Modules_PCRE_Pattern_match_func(Con_Obj *thread)
 	
 	// We've matched successfully, so create a match object.
 	
-	Con_Obj *new_match = Con_Object_new_from_class(thread, sizeof(Con_Obj) + sizeof(Con_Modules_PCRE_Match_Atom), CON_GET_MODULE_DEF(pcre_mod, "Match"));
+	Con_Obj *new_match = Con_Object_new_from_class(thread, sizeof(Con_Obj) + sizeof(Con_Modules_PCRE_Match_Atom), CON_GET_MOD_DEFN(pcre_mod, "Match"));
 	Con_Modules_PCRE_Match_Atom *match_atom = (Con_Modules_PCRE_Match_Atom *) new_match->first_atom;
 	match_atom->next_atom = NULL;
 	
-	match_atom->atom_type = CON_GET_MODULE_DEF(pcre_mod, "Match_Atom_Def");
+	match_atom->atom_type = CON_GET_MOD_DEFN(pcre_mod, "Match_Atom_Def");
 	match_atom->ovector = ovector;
 	match_atom->num_captures = pattern_atom->num_captures;
 	match_atom->string = string;
@@ -283,7 +283,7 @@ Con_Obj *_Con_Modules_PCRE_Pattern_match_func(Con_Obj *thread)
 Con_Obj *_Con_Modules_PCRE_Pattern_search_func(Con_Obj *thread)
 {
 	Con_Obj *pcre_mod = Con_Builtins_VM_Atom_get_functions_module(thread);
-	Con_Obj *pattern_atom_def = CON_GET_MODULE_DEF(pcre_mod, "Pattern_Atom_Def");
+	Con_Obj *pattern_atom_def = CON_GET_MOD_DEFN(pcre_mod, "Pattern_Atom_Def");
 
 	Con_Obj *self, *start_pos_obj, *string;
 	CON_UNPACK_ARGS("OS;n", &self, &string, &start_pos_obj);
@@ -314,11 +314,11 @@ Con_Obj *_Con_Modules_PCRE_Pattern_search_func(Con_Obj *thread)
 	
 	// We've matched successfully, so create a match object.
 	
-	Con_Obj *new_match = Con_Object_new_from_class(thread, sizeof(Con_Obj) + sizeof(Con_Modules_PCRE_Match_Atom), CON_GET_MODULE_DEF(pcre_mod, "Match"));
+	Con_Obj *new_match = Con_Object_new_from_class(thread, sizeof(Con_Obj) + sizeof(Con_Modules_PCRE_Match_Atom), CON_GET_MOD_DEFN(pcre_mod, "Match"));
 	Con_Modules_PCRE_Match_Atom *match_atom = (Con_Modules_PCRE_Match_Atom *) new_match->first_atom;
 	match_atom->next_atom = NULL;
 	
-	match_atom->atom_type = CON_GET_MODULE_DEF(pcre_mod, "Match_Atom_Def");
+	match_atom->atom_type = CON_GET_MOD_DEFN(pcre_mod, "Match_Atom_Def");
 	match_atom->ovector = ovector;
 	match_atom->num_captures = pattern_atom->num_captures;
 	match_atom->string = string;
@@ -345,7 +345,7 @@ Con_Obj *_Con_Modules_PCRE_Match_get_func(Con_Obj *thread)
 	Con_Obj *group_num_obj, *self;
 	CON_UNPACK_ARGS("ON", &self, &group_num_obj);
 	
-	Con_Modules_PCRE_Match_Atom *match_atom = CON_GET_ATOM(self, CON_GET_MODULE_DEF(pcre_mod, "Match_Atom_Def"));
+	Con_Modules_PCRE_Match_Atom *match_atom = CON_GET_ATOM(self, CON_GET_MOD_DEFN(pcre_mod, "Match_Atom_Def"));
 	
 	// Group 0 in the match is the entire match, so when translating indices, we need to add 1 onto
 	// num_captures.
@@ -367,7 +367,7 @@ Con_Obj *_Con_Modules_PCRE_Match_get_indexes_func(Con_Obj *thread)
 	Con_Obj *group_num_obj, *self;
 	CON_UNPACK_ARGS("ON", &self, &group_num_obj);
 	
-	Con_Modules_PCRE_Match_Atom *match_atom = CON_GET_ATOM(self, CON_GET_MODULE_DEF(pcre_mod, "Match_Atom_Def"));
+	Con_Modules_PCRE_Match_Atom *match_atom = CON_GET_ATOM(self, CON_GET_MOD_DEFN(pcre_mod, "Match_Atom_Def"));
 	
 	// Group 0 in the match is the entire match, so when translating indices, we need to add 1 onto
 	// num_captures.

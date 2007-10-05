@@ -67,7 +67,7 @@ Con_Obj *Con_Module_libXML2_init(Con_Obj *thread, Con_Obj *identifier)
 
 Con_Obj *Con_Module_libXML2_import(Con_Obj *thread, Con_Obj *libxml2_mod)
 {
-	Con_Obj *user_exception = CON_GET_MODULE_DEF(CON_BUILTIN(CON_BUILTIN_EXCEPTIONS_MODULE), "User_Exception");
+	Con_Obj *user_exception = CON_GET_MOD_DEFN(CON_BUILTIN(CON_BUILTIN_EXCEPTIONS_MODULE), "User_Exception");
 	Con_Obj *xml_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("XML_Exception"), Con_Builtins_List_Atom_new_va(thread, user_exception, NULL), libxml2_mod);
 	CON_SET_MOD_DEF(libxml2_mod, "XML_Exception", xml_exception);
 	
@@ -160,7 +160,7 @@ Con_Obj *_Con_Modules_libXML2_parse_func(Con_Obj *thread)
 	if (Con_Numbers_Number_to_Con_Int(thread, CON_GET_SLOT_APPLY(state.elements_stack, "len")) != 1)
 		CON_XXX;
 	
-	return CON_GET_SLOT_APPLY(CON_GET_MODULE_DEF(nodes_module, "Document"), "new", document_elems);
+	return CON_GET_SLOT_APPLY(CON_GET_MOD_DEFN(nodes_module, "Document"), "new", document_elems);
 }
 
 
@@ -172,7 +172,7 @@ void _Con_Modules_libXML2_parse_func_characters(void *user_data, const xmlChar *
 	Con_Obj *current_elem = CON_GET_SLOT_APPLY(state->elements_stack, "get", CON_NEW_INT(-1));
 	
 	Con_Obj *str = Con_Builtins_String_Atom_new_copy(thread, ch, len, CON_STR_UTF_8);
-	Con_Obj *text_node = CON_APPLY(CON_GET_SLOT(CON_GET_MODULE_DEF(state->nodes_module, "Text"), "new"), str);
+	Con_Obj *text_node = CON_APPLY(CON_GET_SLOT(CON_GET_MOD_DEFN(state->nodes_module, "Text"), "new"), str);
 	
 	CON_GET_SLOT_APPLY(current_elem, "append", text_node);
 }
@@ -194,7 +194,7 @@ void _Con_Modules_libXML2_parse_error(void *user_data, const char *msg, ...)
 		CON_XXX;
 	va_end(args);
 	
-	Con_Obj *exception = CON_GET_SLOT_APPLY(CON_GET_MODULE_DEF(state->libxml2_mod, "XML_Exception"), "new", Con_Builtins_String_Atom_new_no_copy(thread, (u_char *) buf, strlen(buf), CON_STR_UTF_8));
+	Con_Obj *exception = CON_GET_SLOT_APPLY(CON_GET_MOD_DEFN(state->libxml2_mod, "XML_Exception"), "new", Con_Builtins_String_Atom_new_no_copy(thread, (u_char *) buf, strlen(buf), CON_STR_UTF_8));
 	Con_Builtins_VM_Atom_raise(thread, exception);
 }
 
@@ -232,13 +232,13 @@ void _Con_Modules_libXML2_parse_start_element(void *user_data, const xmlChar *lo
 			attr_namespace = attr_prefix = CON_NEW_STRING("");
 		}
 		
-		Con_Obj *attr = CON_APPLY(CON_GET_SLOT(CON_GET_MODULE_DEF(state->nodes_module, "Attribute"), "new"), attr_name, attr_val, attr_prefix, attr_namespace);
+		Con_Obj *attr = CON_APPLY(CON_GET_SLOT(CON_GET_MOD_DEFN(state->nodes_module, "Attribute"), "new"), attr_name, attr_val, attr_prefix, attr_namespace);
 		CON_GET_SLOT_APPLY(attributes_obj, "add", attr);
 		
 		current_attr += 5;
 	}
 	
-	Con_Obj *element = CON_APPLY(CON_GET_SLOT(CON_GET_MODULE_DEF(state->nodes_module, "Element"), "new"), name_obj, attributes_obj, prefix_obj, namespace_obj);
+	Con_Obj *element = CON_APPLY(CON_GET_SLOT(CON_GET_MOD_DEFN(state->nodes_module, "Element"), "new"), name_obj, attributes_obj, prefix_obj, namespace_obj);
 	
 	CON_GET_SLOT_APPLY(current_elem, "append", element);
 	

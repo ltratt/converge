@@ -71,9 +71,9 @@ Con_Obj *Con_Module_Sys_import(Con_Obj *thread, Con_Obj *sys_mod)
 	
 	// Setup stdin, stdout, and stderr.
 	
-	CON_SET_MOD_DEF(sys_mod, "stdin", CON_GET_SLOT_APPLY(CON_GET_MODULE_DEF(CON_BUILTIN(CON_BUILTIN_C_FILE_MODULE), "File"), "new", CON_NEW_INT(STDIN_FILENO), CON_NEW_STRING("r")));
-	CON_SET_MOD_DEF(sys_mod, "stdout", CON_GET_SLOT_APPLY(CON_GET_MODULE_DEF(CON_BUILTIN(CON_BUILTIN_C_FILE_MODULE), "File"), "new", CON_NEW_INT(STDOUT_FILENO), CON_NEW_STRING("w")));
-	CON_SET_MOD_DEF(sys_mod, "stderr", CON_GET_SLOT_APPLY(CON_GET_MODULE_DEF(CON_BUILTIN(CON_BUILTIN_C_FILE_MODULE), "File"), "new", CON_NEW_INT(STDERR_FILENO), CON_NEW_STRING("w")));
+	CON_SET_MOD_DEF(sys_mod, "stdin", CON_GET_SLOT_APPLY(CON_GET_MOD_DEFN(CON_BUILTIN(CON_BUILTIN_C_FILE_MODULE), "File"), "new", CON_NEW_INT(STDIN_FILENO), CON_NEW_STRING("r")));
+	CON_SET_MOD_DEF(sys_mod, "stdout", CON_GET_SLOT_APPLY(CON_GET_MOD_DEFN(CON_BUILTIN(CON_BUILTIN_C_FILE_MODULE), "File"), "new", CON_NEW_INT(STDOUT_FILENO), CON_NEW_STRING("w")));
+	CON_SET_MOD_DEF(sys_mod, "stderr", CON_GET_SLOT_APPLY(CON_GET_MOD_DEFN(CON_BUILTIN(CON_BUILTIN_C_FILE_MODULE), "File"), "new", CON_NEW_INT(STDERR_FILENO), CON_NEW_STRING("w")));
 
 	// Read the path of the VM and the bytecode path.
 
@@ -138,7 +138,7 @@ Con_Obj *_Con_Modules_Sys_print_func(Con_Obj *thread)
 	Con_Obj *var_args;
 	CON_UNPACK_ARGS("v", &var_args);
 
-	Con_Obj *write_func = CON_GET_SLOT(CON_GET_MODULE_DEF(sys_mod, "stdout"), "write");
+	Con_Obj *write_func = CON_GET_SLOT(CON_GET_MOD_DEFN(sys_mod, "stdout"), "write");
 
 	CON_PRE_GET_SLOT_APPLY_PUMP(var_args, "iterate");
 	while (1) {
@@ -164,7 +164,7 @@ Con_Obj *_Con_Modules_Sys_println_func(Con_Obj *thread)
 	Con_Obj *var_args;
 	CON_UNPACK_ARGS("v", &var_args);
 
-	Con_Obj *write_func = CON_GET_SLOT(CON_GET_MODULE_DEF(sys_mod, "stdout"), "write");
+	Con_Obj *write_func = CON_GET_SLOT(CON_GET_MOD_DEFN(sys_mod, "stdout"), "write");
 
 	CON_PRE_GET_SLOT_APPLY_PUMP(var_args, "iterate");
 	while (1) {

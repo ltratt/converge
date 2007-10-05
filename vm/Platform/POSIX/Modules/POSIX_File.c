@@ -173,7 +173,7 @@ Con_Obj *_Con_Modules_POSIX_File_Module_File_new_func(Con_Obj *thread)
 	file_atom->next_atom = (Con_Atom *) slots_atom;
 	slots_atom->next_atom = NULL;
 
-	file_atom->atom_type = CON_GET_MODULE_DEF(Con_Builtins_VM_Atom_get_functions_module(thread), "File_Atom_Def");
+	file_atom->atom_type = CON_GET_MOD_DEFN(Con_Builtins_VM_Atom_get_functions_module(thread), "File_Atom_Def");
 
 	Con_Atom *atom = path_obj->first_atom;
 	while (atom != NULL) {
@@ -207,7 +207,7 @@ Con_Obj *_Con_Modules_POSIX_File_Module_File_new_func(Con_Obj *thread)
 
 Con_Obj *_Con_Modules_POSIX_File_Module_File_Class_close_func(Con_Obj *thread)
 {
-	Con_Obj *file_atom_def = CON_GET_MODULE_DEF(Con_Builtins_VM_Atom_get_functions_module(thread), "File_Atom_Def");
+	Con_Obj *file_atom_def = CON_GET_MOD_DEFN(Con_Builtins_VM_Atom_get_functions_module(thread), "File_Atom_Def");
 
 	Con_Obj *self_obj;
 	CON_UNPACK_ARGS("U", file_atom_def, &self_obj);
@@ -236,7 +236,7 @@ Con_Obj *_Con_Modules_POSIX_File_Module_File_Class_close_func(Con_Obj *thread)
 
 Con_Obj *_Con_Modules_POSIX_File_Module_File_Class_flush_func(Con_Obj *thread)
 {
-	Con_Obj *file_atom_def = CON_GET_MODULE_DEF(Con_Builtins_VM_Atom_get_functions_module(thread), "File_Atom_Def");
+	Con_Obj *file_atom_def = CON_GET_MOD_DEFN(Con_Builtins_VM_Atom_get_functions_module(thread), "File_Atom_Def");
 
 	Con_Obj *self_obj;
 	CON_UNPACK_ARGS("U", file_atom_def, &self_obj);
@@ -264,7 +264,7 @@ Con_Obj *_Con_Modules_POSIX_File_Module_File_Class_flush_func(Con_Obj *thread)
 
 Con_Obj *_Con_Modules_POSIX_File_Module_File_Class_read_func(Con_Obj *thread)
 {
-	Con_Obj *file_atom_def = CON_GET_MODULE_DEF(Con_Builtins_VM_Atom_get_functions_module(thread), "File_Atom_Def");
+	Con_Obj *file_atom_def = CON_GET_MOD_DEFN(Con_Builtins_VM_Atom_get_functions_module(thread), "File_Atom_Def");
 
 	Con_Obj *requested_size_obj, *self_obj;
 	CON_UNPACK_ARGS("U;N", file_atom_def, &self_obj, &requested_size_obj);
@@ -299,7 +299,7 @@ Con_Obj *_Con_Modules_POSIX_File_Module_File_Class_read_func(Con_Obj *thread)
 
 Con_Obj *_Con_Modules_POSIX_File_Module_File_Class_readln_func(Con_Obj *thread)
 {
-	Con_Obj *file_atom_def = CON_GET_MODULE_DEF(Con_Builtins_VM_Atom_get_functions_module(thread), "File_Atom_Def");
+	Con_Obj *file_atom_def = CON_GET_MOD_DEFN(Con_Builtins_VM_Atom_get_functions_module(thread), "File_Atom_Def");
 
 	Con_Obj *requested_size_obj, *self_obj;
 	CON_UNPACK_ARGS("U;N", file_atom_def, &self_obj, &requested_size_obj);
@@ -332,7 +332,7 @@ Con_Obj *_Con_Modules_POSIX_File_Module_File_Class_readln_func(Con_Obj *thread)
 
 Con_Obj *_Con_Modules_POSIX_File_Module_File_Class_write_func(Con_Obj *thread)
 {
-	Con_Obj *file_atom_def = CON_GET_MODULE_DEF(Con_Builtins_VM_Atom_get_functions_module(thread), "File_Atom_Def");
+	Con_Obj *file_atom_def = CON_GET_MOD_DEFN(Con_Builtins_VM_Atom_get_functions_module(thread), "File_Atom_Def");
 
 	Con_Obj *s_obj, *self_obj;
 	CON_UNPACK_ARGS("US", file_atom_def, &self_obj, &s_obj);
@@ -357,7 +357,7 @@ Con_Obj *_Con_Modules_POSIX_File_Module_File_Class_write_func(Con_Obj *thread)
 
 Con_Obj *_Con_Modules_POSIX_File_Module_File_Class_writeln_func(Con_Obj *thread)
 {
-	Con_Obj *file_atom_def = CON_GET_MODULE_DEF(Con_Builtins_VM_Atom_get_functions_module(thread), "File_Atom_Def");
+	Con_Obj *file_atom_def = CON_GET_MOD_DEFN(Con_Builtins_VM_Atom_get_functions_module(thread), "File_Atom_Def");
 
 	Con_Obj *s_obj, *self_obj;
 	CON_UNPACK_ARGS("US", file_atom_def, &self_obj, &s_obj);

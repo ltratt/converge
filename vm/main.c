@@ -217,7 +217,7 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 	Con_Obj *exception;
 	CON_TRY {
 		Con_Obj *main_module = Con_Modules_import(thread, Con_Modules_get(thread, main_module_identifier));
-		CON_APPLY(CON_GET_MODULE_DEF(main_module, "main"));
+		CON_APPLY(CON_GET_MOD_DEFN(main_module, "main"));
 	}
 	CON_CATCH(exception) {
 		Con_Int exit_code;
@@ -225,11 +225,11 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 		// We check to see if this exception is an instance of System_Exit_Exception; if so, we
 		// don't print a backtrace.
 		
-		if (CON_GET_SLOT_APPLY_NO_FAIL(CON_GET_MODULE_DEF(CON_BUILTIN(CON_BUILTIN_EXCEPTIONS_MODULE), "System_Exit_Exception"), "instantiated", exception) != NULL)
+		if (CON_GET_SLOT_APPLY_NO_FAIL(CON_GET_MOD_DEFN(CON_BUILTIN(CON_BUILTIN_EXCEPTIONS_MODULE), "System_Exit_Exception"), "instantiated", exception) != NULL)
 			exit_code = Con_Numbers_Number_to_Con_Int(thread, CON_GET_SLOT(exception, "code"));
 		else {
-			Con_Obj *backtrace = CON_APPLY(CON_GET_MODULE_DEF(CON_BUILTIN(CON_BUILTIN_EXCEPTIONS_MODULE), "backtrace"), exception);
-			CON_APPLY(CON_GET_MODULE_DEF(CON_BUILTIN(CON_BUILTIN_SYS_MODULE), "println"), backtrace);
+			Con_Obj *backtrace = CON_APPLY(CON_GET_MOD_DEFN(CON_BUILTIN(CON_BUILTIN_EXCEPTIONS_MODULE), "backtrace"), exception);
+			CON_APPLY(CON_GET_MOD_DEFN(CON_BUILTIN(CON_BUILTIN_SYS_MODULE), "println"), backtrace);
 			backtrace = NULL;
 			exit_code = 1;
 		}

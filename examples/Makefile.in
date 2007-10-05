@@ -1,16 +1,19 @@
 all:
 	cd compile_time && ${MAKE} ${MFLAGS}
 	cd dsls && ${MAKE} ${MFLAGS}
+	cd metaclasses && ${MAKE} ${MFLAGS}
 
 install:
 
 clean:
 	cd compile_time && ${MAKE} ${MFLAGS} clean
 	cd dsls && ${MAKE} ${MFLAGS} clean
+	cd metaclasses && ${MAKE} ${MFLAGS} clean
 
 distclean: clean
 	cd compile_time && ${MAKE} ${MFLAGS} distclean
 	cd dsls && ${MAKE} ${MFLAGS} distclean
+	cd metaclasses && ${MAKE} ${MFLAGS} distclean
 	rm -f Makefile .depend
 
 

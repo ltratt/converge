@@ -5,7 +5,7 @@ import Builtins, Sys
 
 class Singleton(Builtins::Class):
 
-	func new():
+	func new(self):
 	
 		if not self.find_slot("instance"):
 			self.instance := exbi Builtins::Class.new()

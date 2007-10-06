@@ -138,49 +138,35 @@ Con_Obj *_Con_Builtins_Module_Class_def_names_func(Con_Obj *thread)
 	Con_Obj *self;
 	CON_UNPACK_ARGS("M", &self);
 
-CON_XXX;
-/*	Con_Builtins_Module_Atom *module_atom = CON_FIND_ATOM(self, CON_BUILTIN(CON_BUILTIN_MODULE_ATOM_DEF_OBJECT));
+	Con_Builtins_Module_Atom *module_atom = CON_GET_ATOM(self, CON_BUILTIN(CON_BUILTIN_MODULE_ATOM_DEF_OBJECT));
 
-		Con_Int slot_name_buffer_size = 16;
-		u_char *slot_name_buffer = Con_Memory_malloc(thread, slot_name_buffer_size, CON_MEMORY_CHUNK_OPAQUE);
-		Con_Int j = 0;
-		while (1) {
-			Con_Obj *val;
-			Con_Int old_j = j;
-			const u_char *slot_name;
-			Con_Int slot_name_size;
-			CON_MUTEX_LOCK(&obj->mutex);
-			if (!Con_Slots_read_slot(thread, &slots_atom->slots, &j, &slot_name, &slot_name_size, &val))
-				break;
-			if (slot_name_size > slot_name_buffer_size) {
-				CON_MUTEX_UNLOCK(&obj->mutex);
-				slot_name_buffer_size = slot_name_size;
-				slot_name = Con_Memory_malloc(thread, slot_name_buffer_size, CON_MEMORY_CHUNK_OPAQUE);
-				j = old_j;
-				CON_MUTEX_LOCK(&obj->mutex);
-				continue;
-			}
-			
-			memmove(slot_name_buffer, slot_name, slot_name_size);
-			
-			CON_MUTEX_UNLOCK(&obj->mutex);
-			CON_GET_SLOT_APPLY(slots, "add", Con_Builtins_String_Atom_new_copy(thread, slot_name, slot_name_size, CON_STR_UTF_8));
+	Con_Int slot_name_buffer_size = 16;
+	u_char *slot_name_buffer = Con_Memory_malloc(thread, slot_name_buffer_size, CON_MEMORY_CHUNK_OPAQUE);
+	Con_Int j = 0;
+	while (1) {
+		Con_Obj *val;
+		Con_Int old_j = j;
+		const u_char *slot_name;
+		Con_Int slot_name_size;
+		CON_MUTEX_LOCK(&self->mutex);
+		if (!Con_Slots_read_slot(thread, &module_atom->top_level_vars, &j, &slot_name, &slot_name_size, &val))
+			break;
+		if (slot_name_size > slot_name_buffer_size) {
+			CON_MUTEX_UNLOCK(&self->mutex);
+			slot_name_buffer_size = slot_name_size;
+			slot_name = Con_Memory_malloc(thread, slot_name_buffer_size, CON_MEMORY_CHUNK_OPAQUE);
+			j = old_j;
+			CON_MUTEX_LOCK(&self->mutex);
+			continue;
 		}
 
+		memmove(slot_name_buffer, slot_name, slot_name_size);
 
-	CON_MUTEX_LOCK(&self->mutex);
-	Con_Obj *top_level_vars_map = module_atom->top_level_vars_map;
-	CON_MUTEX_UNLOCK(&self->mutex);
-
-	CON_PRE_GET_SLOT_APPLY_PUMP(top_level_vars_map, "keys");
-	while (1) {
-		Con_Obj *def_name = CON_APPLY_PUMP();
-		if (def_name == NULL)
-			break;
-		CON_YIELD(def_name);
+		CON_MUTEX_UNLOCK(&self->mutex);
+		CON_YIELD(Con_Builtins_String_Atom_new_copy(thread, slot_name, slot_name_size, CON_STR_UTF_8));
 	}
 
-	return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);*/
+	return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
 }
 
 

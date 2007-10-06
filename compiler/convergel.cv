@@ -19,8 +19,8 @@
 // IN THE SOFTWARE.
 
 
-import Array, Builtins, File, Maths, Parse_Options, Platform::Properties, Strings, Sys
-import Compiler_Vars, CV_Exec, CV_Module, CV_Library, Mk_Packages, Targets::Available, VM
+import Array, Builtins, File, Maths, Parse_Options, Platform::Properties, Strings, Sys, VM
+import Compiler::Compiler_Vars, Compiler::CV_Exec, Compiler::CV_Module, Compiler::CV_Library, Compiler::Mk_Packages, Compiler::Targets::Available
 
 
 

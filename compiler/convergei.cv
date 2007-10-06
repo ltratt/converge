@@ -20,7 +20,7 @@
 
 
 import Exceptions, Strings, Sys
-import Compiler_Vars, Eval
+import Compiler::Compiler_Vars, Compiler::Eval
 
 
 

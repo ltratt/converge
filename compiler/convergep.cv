@@ -21,7 +21,7 @@
 
 import File, Sys
 import CPK::Earley::Grammar, CPK::Tree
-import CV_Parser, Tokenizer
+import Compiler::CV_Parser, Compiler::Tokenizer
 
 
 

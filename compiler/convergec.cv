@@ -20,7 +20,7 @@
 
 
 import File, Parse_Options, Platform::Properties, Strings, Sys, VM
-import Bytecode_Gen, Compiler_Vars, CV_Module, CV_Parser, IModule_Gen, Targets, Tokenizer
+import Compiler::Bytecode_Gen, Compiler::Compiler_Vars, Compiler::CV_Module, Compiler::CV_Parser, Compiler::IModule_Gen, Compiler::Targets, Compiler::Tokenizer
 
 
 

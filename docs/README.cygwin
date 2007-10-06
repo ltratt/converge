@@ -1,3 +1,8 @@
 To compile Converge in a standard Cygwin installation you will need to
 install at least the pcre, pcre-devel, libxml2, libxml2-devel, and gmake
 packages.
+
+You may find that compiling Converge under the normal Cygwin prompt causes a
+stack exception error to be raised. In such a case, try executing "startx"
+and compiling Converge under the xterm that opens. This seems to fix the
+problem - if anyone understands why, please get in touch.

@@ -338,7 +338,7 @@ Con_Obj *Con_Builtins_Module_Atom_pc_to_src_locations(Con_Obj *thread, Con_PC pc
 			case CON_INSTR_IMPORT:
 			case CON_INSTR_LIST:
 			case CON_INSTR_APPLY:
-			case CON_INSTR_FUNC_DEF:
+			case CON_INSTR_FUNC_DEFN:
 			case CON_INSTR_RETURN:
 			case CON_INSTR_BRANCH:
 			case CON_INSTR_YIELD:
@@ -448,7 +448,7 @@ void Con_Builtins_Module_Atom_src_offset_to_line_column(Con_Obj *thread, Con_Obj
 
 
 
-Con_Obj	*Con_Builtins_Module_Atom_get_definition(Con_Obj *thread, Con_Obj *module, const u_char *defn_name, Con_Int defn_name_size)
+Con_Obj	*Con_Builtins_Module_Atom_get_defn(Con_Obj *thread, Con_Obj *module, const u_char *defn_name, Con_Int defn_name_size)
 {
 	Con_Builtins_Module_Atom *module_atom = CON_FIND_ATOM(module, CON_BUILTIN(CON_BUILTIN_MODULE_ATOM_DEF_OBJECT));
 	
@@ -477,7 +477,7 @@ Con_Obj	*Con_Builtins_Module_Atom_get_definition(Con_Obj *thread, Con_Obj *modul
 
 
 
-void Con_Builtins_Module_Atom_set_definition(Con_Obj *thread, Con_Obj *module, const u_char *defn_name, Con_Int defn_name_size, Con_Obj *val)
+void Con_Builtins_Module_Atom_set_defn(Con_Obj *thread, Con_Obj *module, const u_char *defn_name, Con_Int defn_name_size, Con_Obj *val)
 {
 	Con_Builtins_Module_Atom *module_atom = CON_FIND_ATOM(module, CON_BUILTIN(CON_BUILTIN_MODULE_ATOM_DEF_OBJECT));
 	

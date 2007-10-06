@@ -102,7 +102,7 @@ INSTR_POP := 11                    // bits 0-7 := 11
 INSTR_LIST := 12                   // bits 0-7 := 12, bits 8-31 := number of list elements
 INSTR_SLOT_LOOKUP := 13            // bits 0-7 := 13, bits 8-31 := size of slot name, bits 32-.. := slot name
 INSTR_APPLY := 14                  // bits 0-7 := 14, bits 8-31 := number of args
-INSTR_FUNC_DEF := 15               // bits 0-7 := 15, bits 8-15 := is_bound, bit 16 := is bound
+INSTR_FUNC_DEFN := 15              // bits 0-7 := 15, bits 8-15 := is_bound, bit 16 := is bound
 INSTR_RETURN := 16                 // bits 0-7 := 16
 INSTR_BRANCH := 17                 // bits 0-7 := 17, bits 8-30 := pc offset, bit 31 := offset sign
 INSTR_YIELD := 18                  // bits 0-7 := 18
@@ -364,7 +364,7 @@ class Instr_Apply(Instruction):
 
 
 
-class Instr_Func_Def(Instruction):
+class Instr_Func_Defn(Instruction):
 
 	func init(self, src_infos, is_bound):
 		
@@ -375,7 +375,7 @@ class Instr_Func_Def(Instruction):
 
 	func to_bytecode(self):
 	
-		return b_8_1(INSTR_FUNC_DEF, self.is_bound)
+		return b_8_1(INSTR_FUNC_DEFN, self.is_bound)
 
 
 
@@ -1015,7 +1015,7 @@ class Target:
 	Instr_List := Instr_List
 	Instr_Slot_Lookup := Instr_Slot_Lookup
 	Instr_Apply := Instr_Apply
-	Instr_Func_Def := Instr_Func_Def
+	Instr_Func_Defn := Instr_Func_Defn
 	Instr_Return := Instr_Return
 	Instr_Branch := Instr_Branch
 	Instr_Yield := Instr_Yield

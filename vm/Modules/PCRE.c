@@ -98,35 +98,35 @@ Con_Obj *Con_Module_PCRE_import(Con_Obj *thread, Con_Obj *pcre_mod)
 
 	Con_Obj *user_exception = CON_GET_MOD_DEFN(CON_BUILTIN(CON_BUILTIN_EXCEPTIONS_MODULE), "User_Exception");
 	Con_Obj *pcre_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("PCRE_Exception"), Con_Builtins_List_Atom_new_va(thread, user_exception, NULL), pcre_mod);
-	CON_SET_MOD_DEF(pcre_mod, "PCRE_Exception", pcre_exception);
+	CON_SET_MOD_DEFN(pcre_mod, "PCRE_Exception", pcre_exception);
 
 	// Pattern_Atom_Def
 	
-	CON_SET_MOD_DEF(pcre_mod, "Pattern_Atom_Def", Con_Builtins_Atom_Def_Atom_new(thread, NULL, _Con_Module_PCRE_Pattern_Atom_gc_clean_up));
+	CON_SET_MOD_DEFN(pcre_mod, "Pattern_Atom_Def", Con_Builtins_Atom_Def_Atom_new(thread, NULL, _Con_Module_PCRE_Pattern_Atom_gc_clean_up));
 
 	// PCRE.Pattern
 	
 	Con_Obj *pattern_class = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("Pattern"), Con_Builtins_List_Atom_new_va(thread, CON_BUILTIN(CON_BUILTIN_OBJECT_CLASS), NULL), pcre_mod, CON_NEW_UNBOUND_C_FUNC(_Con_Module_PCRE_Pattern_new, "Pattern_new", pcre_mod));
-	CON_SET_MOD_DEF(pcre_mod, "Pattern", pattern_class);
+	CON_SET_MOD_DEFN(pcre_mod, "Pattern", pattern_class);
 	
 	CON_SET_FIELD(pattern_class, "match", CON_NEW_BOUND_C_FUNC(_Con_Module_PCRE_Pattern_match_func, "match", pcre_mod, pattern_class));
 	CON_SET_FIELD(pattern_class, "search", CON_NEW_BOUND_C_FUNC(_Con_Module_PCRE_Pattern_search_func, "search", pcre_mod, pattern_class));
 
 	// Match_Atom_Def
 	
-	CON_SET_MOD_DEF(pcre_mod, "Match_Atom_Def", Con_Builtins_Atom_Def_Atom_new(thread, _Con_Module_PCRE_Match_Atom_gc_scan, NULL));
+	CON_SET_MOD_DEFN(pcre_mod, "Match_Atom_Def", Con_Builtins_Atom_Def_Atom_new(thread, _Con_Module_PCRE_Match_Atom_gc_scan, NULL));
 
 	// PCRE.Match
 	
 	Con_Obj *match_class = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("Match"), Con_Builtins_List_Atom_new_va(thread, CON_BUILTIN(CON_BUILTIN_OBJECT_CLASS), NULL), pcre_mod);
-	CON_SET_MOD_DEF(pcre_mod, "Match", match_class);
+	CON_SET_MOD_DEFN(pcre_mod, "Match", match_class);
 	
 	CON_SET_FIELD(match_class, "get", CON_NEW_BOUND_C_FUNC(_Con_Module_PCRE_Match_get_func, "get", pcre_mod, match_class));
 	CON_SET_FIELD(match_class, "get_indexes", CON_NEW_BOUND_C_FUNC(_Con_Module_PCRE_Match_get_indexes_func, "get_indexes", pcre_mod, match_class));
 	
 	// PCRE module
 	
-	CON_SET_MOD_DEF(pcre_mod, "compile", CON_NEW_UNBOUND_C_FUNC(_Con_Module_PCRE_compile_func, "compile", pcre_mod));
+	CON_SET_MOD_DEFN(pcre_mod, "compile", CON_NEW_UNBOUND_C_FUNC(_Con_Module_PCRE_compile_func, "compile", pcre_mod));
 	
 	return pcre_mod;
 }

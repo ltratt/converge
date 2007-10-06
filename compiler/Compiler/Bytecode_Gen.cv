@@ -344,7 +344,7 @@ class Bytecode_Gen:
 	// Module::Def1::Def2::... is ["Module", "Def1", "Def2", ...].
 	//	
 
-	func _add_mod_def_lookup(self, defn_path, src_infos):
+	func _add_mod_defn_lookup(self, defn_path, src_infos):
 	
 		if not import_id, import_extras := self._compiler.find_import_location(defn_path):
 			self._compiler.error(Strings::format("Can't find module / package '%s'", Strings::join(defn_path, "::")), src_infos)
@@ -416,7 +416,7 @@ class Bytecode_Gen:
 			end_of_expr_label := self._create_label()
 			self._nesting.append([NEST_NORMAL])
 			self._instructions.append(self._target.Instr_Add_Failure_Frame.new(expr.src_infos, end_of_expr_label))
-			if ITree::IFunc_Def.instantiated(expr):
+			if ITree::IFunc_Defn.instantiated(expr):
 				self.preorder(ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(expr.func_name, expr.src_infos)], expr, expr.src_infos))
 			else:
 				self.preorder(expr)
@@ -444,12 +444,12 @@ class Bytecode_Gen:
 		self._instructions.append(self._target.Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_NULL_OBJ))
 		self._add_assign_to_var("null", node.src_infos)
 
-		for definition := node.definitions.iterate():
-			end_of_definition_label := self._create_label()
-			self._instructions.append(self._target.Instr_Add_Failure_Frame.new(node.src_infos, end_of_definition_label))
-			self.preorder(definition)
+		for defn := node.defns.iterate():
+			end_of_defn_label := self._create_label()
+			self._instructions.append(self._target.Instr_Add_Failure_Frame.new(node.src_infos, end_of_defn_label))
+			self.preorder(defn)
 			self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
-			self._set_label(end_of_definition_label)
+			self._set_label(end_of_defn_label)
 
 		self._instructions.append(self._target.Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_NULL_OBJ))
 		self._instructions.append(self._target.Instr_Return.new(node.src_infos))
@@ -459,7 +459,7 @@ class Bytecode_Gen:
 
 
 
-	func _t_iclass_def(self, node):
+	func _t_iclass_defn(self, node):
 		
 		if node.metaclass_ is null:
 			self._instructions.append(self._target.Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_CLASS_CLASS))
@@ -492,12 +492,12 @@ class Bytecode_Gen:
 			self._instructions.append(self._target.Instr_Dup.new(field.src_infos))
 			self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(field.src_infos, "set_field"))
 		
-			if ITree::IFunc_Def.instantiated(field):
+			if ITree::IFunc_Defn.instantiated(field):
 				if field.func_name == "":
 					self._compiler.error("Functions as class fields can not be anonymous.", node.src_infos)
 				self._instructions.append(self._target.Instr_String.new(field.src_infos, field.func_name))
 				self.preorder(field)
-			elif ITree::IClass_Def.instantiated(field):
+			elif ITree::IClass_Defn.instantiated(field):
 				if field.class_name == "":
 					self._compiler.error("Classes as class fields can not be anonymous.", node.src_infos)
 				self._instructions.append(self._target.Instr_String.new(field.src_infos, field.class_name))
@@ -528,7 +528,7 @@ class Bytecode_Gen:
 
 
 
-	func _t_ifunc_def(self, node):
+	func _t_ifunc_defn(self, node):
 		
 		bound_vars := node.internal_bound_vars
 		
@@ -543,7 +543,7 @@ class Bytecode_Gen:
 		self._instructions.append(self._target.Instr_String.new(node.src_infos, node.func_name))
 		self._instructions.append(self._target.Instr_Int.new(node.src_infos, bound_vars.len() + node.is_bound))
 		self._instructions.append(self._target.Instr_Int.new(node.src_infos, node.params.len()))
-		self._instructions.append(self._target.Instr_Func_Def.new(node.src_infos, node.is_bound))
+		self._instructions.append(self._target.Instr_Func_Defn.new(node.src_infos, node.is_bound))
 		end_of_func_body_label := self._create_label()
 		self._instructions.append(self._target.Instr_Branch.new(node.src_infos, end_of_func_body_label))
 		
@@ -652,7 +652,7 @@ class Bytecode_Gen:
 			self._instructions.append(self._target.Instr_Branch.new(node.src_infos, end_of_ndif_label))
 			self._set_label(end_of_clause_label)
 		
-		self._add_mod_def_lookup(["Exceptions", "NDIf_Exception"], node.src_infos)
+		self._add_mod_defn_lookup(["Exceptions", "NDIf_Exception"], node.src_infos)
 		self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(node.src_infos, "new"))
 		self._instructions.append(self._target.Instr_Apply.new(node.src_infos, 0))
 		self._instructions.append(self._target.Instr_Raise.new(node.src_infos))

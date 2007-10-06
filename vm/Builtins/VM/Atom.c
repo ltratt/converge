@@ -1202,7 +1202,7 @@ Con_Obj *_Con_Builtins_VM_Atom_execute(Con_Obj *thread)
 					Con_Builtins_Con_Stack_Atom_update_continuation_frame_pc(thread, con_stack, pc);
 					break;
 				}
-				case CON_INSTR_FUNC_DEF: {
+				case CON_INSTR_FUNC_DEFN: {
 					Con_PC new_pc = pc;
 					new_pc.pc.bytecode_offset += sizeof(Con_Int) + sizeof(Con_Int);
 					Con_Obj *num_params_obj = Con_Builtins_Con_Stack_Atom_pop_object(thread, con_stack);
@@ -1622,7 +1622,7 @@ Con_Obj *_Con_Builtins_VM_Atom_execute(Con_Obj *thread)
 					CON_MUTEX_LOCK(&con_stack->mutex);
 					Con_Obj *module = Con_Builtins_Con_Stack_Atom_pop_object(thread, con_stack);
 					CON_MUTEX_UNLOCK(&con_stack->mutex);
-					Con_Obj *val = Con_Builtins_Module_Atom_get_definition(thread, module, definition_name, definition_name_size);
+					Con_Obj *val = Con_Builtins_Module_Atom_get_defn(thread, module, definition_name, definition_name_size);
 					CON_MUTEX_LOCK(&con_stack->mutex);
 					Con_Builtins_Con_Stack_Atom_push_object(thread, con_stack, val);
 					pc.pc.bytecode_offset += Con_Arch_align(thread, CON_INSTR_DECODE_MODULE_LOOKUP_START(instruction) + definition_name_size);

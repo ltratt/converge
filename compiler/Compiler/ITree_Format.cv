@@ -56,11 +56,11 @@ class ITree_Format:
 
 	func _t_imodule(self, node):
 	
-		return Strings::join(Functional::map(func (x) { return self._preorder(x) }, node.definitions), "\n")
+		return Strings::join(Functional::map(func (x) { return self._preorder(x) }, node.defns), "\n")
 
 
 
-	func _t_iclass_def(self, node):
+	func _t_iclass_defn(self, node):
 
 		supers := Strings::join(Functional::map(func (x) { return self._preorder(x) }, node.supers), ", ")
 		if node.metaclass_ is null:
@@ -84,7 +84,7 @@ class ITree_Format:
 
 
 
-	func _t_ifunc_def(self, node):
+	func _t_ifunc_defn(self, node):
 
 		if self._nesting.len() == 0 | self._nesting[-1] == _NEST_FUNC:
 			if node.is_bound == 0:

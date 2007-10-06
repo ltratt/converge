@@ -54,16 +54,16 @@ Con_Obj *Con_Module_C_Platform_Properties_init(Con_Obj *thread, Con_Obj *identif
 
 Con_Obj *Con_Module_C_Platform_Properties_import(Con_Obj *thread, Con_Obj *properties_mod)
 {
-	CON_SET_MOD_DEF(properties_mod, "word_bits", CON_NEW_INT(sizeof(Con_Int) * 8));
+	CON_SET_MOD_DEFN(properties_mod, "word_bits", CON_NEW_INT(sizeof(Con_Int) * 8));
 
 	// Endianness
 
-	CON_SET_MOD_DEF(properties_mod, "LITTLE_ENDIAN", CON_NEW_INT(0));
-	CON_SET_MOD_DEF(properties_mod, "BIG_ENDIAN", CON_NEW_INT(1));
+	CON_SET_MOD_DEFN(properties_mod, "LITTLE_ENDIAN", CON_NEW_INT(0));
+	CON_SET_MOD_DEFN(properties_mod, "BIG_ENDIAN", CON_NEW_INT(1));
 #	if CON_BYTEORDER == CON_LITTLE_ENDIAN
-	CON_SET_MOD_DEF(properties_mod, "endianness", CON_GET_MOD_DEFN(properties_mod, "LITTLE_ENDIAN"));
+	CON_SET_MOD_DEFN(properties_mod, "endianness", CON_GET_MOD_DEFN(properties_mod, "LITTLE_ENDIAN"));
 #	elif CON_BYTEORDER == CON_BIG_ENDIAN
-	CON_SET_MOD_DEF(properties_mod, "endianness", CON_GET_MOD_DEFN(properties_mod, "BIG_ENDIAN"));
+	CON_SET_MOD_DEFN(properties_mod, "endianness", CON_GET_MOD_DEFN(properties_mod, "BIG_ENDIAN"));
 #	endif
 
 	return properties_mod;

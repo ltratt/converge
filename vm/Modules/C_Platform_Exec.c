@@ -58,7 +58,7 @@ Con_Obj *Con_Module_C_Platform_Exec_init(Con_Obj *thread, Con_Obj *identifier)
 
 Con_Obj *Con_Module_C_Platform_Exec_import(Con_Obj *thread, Con_Obj *env_mod)
 {
-	CON_SET_MOD_DEF(env_mod, "command", CON_NEW_UNBOUND_C_FUNC(_Con_Module_C_Platform_Exec_command, "command", env_mod));
+	CON_SET_MOD_DEFN(env_mod, "command", CON_NEW_UNBOUND_C_FUNC(_Con_Module_C_Platform_Exec_command, "command", env_mod));
 
 	return env_mod;
 }

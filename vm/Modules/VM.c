@@ -59,11 +59,11 @@ Con_Obj *Con_Module_VM_init(Con_Obj *thread, Con_Obj *identifier)
 
 Con_Obj *Con_Module_VM_import(Con_Obj *thread, Con_Obj *vm_mod)
 {
-	CON_SET_MOD_DEF(vm_mod, "add_modules", CON_NEW_UNBOUND_C_FUNC(_Con_Module_VM_add_modules_func, "add_modules", vm_mod));
-	CON_SET_MOD_DEF(vm_mod, "find_module", CON_NEW_UNBOUND_C_FUNC(_Con_Module_VM_find_module_func, "find_module", vm_mod));
-	CON_SET_MOD_DEF(vm_mod, "import_module", CON_NEW_UNBOUND_C_FUNC(_Con_Module_VM_import_module_func, "import_module", vm_mod));
+	CON_SET_MOD_DEFN(vm_mod, "add_modules", CON_NEW_UNBOUND_C_FUNC(_Con_Module_VM_add_modules_func, "add_modules", vm_mod));
+	CON_SET_MOD_DEFN(vm_mod, "find_module", CON_NEW_UNBOUND_C_FUNC(_Con_Module_VM_find_module_func, "find_module", vm_mod));
+	CON_SET_MOD_DEFN(vm_mod, "import_module", CON_NEW_UNBOUND_C_FUNC(_Con_Module_VM_import_module_func, "import_module", vm_mod));
 	
-	CON_SET_MOD_DEF(vm_mod, "vm", Con_Builtins_Thread_Atom_get_vm(thread));
+	CON_SET_MOD_DEFN(vm_mod, "vm", Con_Builtins_Thread_Atom_get_vm(thread));
 	
 	return vm_mod;
 }

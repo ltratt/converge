@@ -118,8 +118,8 @@
 #define CON_GET_SLOT_STR(obj, slot_name) Con_Object_get_slot(thread, obj, (u_char *) slot_name, NULL, 0)
 #define CON_SET_SLOT(obj, slot_name, val) Con_Object_set_slot(thread, obj, NULL, (u_char *) slot_name, sizeof(slot_name) - 1, val)
 
-#define CON_GET_MOD_DEFN(obj, definition_name) Con_Builtins_Module_Atom_get_definition(thread, obj, (u_char *) definition_name, sizeof(definition_name) - 1)
-#define CON_SET_MOD_DEF(obj, defn_name, val) Con_Builtins_Module_Atom_set_definition(thread, obj, (u_char *) defn_name, sizeof(defn_name) - 1, val)
+#define CON_GET_MOD_DEFN(obj, definition_name) Con_Builtins_Module_Atom_get_defn(thread, obj, (u_char *) definition_name, sizeof(definition_name) - 1)
+#define CON_SET_MOD_DEFN(obj, defn_name, val) Con_Builtins_Module_Atom_set_defn(thread, obj, (u_char *) defn_name, sizeof(defn_name) - 1, val)
 
 #define CON_SET_FIELD(_class, field_name, val) Con_Builtins_Class_Atom_set_field(thread, _class, (u_char *) field_name, sizeof(field_name) - 1, val)
 
@@ -141,7 +141,7 @@
 #	define CON_RAISE_EXCEPTION(name, ...) { \
 		Con_Builtins_VM_Atom_ensure_no_current_exception(thread); \
 		Con_Builtins_VM_Atom_raise(thread, \
-			CON_GET_SLOT_APPLY(Con_Builtins_Module_Atom_get_definition(thread, CON_BUILTIN(CON_BUILTIN_EXCEPTIONS_MODULE), (u_char *) name, sizeof(name) - 1), \
+			CON_GET_SLOT_APPLY(Con_Builtins_Module_Atom_get_defn(thread, CON_BUILTIN(CON_BUILTIN_EXCEPTIONS_MODULE), (u_char *) name, sizeof(name) - 1), \
 			"new", ## __VA_ARGS__, NULL)); \
 		abort(); \
 	}

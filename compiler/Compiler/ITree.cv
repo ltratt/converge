@@ -54,25 +54,25 @@ ALL_COMPARISONS := [IS_COMPARISON, EQ_COMPARISON, NEQ_COMPARISON, LEQ_COMPARISON
 
 class IModule:
 	
-	func init(self, module_name, definitions, src_infos):
+	func init(self, module_name, defns, src_infos):
 	
 		self.module_name := module_name
-		self.definitions := definitions
+		self.defns := defns
 		self.src_infos := src_infos
 
 		self.bound_vars := Compiler_Vars::DEFAULT_VARS.scopy()
 		self.import_vars := Set{}
-		for definition := definitions.iterate():
-			self.bound_vars.extend(definition.bound_vars)
-			self.import_vars.extend(definition.import_vars)
+		for defn := defns.iterate():
+			self.bound_vars.extend(defn.bound_vars)
+			self.import_vars.extend(defn.import_vars)
 
 
 
 	func extended_src_infos(self, extra_src_infos):
 		
-		definitions := self._extended_collection_src_infos(self.definitions, extra_src_infos)
+		defns := self._extended_collection_src_infos(self.defns, extra_src_infos)
 		
-		return IModule.new(self.module_name, definitions, self.src_infos + extra_src_infos)
+		return IModule.new(self.module_name, defns, self.src_infos + extra_src_infos)
 
 
 
@@ -81,7 +81,7 @@ class IModule:
 // Definitions
 //
 
-class IClass_Def:
+class IClass_Defn:
 
 	func init(self, class_name, supers, metaclass_, fields, src_infos):
 
@@ -123,12 +123,12 @@ class IClass_Def:
 		metaclass_ := _extended_obj_src_infos(self.metaclass_, extra_src_infos)
 		fields := _extended_collection_src_infos(self.fields, extra_src_infos)
 		
-		return IClass_Def.new(self.class_name, supers, metaclass_, fields, self.src_infos + extra_src_infos)
+		return IClass_Defn.new(self.class_name, supers, metaclass_, fields, self.src_infos + extra_src_infos)
 
 
 
 
-class IFunc_Def:
+class IFunc_Defn:
 
 	func init(self, is_bound, func_name, params, var_arg, nonlocals, renames, body, src_infos):
 
@@ -195,7 +195,7 @@ class IFunc_Def:
 		renames := _extended_collection_src_infos(self.renames, extra_src_infos)
 		body := self.body.extended_src_infos(extra_src_infos)
 		
-		return IFunc_Def.new(self.is_bound, self.func_name, params, var_arg, nonlocals, renames, body, self.src_infos + extra_src_infos)
+		return IFunc_Defn.new(self.is_bound, self.func_name, params, var_arg, nonlocals, renames, body, self.src_infos + extra_src_infos)
 
 
 

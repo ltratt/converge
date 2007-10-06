@@ -48,9 +48,9 @@
 Con_Obj *_Con_Builtins_Module_Class_new_object(Con_Obj *);
 
 Con_Obj *_Con_Builtins_Module_Class_to_str_func(Con_Obj *);
-Con_Obj *_Con_Builtins_Module_Class_get_def_func(Con_Obj *);
+Con_Obj *_Con_Builtins_Module_Class_get_defn_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Module_Class_get_slot_func(Con_Obj *);
-Con_Obj *_Con_Builtins_Module_Class_def_names_func(Con_Obj *);
+Con_Obj *_Con_Builtins_Module_Class_defn_names_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Module_Class_path_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Module_Class_src_offset_to_line_column_func(Con_Obj *);
 
@@ -76,8 +76,8 @@ void Con_Builtins_Module_Class_bootstrap(Con_Obj *thread)
 	Con_Memory_change_chunk_type(thread, module_class, CON_MEMORY_CHUNK_OBJ);
 	
 	CON_SET_FIELD(module_class, "to_str", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Module_Class_to_str_func, "to_str", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), module_class));
-	CON_SET_FIELD(module_class, "def_names", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Module_Class_def_names_func, "def_names", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), module_class));
-	CON_SET_FIELD(module_class, "get_def", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Module_Class_get_def_func, "get_def", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), module_class));
+	CON_SET_FIELD(module_class, "defn_names", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Module_Class_defn_names_func, "defn_names", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), module_class));
+	CON_SET_FIELD(module_class, "get_defn", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Module_Class_get_defn_func, "get_defn", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), module_class));
 	CON_SET_FIELD(module_class, "get_slot", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Module_Class_get_slot_func, "get_slot", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), module_class));
 	CON_SET_FIELD(module_class, "path", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Module_Class_path_func, "path", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), module_class));
 	CON_SET_FIELD(module_class, "src_offset_to_line_column", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Module_Class_src_offset_to_line_column_func, "src_offset_to_line_column", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), module_class));
@@ -130,10 +130,10 @@ Con_Obj *_Con_Builtins_Module_Class_to_str_func(Con_Obj *thread)
 
 
 //
-// 'def_names()' is a generator which returns the name of each definition in the module.
+// 'defn_names()' is a generator which returns the name of each definition in the module.
 //
 
-Con_Obj *_Con_Builtins_Module_Class_def_names_func(Con_Obj *thread)
+Con_Obj *_Con_Builtins_Module_Class_defn_names_func(Con_Obj *thread)
 {
 	Con_Obj *self;
 	CON_UNPACK_ARGS("M", &self);
@@ -172,17 +172,17 @@ Con_Obj *_Con_Builtins_Module_Class_def_names_func(Con_Obj *thread)
 
 
 //
-// 'get_def(name)' returns the definition 'name' in this module.
+// 'get_defn(name)' returns the definition 'name' in this module.
 //
 
-Con_Obj *_Con_Builtins_Module_Class_get_def_func(Con_Obj *thread)
+Con_Obj *_Con_Builtins_Module_Class_get_defn_func(Con_Obj *thread)
 {
 	Con_Obj *name_obj, *self;
 	CON_UNPACK_ARGS("MS", &self, &name_obj);
 
 	Con_Builtins_String_Atom *name_string_atom = CON_GET_ATOM(name_obj, CON_BUILTIN(CON_BUILTIN_STRING_ATOM_DEF_OBJECT));
 	
-	return Con_Builtins_Module_Atom_get_definition(thread, self, name_string_atom->str, name_string_atom->size);
+	return Con_Builtins_Module_Atom_get_defn(thread, self, name_string_atom->str, name_string_atom->size);
 }
 
 

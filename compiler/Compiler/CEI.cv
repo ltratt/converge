@@ -88,10 +88,10 @@ func dsl_parse(dsl_block, src_infos, extra_keywords, extra_symbols, grammar, sta
 //func _ibuilder():
 //
 //	builders := []
-//	for def_name := ITree.def_names():
-//		if def_name[0] != "I" | not Builtins::Class.instantiated(def := ITree.get_def(def_name)):
+//	for def_name := ITree.defn_names():
+//		if def_name[0] != "I" | not Builtins::Class.instantiated(def := ITree.get_defn(def_name)):
 //			continue
-//		num_params := ITree::IInt.new(ITree.get_def(def_name).get_field("init").num_params, __SRC_INFO__)
+//		num_params := ITree::IInt.new(ITree.get_defn(def_name).get_field("init").num_params, __SRC_INFO__)
 //		builders.append([|
 //			func ${def_name.to_lower_case()}(*args):
 //			
@@ -133,9 +133,9 @@ func imodule(*args):
 
 
 
-func iclass_def(*args):
+func iclass_defn(*args):
 
-	elem := ITree::IClass_Def
+	elem := ITree::IClass_Defn
 
 	if args.len() == elem.get_field("init").num_params - 1:
 		args := args[ : -1] + [(args[-1] + Thread::get_continuation_src_infos(2))]
@@ -149,9 +149,9 @@ func iclass_def(*args):
 
 
 
-func ifunc_def(*args):
+func ifunc_defn(*args):
 
-	elem := ITree::IFunc_Def
+	elem := ITree::IFunc_Defn
 
 	if args.len() == elem.get_field("init").num_params - 1:
 		args := args[ : -1] + [(args[-1] + Thread::get_continuation_src_infos(2))]

@@ -111,7 +111,7 @@ class QQ_Mode:
 					continue
 				
 				qq_bound_var := ITree::IVar.new(var_name, node.src_infos)
-				fresh_name_func := self._get_module_def_at_qq("Compiler_Vars", "fresh_name", node.src_infos)
+				fresh_name_func := self._get_module_defn_at_qq("Compiler_Vars", "fresh_name", node.src_infos)
 				fresh_name := ITree::IApplication.new(fresh_name_func, [ITree::IString.new(var_name, node.src_infos)], node.src_infos)
 				return_exprs.append(ITree::IAssignment.new(ITree::STD_ASSIGN, [qq_bound_var], fresh_name, node.src_infos))
 
@@ -161,7 +161,7 @@ class QQ_Mode:
 		if not self._extra_src_infos_var is null:
 			full_src_infos := ITree::IBinary.new(ITree::BINARY_ADD, full_src_infos, self._extra_src_infos_var, node_src_infos)
 
-		itree_node := ITree::ISlot_Lookup.new(self._get_module_def_at_qq("ITree", node_type, node_src_infos), "new", node_src_infos)
+		itree_node := ITree::ISlot_Lookup.new(self._get_module_defn_at_qq("ITree", node_type, node_src_infos), "new", node_src_infos)
 		return ITree::IApplication.new(itree_node, args + [full_src_infos], node_src_infos)
 
 
@@ -234,7 +234,7 @@ class QQ_Mode:
 	// Converge compiler.
 	//
 	
-	func _get_module_def_at_qq(self, module_name, defn_name, src_infos):
+	func _get_module_defn_at_qq(self, module_name, defn_name, src_infos):
 	
 		if not module_id, import_extras := self._compiler.find_import_location(["Compiler", module_name]):
 			raise "XXX"
@@ -305,7 +305,7 @@ class QQ_Mode:
 
 
 
-	func _t_iclass_def(self, node):
+	func _t_iclass_defn(self, node):
 
 		if ITree::IInsert.instantiated(node.class_name):
 			// Class names are a little odd because the class "name" is also used as a variable
@@ -346,11 +346,11 @@ class QQ_Mode:
 		
 		self._nesting.pop()
 		
-		return self._qq("IClass_Def", [class_name, ITree::IList.new(supers, node.src_infos), metaclass_, ITree::IList.new(fields, node.src_infos)], node.src_infos)
+		return self._qq("IClass_Defn", [class_name, ITree::IList.new(supers, node.src_infos), metaclass_, ITree::IList.new(fields, node.src_infos)], node.src_infos)
 
 
 
-	func _t_ifunc_def(self, node):
+	func _t_ifunc_defn(self, node):
 
 		is_bound := ITree::IInt.new(node.is_bound, node.src_infos)
 		if ITree::IInsert.instantiated(node.func_name):
@@ -415,7 +415,7 @@ class QQ_Mode:
 		self._pop_vars()
 		self._nesting.pop()
 		
-		return self._qq("IFunc_Def", [is_bound, func_name, params, var_arg, ITree::IList.new(nonlocals, node.src_infos), ITree::IList.new(renames, node.src_infos), body], node.src_infos)
+		return self._qq("IFunc_Defn", [is_bound, func_name, params, var_arg, ITree::IList.new(nonlocals, node.src_infos), ITree::IList.new(renames, node.src_infos), body], node.src_infos)
 
 
 
@@ -858,7 +858,7 @@ func _insert_check(expr, src_infos):
 func _class_name(name, src_infos):
 
 	if not Builtins::String.instantiated(name):
-		ITree_TC::type_error("Class_Def", "name", name, "String", src_infos)
+		ITree_TC::type_error("Class_Defn", "name", name, "String", src_infos)
 
 	return name
 
@@ -871,6 +871,6 @@ func _class_name(name, src_infos):
 func _func_name(name, src_infos):
 
 	if not Builtins::String.instantiated(name):
-		ITree_TC::type_error("Func_Def", "name", name, "String", src_infos)
+		ITree_TC::type_error("Func_Defn", "name", name, "String", src_infos)
 
 	return name

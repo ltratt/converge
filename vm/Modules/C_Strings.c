@@ -57,7 +57,7 @@ Con_Obj *Con_Module_C_Strings_init(Con_Obj *thread, Con_Obj *identifier)
 
 Con_Obj *Con_Module_C_Strings_import(Con_Obj *thread, Con_Obj *c_strings_mod)
 {
-	CON_SET_MOD_DEF(c_strings_mod, "join", CON_NEW_UNBOUND_C_FUNC(_Con_Module_C_Strings_join_func, "join", c_strings_mod));
+	CON_SET_MOD_DEFN(c_strings_mod, "join", CON_NEW_UNBOUND_C_FUNC(_Con_Module_C_Strings_join_func, "join", c_strings_mod));
 	
 	return c_strings_mod;
 }

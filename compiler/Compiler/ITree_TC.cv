@@ -25,7 +25,7 @@ import Compiler_Vars, ITree
 
 
 
-_EXPRS := [ITree::IClass_Def, ITree::IFunc_Def, ITree::IIf, ITree::INDIf, ITree::IVar, ITree::IImport, ITree::IWhile, ITree::IFor, ITree::ITry, ITree::IInt, ITree::IString, ITree::ISlot_Lookup, ITree::IModule_Lookup, ITree::IList, ITree::IDict, ITree::ISet, ITree::IApplication, ITree::IGet, ITree::ISlice, ITree::IEXBI, ITree::IReturn, ITree::IYield, ITree::IRaise, ITree::IAssert, ITree::IBreak, ITree::IContinue, ITree::IConjunction, ITree::IAlternation, ITree::IAssignment, ITree::INot, ITree::IBinary, ITree::IComparison, ITree::IInsert, ITree::IStandard_Quasi_Quotes, ITree::IMod_Id_Import]
+_EXPRS := [ITree::IClass_Defn, ITree::IFunc_Defn, ITree::IIf, ITree::INDIf, ITree::IVar, ITree::IImport, ITree::IWhile, ITree::IFor, ITree::ITry, ITree::IInt, ITree::IString, ITree::ISlot_Lookup, ITree::IModule_Lookup, ITree::IList, ITree::IDict, ITree::ISet, ITree::IApplication, ITree::IGet, ITree::ISlice, ITree::IEXBI, ITree::IReturn, ITree::IYield, ITree::IRaise, ITree::IAssert, ITree::IBreak, ITree::IContinue, ITree::IConjunction, ITree::IAlternation, ITree::IAssignment, ITree::INot, ITree::IBinary, ITree::IComparison, ITree::IInsert, ITree::IStandard_Quasi_Quotes, ITree::IMod_Id_Import]
 
 
 
@@ -87,15 +87,15 @@ class ITree_TC:
 		if not Builtins::String.instantiated(node.module_name):
 			self._type_error(node, "module_name", node.module_name, "String")
 
-		if not Builtins::List.conformed_by(node.definitions):
-			self._type_error(node, "definitions", node.definitions, "List")
+		if not Builtins::List.conformed_by(node.defns):
+			self._type_error(node, "defns", node.defns, "List")
 		
-		for definition := node.definitions.iterate():
-			self._preorder(definition)
+		for defn := node.defns.iterate():
+			self._preorder(defn)
 
 
 
-	func _t_iclass_def(self, node):
+	func _t_iclass_defn(self, node):
 
 		if not (Builtins::String.instantiated(node.class_name) | ITree::IInsert.instantiated(node.class_name)):
 			self._type_error(node, "class_name", node.class_name, "String")
@@ -112,12 +112,12 @@ class ITree_TC:
 			self._type_error(node, "fields", node.fields, "List")
 		for i := 0.to(node.fields.len()):
 			field := node.fields[i]
-			if not (ITree::IAssignment.instantiated(field) | ITree::IFunc_Def.instantiated(field) | ITree::IClass_Def.instantiated(field)):
-				self._type_error(node, Strings::format("fields[%d]", i), field, "[IAssignment, IFunc_Def, IClass_Def]")
+			if not (ITree::IAssignment.instantiated(field) | ITree::IFunc_Defn.instantiated(field) | ITree::IClass_Defn.instantiated(field)):
+				self._type_error(node, Strings::format("fields[%d]", i), field, "[IAssignment, IFunc_Defn, IClass_Defn]")
 
 
 	
-	func _t_ifunc_def(self, node):
+	func _t_ifunc_defn(self, node):
 	
 		if not (node.is_bound == 0 | node.is_bound == 1):
 			raise "XXX"

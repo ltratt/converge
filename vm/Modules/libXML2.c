@@ -69,9 +69,9 @@ Con_Obj *Con_Module_libXML2_import(Con_Obj *thread, Con_Obj *libxml2_mod)
 {
 	Con_Obj *user_exception = CON_GET_MOD_DEFN(CON_BUILTIN(CON_BUILTIN_EXCEPTIONS_MODULE), "User_Exception");
 	Con_Obj *xml_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("XML_Exception"), Con_Builtins_List_Atom_new_va(thread, user_exception, NULL), libxml2_mod);
-	CON_SET_MOD_DEF(libxml2_mod, "XML_Exception", xml_exception);
+	CON_SET_MOD_DEFN(libxml2_mod, "XML_Exception", xml_exception);
 	
-	CON_SET_MOD_DEF(libxml2_mod, "parse", CON_NEW_UNBOUND_C_FUNC(_Con_Module_libXML2_parse_func, "parse", libxml2_mod));
+	CON_SET_MOD_DEFN(libxml2_mod, "parse", CON_NEW_UNBOUND_C_FUNC(_Con_Module_libXML2_parse_func, "parse", libxml2_mod));
 
 	return libxml2_mod;
 }

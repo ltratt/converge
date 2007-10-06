@@ -59,9 +59,9 @@ Con_Obj *Con_Module_C_Platform_Env_init(Con_Obj *thread, Con_Obj *identifier)
 
 Con_Obj *Con_Module_C_Platform_Env_import(Con_Obj *thread, Con_Obj *env_mod)
 {
-	CON_SET_MOD_DEF(env_mod, "find_var", CON_NEW_UNBOUND_C_FUNC(_Con_Module_C_Platform_Env_find_var, "find_var", env_mod));
-	CON_SET_MOD_DEF(env_mod, "get_var", CON_NEW_UNBOUND_C_FUNC(_Con_Module_C_Platform_Env_get_var, "get_var", env_mod));
-	CON_SET_MOD_DEF(env_mod, "set_var", CON_NEW_UNBOUND_C_FUNC(_Con_Module_C_Platform_Env_set_var, "set_var", env_mod));
+	CON_SET_MOD_DEFN(env_mod, "find_var", CON_NEW_UNBOUND_C_FUNC(_Con_Module_C_Platform_Env_find_var, "find_var", env_mod));
+	CON_SET_MOD_DEFN(env_mod, "get_var", CON_NEW_UNBOUND_C_FUNC(_Con_Module_C_Platform_Env_get_var, "get_var", env_mod));
+	CON_SET_MOD_DEFN(env_mod, "set_var", CON_NEW_UNBOUND_C_FUNC(_Con_Module_C_Platform_Env_set_var, "set_var", env_mod));
 
 	return env_mod;
 }

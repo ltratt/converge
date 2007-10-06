@@ -26,16 +26,16 @@ import Compiler_Vars, Tokenizer
 
 
 GRAMMAR := """
-top_level ::= definition ( "NEWLINE" definition )*
+top_level ::= defn ( "NEWLINE" defn )*
           ::=
 
 
-definition  ::= class_def
-            ::= func_def
-            ::= import
-            ::= name ( "," name )* ":=" expr
-            ::= splice
-			::= insert
+defn  ::= class_defn
+      ::= func_defn
+      ::= import
+      ::= name ( "," name )* ":=" expr
+      ::= splice
+	  ::= insert
 
 
 name ::= "ID"
@@ -50,7 +50,7 @@ import_as   ::= "AS" "ID"
             ::=
 
 
-class_def       ::= "CLASS" class_name class_supers class_metaclass ":" "INDENT" class_fields "DEDENT"
+class_defn       ::= "CLASS" class_name class_supers class_metaclass ":" "INDENT" class_fields "DEDENT"
 class_name      ::= "ID"
                 ::= splice
 				::= insert
@@ -60,14 +60,14 @@ class_supers    ::= "(" expr ( "," expr )* ")"
 class_metaclass ::= "METACLASS" expr
                 ::=
 class_fields    ::= class_field ( "NEWLINE" class_field )*
-class_field     ::= class_def
-                ::= func_def
+class_field     ::= class_defn
+                ::= func_defn
                 ::= name ":=" expr
                 ::= splice
 				::= insert
                 ::= "PASS"
 
-func_def            ::= func_type func_name "(" func_params ")" ":" "INDENT" func_decls expr_body "DEDENT"
+func_defn            ::= func_type func_name "(" func_params ")" ":" "INDENT" func_decls expr_body "DEDENT"
                     ::= func_type func_name "(" func_params ")" "{" "INDENT" func_decls expr_body "DEDENT" "NEWLINE" "}"
                     ::= func_type func_name "(" func_params ")" "{" expr "}"
 func_type           ::= "FUNC"
@@ -107,8 +107,8 @@ func_decl_rename    ::= "RENAME" "ID" "AS" "ID" ( "," "ID" "AS" "ID" )* "NEWLINE
 
 expr_body ::= expr ( "NEWLINE" expr )*
 
-expr ::= class_def
-     ::= func_def
+expr ::= class_defn
+     ::= func_defn
      ::= while           %precedence 5
      ::= if
 	 ::= ndif
@@ -271,8 +271,8 @@ quasi_quotes      ::= expr_quasi_quotes
                   ::= defn_quasi_quotes
 expr_quasi_quotes ::= quasi_quotes_customize "INDENT" expr_body "DEDENT" "NEWLINE" "|]"
                   ::= quasi_quotes_customize expr "|]"
-defn_quasi_quotes ::= "[D|" definition ( "NEWLINE" definition )* "|]" quasi_quotes_customize
-			      ::= "[D|" "INDENT" definition ( "NEWLINE" definition )* "DEDENT" "NEWLINE" "|]" quasi_quotes_customize
+defn_quasi_quotes ::= "[D|" defn ( "NEWLINE" defn )* "|]" quasi_quotes_customize
+			      ::= "[D|" "INDENT" defn ( "NEWLINE" defn )* "DEDENT" "NEWLINE" "|]" quasi_quotes_customize
 quasi_quotes_customize ::= "[" "<" expr ">" "|"
 quasi_quotes_customize ::= "[|"
 

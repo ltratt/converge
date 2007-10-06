@@ -78,7 +78,7 @@
 #define CON_INSTR_LIST 12					// bits 0-7 12, bits 8-31 number of list elements
 #define CON_INSTR_SLOT_LOOKUP 13			// bits 0-7 13, bits 8-31 size of slot name, bits 32-.. slot name
 #define CON_INSTR_APPLY 14  				// bits 0-7 14, bits 8-31 number of args
-#define CON_INSTR_FUNC_DEF 15				// bits 0-7 15, bits 8-9 is_bound
+#define CON_INSTR_FUNC_DEFN 15				// bits 0-7 15, bits 8-9 is_bound
 #define CON_INSTR_RETURN 16 				// bits 0-7 16
 #define CON_INSTR_BRANCH 17 				// bits 0-7 17, bits 8-30 pc offset, bit 31 offset sign (0 = positive, 1 = negative)
 #define CON_INSTR_YIELD 18  				// bits 0-7 18

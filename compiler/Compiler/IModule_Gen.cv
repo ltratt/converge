@@ -37,7 +37,7 @@ class IModule_Gen:
 
 	func generate(self, parse_tree):
 
-		self._definitions := []
+		self._defns := []
 		self._nesting := []
 		self._qq_level := 0
 
@@ -135,8 +135,8 @@ class IModule_Gen:
 		// Determine all the definitions we've currently processed into ITree's.
 
 		already_bound_vars := Dict{}
-		for i := 0.to(self._definitions.len()):
-			defn := self._definitions[i]
+		for i := 0.to(self._defns.len()):
+			defn := self._defns[i]
 			for target_var := defn.bound_vars.iterate():
 				already_bound_vars[target_var] := i
 
@@ -148,7 +148,7 @@ class IModule_Gen:
 		stack := Builtins::List.new(defns_to_include)
 		i := 0
 		while i < stack.len():
-			for free_var := self._definitions[stack[i]].free_vars.iterate():
+			for free_var := self._defns[stack[i]].free_vars.iterate():
 				if not defns_to_include.find(free_var) & defn_i := already_bound_vars.find(free_var) & not stack.find_index(defn_i) <= i:
 					stack.append(defn_i)
 					defns_to_include.add(defn_i)
@@ -158,15 +158,15 @@ class IModule_Gen:
 		// they're referenced by the splice expression, or referenced by something referenced
 		// by the splice expression).
 
-		definitions := []
+		defns := []
 		i := 0
-		for i := 0.to(self._definitions.len()):
+		for i := 0.to(self._defns.len()):
 			if defns_to_include.find(i):
-				definitions.append(self._definitions[i])
+				defns.append(self._defns[i])
 
-		dummy_func := ITree::IFunc_Def.new(0, splice_name, [], null, [], [], ITree::IExpr_Block.new([ITree::IReturn.new(expr, extra_src_infos + node[1][1].src_infos)], expr.src_infos), extra_src_infos + node[1][1].src_infos)
-		dummy_definitions := definitions + [ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(splice_name, extra_src_infos + node[1][1].src_infos)], dummy_func, extra_src_infos + node[1][1].src_infos)]
-		dummy_imodule := ITree::IModule.new(splice_name, dummy_definitions, extra_src_infos + node[1][1].src_infos)
+		dummy_func := ITree::IFunc_Defn.new(0, splice_name, [], null, [], [], ITree::IExpr_Block.new([ITree::IReturn.new(expr, extra_src_infos + node[1][1].src_infos)], expr.src_infos), extra_src_infos + node[1][1].src_infos)
+		dummy_defns := defns + [ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(splice_name, extra_src_infos + node[1][1].src_infos)], dummy_func, extra_src_infos + node[1][1].src_infos)]
+		dummy_imodule := ITree::IModule.new(splice_name, dummy_defns, extra_src_infos + node[1][1].src_infos)
 
 		ITree_TC::tc(dummy_imodule)
 
@@ -211,7 +211,7 @@ class IModule_Gen:
 
 		module_identifiers := VM::add_modules(modules_to_add)
 		module := VM::import_module(modules_to_add[0])
-		if not out_itree := module.get_def(splice_name)():
+		if not out_itree := module.get_defn(splice_name)():
 			self._compiler.error("Splice did not return a value.", expr.src_infos)
 		if out_itree is null:
 			self._compiler.error("Splice returned null.", expr.src_infos)
@@ -248,15 +248,15 @@ class IModule_Gen:
 
 	func _t_top_level(self, node, extra_src_infos):
 
-		// top_level ::= definition ( "NEWLINE" definition )*
+		// top_level ::= defn ( "NEWLINE" defn )*
 		//           ::=
 
 		i := 1
 		while i < node.len():
-			self._definitions.extend(self._preorder(node[i], extra_src_infos))
+			self._defns.extend(self._preorder(node[i], extra_src_infos))
 			i += 2
 
-		return ITree::IModule.new(self._compiler.src_module_name, self._definitions, extra_src_infos + [[self._module_id, null]])
+		return ITree::IModule.new(self._compiler.src_module_name, self._defns, extra_src_infos + [[self._module_id, null]])
 
 
 
@@ -265,30 +265,30 @@ class IModule_Gen:
 	//
 
 	//
-	// Returns a list of IDefinition's
+	// Returns a list of IDefn's
 	//
 
-	func _t_definition(self, node, extra_src_infos):
+	func _t_defn(self, node, extra_src_infos):
 
-		// definition ::= class_def
-		//            ::= func_def
-		//            ::= import
-		//            ::= name ( "," name )* ":=" expr
-		//            ::= splice
-		//            ::= insert
+		// defn ::= class_defn
+		//      ::= func_defn
+		//      ::= import
+		//      ::= name ( "," name )* ":=" expr
+		//      ::= splice
+		//      ::= insert
 
-		ndif node.len() == 2 & node[1][0] == "class_def":
-			// definition ::= class_def
-			class_def := self._preorder(node[1], extra_src_infos)
-			return [ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(class_def.class_name, extra_src_infos + node[1][2][1].src_infos)], class_def, extra_src_infos + node[1][2][1].src_infos)]
-		elif node.len() == 2 & node[1][0] == "func_def":
-			// definition ::= func_def
+		ndif node.len() == 2 & node[1][0] == "class_defn":
+			// defn ::= class_defn
+			class_defn := self._preorder(node[1], extra_src_infos)
+			return [ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(class_defn.class_name, extra_src_infos + node[1][2][1].src_infos)], class_defn, extra_src_infos + node[1][2][1].src_infos)]
+		elif node.len() == 2 & node[1][0] == "func_defn":
+			// defn ::= func_defn
 			return [self._preorder(node[1], extra_src_infos)]
 		elif node.len() == 2 & node[1][0] == "import":
-			// definition ::= import
+			// defn ::= import
 			return self._preorder(node[1], extra_src_infos)
 		elif node.len() >= 4:
-			// definition ::= name ( "," name )* ":=" expr
+			// defn ::= name ( "," name )* ":=" expr
 			targets := []
 			i := 1
 			while node[i][0] == "name":
@@ -305,7 +305,7 @@ class IModule_Gen:
 				i += 2
 			return [ITree::IAssignment.new(ITree::STD_ASSIGN, targets, self._preorder(node[-1], extra_src_infos), extra_src_infos + node[-2].src_infos)]
 		elif node[1][0] == "splice":
-			// definition ::= splice
+			// defn ::= splice
 			defn := self._eval_splice(node[1], extra_src_infos)
 			if Builtins::List.conformed_by(defn):
 				tmp_defns := []
@@ -372,12 +372,12 @@ class IModule_Gen:
 
 
 	//
-	// Returns an IClass_Def.
+	// Returns an IClass_Defn.
 	//
 
-	func _t_class_def(self, node, extra_src_infos):
+	func _t_class_defn(self, node, extra_src_infos):
 
-		// class_def ::= "CLASS" class_name class_supers class_metaclass ":" "INDENT" class_fields "DEDENT"
+		// class_defn ::= "CLASS" class_name class_supers class_metaclass ":" "INDENT" class_fields "DEDENT"
 		
 		if node[2].len() == 1:
 			// class_name ::=
@@ -421,20 +421,20 @@ class IModule_Gen:
 			if node[7][i].len() == 2 & not Builtins::List.conformed_by(node[7][i][1]):
 				// class_field ::= "PASS"
 				pass
-			elif node[7][i].len() == 2 & node[7][i][1][0] == "class_def":
-				// class_field ::= class_def
-				class_def := node[7][i][1]
-				if class_def[2].len() == 1:
+			elif node[7][i].len() == 2 & node[7][i][1][0] == "class_defn":
+				// class_field ::= class_defn
+				class_defn := node[7][i][1]
+				if class_defn[2].len() == 1:
 					// class_name ::=
-					self._compiler.error("Classes as class fields can not be anonymous.", class_def[1].src_infos)
-				fields.append(self._preorder(class_def, extra_src_infos))
-			elif node[7][i].len() == 2 & node[7][i][1][0] == "func_def":
+					self._compiler.error("Classes as class fields can not be anonymous.", class_defn[1].src_infos)
+				fields.append(self._preorder(class_defn, extra_src_infos))
+			elif node[7][i].len() == 2 & node[7][i][1][0] == "func_defn":
 				// class_field ::= func_def
-				func_def := node[7][i][1]
-				if func_def[2].len() == 1:
+				func_defn := node[7][i][1]
+				if func_defn[2].len() == 1:
 					// func_name ::=
-					self._compiler.error("Functions as class fields can not be anonymous.", func_def[1][1].src_infos)
-				fields.append(self._preorder(func_def, extra_src_infos))
+					self._compiler.error("Functions as class fields can not be anonymous.", func_defn[1][1].src_infos)
+				fields.append(self._preorder(func_defn, extra_src_infos))
 			elif node[7][i].len() == 4 & node[7][i][1][0] == "name":
 				// class_field ::= name ":=" expr
 				fields.append(ITree::IAssignment.new(ITree::STD_ASSIGN, [self._preorder(node[7][i][1], extra_src_infos)], self._preorder(node[7][i][3], extra_src_infos), extra_src_infos + node[7][i][2].src_infos))
@@ -448,17 +448,17 @@ class IModule_Gen:
 			i += 2
 		self._nesting.pop()
 
-		return ITree::IClass_Def.new(class_name, supers, metaclass_, fields, extra_src_infos + node[1].src_infos)
+		return ITree::IClass_Defn.new(class_name, supers, metaclass_, fields, extra_src_infos + node[1].src_infos)
 
 
 
 	//
-	// Returns an IFunc_Def.
+	// Returns an IFunc_Defn.
 	//
 
-	func _t_func_def(self, node, extra_src_infos):
+	func _t_func_defn(self, node, extra_src_infos):
 
-		// func_def ::= func_type func_name "(" func_params ")" ":" "INDENT" func_defs expr_body
+		// func_defn ::= func_type func_name "(" func_params ")" ":" "INDENT" func_decls expr_body
 		//              "DEDENT"
 		//          ::= func_type func_name "(" func_params ")" "{" "INDENT" func_decls expr_body
 		//              "DEDENT" "NEWLINE" "}"
@@ -600,7 +600,7 @@ class IModule_Gen:
 
 		self._nesting.pop()
 		
-		return ITree::IFunc_Def.new(is_bound, func_name, params, var_args, nonlocals_, renames, body, extra_src_infos + node[1][1].src_infos)
+		return ITree::IFunc_Defn.new(is_bound, func_name, params, var_args, nonlocals_, renames, body, extra_src_infos + node[1][1].src_infos)
 
 
 

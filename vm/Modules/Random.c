@@ -72,9 +72,9 @@ Con_Obj *Con_Module_Random_init(Con_Obj *thread, Con_Obj *identifier)
 
 Con_Obj *Con_Module_Random_import(Con_Obj *thread, Con_Obj *random_mod)
 {
-	CON_SET_MOD_DEF(random_mod, "pluck", CON_NEW_UNBOUND_C_FUNC(_Con_Module_Random_pluck_func, "pluck", random_mod));
-	CON_SET_MOD_DEF(random_mod, "random", CON_NEW_UNBOUND_C_FUNC(_Con_Module_Random_random_func, "random", random_mod));
-	CON_SET_MOD_DEF(random_mod, "shuffle", CON_NEW_UNBOUND_C_FUNC(_Con_Module_Random_shuffle_func, "shuffle", random_mod));
+	CON_SET_MOD_DEFN(random_mod, "pluck", CON_NEW_UNBOUND_C_FUNC(_Con_Module_Random_pluck_func, "pluck", random_mod));
+	CON_SET_MOD_DEFN(random_mod, "random", CON_NEW_UNBOUND_C_FUNC(_Con_Module_Random_random_func, "random", random_mod));
+	CON_SET_MOD_DEFN(random_mod, "shuffle", CON_NEW_UNBOUND_C_FUNC(_Con_Module_Random_shuffle_func, "shuffle", random_mod));
 
 #	ifdef CON_HAVE_SRANDOMDEV
 	srandomdev();

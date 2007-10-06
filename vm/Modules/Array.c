@@ -105,16 +105,16 @@ Con_Obj *Con_Module_Array_import(Con_Obj *thread, Con_Obj *array_mod)
 
 	Con_Obj *user_exception = CON_GET_MOD_DEFN(CON_BUILTIN(CON_BUILTIN_EXCEPTIONS_MODULE), "User_Exception");
 	Con_Obj *array_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("Array_Exception"), Con_Builtins_List_Atom_new_va(thread, user_exception, NULL), array_mod);
-	CON_SET_MOD_DEF(array_mod, "Array_Exception", array_exception);
+	CON_SET_MOD_DEFN(array_mod, "Array_Exception", array_exception);
 
 	// Array_Atom_Def
 	
-	CON_SET_MOD_DEF(array_mod, "Array_Atom_Def", Con_Builtins_Atom_Def_Atom_new(thread, _Con_Module_Array_Array_Atom_gc_scan, NULL));
+	CON_SET_MOD_DEFN(array_mod, "Array_Atom_Def", Con_Builtins_Atom_Def_Atom_new(thread, _Con_Module_Array_Array_Atom_gc_scan, NULL));
 
 	// Array.Array
 	
 	Con_Obj *array_class = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("Array"), Con_Builtins_List_Atom_new_va(thread, CON_BUILTIN(CON_BUILTIN_OBJECT_CLASS), NULL), array_mod, CON_NEW_UNBOUND_C_FUNC(_Con_Module_Array_Array_new, "Array_new", array_mod));
-	CON_SET_MOD_DEF(array_mod, "Array", array_class);
+	CON_SET_MOD_DEFN(array_mod, "Array", array_class);
 	
 	CON_SET_FIELD(array_class, "append", CON_NEW_BOUND_C_FUNC(_Con_Module_Array_Array_append_func, "append", array_mod, array_class));
 	CON_SET_FIELD(array_class, "extend", CON_NEW_BOUND_C_FUNC(_Con_Module_Array_Array_extend_func, "extend", array_mod, array_class));

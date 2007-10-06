@@ -195,11 +195,11 @@ Creates a new module from the string <code>bc</code>, which should be the conten
 
 Module objects have the following slots:
 
-<function name="def_names">
+<function name="defn_names">
 Successively generates each definition name in the module.
 </function>
 
-<function name="get_def">
+<function name="get_defn">
 <argument name="name" type="String" />
 Returns the definition named <code>name</code> in this module.
 </function>

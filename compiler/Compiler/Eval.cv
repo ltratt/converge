@@ -83,9 +83,9 @@ class Eval_Compiler:
 		|])
 
 		eval_name := Compiler_Vars::fresh_name()		
-		dummy_func := ITree::IFunc_Def.new(0, eval_name, [], null, [], [], ITree::IExpr_Block.new(body, []), [])
-		dummy_definitions := [ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(eval_name, [])], dummy_func, [])]
-		dummy_imodule := ITree::IModule.new(eval_name, dummy_definitions, [])
+		dummy_func := ITree::IFunc_Defn.new(0, eval_name, [], null, [], [], ITree::IExpr_Block.new(body, []), [])
+		dummy_defns := [ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(eval_name, [])], dummy_func, [])]
+		dummy_imodule := ITree::IModule.new(eval_name, dummy_defns, [])
 		
 		cv_mod := _Eval_Bytecode_Gen.new().generate(dummy_imodule, self.target)
 		mod := Builtins::Module.new(cv_mod.serialize())
@@ -93,7 +93,7 @@ class Eval_Compiler:
 		module_identifiers := VM::add_modules([mod])
 		VM::import_module(mod)
 		
-		return mod.get_def(eval_name)()
+		return mod.get_defn(eval_name)()
 
 
 

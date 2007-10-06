@@ -94,8 +94,6 @@ func main():
 			Compiler_Vars::push_compiler(compiler)
 			if rtn := compiler.eval():
 				Sys::println(rtn)
-			else:
-				Sys::println("fail")
 			Compiler_Vars::pop_compiler()
 		catch _Dummy_Exception into e:
 			pass

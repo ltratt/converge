@@ -266,9 +266,9 @@ fi
 extra_cflags="$extra_cflags `$xml2_config --cflags`"
 extra_libs="$extra_libs `$xml2_config --libs`"
 
-AC_MSG_CHECKING([checking which modules to compile])
+AC_MSG_CHECKING([which modules to compile])
 mod_paths=`ls vm/Modules/*.c | sed "s/c$/o/"`
-if [[ posix -eq 1 ]]; then
+if [[ $posix -eq 1 ]]; then
 	mod_paths="$mod_paths vm/Platform/POSIX/Modules/POSIX_File.o"
 fi
 mod_names=""

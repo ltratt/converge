@@ -793,9 +793,12 @@ class IModule_Gen:
 	func _t_number(self, node, extra_src_infos):
 	
 		// number ::= "INT"
+		//        ::= "FLOAT"
 	
-		return ITree::IInt.new(Builtins::Int.new(node[1].value), extra_src_infos + node[1].src_infos)
-
+		if node[1].type == "INT":
+			return ITree::IInt.new(Builtins::Int.new(node[1].value), extra_src_infos + node[1].src_infos)
+		elif node[1].type == "FLOAT":
+			return ITree::IFloat.new(Builtins::Float.new(node[1].value), extra_src_infos + node[1].src_infos)
 
 
 	func _t_name(self, node, extra_src_infos):

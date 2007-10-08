@@ -82,6 +82,7 @@
 #define CON_INSTR_RETURN 16 				// bits 0-7 16
 #define CON_INSTR_BRANCH 17 				// bits 0-7 17, bits 8-30 pc offset, bit 31 offset sign (0 = positive, 1 = negative)
 #define CON_INSTR_YIELD 18  				// bits 0-7 18
+#define CON_INSTR_FLOAT 19  				// bits 0-7 19, bits 32-96 := float number
 #define CON_INSTR_IMPORT 20 				// bits 0-7 20, bits 8-31 module number
 #define CON_INSTR_DICT 21					// bits 0-7 21, bits 8-31 number of dictionary elements
 #define CON_INSTR_DUP 22					// bits 0-7 22

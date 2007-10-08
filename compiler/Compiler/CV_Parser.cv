@@ -176,6 +176,7 @@ broken ::= "NEWLINE" "BROKEN" ":" "INDENT" expr_body "DEDENT"
        ::=
 
 number ::= "INT"
+       ::= "FLOAT"
 
 var_lookup ::= "ID"
            ::= "&" "ID"

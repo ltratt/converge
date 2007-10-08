@@ -68,6 +68,7 @@ _BUILTIN_FLOAT_CLASS := 38
 
 _CONSTANT_STRING_TEMPLATE := "str_%s"
 _CONSTANT_INT_TEMPLATE := "int_%s"
+_CONSTANT_FLOAT_TEMPLATE := "float_%s"
 
 //
 // Definition and expression nesting
@@ -693,6 +694,22 @@ class Bytecode_Gen:
 			self._set_label(label, self._constants_instructions.len())
 			self._constants_labels.append(label)
 			self._constants_instructions.append(self._target.Instr_Int.new(node.src_infos, node.val))
+			self._constants_instructions.append(self._target.Instr_Constant_Set.new(node.src_infos, self._constants[constant_name]))
+			self._constants_instructions.append(self._target.Instr_Fail_Now.new(node.src_infos))
+		
+		self._instructions.append(self._target.Instr_Constant_Get.new(node.src_infos, self._constants[constant_name]))
+
+
+
+	func _t_ifloat(self, node):
+	
+		constant_name := Strings::format(_CONSTANT_FLOAT_TEMPLATE, node.val.to_str())
+		if not self._constants.find(constant_name):
+			self._constants[constant_name] := self._constants.len()
+			label := self._create_label()
+			self._set_label(label, self._constants_instructions.len())
+			self._constants_labels.append(label)
+			self._constants_instructions.append(self._target.Instr_Float.new(node.src_infos, node.val))
 			self._constants_instructions.append(self._target.Instr_Constant_Set.new(node.src_infos, self._constants[constant_name]))
 			self._constants_instructions.append(self._target.Instr_Fail_Now.new(node.src_infos))
 		

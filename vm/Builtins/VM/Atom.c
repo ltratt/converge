@@ -57,6 +57,7 @@ void *alloca (size_t);
 #include "Builtins/Dict/Atom.h"
 #include "Builtins/Exception/Atom.h"
 #include "Builtins/Exception/Class.h"
+#include "Builtins/Float/Atom.h"
 #include "Builtins/Func/Atom.h"
 #include "Builtins/Int/Atom.h"
 #include "Builtins/List/Atom.h"
@@ -1043,6 +1044,17 @@ Con_Obj *_Con_Builtins_VM_Atom_execute(Con_Obj *thread)
 					CON_MUTEX_LOCK(&con_stack->mutex);
 					Con_Builtins_Con_Stack_Atom_push_object(thread, con_stack, new_int_obj);
 					pc.pc.bytecode_offset += sizeof(Con_Int);
+					Con_Builtins_Con_Stack_Atom_update_continuation_frame_pc(thread, con_stack, pc);
+					break;
+				}
+				case CON_INSTR_FLOAT: {
+					CON_MUTEX_UNLOCK(&con_stack->mutex);
+					Con_Float float_val;
+					Con_Builtins_Module_Atom_read_bytes(thread, pc.module, pc.pc.bytecode_offset + sizeof(Con_Int), &float_val, sizeof(Con_Float));
+					Con_Obj *float_obj = Con_Builtins_Float_Atom_new(thread, float_val);
+					CON_MUTEX_LOCK(&con_stack->mutex);
+					Con_Builtins_Con_Stack_Atom_push_object(thread, con_stack, float_obj);
+					pc.pc.bytecode_offset += sizeof(Con_Int) + sizeof(Con_Float);
 					Con_Builtins_Con_Stack_Atom_update_continuation_frame_pc(thread, con_stack, pc);
 					break;
 				}

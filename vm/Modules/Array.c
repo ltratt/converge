@@ -44,7 +44,7 @@
 
 
 
-typedef enum {_CON_MODULES_ARRAY_TYPE_INT32, _CON_MODULES_ARRAY_TYPE_INT64} _Con_Module_Array_Type;
+typedef enum {_CON_MODULES_ARRAY_TYPE_INT32, _CON_MODULES_ARRAY_TYPE_INT64, _CON_MODULES_ARRAY_TYPE_DOUBLE} _Con_Module_Array_Type;
 
 typedef struct {
 	CON_ATOM_HEAD
@@ -198,6 +198,14 @@ Con_Obj *_Con_Module_Array_Array_new(Con_Obj *thread)
 		array_atom->type = _CON_MODULES_ARRAY_TYPE_INT64;
 		array_atom->entry_size = sizeof(int64_t);
 	}
+	else if (CON_C_STRING_EQ("f", type)) {
+#		if SIZEOF_CON_FLOAT == SIZEOF_DOUBLE
+		array_atom->type = _CON_MODULES_ARRAY_TYPE_DOUBLE;
+		array_atom->entry_size = sizeof(double);
+#		else
+		CON_XXX;
+#		endif
+	}
 	else
 		CON_XXX;
 
@@ -284,6 +292,13 @@ Con_Obj *_Con_Module_Array_Array_append_func(Con_Obj *thread)
 		CON_MUTEX_LOCK(&self->mutex);
 		Con_Memory_make_array_room(thread, (void **) &array_atom->entries, &self->mutex, &array_atom->num_entries_allocated, &array_atom->num_entries, 1, array_atom->entry_size);
 		((int64_t *) array_atom->entries)[array_atom->num_entries++] = val;
+		CON_MUTEX_UNLOCK(&self->mutex);
+	}
+	else if (array_atom->type == _CON_MODULES_ARRAY_TYPE_DOUBLE) {
+		double val = Con_Numbers_Number_to_Con_Float(thread, o);
+		CON_MUTEX_LOCK(&self->mutex);
+		Con_Memory_make_array_room(thread, (void **) &array_atom->entries, &self->mutex, &array_atom->num_entries_allocated, &array_atom->num_entries, 1, array_atom->entry_size);
+		((double *) array_atom->entries)[array_atom->num_entries++] = val;
 		CON_MUTEX_UNLOCK(&self->mutex);
 	}
 	else
@@ -522,6 +537,11 @@ Con_Obj *_Con_Module_Array_Array_iterate_func(Con_Obj *thread)
 #			else
 			CON_XXX;
 #			endif
+			CON_MUTEX_UNLOCK(&self->mutex);
+			entry = CON_NEW_INT(val);
+		}
+		else if (array_atom->type == _CON_MODULES_ARRAY_TYPE_DOUBLE) {
+			double val = ((double *) array_atom->entries)[i];
 			CON_MUTEX_UNLOCK(&self->mutex);
 			entry = CON_NEW_INT(val);
 		}

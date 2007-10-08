@@ -9,8 +9,10 @@ Array objects are created by calling the following function on the <code>Array</
 <argument name="d" type="String">null</argument>
 Creates an array of the type specified by <code>type</code>:
 <table>
+<tr><td><code>f</code></td><td>Array of floats (size determined by architecture / OS).</td></tr>
 <tr><td><code>i</code></td><td>Array of integers (size determined by architecture / OS).</td></tr>
 <tr><td><code>i32</code></td><td>Array of 32-bit integers.</td></tr>
+<tr><td><code>i64</code></td><td>Array of 64-bit integers.</td></tr>
 </table>
 If <code>d</code> is not <code>null</code>, it is taken to be a string representing the underlying data and which is added to the array via <ref name="Array#extend_from_string" />.
 </function>

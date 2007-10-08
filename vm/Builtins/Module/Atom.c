@@ -326,6 +326,9 @@ Con_Obj *Con_Builtins_Module_Atom_pc_to_src_locations(Con_Obj *thread, Con_PC pc
 			case CON_INSTR_MODULE_LOOKUP:
 				current_pc += Con_Arch_align(thread, CON_INSTR_DECODE_MODULE_LOOKUP_START(instruction) + CON_INSTR_DECODE_MODULE_LOOKUP_SIZE(instruction));
 				break;
+			case CON_INSTR_FLOAT:
+				current_pc += sizeof(Con_Int) + sizeof(Con_Float);
+				break;
 			case CON_INSTR_VAR_LOOKUP:
 			case CON_INSTR_VAR_ASSIGN:
 			case CON_INSTR_INT:

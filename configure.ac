@@ -203,6 +203,11 @@ case $ac_cv_sizeof_CON_INT in
 	* ) AC_MSG_ERROR([Unknown word size "$ac_cv_sizeof_CON_INT"]);;
 esac
 
+AH_TEMPLATE(CON_FLOAT, [The appropriate type for a double word float on your machine.])
+AC_DEFINE(CON_FLOAT, double)
+AC_CHECK_SIZEOF(double)
+AC_CHECK_SIZEOF(CON_FLOAT)
+
 AC_MSG_CHECKING([for architecture specific memmove])
 # XXX Since Darwin's as doesn't seem to like the included memmove.o, we simply avoid compiling it.
 # If anyone knows how to fix it (or whether this is worth fixing, please shout).

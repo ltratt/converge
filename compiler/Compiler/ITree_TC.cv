@@ -25,7 +25,7 @@ import Compiler_Vars, ITree
 
 
 
-_EXPRS := [ITree::IClass_Defn, ITree::IFunc_Defn, ITree::IIf, ITree::INDIf, ITree::IVar, ITree::IImport, ITree::IWhile, ITree::IFor, ITree::ITry, ITree::IInt, ITree::IString, ITree::ISlot_Lookup, ITree::IModule_Lookup, ITree::IList, ITree::IDict, ITree::ISet, ITree::IApplication, ITree::IGet, ITree::ISlice, ITree::IEXBI, ITree::IReturn, ITree::IYield, ITree::IRaise, ITree::IAssert, ITree::IBreak, ITree::IContinue, ITree::IConjunction, ITree::IAlternation, ITree::IAssignment, ITree::INot, ITree::IBinary, ITree::IComparison, ITree::IInsert, ITree::IStandard_Quasi_Quotes, ITree::IMod_Id_Import]
+_EXPRS := [ITree::IClass_Defn, ITree::IFunc_Defn, ITree::IIf, ITree::INDIf, ITree::IVar, ITree::IImport, ITree::IWhile, ITree::IFor, ITree::ITry, ITree::IInt, ITree::IFloat, ITree::IString, ITree::ISlot_Lookup, ITree::IModule_Lookup, ITree::IList, ITree::IDict, ITree::ISet, ITree::IApplication, ITree::IGet, ITree::ISlice, ITree::IEXBI, ITree::IReturn, ITree::IYield, ITree::IRaise, ITree::IAssert, ITree::IBreak, ITree::IContinue, ITree::IConjunction, ITree::IAlternation, ITree::IAssignment, ITree::INot, ITree::IBinary, ITree::IComparison, ITree::IInsert, ITree::IStandard_Quasi_Quotes, ITree::IMod_Id_Import]
 
 
 
@@ -220,6 +220,13 @@ class ITree_TC:
 
 		if not Builtins::Int.instantiated(node.val):
 			self._type_error(node, "value", node.val, "Int")
+
+
+
+	func _t_ifloat(self, node):
+
+		if not Builtins::Float.instantiated(node.val):
+			self._type_error(node, "value", node.val, "Float")
 
 
 

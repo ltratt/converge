@@ -455,6 +455,27 @@ class IInt:
 
 
 
+class IFloat:
+
+	func init(self, val, src_infos):
+
+		self.val := val
+		self.src_infos := src_infos
+
+		self.bound_vars := Set{}
+		self.import_vars := Set{}
+		self.qq_bound_vars := Set{}
+		self.free_vars := Set{}
+
+
+
+	func extended_src_infos(self, extra_src_infos):
+	
+		return IFloat.new(self.val, self.src_infos + extra_src_infos)
+
+
+
+
 class IString:
 
 	func init(self, string, src_infos):

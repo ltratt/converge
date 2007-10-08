@@ -95,7 +95,7 @@
 //
 
 typedef CON_INT Con_Int;
-typedef double Con_Float;
+typedef CON_FLOAT Con_Float;
 
 typedef unsigned long Con_Hash;
 

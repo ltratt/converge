@@ -107,6 +107,7 @@ INSTR_FUNC_DEFN := 15              // bits 0-7 := 15, bits 8-15 := is_bound, bit
 INSTR_RETURN := 16                 // bits 0-7 := 16
 INSTR_BRANCH := 17                 // bits 0-7 := 17, bits 8-30 := pc offset, bit 31 := offset sign
 INSTR_YIELD := 18                  // bits 0-7 := 18
+INSTR_FLOAT := 19                  // bits 0-7 := 19, bits 32-96 := float number
 INSTR_IMPORT := 20                 // bits 0-7 := 20, bits 8-31 := module name
 INSTR_DICT := 21                   // bits 0-7 := 21, bits 8-31 := number of dictionary elements
 INSTR_DUP := 22                    // bits 0-7 := 22
@@ -417,6 +418,35 @@ class Instr_Yield(Instruction):
 	func to_bytecode(self):
 	
 		return b_8(INSTR_YIELD)
+
+
+
+
+class Instr_Float(Instruction):
+
+	func init(self, src_infos, val):
+	
+		self.src_infos := src_infos
+		self.val := val
+
+
+
+	func bytecode_len_bytes(self):
+	
+		return 2 * WORDSIZE
+
+
+
+	func to_bytecode(self):
+	
+		float_ar := Array::Array.new("f")
+		float_ar.append(self.val)
+		
+		ar := Array::Array.new("i32")
+		ar.append(INSTR_FLOAT)
+		ar.extend_from_string(float_ar.serialize())
+		
+		return ar
 
 
 
@@ -999,6 +1029,7 @@ class Target:
 	Instr_Lookup_Var := Instr_Lookup_Var
 	Instr_Assign_Var := Instr_Assign_Var
 	Instr_Int := Instr_Int
+	Instr_Float := Instr_Float
 	Instr_Add_Failure_Frame := Instr_Add_Failure_Frame
 	Instr_Add_Fail_Up_Frame := Instr_Add_Fail_Up_Frame
 	Instr_Remove_Failure_Frame := Instr_Remove_Failure_Frame

@@ -462,6 +462,12 @@ class QQ_Mode:
 
 
 
+	func _t_ifloat(self, node):
+
+		return self._qq("IFloat", [node], node.src_infos)
+
+
+
 	func _t_ivar(self, node):
 
 		return self._process_lookup_var(node.var_name, node.src_infos)

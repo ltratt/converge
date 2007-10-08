@@ -146,7 +146,7 @@
 		abort(); \
 	}
 
-#	define CON_PRINTLN(...) CON_APPLY(CON_GET_MODULE_DEF(CON_BUILTIN(CON_BUILTIN_SYS_MODULE), "println"), ## __VA_ARGS__, NULL)
+#	define CON_PRINTLN(...) CON_APPLY(CON_GET_MOD_DEFN(CON_BUILTIN(CON_BUILTIN_SYS_MODULE), "println"), ## __VA_ARGS__, NULL)
 #else
 #	error "Unsupported compiler"
 #endif

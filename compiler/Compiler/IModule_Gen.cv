@@ -658,7 +658,7 @@ class IModule_Gen:
 			if imports.len() == 1:
 				return imports[0]
 			else:
-				return ITree::IConjunction.new(imports, extra_src_infos + node[1].src_infos)
+				return ITree::IConjunction.new(imports, extra_src_infos + node[1][1].src_infos)
 		else:
 			return self._preorder(node[1], extra_src_infos)
 

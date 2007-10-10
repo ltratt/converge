@@ -66,6 +66,7 @@ Con_Obj *Con_Module_POSIX_File_import(Con_Obj *, Con_Obj *);
 void _Con_Modules_POSIX_File_Module_File_Atom_gc_clean_up(Con_Obj *, Con_Obj *, Con_Atom *);
 
 void _Con_Modules_POSIX_File_Module_error(Con_Obj *, Con_Obj *, int);
+void _Con_Modules_POSIX_File_Module_error_no_path(Con_Obj *, int);
 
 Con_Obj *Con_Module_POSIX_File_Module_init(Con_Obj *thread, Con_Obj *);
 Con_Obj *Con_Module_POSIX_File_Module_import(Con_Obj *thread, Con_Obj *);
@@ -137,7 +138,6 @@ void _Con_Modules_POSIX_File_Module_File_Atom_gc_clean_up(Con_Obj *thread, Con_O
 		// as there's nothing sensible we can do with such errors during garbage collection.
 		
 		fclose(file_atom->file);
-		file_atom->file = NULL;
 	}
 }
 
@@ -153,6 +153,15 @@ void _Con_Modules_POSIX_File_Module_error(Con_Obj *thread, Con_Obj *path, int er
 	msg = CON_ADD(msg, CON_NEW_STRING(" '"));
 	msg = CON_ADD(msg, path);
 	msg = CON_ADD(msg, CON_NEW_STRING("'."));
+	CON_RAISE_EXCEPTION("File_Exception", msg);
+}
+
+
+
+void _Con_Modules_POSIX_File_Module_error_no_path(Con_Obj *thread, int errnum)
+{
+	Con_Obj *msg = Con_Builtins_Exception_Atom_strerror(thread, errnum);
+	msg = CON_ADD(msg, CON_NEW_STRING("."));
 	CON_RAISE_EXCEPTION("File_Exception", msg);
 }
 
@@ -214,17 +223,9 @@ Con_Obj *_Con_Modules_POSIX_File_Module_File_Class_close_func(Con_Obj *thread)
 	
 	Con_Modules_POSIX_File_Module_File_Atom *file_atom = CON_GET_ATOM(self_obj, file_atom_def);
 
-	if (file_atom->file == NULL)
-		CON_XXX;
+	if (fclose(file_atom->file) != 0)
+		_Con_Modules_POSIX_File_Module_error_no_path(thread, errno);
 	
-	int rtn = fclose(file_atom->file);
-	if (rtn != 0) {
-		Con_Obj *msg = CON_ADD(Con_Builtins_Exception_Atom_strerror(thread, errno), CON_NEW_STRING("."));
-		CON_RAISE_EXCEPTION("File_Exception", msg);
-	}
-	
-	file_atom->file = NULL;
-
 	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }
 
@@ -243,14 +244,8 @@ Con_Obj *_Con_Modules_POSIX_File_Module_File_Class_flush_func(Con_Obj *thread)
 
 	Con_Modules_POSIX_File_Module_File_Atom *file_atom = CON_GET_ATOM(self_obj, file_atom_def);
 
-	if (file_atom->file == NULL)
-		CON_XXX;
-
-	int rtn = fflush(file_atom->file);
-	if (rtn != 0) {
-		Con_Obj *msg = CON_ADD(Con_Builtins_Exception_Atom_strerror(thread, errno), CON_NEW_STRING("."));
-		CON_RAISE_EXCEPTION("File_Exception", msg);
-	}
+	if (fflush(file_atom->file) != 0)
+		_Con_Modules_POSIX_File_Module_error_no_path(thread, errno);
 
 	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }
@@ -276,8 +271,12 @@ Con_Obj *_Con_Modules_POSIX_File_Module_File_Class_read_func(Con_Obj *thread)
 		CON_XXX;
 	
 	size_t data_size;
-	if (requested_size_obj != NULL)
-		data_size = Con_Numbers_Number_to_Con_Int(thread, requested_size_obj);
+	if (requested_size_obj != NULL) {
+		Con_Int user_size = Con_Numbers_Number_to_Con_Int(thread, requested_size_obj);
+		if (user_size < 0)
+			CON_RAISE_EXCEPTION("File_Exception", CON_NEW_STRING("Can not read less than 0 bytes from file."));
+		data_size = user_size;
+	}
 	else
 		data_size = file_stat.st_size - ftell(file_atom->file);
 
@@ -344,7 +343,7 @@ Con_Obj *_Con_Modules_POSIX_File_Module_File_Class_write_func(Con_Obj *thread)
 		CON_XXX;
 
 	if (fwrite(s_string_atom->str, s_string_atom->size, 1, file_atom->file) < 1)
-		CON_XXX;
+		_Con_Modules_POSIX_File_Module_error_no_path(thread, errno);
 
 	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }
@@ -368,11 +367,9 @@ Con_Obj *_Con_Modules_POSIX_File_Module_File_Class_writeln_func(Con_Obj *thread)
 	if (s_string_atom->encoding != CON_STR_UTF_8)
 		CON_XXX;
 
-	if (fwrite(s_string_atom->str, s_string_atom->size, 1, file_atom->file) < 1)
-		CON_XXX;
-
-	if (fwrite("\n", 1, 1, file_atom->file) < 1)
-		CON_XXX;
+	if ((fwrite(s_string_atom->str, s_string_atom->size, 1, file_atom->file) < 1) ||
+		(fwrite("\n", 1, 1, file_atom->file) < 1))
+		_Con_Modules_POSIX_File_Module_error_no_path(thread, errno);
 
 	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }

@@ -180,7 +180,8 @@ class Compiler:
 						line += 1
 					col := src_offset - newlines[line - 1]
 				else:
-					mod := VM::import_module(src_info[0])
+					if not mod := VM::find_module(src_info[0]):
+						raise "XXX"
 					line, col := mod.src_offset_to_line_column(src_info[1])
 				
 				if src_infos.len() == 1 & other_files == 0:

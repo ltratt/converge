@@ -114,6 +114,7 @@ class ITree_TC:
 			field := node.fields[i]
 			if not (ITree::IAssignment.instantiated(field) | ITree::IFunc_Defn.instantiated(field) | ITree::IClass_Defn.instantiated(field)):
 				self._type_error(node, Strings::format("fields[%d]", i), field, "[IAssignment, IFunc_Defn, IClass_Defn]")
+			self._preorder(field)
 
 
 	
@@ -131,6 +132,11 @@ class ITree_TC:
 			param := node.params[i]
 			if not (ITree::IParam.instantiated(param) | ITree::IInsert.instantiated(param)):
 				self._type_error(node, Strings::format("param[%d]", i), param, "[IParam, IInsert]")
+			if ITree::IParam.instantiated(param):
+				if not ITree::IVar.instantiated(param.var):
+					self._type_error(node, Strings::format("param[%d].var", i), param, "[IVar]")
+				if not param.default is null:
+					self._check_expr(node, Strings::format("param[%d].default", i), param.default)
 			
 		if not node.var_arg is null:
 			if not ITree::IVar.instantiated(node.var_arg):
@@ -154,9 +160,12 @@ class ITree_TC:
 
 	func _t_iif(self, node):
 
-		for clause := node.clauses.iterate():
+		for i := 0.to(node.clauses.len()):
+			clause := node.clauses[i]
 			if not ITree::IClause.instantiated(clause):
 				self._type_error(node, "clause", clause, "IClause")
+			self._check_expr(node, Strings::format("clause[%d].condition", i), clause.condition)
+			self._check_expr_block(node, Strings::format("clause[%d].body", i), clause.body)
 		
 		if not node.else_body is null:
 			self._check_expr_block(node, "else body", node.else_body)
@@ -165,9 +174,12 @@ class ITree_TC:
 
 	func _t_indif(self, node):
 
-		for clause := node.clauses.iterate():
+		for i := 0.to(node.clauses.len()):
+			clause := node.clauses[i]
 			if not ITree::IClause.instantiated(clause):
 				self._type_error(node, "clause", clause, "IClause")
+			self._check_expr(node, Strings::format("clause[%d].condition", i), clause.condition)
+			self._check_expr_block(node, Strings::format("clause[%d].body", i), clause.body)
 
 
 
@@ -387,10 +399,10 @@ class ITree_TC:
 		if not Builtins::List.conformed_by(node.targets):
 			self._type_error(node, "targets", node.exprs, "List")
 		for target := node.targets.iterate():
-			if ITree::IVar.instantiated(target) | ITree::IGet.instantiated(target) | ITree::ISlot_Lookup.instantiated(target) | ITree::IInsert.instantiated(target):
+			if ITree::IVar.instantiated(target) | ITree::IGet.instantiated(target) | ITree::ISlot_Lookup.instantiated(target) | ITree::IInsert.instantiated(target) | ITree::ISlice.instantiated(target):
 				self._preorder(target)
 			else:
-				self._type_error(node, "target", target, "[IVar, IGet, ISlot_Lookup]")
+				self._type_error(node, "target", target, "[IVar, IGet, ISlot_Lookup, ISlice]")
 		
 		self._check_expr(node, "expr", node.expr)
 

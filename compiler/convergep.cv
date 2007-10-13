@@ -40,7 +40,7 @@ class Parser_Compiler:
 
 		parse_tree := CV_Parser::CV_Parser.new().parse(grammar, rule_names, tokens_map, self.tokenizer.tokens)
 
-		Compiler_Vars::pop_compiler(self)
+		Compiler_Vars::pop_compiler()
 		
 		Sys::println(Tree::pp_tree(parse_tree))
 

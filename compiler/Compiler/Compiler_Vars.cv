@@ -138,3 +138,50 @@ func find_std_includes():
 		peek_compiler().error("Can't find Compiler package.")
 
 	return includes
+
+
+
+func get_std_libraries():
+
+	libraries := []
+
+	// In order to make a good stab at finding libconverge.cvl we check in order:
+	//
+	//   ../lib/converge-<version>
+	//   ../lib/converge
+	//   ../lib
+	//
+	// where ".." is relative to the directory convergec was contained in.
+
+	bin_dir := File::split_leaf(Sys::program_path)[0]
+	cnd_dirs := [File::join_names(bin_dir, "..", "lib", "converge-" + Sys::version), \
+	  File::join_names(bin_dir, "..", "lib", "converge"), \
+	  File::join_names(bin_dir, "..", "lib")]
+	for cnd_dir := cnd_dirs.iterate():
+		cnd_path := File::join_names(cnd_dir, "libconverge.cvl")
+		if File::exists(cnd_path):
+			libraries.append(File::canon_path(cnd_path))
+			break
+	exhausted:
+		peek_compiler().error("Can't find libconverge.cvl.")
+
+	// In order to make a good stab at finding libconverge.cvl we check in order:
+	//
+	//   ../lib/converge-<version>/Compiler
+	//   ../lib/converge/Compiler
+	//   ../compiler/
+	//
+	// where ".." is relative to the directory convergec was contained in.
+
+	cnd_dirs := [File::join_names(bin_dir, "..", "lib", "converge-" + Sys::version, "Compiler"), \
+	  File::join_names(bin_dir, "..", "lib", "converge", "Compiler"), \
+	  File::join_names(bin_dir, "..", "compiler")]
+	for cnd_dir := cnd_dirs.iterate():
+		cnd_path := File::join_names(cnd_dir, "libcompiler.cvl")
+		if File::exists(cnd_path):
+			libraries.append(File::canon_path(cnd_path))
+			break
+	exhausted:
+		peek_compiler().error("Can't find libcompiler.cvl.")
+
+	return libraries

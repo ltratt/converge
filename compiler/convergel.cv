@@ -54,6 +54,9 @@ class Linker:
 			self.usage("Not enough arguments.")
 
 		target := self.target_name_to_target(target_name)
+		
+		input_paths := extra_args
+		input_paths.extend(Compiler_Vars::get_std_libraries())
 
 		modules := Dict{}
 		first_module_id := null

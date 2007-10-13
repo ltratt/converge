@@ -19,7 +19,7 @@ OBJECT_FILES = ${BASE_OBJECT_FILES} ${TARGET_OBJECT_FILES}
 
 all: libcompiler.cvl convergec convergei convergel convergep
 
-install:
+install: all
 	install -d ${bindir}
 	install -c -m 555 convergec ${bindir}
 	install -c -m 555 convergei ${bindir}
@@ -29,6 +29,7 @@ install:
 	install -d ${conlibdir}/Compiler/Targets
 	install -c -m 444 ${BASE_OBJECT_FILES} ${BASE_OBJECT_FILES:.cvb=.cv} ${conlibdir}/Compiler
 	install -c -m 444 ${TARGET_OBJECT_FILES} ${TARGET_OBJECT_FILES:.cvb=.cv} ${conlibdir}/Compiler/Targets
+	install -c -m 444 libcompiler.cvl ${conlibdir}/Compiler
 
 
 include @abs_top_srcdir@/Makefile.inc
@@ -51,16 +52,16 @@ libcompiler.cvl: ${OBJECT_FILES}
 	${CONVERGE_VM} ${CONVERGEL} -l -o libcompiler.cvl ${OBJECT_FILES}
 
 convergec: ${OBJECT_FILES} ${CONVERGE_LIB}
-	${CONVERGE_VM} ${CONVERGEL} -s -o convergec convergec.cvb ${OBJECT_FILES} ${CONVERGE_LIB}
+	${CONVERGE_VM} ${CONVERGEL} -s -o convergec convergec.cvb ${OBJECT_FILES}
 
 convergei: ${OBJECT_FILES} ${CONVERGE_LIB}
-	${CONVERGE_VM} ${CONVERGEL} -s -o convergei convergei.cvb ${OBJECT_FILES} ${CONVERGE_LIB}
+	${CONVERGE_VM} ${CONVERGEL} -s -o convergei convergei.cvb ${OBJECT_FILES}
 
 convergel: ${OBJECT_FILES} ${CONVERGE_LIB}
-	${CONVERGE_VM} ${CONVERGEL} -s -o convergel convergel.cvb ${OBJECT_FILES} ${CONVERGE_LIB}
+	${CONVERGE_VM} ${CONVERGEL} -s -o convergel convergel.cvb ${OBJECT_FILES}
 
 convergep: ${OBJECT_FILES} ${CONVERGE_LIB}
-	${CONVERGE_VM} ${CONVERGEL} -s -o convergep convergep.cvb ${OBJECT_FILES} ${CONVERGE_LIB}
+	${CONVERGE_VM} ${CONVERGEL} -s -o convergep convergep.cvb ${OBJECT_FILES}
 
 clean:
 	rm -f libcompiler.cvl ${OBJECT_FILES}

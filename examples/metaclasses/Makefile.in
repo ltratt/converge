@@ -1,8 +1,8 @@
 all: singleton
 
 
-singleton: singleton.cvb ${CONVERGE_LIB} ${CONVERGE_COMPILER_LIB}
-	${CONVERGE_VM} ${CONVERGEL} -o singleton singleton.cvb ${CONVERGE_LIB}
+singleton: singleton.cvb
+	${CONVERGE_VM} ${CONVERGEL} -o singleton singleton.cvb
 
 clean:
 	rm -f singleton singleton.cvb

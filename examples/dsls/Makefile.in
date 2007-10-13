@@ -1,7 +1,7 @@
 all: switch
 
 switch: switch.cvb
-	${CONVERGE_VM} ${CONVERGEL} -o switch switch.cvb ${CONVERGE_LIB} ${CONVERGE_COMPILER_LIB}
+	${CONVERGE_VM} ${CONVERGEL} -o switch switch.cvb
 
 clean:
 	rm -f switch switch.cvb

@@ -1,7 +1,7 @@
 all: printf
 
 printf: printf.cvb
-	${CONVERGE_VM} ${CONVERGEL} -o printf printf.cvb ${CONVERGE_LIB} ${CONVERGE_COMPILER_LIB}
+	${CONVERGE_VM} ${CONVERGEL} -o printf printf.cvb
 
 clean:
 	rm -f printf printf.cvb

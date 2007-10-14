@@ -433,7 +433,7 @@ class Instr_Float(Instruction):
 
 	func bytecode_len_bytes(self):
 	
-		return 2 * WORDSIZE
+		return 3 * WORDSIZE
 
 
 

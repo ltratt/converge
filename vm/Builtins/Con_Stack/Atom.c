@@ -1423,7 +1423,7 @@ void Con_Builtins_Con_Stack_Atom_unpack_args(Con_Obj *thread, Con_Obj *con_stack
 				args += 1;
 				break;
 			case 'R':
-				CONFORMS_TO(CON_BUILTIN_FLOAT_ATOM_DEF_OBJECT, CON_BUILTIN_CLASS_CLASS)
+				CONFORMS_TO(CON_BUILTIN_FLOAT_ATOM_DEF_OBJECT, CON_BUILTIN_FLOAT_CLASS)
 				args_processed += 1;
 				args += 1;
 				break;

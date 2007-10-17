@@ -458,7 +458,7 @@ Con_Obj *_Con_Module_Exception_Type_Exception_init_func(Con_Obj *thread)
 	}
 	else
 		msg = CON_ADD(msg, CON_NEW_STRING("to be conformant to "));
-	msg = CON_ADD(msg, CON_GET_SLOT_APPLY(should_be, "path", CON_BUILTIN(CON_BUILTIN_NULL_OBJ)));
+	msg = CON_ADD(msg, should_be);
 	msg = CON_ADD(msg, CON_NEW_STRING(" but got instance of "));
 	msg = CON_ADD(msg, CON_GET_SLOT_APPLY(CON_GET_SLOT(o, "instance_of"), "path", CON_BUILTIN(CON_BUILTIN_NULL_OBJ)));
 	msg = CON_ADD(msg, CON_NEW_STRING("."));

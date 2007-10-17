@@ -418,7 +418,7 @@ Con_Obj *_Con_Builtins_List_Class_eq_func(Con_Obj *thread)
 		}
 	}
 	else
-		CON_RAISE_EXCEPTION("Type_Exception", CON_BUILTIN(CON_BUILTIN_LIST_CLASS), o, CON_NEW_STRING("XXX"));
+		CON_RAISE_EXCEPTION("Type_Exception", CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_LIST_CLASS), "path"), o);
 	
 	if (equal)
 		return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);

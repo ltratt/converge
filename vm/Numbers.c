@@ -57,7 +57,7 @@ Con_Int Con_Numbers_Number_to_Con_Int(Con_Obj *thread, Con_Obj *number)
 		atom = atom->next_atom;
 	}
 
-	CON_RAISE_EXCEPTION("Type_Exception", CON_BUILTIN(CON_BUILTIN_NUMBER_CLASS), number, CON_NEW_STRING("number"));
+	CON_RAISE_EXCEPTION("Type_Exception", CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_NUMBER_CLASS), "path"), number);
 }
 
 
@@ -80,7 +80,7 @@ Con_Float Con_Numbers_Number_to_Con_Float(Con_Obj *thread, Con_Obj *number)
 		atom = atom->next_atom;
 	}
 
-	CON_RAISE_EXCEPTION("Type_Exception", CON_BUILTIN(CON_BUILTIN_NUMBER_CLASS), number, CON_NEW_STRING("number"));
+	CON_RAISE_EXCEPTION("Type_Exception", CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_NUMBER_CLASS), "path"), number);
 }
 
 
@@ -104,7 +104,7 @@ int Con_Numbers_Number_to_c_Int(Con_Obj *thread, Con_Obj *number)
 		atom = atom->next_atom;
 	}
 
-	CON_RAISE_EXCEPTION("Type_Exception", CON_BUILTIN(CON_BUILTIN_NUMBER_CLASS), number, CON_NEW_STRING("number"));
+	CON_RAISE_EXCEPTION("Type_Exception", CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_NUMBER_CLASS), "path"), number);
 }
 
 

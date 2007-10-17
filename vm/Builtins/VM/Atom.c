@@ -779,7 +779,7 @@ void Con_Builtins_VM_Atom_raise(Con_Obj *thread, Con_Obj *exception)
 	// exception then the call chain is still intact.
 	
 	if (CON_FIND_ATOM(exception, CON_BUILTIN(CON_BUILTIN_EXCEPTION_ATOM_DEF_OBJECT)) == NULL)
-		CON_RAISE_EXCEPTION("Type_Exception", CON_BUILTIN(CON_BUILTIN_EXCEPTION_CLASS), exception, CON_NEW_STRING("exception"));
+		CON_RAISE_EXCEPTION("Type_Exception", CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_EXCEPTION_CLASS), "path"), exception);
 
 	// We populate call_chain by reverse iterating over the con stack, gradually removing
 	// continuations. However we don't set 'exception's call chain until we've finished populating

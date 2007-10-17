@@ -99,7 +99,7 @@ Con_Obj *_Con_Module_C_Strings_join_func(Con_Obj *thread)
 			break;
 		Con_Builtins_String_Atom *val_string_atom = CON_FIND_ATOM(val, CON_BUILTIN(CON_BUILTIN_STRING_ATOM_DEF_OBJECT));
 		if (val_string_atom == NULL)
-			CON_RAISE_EXCEPTION("Type_Exception", CON_BUILTIN(CON_BUILTIN_STRING_CLASS), val, CON_NEW_STRING("member of list"));
+			CON_RAISE_EXCEPTION("Type_Exception", CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_STRING_CLASS), "path"), val, CON_NEW_STRING("member of list"));
 
 		Con_Int extra_size_needed;
 		if (i == 0)

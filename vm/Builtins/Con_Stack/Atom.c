@@ -1345,7 +1345,7 @@ void Con_Builtins_Con_Stack_Atom_unpack_args(Con_Obj *thread, Con_Obj *con_stack
 
 #		define CONFORMS_TO(atom, class) if (CON_FIND_ATOM(obj, CON_BUILTIN(atom)) == NULL) {\
 			Con_Obj *msg = CON_ADD(CON_NEW_STRING("arg "), CON_GET_SLOT_APPLY(CON_NEW_INT(args_processed + 1), "to_str")); \
-			CON_RAISE_EXCEPTION("Type_Exception", CON_BUILTIN(class), obj, msg); \
+			CON_RAISE_EXCEPTION("Type_Exception", CON_GET_SLOT_APPLY(CON_BUILTIN(class), "path"), obj, msg); \
 		}
 
 		char arg = *args;
@@ -1367,7 +1367,7 @@ void Con_Builtins_Con_Stack_Atom_unpack_args(Con_Obj *thread, Con_Obj *con_stack
 			case 'N':
 				if (!(CON_FIND_ATOM(obj, CON_BUILTIN(CON_BUILTIN_INT_ATOM_DEF_OBJECT)) != NULL || CON_FIND_ATOM(obj, CON_BUILTIN(CON_BUILTIN_FLOAT_ATOM_DEF_OBJECT)))) {
 					Con_Obj *msg = CON_ADD(CON_NEW_STRING("arg "), CON_GET_SLOT_APPLY(CON_NEW_INT(args_processed + 1), "to_str"));
-					CON_RAISE_EXCEPTION("Type_Exception", CON_BUILTIN(CON_BUILTIN_NUMBER_CLASS), obj, msg);
+					CON_RAISE_EXCEPTION("Type_Exception", CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_NUMBER_CLASS), "path"), obj, msg);
 				}
 				args_processed += 1;
 				args += 1;

@@ -42,11 +42,11 @@ PRINTF_STRING := 1
 //
 //   func (p0, p1, p2):
 //       if not p0.conforms_to(String):
-//           raise Exceptions::Type_Exception(String, p0.instance_of, "Parameter 1")
+//           raise Exceptions::Type_Exception(String.path(), p0.instance_of, "Parameter 1")
 //       if not p1.conforms_to(Int):
-//           raise Exceptions::Type_Exception(Int, p0.instance_of, "Parameter 2")
+//           raise Exceptions::Type_Exception(Int.path(), p0.instance_of, "Parameter 2")
 //       if not p2.conforms_to(String):
-//           raise Exceptions::Type_Exception(String, p0.instance_of, "Parameter 3")
+//           raise Exceptions::Type_Exception(String.path(), p0.instance_of, "Parameter 3")
 //       return p0 + p1.to_str() + p2
 //
 // so that the following expression:
@@ -116,13 +116,13 @@ func printf(format):
 				if part == PRINTF_INT:
 					body.append([|
 						if not Builtins::Int.conformed_by(${param_var}):
-							raise Exceptions::Type_Exception.new(Builtins::Int, ${param_var}, ${CEI::lift("parameter " + parameter_num.to_str())})
+							raise Exceptions::Type_Exception.new(Builtins::Int.path(), ${param_var}, ${CEI::lift("parameter " + parameter_num.to_str())})
 					|])
 					expr_part := [| ${param_var}.to_str() |]
 				elif part == PRINTF_STRING:
 					body.append([|
 						if not Builtins::String.conformed_by(${param_var}):
-							raise Exceptions::Type_Exception.new(Builtins::String, ${param_var}, ${CEI::lift("parameter " + parameter_num.to_str())})
+							raise Exceptions::Type_Exception.new(Builtins::String.path(), ${param_var}, ${CEI::lift("parameter " + parameter_num.to_str())})
 					|])
 					expr_part := [| ${param_var} |]
 				parameter_num += 1

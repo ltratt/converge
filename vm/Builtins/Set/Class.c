@@ -368,7 +368,7 @@ Con_Obj *_Con_Builtins_Set_Class_complement_func(Con_Obj *thread)
 		return new_set;
 	}
 
-	CON_RAISE_EXCEPTION("Type_Exception", CON_BUILTIN(CON_BUILTIN_SET_CLASS), o_obj, CON_NEW_STRING("XXX"));
+	CON_RAISE_EXCEPTION("Type_Exception", CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_SET_CLASS), "path"), o_obj);
 }
 
 
@@ -498,7 +498,7 @@ Con_Obj *_Con_Builtins_Set_Class_intersect_func(Con_Obj *thread)
 		return new_set;
 	}
 
-	CON_RAISE_EXCEPTION("Type_Exception", CON_BUILTIN(CON_BUILTIN_SET_CLASS), o_obj, CON_NEW_STRING("XXX"));
+	CON_RAISE_EXCEPTION("Type_Exception", CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_SET_CLASS), "path"), o_obj);
 }
 
 

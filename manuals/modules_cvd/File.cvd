@@ -54,11 +54,6 @@ These functions should be used to ensure that file name manipulation is done in 
 Returns the fully canonicalized version of <code>path</code>. The exact effects are platform dependent.
 </function>
 
-<function name="dir_entries">
-<argument name="path" type="String" />
-Returns a list of leaf names for all entries in the directory <code>path</code>.
-</function>
-
 <function name="exists">
 <argument name="path" type="String" />
 Succeeds if <code>path</code> exists.
@@ -67,6 +62,11 @@ Succeeds if <code>path</code> exists.
 <function name="is_dir">
 <argument name="path" type="String" />
 Succeeds if <code>path</code> is a directory. Notice that mere failure - as opposed to an exception being generated - does not necessarily imply that <code>path</code> exists but is not a directory [this behaviour is platform dependent].
+</function>
+
+<function name="iter_dir_entries">
+<argument name="dir_path" type="String" />
+Successively generates each leaf names in the directory <code>dir_path</code>.
 </function>
 
 <function name="join_names">

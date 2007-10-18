@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <dirent.h>
 
 #ifndef CON_HAVE_NATIVE_FGETLN
 #	include "Platform/fgetln.h"
@@ -84,6 +85,7 @@ Con_Obj *_Con_Module_POSIX_File_canon_path_func(Con_Obj *);
 Con_Obj *_Con_Module_POSIX_File_exists_func(Con_Obj *);
 Con_Obj *_Con_Module_POSIX_File_is_dir_func(Con_Obj *);
 Con_Obj *_Con_Module_POSIX_File_is_file_func(Con_Obj *);
+Con_Obj *_Con_Module_POSIX_File_iter_dir_entries_func(Con_Obj *);
 
 
 
@@ -120,6 +122,7 @@ Con_Obj *Con_Module_POSIX_File_import(Con_Obj *thread, Con_Obj *posix_file_mod)
 	CON_SET_MOD_DEFN(posix_file_mod, "exists", CON_NEW_UNBOUND_C_FUNC(_Con_Module_POSIX_File_exists_func, "exists", posix_file_mod));
 	CON_SET_MOD_DEFN(posix_file_mod, "is_dir", CON_NEW_UNBOUND_C_FUNC(_Con_Module_POSIX_File_is_dir_func, "is_dir", posix_file_mod));
 	CON_SET_MOD_DEFN(posix_file_mod, "is_file", CON_NEW_UNBOUND_C_FUNC(_Con_Module_POSIX_File_is_file_func, "is_file", posix_file_mod));
+	CON_SET_MOD_DEFN(posix_file_mod, "iter_dir_entries", CON_NEW_UNBOUND_C_FUNC(_Con_Module_POSIX_File_iter_dir_entries_func, "iter_dir_entries", posix_file_mod));
 	
 	return posix_file_mod;
 }
@@ -189,17 +192,19 @@ Con_Obj *_Con_Module_POSIX_File_File_new_func(Con_Obj *thread)
 	while (atom != NULL) {
 		if (atom->atom_type == CON_BUILTIN(CON_BUILTIN_INT_ATOM_DEF_OBJECT) || atom->atom_type == CON_BUILTIN(CON_BUILTIN_STRING_ATOM_DEF_OBJECT))
 			break;
+		atom = atom->next_atom;
 	}
 	if (atom == NULL)
-		CON_XXX;
+		CON_RAISE_EXCEPTION("Type_Exception", CON_NEW_STRING("[String, Int]"), path_obj, CON_NEW_STRING("path"));
 	
 	if (atom->atom_type == CON_BUILTIN(CON_BUILTIN_INT_ATOM_DEF_OBJECT)) {
 		if ((file_atom->file = fdopen(Con_Numbers_Number_to_c_Int(thread, path_obj), Con_Builtins_String_Atom_to_c_string(thread, mode_obj))) == NULL)
 			CON_XXX;
 	}
 	else {
-		if ((file_atom->file = fopen(Con_Builtins_String_Atom_to_c_string(thread, path_obj), Con_Builtins_String_Atom_to_c_string(thread, mode_obj))) == NULL)
+		if ((file_atom->file = fopen(Con_Builtins_String_Atom_to_c_string(thread, path_obj), Con_Builtins_String_Atom_to_c_string(thread, mode_obj))) == NULL) {
 			_Con_Module_POSIX_File_error(thread, path_obj, errno);
+		}
 	}
 	
 	Con_Builtins_Slots_Atom_Def_init_atom(thread, slots_atom);
@@ -474,4 +479,45 @@ Con_Obj *_Con_Module_POSIX_File_is_file_func(Con_Obj *thread)
 		return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 	else
 		return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
+}
+
+
+
+//
+// Successively generates each leaf name in 'dir_path'.
+//
+
+Con_Obj *_Con_Module_POSIX_File_iter_dir_entries_func(Con_Obj *thread)
+{
+	Con_Obj *dir_path;
+	CON_UNPACK_ARGS("S", &dir_path);
+	
+	DIR *dir = opendir(Con_Builtins_String_Atom_to_c_string(thread, dir_path));
+	if (dir == NULL)
+		_Con_Module_POSIX_File_error(thread, dir_path, errno);
+	
+	while (1) {
+		errno = 0;
+		struct dirent *de = readdir(dir);
+		if (de == NULL) {
+			if (errno == 0)
+				break;
+			else
+				_Con_Module_POSIX_File_error(thread, dir_path, errno);
+		}
+
+#		ifdef CON_PLATFORM_POSIX
+		// We strip out the "." and ".." entries if they appear, as they are a portability headache
+		// waiting to happen.
+
+		if (strcmp(de->d_name, ".") == 0 || strcmp(de->d_name, "..") == 0)
+			continue;
+#		endif
+
+		CON_YIELD(Con_Builtins_String_Atom_new_copy(thread, de->d_name, strlen(de->d_name), CON_STR_UTF_8));
+	}
+
+	closedir(dir);
+
+	return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);	
 }

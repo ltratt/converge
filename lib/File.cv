@@ -47,27 +47,10 @@ func open(path, mode):
 // Examining / testing file properties
 //
 
-func dir_entries(path):
-
-	return POSIX_File::dir_entries(path)
-
-
-
-func exists(path):
-
-	return POSIX_File::exists(path)
-
-
-
-func is_dir(path):
-
-	return POSIX_File::is_dir(path)
-
-
-
-func is_file(path):
-
-	return POSIX_File::is_file(path)
+iter_dir_entries := POSIX_File::iter_dir_entries
+exists := POSIX_File::exists
+is_dir := POSIX_File::is_dir
+is_file := POSIX_File::is_file
 
 
 
@@ -75,9 +58,7 @@ func is_file(path):
 // Temporary files
 //
 
-func temp_name():
-
-	return POSIX_File::temp_name()
+//temp_name := POSIX_File::temp_name
 
 
 
@@ -138,9 +119,7 @@ func join_ext(path, ext):
 
 
 
-func canon_path(path):
-
-	return POSIX_File::canon_path(path)
+canon_path := POSIX_File::canon_path
 
 
 

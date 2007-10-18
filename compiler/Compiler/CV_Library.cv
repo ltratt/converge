@@ -59,7 +59,7 @@ class CV_Library:
 			to := module_offset + library[module_offset + self._target.MODULE_BYTECODE_SIZE] / self._target.WORDSIZE
 			module.deserialize_array(library[module_offset : to])
 			self.modules.append(module)
-			modules_and_str.append([module_str[module_offset * self._target.WORDSIZE : to * self._target.WORDSIZE], module])
+			modules_and_str.append([module, module_str[module_offset * self._target.WORDSIZE : to * self._target.WORDSIZE]])
 		
 		return modules_and_str
 

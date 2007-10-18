@@ -71,12 +71,12 @@ class Linker:
 				if first_module_id is null:
 					raise "XXX"
 				library := CV_Library::CV_Library.new(target)
-				for module_str, module := library.deserialize(input_file_data).iterate():
-					modules[module.get_identifier()] := [module_str, module]
+				for module, module_str := library.deserialize(input_file_data).iterate():
+					modules[module.get_identifier()] := [module, module_str]
 			elif file_type == CV_Module::MODULE_INIT_STRING:
 				module := CV_Module::CV_Module.new(target)
 				module.deserialize_str(input_file_data)
-				modules[module.get_identifier()] := [input_file_data, module]
+				modules[module.get_identifier()] := [module, input_file_data]
 				if first_module_id is null:
 					first_module_id := module.get_identifier()
 			else:
@@ -106,7 +106,7 @@ class Linker:
 		while i < modules_stack.len():
 			module_id := modules_stack[i]
 			modules_offsets.append(modules_bytecode.len_bytes())
-			module_str, module := modules[module_id]
+			module, module_str := modules[module_id]
 			modules_bytecode.extend_from_string(module_str)
 			linked_modules.append(module)
 
@@ -121,11 +121,11 @@ class Linker:
 				j := 1
 				while j < defn_names.len():
 					defn_name := defn_names[j]
-					if lookedup_mod := modules.find(lookedup_mod_id)[1]:
+					if lookedup_mod := modules.find(lookedup_mod_id)[0]:
 						if not (defn_num := lookedup_mod.get_top_level_vars_map().find(defn_name)):
 							// The requested definition definitely doesn't exist in the looked-up
 							// module, so raise an error.
-							self.error(Strings::format("Can't find definition '%s' in '%s'.", defn_name, Strings::join(defn_names[ : j], "::")), self._tn_src_infos(src_infos, modules[module_id][1]))
+							self.error(Strings::format("Can't find definition '%s' in '%s'.", defn_name, Strings::join(defn_names[ : j], "::")), self._tn_src_infos(src_infos, modules[module_id][0]))
 
 						if lookedup_mod_num := lookedup_mod.get_import_defns().find(defn_num):
 							lookedup_mod_id := lookedup_mod.get_imports()[lookedup_mod_num]
@@ -136,7 +136,7 @@ class Linker:
 								// a warning, and give up further processing of this lookup,
 								// but do not halt the linking process.
 								msg := Strings::format("Unable to trace definition '%s' in '%s'.", defn_names[j + 1], Strings::join(defn_names[ : j + 1], "::"))
-								self.warning(msg, self._tn_src_infos(src_infos, modules[module_id][1]))
+								self.warning(msg, self._tn_src_infos(src_infos, modules[module_id][0]))
 								break
 					else:
 						if Compiler_Vars::BUILTIN_MODULES.find(lookedup_mod_id):
@@ -224,7 +224,7 @@ class Linker:
 			
 			if file_type == CV_Library::LIBRARY_INIT_STRING:
 				library := CV_Library::CV_Library.new(target)
-				for module_str, module := library.deserialize(input_file_data).iterate():
+				for module, module_str := library.deserialize(input_file_data).iterate():
 					modules.append(module_str)
 			elif file_type == CV_Module::MODULE_INIT_STRING:
 				modules.append(input_file_data)
@@ -278,7 +278,7 @@ class Linker:
 		if not src_infos is null:
 			Sys::stderr.writeln(Strings::format("%s:", pre_msg))
 			for src_info := src_infos.iterate():
-				mod := Builtins::Module.new(self.modules[src_info[0]][1].serialize())
+				mod := Builtins::Module.new(self.modules[src_info[0]][0].serialize())
 				line, col := mod.src_offset_to_line_column(src_info[1])
 				
 				Sys::stderr.writeln(Strings::format("  %s, line %d, column %d", src_info[0], line, col))

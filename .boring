@@ -62,4 +62,4 @@ bootstrap/convergel.bootstrap$
 bootstrap/id_fix.bootstrap$
 manuals/cvd_to_html
 manuals/modules_html/.*.html
-vm/Builtin_Modules.c
+vm/Std_Modules.[ch]$

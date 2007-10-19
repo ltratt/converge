@@ -290,18 +290,29 @@ AC_SUBST(MODULES, [`echo $mod_paths | sed "s/vm\///g"`])
 
 externs=""
 modules_list=""
+mod_ids=""
 i=0
 for mod_name in $sorted_mod_names; do
 	if [[ $i -gt 0 ]]; then
 		modules_list="$modules_list, "
 	fi
-	externs="${externs} extern _Con_Modules_get_init_t Con_Module_${mod_name}_init; extern _Con_Modules_get_import_t Con_Module_${mod_name}_import;"
+	externs=`printf "%s\\n%s\\n%s" "$externs" "extern _Con_Modules_get_init_t Con_Module_${mod_name}_init;" "extern _Con_Modules_get_import_t Con_Module_${mod_name}_import;"`
 	modules_list="$modules_list{ \"$mod_name\", Con_Module_${mod_name}_init, Con_Module_${mod_name}_import }"
+	cap_mod_name=`echo $mod_name | sed "y/abcdefghijklmnopqrstuvwxyz/ABCDEFGHIJKLMNOPQRSTUVWXYZ/"`
+	mod_ids=`printf "%s\\n#define CON_MOD_ID_%s %s\\n" "$mod_ids" "$cap_mod_name" "$mod_name"`
 	i=$(($i + 1))
 done
 AC_SUBST(MODULES_LIST, $modules_list)
 
-cat << EOF > vm/Builtin_Modules.c
+cd lib
+for lib_path in `find . | grep cv$ | sed "s/^\\.\\///"`; do
+	mod_name=`echo $lib_path | sed "s/\\//_/g" | sed "s/\\.cv$//" | sed "y/abcdefghijklmnopqrstuvwxyz/ABCDEFGHIJKLMNOPQRSTUVWXYZ/"`
+	mod_id=`readlink -f $lib_path`
+	mod_ids=`printf "%s\\n#define CON_MOD_ID_%s \"%s\"\\n" "$mod_ids" "$mod_name" "$mod_id"`
+done
+cd ..
+
+cat << EOF > vm/Std_Modules.c
 // This file is auto-generated.
 //
 // Any changes you make are likely to be lost.
@@ -315,6 +326,19 @@ $externs
 
 Con_Modules_Spec Con_Builtin_Modules[[]] = {$modules_list, { NULL, NULL, NULL }};
 
+EOF
+
+cat << EOF > vm/Std_Modules.h
+// This file is auto-generated.
+//
+// Any changes you make are likely to be lost.
+
+#ifndef CON_STD_MODULES_H
+#define CON_STD_MODULES_H
+
+$mod_ids
+
+#endif
 EOF
 
 

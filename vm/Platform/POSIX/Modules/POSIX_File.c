@@ -228,9 +228,14 @@ Con_Obj *_Con_Module_POSIX_File_File_Class_close_func(Con_Obj *thread)
 	CON_UNPACK_ARGS("U", file_atom_def, &self_obj);
 	
 	_Con_Module_POSIX_File_Atom *file_atom = CON_GET_ATOM(self_obj, file_atom_def);
+	
+	if (file_atom->file == NULL)
+		CON_RAISE_EXCEPTION("File_Exception", CON_NEW_STRING("File previously closed."));
 
 	if (fclose(file_atom->file) != 0)
 		_Con_Module_POSIX_File_error_no_path(thread, errno);
+	
+	file_atom->file = NULL;
 	
 	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }
@@ -249,6 +254,9 @@ Con_Obj *_Con_Module_POSIX_File_File_Class_flush_func(Con_Obj *thread)
 	CON_UNPACK_ARGS("U", file_atom_def, &self_obj);
 
 	_Con_Module_POSIX_File_Atom *file_atom = CON_GET_ATOM(self_obj, file_atom_def);
+
+	if (file_atom->file == NULL)
+		CON_RAISE_EXCEPTION("File_Exception", CON_NEW_STRING("File previously closed."));
 
 	if (fflush(file_atom->file) != 0)
 		_Con_Module_POSIX_File_error_no_path(thread, errno);
@@ -271,6 +279,9 @@ Con_Obj *_Con_Module_POSIX_File_File_Class_read_func(Con_Obj *thread)
 	CON_UNPACK_ARGS("U;N", file_atom_def, &self_obj, &requested_size_obj);
 	
 	_Con_Module_POSIX_File_Atom *file_atom = CON_GET_ATOM(self_obj, file_atom_def);
+
+	if (file_atom->file == NULL)
+		CON_RAISE_EXCEPTION("File_Exception", CON_NEW_STRING("File previously closed."));
 
 	struct stat file_stat;
 	if (fstat(fileno(file_atom->file), &file_stat) == -1)
@@ -311,6 +322,9 @@ Con_Obj *_Con_Module_POSIX_File_File_Class_readln_func(Con_Obj *thread)
 	
 	_Con_Module_POSIX_File_Atom *file_atom = CON_GET_ATOM(self_obj, file_atom_def);
 
+	if (file_atom->file == NULL)
+		CON_RAISE_EXCEPTION("File_Exception", CON_NEW_STRING("File previously closed."));
+
 	while (1) {
 		size_t len;
 		char *line = fgetln(file_atom->file, &len);
@@ -344,6 +358,9 @@ Con_Obj *_Con_Module_POSIX_File_File_Class_write_func(Con_Obj *thread)
 	
 	_Con_Module_POSIX_File_Atom *file_atom = CON_GET_ATOM(self_obj, file_atom_def);
 
+	if (file_atom->file == NULL)
+		CON_RAISE_EXCEPTION("File_Exception", CON_NEW_STRING("File previously closed."));
+
 	Con_Builtins_String_Atom *s_string_atom = CON_FIND_ATOM(s_obj, CON_BUILTIN(CON_BUILTIN_STRING_ATOM_DEF_OBJECT));
 	if (s_string_atom->encoding != CON_STR_UTF_8)
 		CON_XXX;
@@ -368,6 +385,9 @@ Con_Obj *_Con_Module_POSIX_File_File_Class_writeln_func(Con_Obj *thread)
 	CON_UNPACK_ARGS("US", file_atom_def, &self_obj, &s_obj);
 	
 	_Con_Module_POSIX_File_Atom *file_atom = CON_GET_ATOM(self_obj, file_atom_def);
+
+	if (file_atom->file == NULL)
+		CON_RAISE_EXCEPTION("File_Exception", CON_NEW_STRING("File previously closed."));
 
 	Con_Builtins_String_Atom *s_string_atom = CON_FIND_ATOM(s_obj, CON_BUILTIN(CON_BUILTIN_STRING_ATOM_DEF_OBJECT));
 	if (s_string_atom->encoding != CON_STR_UTF_8)

@@ -175,7 +175,7 @@ class Compiler:
 			lib_file := File::open(lib_path, "r")
 			lib_data := lib_file.read()
 			lib_file.close()
-			for cv_mod, mod_ser := lib.deserialize(lib_data).iterate():
+			for cv_mod := lib.deserialize(lib_data).iterate():
 				lib_mods.append(cv_mod)
 				mod_ids.add(cv_mod.get_identifier())
 

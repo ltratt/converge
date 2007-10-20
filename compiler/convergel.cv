@@ -20,7 +20,7 @@
 
 
 import Array, Builtins, File, Maths, Parse_Options, Platform::Properties, Strings, Sys, VM
-import Compiler::Compiler_Vars, Compiler::CV_Exec, Compiler::CV_Module, Compiler::CV_Library, Compiler::Mk_Packages, Compiler::Targets::Available
+import Compiler::Compiler_Vars, Compiler::CV_Exec, Compiler::CV_Module, Compiler::CV_Library, Compiler::Link, Compiler::Mk_Packages, Compiler::Targets::Available
 
 
 
@@ -58,8 +58,7 @@ class Linker:
 		input_paths := extra_args
 		input_paths.extend(Compiler_Vars::get_std_libraries())
 
-		modules := Dict{}
-		first_module_id := null
+		cv_mods := []
 		for input_path := extra_args.iterate():
 			input_path := File::canon_path(input_path)
 			input_file := File::open(input_path, "r")
@@ -68,123 +67,21 @@ class Linker:
 			file_type := input_file_data[ : CV_Library::LIBRARY_INIT_STRING.len()]
 			
 			if file_type == CV_Library::LIBRARY_INIT_STRING:
-				if first_module_id is null:
-					raise "XXX"
 				library := CV_Library::CV_Library.new(target)
-				for module, module_str := library.deserialize(input_file_data).iterate():
-					modules[module.get_identifier()] := [module, module_str]
+				for cv_mod := library.deserialize(input_file_data).iterate():
+					cv_mods.append(cv_mod)
 			elif file_type == CV_Module::MODULE_INIT_STRING:
-				module := CV_Module::CV_Module.new(target)
-				module.deserialize_str(input_file_data)
-				modules[module.get_identifier()] := [module, input_file_data]
-				if first_module_id is null:
-					first_module_id := module.get_identifier()
+				cv_mod := CV_Module::CV_Module.new(target)
+				cv_mod.deserialize_str(input_file_data)
+				cv_mods.append(cv_mod)
 			else:
 				self.error(Strings::format("File '%s' is not of a known type.", input_path))
 
-		self.modules := modules
-
-		linked_bytecode := Array::Array.new(target.ARRAY_TYPE)
-		linked_bytecode.extend_from_string(CV_Exec::EXEC_INIT_STRING)
-		linked_bytecode.append(0)  // Version
-		linked_bytecode.append(-1) // Number of modules
-		
-		// Using the first module on the command line as a "seed", we now go through and try and
-		// pluck out all the imports that it refers to (directly and indirectly through other
-		// modules).
-		//
-		// This happens in two phases. First we try and find "normal" modules. Then we construct
-		// any packages required. Then we check to see if we're missing any files that would need
-		// to be imported.
-		
-		modules_stack := [first_module_id]
-		assert(modules.find(modules_stack[0]))
-		modules_offsets := []
-		linked_modules := []
-		modules_bytecode := Array::Array.new(target.ARRAY_TYPE)
-		i := 0
-		while i < modules_stack.len():
-			module_id := modules_stack[i]
-			modules_offsets.append(modules_bytecode.len_bytes())
-			module, module_str := modules[module_id]
-			modules_bytecode.extend_from_string(module_str)
-			linked_modules.append(module)
-
-			for import_module_id := module.get_imports().iterate():
-				if not Compiler_Vars::BUILTIN_MODULES.find(import_module_id):
-					if not modules_stack.find(import_module_id):
-						if modules.find(import_module_id):
-							modules_stack.append(import_module_id)
-
-			for mod_num, defn_names, src_infos := module.get_mod_lookups().iterate():
-				lookedup_mod_id := module.get_imports()[mod_num]
-				j := 1
-				while j < defn_names.len():
-					defn_name := defn_names[j]
-					if lookedup_mod := modules.find(lookedup_mod_id)[0]:
-						if not (defn_num := lookedup_mod.get_top_level_vars_map().find(defn_name)):
-							// The requested definition definitely doesn't exist in the looked-up
-							// module, so raise an error.
-							self.error(Strings::format("Can't find definition '%s' in '%s'.", defn_name, Strings::join(defn_names[ : j], "::")), self._tn_src_infos(src_infos, modules[module_id][0]))
-
-						if lookedup_mod_num := lookedup_mod.get_import_defns().find(defn_num):
-							lookedup_mod_id := lookedup_mod.get_imports()[lookedup_mod_num]
-						else:
-							if j + 1 < defn_names.len():
-								// We can't trace the next definition in the current known
-								// module; it might exist at run-time, it might not. Print
-								// a warning, and give up further processing of this lookup,
-								// but do not halt the linking process.
-								msg := Strings::format("Unable to trace definition '%s' in '%s'.", defn_names[j + 1], Strings::join(defn_names[ : j + 1], "::"))
-								self.warning(msg, self._tn_src_infos(src_infos, modules[module_id][0]))
-								break
-					else:
-						if Compiler_Vars::BUILTIN_MODULES.find(lookedup_mod_id):
-							pass
-						elif not lookedup_mod_id.suffixed_by(Compiler_Vars::CV_EXTENSION):
-							// This must be an imported package. At this point in linking,
-							// packages don't exist. So we try and look up a sub-package or
-							// sub-module which has a correct identifier.
-							cnd_mod_id := File::join_names(lookedup_mod_id, defn_name)
-							if modules.find(cnd_mod_id):
-								lookedup_mod_id := cnd_mod_id
-							else:
-								cnd_mod_id := File::join_ext(cnd_mod_id, Compiler_Vars::CV_EXTENSION)
-								if modules.find(cnd_mod_id):
-									modules_stack.append(cnd_mod_id)
-									lookedup_mod_id := cnd_mod_id
-					j += 1
-
-			i += 1
-
-		pkgs := Mk_Packages::mk_packages(linked_modules, target)
-		for pkg := pkgs.iterate():
-			linked_modules.append(pkg)
-			modules_offsets.append(modules_bytecode.len_bytes())
-			modules_bytecode.extend_from_string(pkg.serialize())
-
-		module_ids := Set{}
-		for module := linked_modules.iterate():
-			module_ids.add(module.get_identifier())
-		
-		for module := linked_modules.iterate():
-			for import_ := module.get_imports().iterate():
-				if not Compiler_Vars::BUILTIN_MODULES.find(import_) & not module_ids.find(import_):
-					self.error(Strings::format("Module '%s' referenced in '%s' not found in input files.", import_, module_id))
-
-		linked_bytecode[target.LIBRARY_BYTECODE_NUM_MODULES] := modules_offsets.len()
-		
-		preamble_length := (linked_bytecode.len() + modules_offsets.len()) * target.WORDSIZE
-		for module_offset := modules_offsets.iterate():
-			linked_bytecode.append(preamble_length + module_offset)
-
-		linked_bytecode.extend(modules_bytecode)
+		ser_cv_exec := Link::link_exec(cv_mods, self, target)
 
 		output_file := File::File.new(output_path, "w")
-		if mk_shell_script == 1:
-			sh_header := "#! /usr/bin/env converge\n"
-			output_file.write(sh_header + "\n" * (target.align(sh_header.len()) - sh_header.len()))
-		output_file.write(linked_bytecode.serialize())
+		output_file.write(ser_cv_exec)
+		output_file.close()
 
 
 
@@ -224,8 +121,8 @@ class Linker:
 			
 			if file_type == CV_Library::LIBRARY_INIT_STRING:
 				library := CV_Library::CV_Library.new(target)
-				for module, module_str := library.deserialize(input_file_data).iterate():
-					modules.append(module_str)
+				for cv_mod := library.deserialize(input_file_data).iterate():
+					modules.append(cv_mod.serialize())
 			elif file_type == CV_Module::MODULE_INIT_STRING:
 				modules.append(input_file_data)
 

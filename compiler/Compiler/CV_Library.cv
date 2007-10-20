@@ -47,21 +47,19 @@ class CV_Library:
 
 
 
-	func deserialize(self, module_str):
+	func deserialize(self, mod_str):
 	
-		library := Array::Array.new(self._target.ARRAY_TYPE, module_str)
+		library := Array::Array.new(self._target.ARRAY_TYPE, mod_str)
 	
 		self.modules := []
-		modules_and_str := []
 		for i := 0.to(library[self._target.LIBRARY_BYTECODE_NUM_MODULES]):
-			module := CV_Module::CV_Module.new(self._target)
-			module_offset := library[self._target.LIBRARY_BYTECODE_MODULE_OFFSETS + i] / self._target.WORDSIZE
-			to := module_offset + library[module_offset + self._target.MODULE_BYTECODE_SIZE] / self._target.WORDSIZE
-			module.deserialize_array(library[module_offset : to])
-			self.modules.append(module)
-			modules_and_str.append([module, module_str[module_offset * self._target.WORDSIZE : to * self._target.WORDSIZE]])
+			cv_mod := CV_Module::CV_Module.new(self._target)
+			mod_offset := library[self._target.LIBRARY_BYTECODE_MODULE_OFFSETS + i] / self._target.WORDSIZE
+			to := mod_offset + library[mod_offset + self._target.MODULE_BYTECODE_SIZE] / self._target.WORDSIZE
+			cv_mod.deserialize_str(mod_str[mod_offset * self._target.WORDSIZE : to * self._target.WORDSIZE])
+			self.modules.append(cv_mod)
 		
-		return modules_and_str
+		return self.modules
 
 
 

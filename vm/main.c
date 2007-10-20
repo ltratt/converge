@@ -174,6 +174,13 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 	else
 		prog_path = argv[1];
 	
+	char *canon_prog_path = malloc(PATH_MAX);
+	if (realpath(prog_path, canon_prog_path) == NULL) {
+		// If we can't canonicalise the programs path name, we fall back on the "raw" path and cross
+		// our fingers.
+		strcpy(canon_prog_path, prog_path);
+	}
+	
 	struct stat con_binary_file_stat;
 	if (stat(prog_path, &con_binary_file_stat) == -1) {
 		err(1, ": trying to stat '%s'", prog_path);
@@ -185,7 +192,7 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 		exit(1);
 	}
 
-	Con_Obj *thread = Con_Bootstrap_do(root_stack_start, argc, argv, vm_path, prog_path);
+	Con_Obj *thread = Con_Bootstrap_do(root_stack_start, argc, argv, vm_path, canon_prog_path);
 	if (thread == NULL) {
 		fprintf(stderr, "%s: error when trying to initialize virtual machine.\n", __progname);
 		exit(1);

@@ -19,7 +19,7 @@
 // IN THE SOFTWARE.
 
 
-import POSIX_File, Strings, Sys
+import POSIX_File, Strings, Sys, Time
 
 
 
@@ -51,6 +51,7 @@ iter_dir_entries := POSIX_File::iter_dir_entries
 exists := POSIX_File::exists
 is_dir := POSIX_File::is_dir
 is_file := POSIX_File::is_file
+mtime := POSIX_File::mtime
 
 
 

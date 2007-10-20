@@ -35,9 +35,11 @@
 #endif
 
 #include "Core.h"
+#include "Modules.h"
 #include "Numbers.h"
 #include "Object.h"
 #include "Shortcuts.h"
+#include "Std_Modules.h"
 
 #include "Builtins/Atom_Def_Atom.h"
 #include "Builtins/Class/Atom.h"
@@ -86,6 +88,7 @@ Con_Obj *_Con_Module_POSIX_File_exists_func(Con_Obj *);
 Con_Obj *_Con_Module_POSIX_File_is_dir_func(Con_Obj *);
 Con_Obj *_Con_Module_POSIX_File_is_file_func(Con_Obj *);
 Con_Obj *_Con_Module_POSIX_File_iter_dir_entries_func(Con_Obj *);
+Con_Obj *_Con_Module_POSIX_File_mtime_func(Con_Obj *);
 
 
 
@@ -123,6 +126,7 @@ Con_Obj *Con_Module_POSIX_File_import(Con_Obj *thread, Con_Obj *posix_file_mod)
 	CON_SET_MOD_DEFN(posix_file_mod, "is_dir", CON_NEW_UNBOUND_C_FUNC(_Con_Module_POSIX_File_is_dir_func, "is_dir", posix_file_mod));
 	CON_SET_MOD_DEFN(posix_file_mod, "is_file", CON_NEW_UNBOUND_C_FUNC(_Con_Module_POSIX_File_is_file_func, "is_file", posix_file_mod));
 	CON_SET_MOD_DEFN(posix_file_mod, "iter_dir_entries", CON_NEW_UNBOUND_C_FUNC(_Con_Module_POSIX_File_iter_dir_entries_func, "iter_dir_entries", posix_file_mod));
+	CON_SET_MOD_DEFN(posix_file_mod, "mtime", CON_NEW_UNBOUND_C_FUNC(_Con_Module_POSIX_File_mtime_func, "mtime", posix_file_mod));
 	
 	return posix_file_mod;
 }
@@ -540,4 +544,29 @@ Con_Obj *_Con_Module_POSIX_File_iter_dir_entries_func(Con_Obj *thread)
 	closedir(dir);
 
 	return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);	
+}
+
+
+
+//
+// Successively generates each leaf name in 'dir_path'.
+//
+
+Con_Obj *_Con_Module_POSIX_File_mtime_func(Con_Obj *thread)
+{
+	Con_Obj *path;
+	CON_UNPACK_ARGS("S", &path);
+	
+	struct stat sb;
+	
+	int rtn;
+	if ((rtn = stat(Con_Builtins_String_Atom_to_c_string(thread, path), &sb)) != 0)
+		_Con_Module_POSIX_File_error(thread, path, errno);
+	
+	Con_Obj *time_mod = Con_Modules_import(thread, Con_Modules_get(thread, CON_NEW_STRING(CON_MOD_ID_TIME)));
+	
+	Con_Obj *sec = CON_NEW_INT(sb.st_mtimespec.tv_sec);
+	Con_Obj *nsec = CON_NEW_INT(sb.st_mtimespec.tv_nsec);
+	
+	return CON_APPLY(CON_GET_MOD_DEFN(time_mod, "mk_timespec"), sec, nsec);
 }

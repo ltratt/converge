@@ -232,7 +232,7 @@ class Instr_Int(Instruction):
 		else:
 			int_val := self.val
 		if int_val.and(0x000000FF.lsl(24)) != 0:
-			raise Exceptions::Exception("Unable to squeeze int into 24 bits")
+			raise Exceptions::Exception.new("Unable to squeeze int into 24 bits")
 		else:
 			return b_8_s24(INSTR_INT, int_val)
 

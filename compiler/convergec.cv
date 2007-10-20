@@ -19,8 +19,8 @@
 // IN THE SOFTWARE.
 
 
-import File, Parse_Options, Platform::Properties, Strings, Sys, VM
-import Compiler::Bytecode_Gen, Compiler::Compiler_Vars, Compiler::CV_Module, Compiler::CV_Parser, Compiler::IModule_Gen, Compiler::Targets, Compiler::Tokenizer
+import Builtins, File, Parse_Options, Platform::Properties, Strings, Sys, VM
+import Compiler::Bytecode_Gen, Compiler::Compiler_Vars, Compiler::CV_Library, Compiler::CV_Module, Compiler::CV_Parser, Compiler::IModule_Gen, Compiler::Link, Compiler::Targets, Compiler::Tokenizer
 
 
 
@@ -29,16 +29,22 @@ class Compiler:
 
 	func compile(self):
 	
-		self.includes := []
+		start_includes := []
 	
 		options := Parse_Options::Options.new(self._usage_callback)
-		options.add(Parse_Options::Option_Spec.new("output", "o", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ONE))
-		options.add(Parse_Options::Option_Spec.new("bootstrap", "b", Parse_Options::NONE, Parse_Options::FREQUENCY_ZERO_OR_ONE))
+		options.add(Parse_Options::Option_Spec.new("output", "o", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_ONE))
+		options.add(Parse_Options::Option_Spec.new("bootstrap", "b", Parse_Options::NONE, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_ONE))
 		options.add(Parse_Options::Option_Spec.new("includes", "I", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_MORE))
+		options.add(Parse_Options::Option_Spec.new("make", "m", Parse_Options::NONE, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_ONE))
 		options.add(Parse_Options::Option_Spec.new("optimise", "O", Parse_Options::NONE))
 		options.add(Parse_Options::Option_Spec.new("target", "T", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_ONE))
+		options.add(Parse_Options::Option_Spec.new("verbose", "v", Parse_Options::NONE, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_MORE))
 		
 		self.bootstrap := 0
+		self.make_mode := 0
+		self.output_path := null
+		self.start_includes := []
+		self.verbosity := 0
 		target_name := Strings::format("%dbit", Properties::word_bits)
 		internal_target_name := Strings::format("%dbit", Properties::word_bits)
 		parsed, extra := options.parse()
@@ -48,14 +54,27 @@ class Compiler:
 			elif option_name == "bootstrap":
 				self.bootstrap := 1
 			elif option_name == "includes":
-				self.includes := option_val
+				self.start_includes.extend(option_val)
+			elif option_name == "make":
+				self.make_mode := 1
 			elif option_name == "target":
 				target_name := option_val
-		
+			elif option_name == "verbose":
+				self.verbosity += 1
+
 		if extra.len() == 0:
 			self._usage_callback("Not enough arguments.")
 		elif extra.len() > 1:
 			self._usage_callback("Too many arguments.")
+
+		if self.output_path is null:
+			if self.make_mode == 1:
+				main, ext := File::split_ext(extra[0])
+				if ext != Compiler_Vars::CV_EXTENSION:
+					self._usage_callback(Strings::format("-o can not be left out if input file does not end in '.%s'.", Compiler_Vars::CV_EXTENSION))
+				self.output_path := File::join_ext(main, Compiler_Vars::CVB_EXTENSION)
+			else:
+				self._usage_callback("-o option must be specified.")
 
 		self.target := self._target_name_to_target(target_name)
 		self.internal_target := self._target_name_to_target(internal_target_name)
@@ -93,10 +112,24 @@ class Compiler:
 				// Sanity checks failed.
 				raise "XXX"
 
-		if not File::exists(extra[0]):
-			self.error(Strings::format("Source file '%s' not found.", extra[0]))
+		if self.make_mode == 1:
+			self._make(extra[0])
+		else:
+			cv_module := self._compile_path(extra[0])
+			output_file := File::File.new(self.output_path, "w")
+			output_file.write(cv_module.serialize())
+			output_file.close()
 
-		self.module_id := File::canon_path(extra[0])
+
+
+	func _compile_path(self, src_path):
+
+		self.includes := self.start_includes
+
+		if not File::exists(src_path):
+			self.error(Strings::format("Source file '%s' not found.", src_path))
+
+		self.module_id := File::canon_path(src_path)
 
 		if (input_file_dir := File::split_leaf(self.module_id)[0]) == "":
 			self.includes.insert(0, ".")
@@ -106,32 +139,93 @@ class Compiler:
 		// For the moment, we assume the compiled module name is simply the leaf name (minus its
 		// extension). On platforms with non-case preserving filesystems, perhaps there is a need
 		// for a more sophisticated mechanism?
-		
+
 		self.src_module_name := File::split_ext(File::split_leaf(self.module_id)[1])[0]
-		
+
 		self.includes.extend(Compiler_Vars::find_std_includes())
-		
+
 		src_file := File::open(self.module_id, "r")
 		src_data := src_file.read()
 		src_file.close()
-		
+
 		self.tokenizer := Tokenizer::Tokenizer.new()
 		parse_tree := CV_Parser::parse(src_data)
 		self.newlines := self.tokenizer.newlines
-		
+
 		imodule := IModule_Gen::IModule_Gen.new().generate(parse_tree)
-		bytecode := Bytecode_Gen::Bytecode_Gen.new().generate(imodule, self.target).serialize()
 		
-		output_file := File::File.new(self.output_path, "w")
-		output_file.write(bytecode)
+		return Bytecode_Gen::Bytecode_Gen.new().generate(imodule, self.target)
+
+
+
+	func _make(self, src_path):
+
+		if File::exists(self.output_path):
+			if File::mtime(self.output_path) < File::mtime(src_path):
+				update := 1
+			else:
+				update := 0
+		else:
+			update := 1
+
+		lib_mods := [] // CV_Module instances.
+		mod_ids := Set{} // All module ids already dealt with.
+		for lib_path := Compiler_Vars::get_std_libraries().iterate():
+			lib := CV_Library::CV_Library.new(self.target)
+			lib_file := File::open(lib_path, "r")
+			lib_data := lib_file.read()
+			lib_file.close()
+			for cv_mod, mod_ser := lib.deserialize(lib_data).iterate():
+				lib_mods.append(cv_mod)
+				mod_ids.add(cv_mod.get_identifier())
+
+		src_paths := [src_path]
+		mods := []
+		while src_paths.len() > 0:
+			src_path := src_paths[0]
+			src_paths.del(0)
+			
+			if not (cv_mod := self._read_cache_cvb(src_path)):
+				if self.verbosity > 0:
+					self.info(Strings::format("Compiling %s", src_path))
+				cv_mod := self._compile_path(src_path)
+				self._write_cache_cvb(src_path, cv_mod.serialize())
+				update := 1
+
+			mods.append(cv_mod)
+			
+			for mod_id := cv_mod.get_imports().iterate():
+				if Compiler_Vars::BUILTIN_MODULES.find(mod_id) | mod_ids.find(mod_id):
+					continue
+				
+				if not File::exists(mod_id):
+					self.error(Strings::format("Source file '%s' not found.", src_path))
+				
+				if File::is_dir(mod_id):
+					// This must be a package.
+					src_paths.extend(self._locate_cv_files(mod_id))
+				else:
+					src_paths.append(mod_id)
 		
+		mods.extend(lib_mods)
+	
+		if update == 1:
+			if self.verbosity > 0:
+				self.info("Linking.")
+			self.module_id := mods[0].get_identifier()
+			ser_cv_exec := Linker.new().link(mods, self.target)
+
+			output_file := File::File.new(self.output_path, "w")
+			output_file.write(ser_cv_exec)
+			output_file.close()
+
 
 
 	func _usage_callback(self, msg):
 	
 		if not msg is null:
 			Sys::stderr.writeln(Strings::format("Error: %s", msg))
-		Sys::stderr.writeln("Usage: convergec [-I <include> [-I <include> ...]] [-O] [-T <target bit size>] -o <output> <input>")
+		Sys::stderr.writeln("Usage: convergec [-bm] [-I <include> [-I <include> ...]] [-O] [-T <target bit size>] -o <output> <input>")
 		if not msg is null:
 			Sys::exit(1)
 
@@ -147,6 +241,12 @@ class Compiler:
 	func warning(self, msg, src_infos := null):
 	
 		self._print_msg("Warning", msg, src_infos)
+
+
+
+	func info(self, msg):
+	
+		Sys::stderr.writeln(Strings::format("===> %s", msg))
 	
 	
 	
@@ -241,6 +341,117 @@ class Compiler:
 			self.error(Strings::format("No support yet for target '%s'.", target_name))
 
 		return Targets::Available::TARGETS[target_name].new()
+
+
+
+	//
+	// Attempt to read the bytecode file matching 'src_path' if it exists. If nothing can be read,
+	// this method fails.
+	//
+
+	func _read_cache_cvb(self, src_path):
+
+		name, ext := File::split_ext(src_path)
+		if ext == Compiler_Vars::CV_EXTENSION:
+			cvb_path := File::join_ext(name, Compiler_Vars::CVB_EXTENSION)
+			if File::exists(cvb_path) & File::mtime(cvb_path) > File::mtime(src_path):
+				cvb_file := File::open(cvb_path, "r")
+				cvb_data := cvb_file.read()
+				cvb_file.close()
+				if cvb_data.prefixed_by(CV_Module::MODULE_INIT_STRING):
+					mod := CV_Module::CV_Module.new(self.target)
+					mod.deserialize_str(cvb_data)
+					return mod
+		
+		return fail
+
+
+
+	//
+	// Attempt to write the bytecode 'bc' to the correct cached location for the src file 'src_path'.
+	// This fails silently if it is unable to do so.
+	//
+
+	func _write_cache_cvb(self, src_path, bc):
+
+		name, ext := File::split_ext(src_path)
+		if ext == Compiler_Vars::CV_EXTENSION:
+			cvb_path := File::join_ext(name, Compiler_Vars::CVB_EXTENSION)
+			can_write := 1
+			if File::exists(cvb_path):
+				cvb_file := File::open(cvb_path, "r")
+				if cvb_file.read(CV_Module::MODULE_INIT_STRING.len()) != CV_Module::MODULE_INIT_STRING:
+					can_write := 0
+				cvb_file.close()
+
+			if can_write == 1:
+				cvb_file := File::open(cvb_path, "w")
+				cvb_file.write(bc)
+				cvb_file.close()
+
+
+
+	func _locate_cv_files(self, path):
+	
+		cv_files := []
+		for leaf := File::iter_dir_entries(path):
+			entry_path := File::join_names(path, leaf)
+			if File::is_file(entry_path) & File::split_ext(leaf)[1] == Compiler_Vars::CV_EXTENSION:
+				cv_files.append(entry_path)
+			elif File::is_dir(entry_path):
+				cv_files.extend(self._locate_cv_files(entry_path))
+		
+		return cv_files
+
+
+
+
+//
+// This linker class is used when we're running in make mode only.
+//
+
+class Linker:
+
+	func link(self, mods, target):
+
+		self.mods := mods
+
+		return Link::link_exec(mods, self, target)
+
+
+
+	func error(self, msg, src_infos := null):
+
+		self.print_msg("Error", msg, src_infos)
+		Sys::exit(1)
+
+
+
+	func warning(self, msg, src_infos := null):
+
+		self.print_msg("Warning", msg, src_infos)
+
+
+
+	func print_msg(self, pre_msg, msg, src_infos := null):
+
+		if not src_infos is null:
+			Sys::stderr.writeln(Strings::format("%s:", pre_msg))
+			for src_info := src_infos.iterate():
+				for cv_mod := self.mods.iterate():
+					if cv_mod.get_identifier() == src_info[0]:
+						break
+				exhausted:
+					raise "XXX"
+				mod := Builtins::Module.new(cv_mod.serialize())
+				line, col := mod.src_offset_to_line_column(src_info[1])
+				
+				Sys::stderr.writeln(Strings::format("  %s, line %d, column %d", src_info[0], line, col))
+
+			Sys::stderr.writeln(msg)
+		else:
+			Sys::stderr.writeln(Strings::format("%s: %s", pre_msg, msg))
+
 
 
 

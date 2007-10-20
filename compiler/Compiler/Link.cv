@@ -1,0 +1,147 @@
+// Copyright (c) 2007 Laurence Tratt
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to
+// deal in the Software without restriction, including without limitation the
+// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+// sell copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+// IN THE SOFTWARE.
+
+
+import Array, File, Strings
+import Compiler_Vars, CV_Exec, Mk_Packages
+
+
+
+
+func link_exec(mods, linker, target):
+
+	mods_map := Dict{}
+	for mod := mods.iterate():
+		mods_map[mod.get_identifier()] := mod
+
+	linked_bytecode := Array::Array.new(target.ARRAY_TYPE)
+	linked_bytecode.extend_from_string(CV_Exec::EXEC_INIT_STRING)
+	linked_bytecode.append(0)  // Version
+	linked_bytecode.append(-1) // Number of modules
+
+	// Using the first module on the command line as a "seed", we now go through and try and
+	// pluck out all the imports that it refers to (directly and indirectly through other
+	// modules).
+	//
+	// This happens in two phases. First we try and find "normal" modules. Then we construct
+	// any packages required. Then we check to see if we're missing any files that would need
+	// to be imported.
+
+	todo := [mods[0].get_identifier()] // List of module IDs
+	done_ids := Set{} // Set of module IDs
+	done_mods := [] // List of CV_Module instances.
+	ser_mods_offsets := []
+	ser_mods := Array::Array.new(target.ARRAY_TYPE)
+	while todo.len() > 0:
+		mod_id := todo[0]
+		todo.del(0)
+		done_ids.add(mod_id)
+		ser_mods_offsets.append(ser_mods.len_bytes())
+		mod := mods_map[mod_id]
+		ser_mods.extend_from_string(mod.serialize())
+		done_mods.append(mod)
+
+		for imp_mod_id := mod.get_imports().iterate():
+			if not Compiler_Vars::BUILTIN_MODULES.find(imp_mod_id):
+				if not (done_ids.find(imp_mod_id) | todo.find(imp_mod_id)):
+					if mods_map.find(imp_mod_id):
+						todo.append(imp_mod_id)
+
+		for mod_num, defn_names, src_infos := mod.get_mod_lookups().iterate():
+			lookedup_mod_id := mod.get_imports()[mod_num]
+			j := 1
+			while j < defn_names.len():
+				defn_name := defn_names[j]
+				if lookedup_mod := mods_map.find(lookedup_mod_id):
+					if not (defn_num := lookedup_mod.get_top_level_vars_map().find(defn_name)):
+						// The requested definition definitely doesn't exist in the looked-up
+						// module, so raise an error.
+						linker.error(Strings::format("Can't find definition '%s' in '%s'.", defn_name, Strings::join(defn_names[ : j], "::")), _tn_src_infos(src_infos, mods_map[mod_id]))
+
+					if lookedup_mod_num := lookedup_mod.get_import_defns().find(defn_num):
+						lookedup_mod_id := lookedup_mod.get_imports()[lookedup_mod_num]
+					else:
+						if j + 1 < defn_names.len():
+							// We can't trace the next definition in the current known
+							// module; it might exist at run-time, it might not. Print
+							// a warning, and give up further processing of this lookup,
+							// but do not halt the linking process.
+							msg := Strings::format("Unable to trace definition '%s' in '%s'.", defn_names[j + 1], Strings::join(defn_names[ : j + 1], "::"))
+							linker.warning(msg, _tn_src_infos(src_infos, mods_map[mod_id]))
+							break
+				else:
+					if Compiler_Vars::BUILTIN_MODULES.find(lookedup_mod_id):
+						pass
+					elif not lookedup_mod_id.suffixed_by(Compiler_Vars::CV_EXTENSION):
+						// This must be an imported package. At this point in linking,
+						// packages don't exist. So we try and look up a sub-package or
+						// sub-module which has a correct identifier.
+						cnd_mod_id := File::join_names(lookedup_mod_id, defn_name)
+						if mods_map.find(cnd_mod_id):
+							lookedup_mod_id := cnd_mod_id
+						else:
+							cnd_mod_id := File::join_ext(cnd_mod_id, Compiler_Vars::CV_EXTENSION)
+							if mods_map.find(cnd_mod_id):
+								todo.append(cnd_mod_id)
+								lookedup_mod_id := cnd_mod_id
+				j += 1
+
+	pkgs := Mk_Packages::mk_packages(done_mods, target)
+	for pkg := pkgs.iterate():
+		done_mods.append(pkg)
+		done_ids.add(pkg.get_identifier())
+		ser_mods_offsets.append(ser_mods.len_bytes())
+		ser_mods.extend_from_string(pkg.serialize())
+
+	for mod := done_mods.iterate():
+		for import_ := mod.get_imports().iterate():
+			if not Compiler_Vars::BUILTIN_MODULES.find(import_) & not done_ids.find(import_):
+				linker.error(Strings::format("Module '%s' referenced in '%s' not found in input files.", import_, mod_id))
+
+	linked_bytecode[target.LIBRARY_BYTECODE_NUM_MODULES] := ser_mods_offsets.len()
+
+	preamble_length := (linked_bytecode.len() + ser_mods_offsets.len()) * target.WORDSIZE
+	for mod_offset := ser_mods_offsets.iterate():
+		linked_bytecode.append(preamble_length + mod_offset)
+
+	linked_bytecode.extend(ser_mods)
+	
+	sh_header := "#! /usr/bin/env converge\n"
+	ser := sh_header + "\n" * (target.align(sh_header.len()) - sh_header.len()) + linked_bytecode.serialize()
+	
+	return ser
+
+
+
+//
+// Translates lists of bytecode src infos of the form [<import num>, <offset>] to proper src
+// infos of the form [<module id>, <offset>].
+//
+
+func _tn_src_infos(src_infos, mod):
+
+	new_src_infos := []
+	for mod_num, offset := src_infos.iterate():
+		if mod_num == -1:
+			new_src_infos.append([mod.get_identifier(), offset])
+		else:
+			new_src_infos.append([mod.get_imports()[mod_num], offset])
+
+	return new_src_infos

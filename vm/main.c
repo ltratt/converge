@@ -236,7 +236,7 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 			exit_code = Con_Numbers_Number_to_Con_Int(thread, CON_GET_SLOT(exception, "code"));
 		else {
 			Con_Obj *backtrace = CON_APPLY(CON_GET_MOD_DEFN(CON_BUILTIN(CON_BUILTIN_EXCEPTIONS_MODULE), "backtrace"), exception);
-			CON_APPLY(CON_GET_MOD_DEFN(CON_BUILTIN(CON_BUILTIN_SYS_MODULE), "println"), backtrace);
+			fprintf(stderr, "%s\n", Con_Builtins_String_Atom_to_c_string(thread, backtrace));
 			backtrace = NULL;
 			exit_code = 1;
 		}

@@ -18,7 +18,7 @@ install:
 include @abs_top_srcdir@/Makefile.inc
 
 cvd_to_html: cvd_to_html.cvb ${CONVERGE_LIB}
-	${CONVERGE_VM} ${CONVERGEL} -s -o cvd_to_html cvd_to_html.cvb
+	${CONVERGE_VM} ${CONVERGEL} -o cvd_to_html cvd_to_html.cvb
 
 
 clean:

@@ -72,7 +72,7 @@ class Compiler:
 				main, ext := File::split_ext(extra[0])
 				if ext != Compiler_Vars::CV_EXTENSION:
 					self._usage_callback(Strings::format("-o can not be left out if input file does not end in '.%s'.", Compiler_Vars::CV_EXTENSION))
-				self.output_path := File::join_ext(main, Compiler_Vars::CVB_EXTENSION)
+				self.output_path := main
 			else:
 				self._usage_callback("-o option must be specified.")
 

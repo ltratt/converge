@@ -78,6 +78,7 @@ class Linker:
 		output_file := File::File.new(output_path, "w")
 		output_file.write(ser_cv_exec)
 		output_file.close()
+		File::chmod(output_path, 493)
 
 
 

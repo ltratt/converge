@@ -84,6 +84,7 @@ Con_Obj *_Con_Module_POSIX_File_File_Class_write_func(Con_Obj *);
 Con_Obj *_Con_Module_POSIX_File_File_Class_writeln_func(Con_Obj *);
 
 Con_Obj *_Con_Module_POSIX_File_canon_path_func(Con_Obj *);
+Con_Obj *_Con_Module_POSIX_File_chmod_func(Con_Obj *);
 Con_Obj *_Con_Module_POSIX_File_exists_func(Con_Obj *);
 Con_Obj *_Con_Module_POSIX_File_is_dir_func(Con_Obj *);
 Con_Obj *_Con_Module_POSIX_File_is_file_func(Con_Obj *);
@@ -122,6 +123,7 @@ Con_Obj *Con_Module_POSIX_File_import(Con_Obj *thread, Con_Obj *posix_file_mod)
 	// Module-level functions
 	
 	CON_SET_MOD_DEFN(posix_file_mod, "canon_path", CON_NEW_UNBOUND_C_FUNC(_Con_Module_POSIX_File_canon_path_func, "canon_path", posix_file_mod));
+	CON_SET_MOD_DEFN(posix_file_mod, "chmod", CON_NEW_UNBOUND_C_FUNC(_Con_Module_POSIX_File_chmod_func, "chmod", posix_file_mod));
 	CON_SET_MOD_DEFN(posix_file_mod, "exists", CON_NEW_UNBOUND_C_FUNC(_Con_Module_POSIX_File_exists_func, "exists", posix_file_mod));
 	CON_SET_MOD_DEFN(posix_file_mod, "is_dir", CON_NEW_UNBOUND_C_FUNC(_Con_Module_POSIX_File_is_dir_func, "is_dir", posix_file_mod));
 	CON_SET_MOD_DEFN(posix_file_mod, "is_file", CON_NEW_UNBOUND_C_FUNC(_Con_Module_POSIX_File_is_file_func, "is_file", posix_file_mod));
@@ -428,6 +430,26 @@ Con_Obj *_Con_Module_POSIX_File_canon_path_func(Con_Obj *thread)
 		_Con_Module_POSIX_File_error(thread, path, errno);
 
 	return Con_Builtins_String_Atom_new_copy(thread, (u_char *) resolved, strlen(resolved), CON_STR_UTF_8);
+}
+
+
+
+//
+// 'chmod(path)' returns a canonicalised version of 'path'.
+//
+// Note that (apparently) some operating systems may not canonacalise some paths; there's nothing
+// that this function can do about that in such cases.
+//
+
+Con_Obj *_Con_Module_POSIX_File_chmod_func(Con_Obj *thread)
+{
+	Con_Obj *mode, *path;
+	CON_UNPACK_ARGS("SN", &path, &mode);
+	
+	if (chmod(Con_Builtins_String_Atom_to_c_string(thread, path), Con_Numbers_Number_to_Con_Int(thread, mode)) == -1)
+		_Con_Module_POSIX_File_error(thread, path, errno);
+
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }
 
 

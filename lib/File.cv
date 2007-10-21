@@ -48,6 +48,7 @@ func open(path, mode):
 //
 
 iter_dir_entries := POSIX_File::iter_dir_entries
+chmod := POSIX_File::chmod
 exists := POSIX_File::exists
 is_dir := POSIX_File::is_dir
 is_file := POSIX_File::is_file

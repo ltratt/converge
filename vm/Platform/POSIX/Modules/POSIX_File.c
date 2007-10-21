@@ -587,8 +587,8 @@ Con_Obj *_Con_Module_POSIX_File_mtime_func(Con_Obj *thread)
 	
 	Con_Obj *time_mod = Con_Modules_import(thread, Con_Modules_get(thread, CON_NEW_STRING(CON_MOD_ID_TIME)));
 	
-	Con_Obj *sec = CON_NEW_INT(sb.st_mtimespec.tv_sec);
-	Con_Obj *nsec = CON_NEW_INT(sb.st_mtimespec.tv_nsec);
+	Con_Obj *sec = CON_NEW_INT(sb.STAT_ST_MTIMESPEC.tv_sec);
+	Con_Obj *nsec = CON_NEW_INT(sb.STAT_ST_MTIMESPEC.tv_nsec);
 	
 	return CON_APPLY(CON_GET_MOD_DEFN(time_mod, "mk_timespec"), sec, nsec);
 }

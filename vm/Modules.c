@@ -64,8 +64,10 @@ Con_Obj *Con_Modules_find(Con_Obj *thread, Con_Obj *mod_id)
 		for (int i = 0; Con_Builtin_Modules[i].mod_name != NULL; i += 1) {
 			if (Con_Builtins_String_Atom_c_string_eq(thread, Con_Builtin_Modules[i].mod_name, strlen(Con_Builtin_Modules[i].mod_name), mod_id)) {
 				mod = Con_Builtin_Modules[i].init_func(thread, mod_id);
+				break;
 			}
 		}
+		CON_GET_SLOT_APPLY(modules, "set", mod_id, mod);
 	}
 		
 	return mod;
@@ -112,6 +114,7 @@ Con_Obj *Con_Modules_import(Con_Obj *thread, Con_Obj *module)
 			for (int i = 0; Con_Builtin_Modules[i].mod_name != NULL; i += 1) {
 				if (Con_Builtins_String_Atom_c_string_eq(thread, Con_Builtin_Modules[i].mod_name, strlen(Con_Builtin_Modules[i].mod_name), module_atom->identifier)) {
 					Con_Builtin_Modules[i].import_func(thread, module);
+					break;
 				}
 			}
 		}

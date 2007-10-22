@@ -494,6 +494,8 @@ class QQ_Mode:
 
 		if ITree::IInsert.instantiated(node.names[0]):
 			names.append(node.names[0].expr)
+		elif ITree::IMod_Id_Import.instantiated(node.names[0]):
+			names.append(self._preorder(node.names[0]))
 		else:
 			// We need to process the first part of a module lookup differently. If we've got code along
 			// the lines of the following:

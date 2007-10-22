@@ -24,6 +24,7 @@
 #include <sys/param.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 
 #include <err.h>
 #include <libgen.h>
@@ -46,14 +47,23 @@
 
 #include "Builtins/Con_Stack/Atom.h"
 #include "Builtins/Module/Atom.h"
+#include "Builtins/String/Atom.h"
 #include "Builtins/Thread/Atom.h"
 #include "Builtins/VM/Atom.h"
 
 
 
+// How many bytes into a file do we check to see if it is a Converge executeable.
+
+#define BYTES_TO_FIND_EXEC 1024
+
+
 extern char* __progname;
 
 int main_do(int, char **, u_char *);
+char *find_con_exec(const char *, const char *);
+ssize_t find_bytecode_start(u_char *, size_t);
+void make_mode(char *, u_char **, size_t *, char *);
 
 
 
@@ -138,38 +148,10 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 		}
 	}
 
-	char *prog_path = argv[1];
+	char *prog_path;
 	if (argc == 1) {
 		// If we've been called without arguments, we try to load convergei.
-		prog_path = NULL;
-		if (vm_path != NULL) {
-			const char* cnds[] = {"convergei", "../compiler/convergei", NULL};
-			char *cnd = malloc(PATH_MAX);
-			char *canon_cnd = malloc(PATH_MAX);
-			int i;
-			for (i = 0; cnds[i] != NULL; i += 1) {
-				strcpy(cnd, vm_path);
-				int j;
-				for (j = strlen(cnd); j >= 0 && cnd[j] != '/'; j -= 1) {}
-				if (cnd[j] == '/')
-					strcpy(cnd + j + 1, cnds[i]);
-				else
-					strcpy(cnd + j, cnds[i]);
-				struct stat tmp_stat;
-				if (realpath(cnd, canon_cnd) != NULL && stat(canon_cnd, &tmp_stat) == 0)
-					break;
-			}
-			free(cnd);
-			if (cnds[i] == NULL)
-				free(canon_cnd);
-			else {
-				prog_path = canon_cnd;
-			}
-		}
-		if (prog_path == NULL) {
-			fprintf(stderr, "%s: too few options and unable to locate convergei.\n", __progname);
-			exit(1);
-		}
+		prog_path = find_con_exec("convergei", vm_path);
 	}
 	else
 		prog_path = argv[1];
@@ -201,25 +183,26 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 	size_t bytecode_size = con_binary_file_stat.st_size;
 	u_char *bytecode = malloc(bytecode_size);
 	fread(bytecode, 1, bytecode_size, con_binary_file);
-	
-	// We now go through the file and look for where CONVEXEC starts. This means that files can have
-	// arbitrary text at their beginning allowing e.g. "#!" UNIX commands to be inserted there.
-	
-	size_t bytecode_start = 0;
-	while (bytecode_size - bytecode_start >= 8 && strncmp(bytecode + bytecode_start, "CONVEXEC", 8) != 0) {
-		bytecode_start += 1;
-	}
-	if (bytecode_size - bytecode_start < 8) {
-		fprintf(stderr, "%s: '%s' does not appear to be a valid Converge executeable.\n", __progname, prog_path);
-		exit(1);
-	}
-	Con_Obj *main_module_identifier = Con_Bytecode_add_executable(thread, bytecode + bytecode_start);
-	free(bytecode);
 
 	if (fclose(con_binary_file) != 0) {
 		err(1, ": error closing '%s'", prog_path);
 		exit(1);
 	}
+
+	// We now see if we've been given something that appears to be an executeable or a source file;
+	// if the latter we go into make mode.
+	
+	ssize_t bytecode_start = find_bytecode_start(bytecode, bytecode_size);
+	if (bytecode_start == -1) {
+		make_mode(prog_path, &bytecode, &bytecode_size, vm_path);
+		bytecode_start = find_bytecode_start(bytecode, bytecode_size);
+		if (bytecode_start == -1) {
+			fprintf(stderr, "convergec does not appear to have produced an executeable.\n");
+			exit(1);
+		}
+	}
+	Con_Obj *main_module_identifier = Con_Bytecode_add_executable(thread, bytecode + bytecode_start);
+	free(bytecode);
 
 	Con_Obj *exception;
 	CON_TRY {
@@ -282,4 +265,191 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 	Con_Memory_gc_force(thread);
 	
 	return 0;
+}
+
+
+
+//
+// Return a malloc'd string of the canonicalised path of the Converge executeable 'name'. 'vm_path'
+// should be the canonicalised pathname of the VM so that this function has some chance of finding
+// other executeables.
+//
+
+char *find_con_exec(const char *name, const char *vm_path)
+{
+	char *prog_path = NULL;
+	if (vm_path != NULL) {
+		const char* cnds[] = {"", "../compiler/", NULL};
+		char *cnd = malloc(PATH_MAX);
+		char *canon_cnd = malloc(PATH_MAX);
+		int i;
+		for (i = 0; cnds[i] != NULL; i += 1) {
+			strcpy(cnd, vm_path);
+			int j;
+			for (j = strlen(cnd); j >= 0 && cnd[j] != '/'; j -= 1) {}
+			if (cnd[j] == '/') {
+				strcpy(cnd + j + 1, cnds[i]);
+				j += strlen(cnds[i]) + 1;
+			}
+			else {
+				strcpy(cnd + j, cnds[i]);
+				j += strlen(cnds[i]);
+			}
+			strcpy(cnd + j, name);
+			struct stat tmp_stat;
+			if (realpath(cnd, canon_cnd) != NULL && stat(canon_cnd, &tmp_stat) == 0)
+				break;
+		}
+		free(cnd);
+		if (cnds[i] == NULL)
+			free(canon_cnd);
+		else {
+			prog_path = canon_cnd;
+		}
+	}
+	if (prog_path == NULL) {
+		fprintf(stderr, "%s: unable to locate %s.\n", __progname, name);
+		exit(1);
+	}
+	
+	return prog_path;
+}
+
+
+
+//
+// Find the start of an executeable within 'bytecode', or return -1 if an executeable is not fonud.
+//
+
+ssize_t find_bytecode_start(u_char *bytecode, size_t bytecode_size)
+{
+	ssize_t bytecode_start = 0;
+	while (bytecode_size - bytecode_start >= 8 && bytecode_start < BYTES_TO_FIND_EXEC &&
+	  strncmp(bytecode + bytecode_start, "CONVEXEC", 8) != 0) {
+		bytecode_start += 1;
+	}
+	if (bytecode_size - bytecode_start < 8 || bytecode_start == BYTES_TO_FIND_EXEC)
+		return -1;
+
+	return bytecode_start;
+}
+
+
+
+//
+// Compile and link 'prog_path'.
+//
+
+void make_mode(char *prog_path, u_char **bytecode, size_t *bytecode_size, char *vm_path)
+{
+	// Fire up convergec -m on progpath. We do this by creating a pipe, forking, getting the child
+	// to output to the pipe (although note that we leave stdin and stdout unmolested on the child
+	// process, as user programs might want to print stuff to screen) and reading from that pipe
+	// to get the necessary bytecode.
+
+	int filedes[2];
+	pipe(filedes);
+	
+	pid_t pid = fork();
+	if (pid == -1)
+		CON_XXX;
+	else if (pid == 0) {
+		// Child process.
+		char *convergec_path = find_con_exec("convergec", vm_path);
+		char fd_path[PATH_MAX];
+		if (snprintf(fd_path, PATH_MAX, "/dev/fd/%d", filedes[1]) >= PATH_MAX)
+			CON_XXX;
+		execlp(vm_path, vm_path, convergec_path, "-m", "-o", fd_path, prog_path, (char *) NULL);
+		CON_XXX;
+	}
+	
+	// Parent process.
+	
+	close(filedes[1]);
+
+	// Read in the output from the child process.
+
+	int i = sizeof(Con_Int) * 2 * *bytecode_size;
+	*bytecode_size = 0;
+	*bytecode = malloc(i);
+	while (1) {
+		int rtn = read(filedes[0], *bytecode + *bytecode_size, i);
+		if (rtn == 0)
+			break;
+		else if (rtn == -1) {
+			err(1, ": error reading");
+			extern int errno;
+			printf("%d\n", errno);
+			CON_XXX;
+		}
+		else {
+			*bytecode_size += rtn;
+			i += rtn;
+			*bytecode = realloc(*bytecode, *bytecode_size + i);
+			if (*bytecode == NULL)
+				CON_XXX;
+		}
+	}
+	
+	// Now we've read all the data from the child convergec, we check its return status; if it
+	// returned something other than 0 then we return that value and do not continue.
+	
+	int status;
+	waitpid(pid, &status, 0);
+	if (WIFEXITED(status)) {
+		int child_rtn = WEXITSTATUS(status);
+		if (child_rtn != 0)
+			exit(child_rtn);
+	}
+
+	// Since we might have grossly over-guessed how much memory to allocate, we now resize to the
+	// correct value.
+
+	*bytecode = realloc(*bytecode, *bytecode_size);
+	if (*bytecode == NULL)
+		CON_XXX;
+
+	// Try and write the file to its cached equivalent. Since this isn't strictly necessary, if at
+	// any point anything fails, we simply give up without reporting an error.
+
+	for (i = strlen(prog_path) - 1; i >= 0 && prog_path[i] != '.'; i -= 1) {}
+	if (i >= 0) {
+		char cache_path[PATH_MAX];
+		memmove(cache_path, prog_path, i);
+		cache_path[i] = '\0';
+
+		FILE *cache_file;
+
+		struct stat st;
+		if (stat(cache_path, &st) != -1) {
+			// A file with the cached name already exists, we we want to ensure that it's a Converge
+			// executeable to be reasonably sure that we're not overwriting a normal user file.
+
+			FILE *cache_file = fopen(cache_path, "rb");
+			if (cache_file == NULL)
+				return;
+
+			u_char *tmp = malloc(BYTES_TO_FIND_EXEC);
+			int read = fread(tmp, 1, BYTES_TO_FIND_EXEC, cache_file);
+			if (read < BYTES_TO_FIND_EXEC && ferror(cache_file)) {
+				free(tmp);
+				return;
+			}
+
+			if (find_bytecode_start(tmp, read) == -1) {
+				free(tmp);
+				return;
+			}
+
+			free(tmp);
+			fclose(cache_file);
+		}
+
+		cache_file = fopen(cache_path, "w");
+		if (cache_file == NULL)
+			return;
+		// We intentionally ignore any errors from fwrite or fclose.
+		fwrite(*bytecode, 1, *bytecode_size, cache_file);
+		fclose(cache_file);
+	}
 }

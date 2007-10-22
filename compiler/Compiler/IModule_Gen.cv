@@ -197,7 +197,10 @@ class IModule_Gen:
 					// running VM is entirely in terms of old module ids.
 					import_ := File::join_names(self._compiler.original_lc_top_level_path, import_[self._compiler.top_level_path.len() : ])
 				if not known_module_names.find(import_):
-					new_module_file := File::open(File::join_ext(File::split_ext(import_)[0], CV_Module::CVB_EXTENSION), "r")
+					mod_path := File::join_ext(File::split_ext(import_)[0], CV_Module::CVB_EXTENSION)
+					if not File::exists(mod_path):
+						self._compiler.error(Strings::format("Can not find compiled version of '%s'.", import_), node[1][1].src_infos)
+					new_module_file := File::open(mod_path, "r")
 					new_module_data := new_module_file.read()
 					modules_to_add.append(Builtins::Module.new(new_module_data))
 					new_module := CV_Module::CV_Module.new(self._compiler.internal_target)

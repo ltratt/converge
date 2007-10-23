@@ -20,8 +20,8 @@ Succeeds if this class (or one of its subclasses) instantiated <code>o</code>.
 Returns the field <code>name</code> in the class, raising an exception if it does not exist.
 </function>
 
-<function name="get_fields">
-Returns a set of all field names defined in this class (note that this does <em>not</em> include slots defined in superclasses).
+<function name="iter_defns">
+Successively generates each (field name, field value) pair for the class (note that this does <em>not</em> include slots defined in superclasses).
 </function>
 
 <function name="set_field">
@@ -203,6 +203,10 @@ Successively generates each definition name in the module.
 <argument name="name" type="String" />
 Returns the definition named <code>name</code> in this module.
 </function>
+
+<function name="iter_defns">
+Successively generates each (definition name, definition value) pair for the module.
+</function>
 </class>
 
 
@@ -228,6 +232,16 @@ Returns the value of the slot <code>name</code>, or fails if no such slot exists
 <function name="get_slot">
 <argument name="name" />
 Returns the value of the slot <code>name</code>, raising an exception if no such slot exists.
+</function>
+
+<function name="iter_slots">
+Successively generates each (slot name, slot value) pair for the object.
+</function>
+
+<function name="set_slot">
+<argument name="name" type="String" />
+<argument name="o" type="Object" />
+Sets the value of slot <code>name</code> to <code>o</code>, creating <code>name</code> if it did not previously exist.
 </function>
 </class>
 

@@ -50,7 +50,7 @@ Con_Obj *_Con_Builtins_Module_Class_new_object(Con_Obj *);
 Con_Obj *_Con_Builtins_Module_Class_to_str_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Module_Class_get_defn_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Module_Class_get_slot_func(Con_Obj *);
-Con_Obj *_Con_Builtins_Module_Class_iter_defn_names_func(Con_Obj *);
+Con_Obj *_Con_Builtins_Module_Class_iter_defns_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Module_Class_path_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Module_Class_src_offset_to_line_column_func(Con_Obj *);
 
@@ -76,7 +76,7 @@ void Con_Builtins_Module_Class_bootstrap(Con_Obj *thread)
 	Con_Memory_change_chunk_type(thread, module_class, CON_MEMORY_CHUNK_OBJ);
 	
 	CON_SET_FIELD(module_class, "to_str", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Module_Class_to_str_func, "to_str", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), module_class));
-	CON_SET_FIELD(module_class, "iter_defn_names", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Module_Class_iter_defn_names_func, "iter_defn_names", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), module_class));
+	CON_SET_FIELD(module_class, "iter_defns", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Module_Class_iter_defns_func, "iter_defns", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), module_class));
 	CON_SET_FIELD(module_class, "get_defn", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Module_Class_get_defn_func, "get_defn", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), module_class));
 	CON_SET_FIELD(module_class, "get_slot", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Module_Class_get_slot_func, "get_slot", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), module_class));
 	CON_SET_FIELD(module_class, "path", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Module_Class_path_func, "path", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), module_class));
@@ -130,10 +130,11 @@ Con_Obj *_Con_Builtins_Module_Class_to_str_func(Con_Obj *thread)
 
 
 //
-// 'iter_defn_names()' is a generator which returns the name of each definition in the module.
+// 'iter_defns()' is a generator which generates the name of each definition and its value as a pair
+// in the module.
 //
 
-Con_Obj *_Con_Builtins_Module_Class_iter_defn_names_func(Con_Obj *thread)
+Con_Obj *_Con_Builtins_Module_Class_iter_defns_func(Con_Obj *thread)
 {
 	Con_Obj *self;
 	CON_UNPACK_ARGS("M", &self);
@@ -163,7 +164,8 @@ Con_Obj *_Con_Builtins_Module_Class_iter_defn_names_func(Con_Obj *thread)
 		memmove(slot_name_buffer, slot_name, slot_name_size);
 
 		CON_MUTEX_UNLOCK(&self->mutex);
-		CON_YIELD(Con_Builtins_String_Atom_new_copy(thread, slot_name, slot_name_size, CON_STR_UTF_8));
+		Con_Obj *name = Con_Builtins_String_Atom_new_copy(thread, slot_name, slot_name_size, CON_STR_UTF_8);
+		CON_YIELD(Con_Builtins_List_Atom_new_va(thread, name, val, NULL));
 	}
 
 	return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);

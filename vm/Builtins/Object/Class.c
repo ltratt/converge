@@ -45,8 +45,8 @@ Con_Obj *_Con_Builtins_Object_Class_new_object(Con_Obj *);
 
 Con_Obj *_Con_Builtins_Object_Class_init_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Object_Class_get_slot_func(Con_Obj *);
-Con_Obj *_Con_Builtins_Object_Class_get_slots_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Object_Class_find_slot_func(Con_Obj *);
+Con_Obj *_Con_Builtins_Object_Class_iter_slots_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Object_Class_set_slot_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Object_Class_to_str_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Object_Class_is_func(Con_Obj *);
@@ -74,7 +74,7 @@ void Con_Builtins_Object_Class_bootstrap(Con_Obj *thread)
 	
 	CON_SET_FIELD(object_class, "init", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Object_Class_init_func, "init", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), object_class));
 	CON_SET_FIELD(object_class, "get_slot", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Object_Class_get_slot_func, "get_slot", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), object_class));
-	CON_SET_FIELD(object_class, "get_slots", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Object_Class_get_slots_func, "get_slots", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), object_class));
+	CON_SET_FIELD(object_class, "iter_slots", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Object_Class_iter_slots_func, "iter_slots", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), object_class));
 	CON_SET_FIELD(object_class, "find_slot", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Object_Class_find_slot_func, "find_slot", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), object_class));
 	CON_SET_FIELD(object_class, "set_slot", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Object_Class_set_slot_func, "set_slot", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), object_class));
 	CON_SET_FIELD(object_class, "to_str", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Object_Class_to_str_func, "to_str", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), object_class));
@@ -154,15 +154,62 @@ Con_Obj *_Con_Builtins_Object_Class_get_slot_func(Con_Obj *thread)
 
 
 //
-// 'get_slots()' returns a set of slot names.
+// 'iter_slots()' returns a set of slot names.
 //
 
-Con_Obj *_Con_Builtins_Object_Class_get_slots_func(Con_Obj *thread)
+Con_Obj *_Con_Builtins_Object_Class_iter_slots_func(Con_Obj *thread)
 {
 	Con_Obj *self;
 	CON_UNPACK_ARGS("O", &self);
+
+	if (self->creator_slots != NULL) {
+		Con_Int j = 0;
+		while (1) {
+			Con_Obj *val;
+			const u_char *slot_name;
+			Con_Int slot_name_size;
+			if (!Con_Slots_read_slot(thread, self->creator_slots, &j, &slot_name, &slot_name_size, &val))
+				break;
+			
+			Con_Obj *name = Con_Builtins_String_Atom_new_copy(thread, slot_name, slot_name_size, CON_STR_UTF_8);
+			
+			CON_YIELD(Con_Builtins_List_Atom_new_va(thread, name, val, NULL));
+		}
+	}
+
+	Con_Builtins_Slots_Atom *slots_atom = CON_FIND_ATOM(self, CON_BUILTIN(CON_BUILTIN_SLOTS_ATOM_DEF_OBJECT));
+	if (slots_atom != NULL) {
+		Con_Int slot_name_buffer_size = 16;
+		u_char *slot_name_buffer = Con_Memory_malloc(thread, slot_name_buffer_size, CON_MEMORY_CHUNK_OPAQUE);
+		Con_Int j = 0;
+		while (1) {
+			Con_Obj *val;
+			Con_Int old_j = j;
+			const u_char *slot_name;
+			Con_Int slot_name_size;
+			CON_MUTEX_LOCK(&self->mutex);
+			if (!Con_Slots_read_slot(thread, &slots_atom->slots, &j, &slot_name, &slot_name_size, &val))
+				break;
+			if (slot_name_size > slot_name_buffer_size) {
+				CON_MUTEX_UNLOCK(&self->mutex);
+				slot_name_buffer_size = slot_name_size;
+				slot_name = Con_Memory_malloc(thread, slot_name_buffer_size, CON_MEMORY_CHUNK_OPAQUE);
+				j = old_j;
+				CON_MUTEX_LOCK(&self->mutex);
+				continue;
+			}
+			
+			memmove(slot_name_buffer, slot_name, slot_name_size);
+			
+			CON_MUTEX_UNLOCK(&self->mutex);
+			Con_Obj *name = Con_Builtins_String_Atom_new_copy(thread, slot_name, slot_name_size, CON_STR_UTF_8);
+			
+			CON_YIELD(Con_Builtins_List_Atom_new_va(thread, name, val, NULL));
+		}
+	}
 	
-	return Con_Object_get_slots(thread, self);
+	return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
+
 }
 
 

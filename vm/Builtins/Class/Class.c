@@ -52,7 +52,7 @@ Con_Obj *_Con_Builtins_Class_Class_get_slot_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Class_Class_to_str_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Class_Class_path_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Class_Class_get_field_func(Con_Obj *);
-Con_Obj *_Con_Builtins_Class_Class_get_fields_func(Con_Obj *);
+Con_Obj *_Con_Builtins_Class_Class_iter_fields_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Class_Class_get_supers_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Class_Class_set_field_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Class_Class_conformed_by_func(Con_Obj *);
@@ -88,7 +88,7 @@ void Con_Builtins_Class_Class_bootstrap(Con_Obj *thread)
 	CON_SET_FIELD(class_class, "path", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Class_Class_path_func, "path", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), class_class));
 
 	CON_SET_FIELD(class_class, "get_field", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Class_Class_get_field_func, "get_field", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), class_class));
-	CON_SET_FIELD(class_class, "get_fields", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Class_Class_get_fields_func, "get_fields", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), class_class));
+	CON_SET_FIELD(class_class, "iter_fields", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Class_Class_iter_fields_func, "iter_fields", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), class_class));
 	CON_SET_FIELD(class_class, "set_field", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Class_Class_set_field_func, "set_field", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), class_class));
 	CON_SET_FIELD(class_class, "get_supers", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Class_Class_get_supers_func, "get_supers", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), class_class));
 	CON_SET_FIELD(class_class, "conformed_by", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Class_Class_conformed_by_func, "conformed_by", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), class_class));
@@ -300,17 +300,16 @@ Con_Obj *_Con_Builtins_Class_Class_get_field_func(Con_Obj *thread)
 
 
 //
-// 'get_fields()'.
+// 'iter_fields()'.
 //
 
-Con_Obj *_Con_Builtins_Class_Class_get_fields_func(Con_Obj *thread)
+Con_Obj *_Con_Builtins_Class_Class_iter_fields_func(Con_Obj *thread)
 {
 	Con_Obj *self;
 	CON_UNPACK_ARGS("C", &self);
 
 	Con_Builtins_Class_Atom *class_atom = CON_GET_ATOM(self, CON_BUILTIN(CON_BUILTIN_CLASS_ATOM_DEF_OBJECT));
 
-	Con_Obj *fields = Con_Builtins_Set_Atom_new(thread);
 	Con_Slots *slots = &class_atom->fields;
 	Con_Int slot_name_buffer_size = 16;
 	u_char *slot_name_buffer = Con_Memory_malloc(thread, slot_name_buffer_size, CON_MEMORY_CHUNK_OPAQUE);
@@ -335,10 +334,12 @@ Con_Obj *_Con_Builtins_Class_Class_get_fields_func(Con_Obj *thread)
 		memmove(slot_name_buffer, slot_name, slot_name_size);
 
 		CON_MUTEX_UNLOCK(&self->mutex);
-		CON_GET_SLOT_APPLY(fields, "add", Con_Builtins_String_Atom_new_copy(thread, slot_name, slot_name_size, CON_STR_UTF_8));
+		Con_Obj *name = Con_Builtins_String_Atom_new_copy(thread, slot_name, slot_name_size, CON_STR_UTF_8);
+		
+		CON_YIELD(Con_Builtins_List_Atom_new_va(thread, name, val, NULL));
 	}
 	
-	return fields;
+	return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
 }
 
 

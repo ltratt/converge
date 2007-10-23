@@ -27,7 +27,11 @@ import Compiler::Bytecode_Gen, Compiler::Compiler_Vars, Compiler::CV_Exec, Compi
 
 class Compiler:
 
-	func compile(self):
+	////////////////////////////////////////////////////////////////////////////////////////////////
+	// Compiler start up
+	//
+
+	func from_cmd_line(self):
 	
 		start_includes := []
 	
@@ -129,12 +133,120 @@ class Compiler:
 
 
 
+	func from_make_mode(self, src_path, start_includes, verbosity, target, internal_target, make_done_cv_mods):
+
+		self.bootstrap := 0
+		self.make_mode := 1
+		self.output_path := null
+		self.start_includes := start_includes
+		self.verbosity := verbosity
+		self.target := target
+		self.internal_target := internal_target
+		
+		self.make_done_cv_mods := make_done_cv_mods
+
+		cv_mod := self._compile_path(src_path)
+		self._write_cache_cvb(src_path, cv_mod.serialize())
+		
+		return cv_mod
+
+
+
+	////////////////////////////////////////////////////////////////////////////////////////////////
+	// "Public" functions
+	//
+
+
+	func error(self, msg, src_infos := null):
+	
+		self._print_msg("Error", msg, src_infos)
+		Sys::exit(1)
+
+
+
+	func warning(self, msg, src_infos := null):
+	
+		self._print_msg("Warning", msg, src_infos)
+
+
+
+	func info(self, msg):
+	
+		Sys::stderr.writeln(Strings::format("===> %s", msg))
+
+
+
+	func get_cv_mod(self, src_path, src_infos := null):
+	
+		if cv_mod := self._read_cache_cvb(src_path):
+			return cv_mod
+
+		if self.make_mode == 0:
+			self.error(Strings::format("Can not find compiled version of '%s'.", src_path), src_infos)
+		
+		if cv_mod := self.make_done_cv_mods.find(src_path):
+			return cv_mod
+	
+		compiler := Compiler.new()
+		Compiler_Vars::push_compiler(compiler)
+		cv_mod := compiler.from_make_mode(src_path, self.start_includes, self.verbosity, self.target, self.internal_target, self.make_done_cv_mods)
+		Compiler_Vars::pop_compiler()
+		
+		return cv_mod
+
+
+
+	func find_import_location(self, import_name_list):
+
+		func match_path(i, dir):
+		
+			cnd_path := File::join_names(dir, import_name_list[i])
+
+			if File::exists(cnd_path) & File::is_dir(cnd_path):
+				if i + 1 == import_name_list.len():
+					return [cnd_path, i]
+				else:
+					return match_path(i + 1, cnd_path)
+
+			cnd_file_path := File::join_ext(cnd_path, CV_Module::CV_EXTENSION)
+			if File::exists(cnd_file_path) & File::is_file(cnd_file_path):
+				return [cnd_file_path, i]
+			
+			return fail
+			
+	
+		for include_dir := self.includes.iter():
+			if matched_path, extra_pos := match_path(0, include_dir):
+				import_full_name := File::canon_path(matched_path)
+				import_extras := import_name_list[extra_pos + 1 : ]
+				break
+		exhausted:
+			// If the first part of the import references a builtin, then looking up that module ID
+			// will succeed.
+			if VM::find_module(import_name_list[0]):
+				import_full_name := import_name_list[0]
+				import_extras := import_name_list[1 : ]
+			else:
+				return fail
+		
+		return [import_full_name, import_extras]
+
+
+
+	////////////////////////////////////////////////////////////////////////////////////////////////
+	// Internal functions
+	//
+
+
 	func _compile_path(self, src_path):
 
 		self.includes := self.start_includes
 
 		if not File::exists(src_path):
 			self.error(Strings::format("Source file '%s' not found.", src_path))
+
+		if self.verbosity > 0:
+			self.info(Strings::format("Compiling %s", src_path))
 
 		self.module_id := File::canon_path(src_path)
 
@@ -175,8 +287,10 @@ class Compiler:
 		else:
 			update := 1
 
-		lib_mods := [] // CV_Module instances.
-		mod_ids := Set{} // All module ids already dealt with.
+		self.make_done_cv_mods := Dict{} // module id : CV_Module instances map.
+		todo_mod_ids := [src_path]
+		
+		lib_mods := []
 		for lib_path := Compiler_Vars::get_std_libraries().iter():
 			lib := CV_Library::CV_Library.new(self.target)
 			lib_file := File::open(lib_path, "r")
@@ -184,25 +298,26 @@ class Compiler:
 			lib_file.close()
 			for cv_mod := lib.deserialize(lib_data).iter():
 				lib_mods.append(cv_mod)
-				mod_ids.add(cv_mod.get_identifier())
+				self.make_done_cv_mods[cv_mod.get_identifier()] := cv_mod
 
-		src_paths := [src_path]
 		mods := []
-		while src_paths.len() > 0:
-			src_path := src_paths[0]
-			src_paths.del(0)
+		while todo_mod_ids.len() > 0:
+			src_path := todo_mod_ids[0]
+			todo_mod_ids.del(0)
+			
+			if self.make_done_cv_mods.find(src_path):
+				continue
 			
 			if not (cv_mod := self._read_cache_cvb(src_path)):
-				if self.verbosity > 0:
-					self.info(Strings::format("Compiling %s", src_path))
 				cv_mod := self._compile_path(src_path)
 				self._write_cache_cvb(src_path, cv_mod.serialize())
 				update := 1
 
+			self.make_done_cv_mods[cv_mod.get_identifier()] := cv_mod
 			mods.append(cv_mod)
 			
 			for mod_id := cv_mod.get_imports().iter():
-				if Compiler_Vars::BUILTIN_MODULES.find(mod_id) | mod_ids.find(mod_id):
+				if Compiler_Vars::BUILTIN_MODULES.find(mod_id) | self.make_done_cv_mods.find(mod_id):
 					continue
 				
 				if not File::exists(mod_id):
@@ -210,9 +325,9 @@ class Compiler:
 				
 				if File::is_dir(mod_id):
 					// This must be a package.
-					src_paths.extend(self._locate_cv_files(mod_id))
+					todo_mod_ids.extend(self._locate_cv_files(mod_id))
 				else:
-					src_paths.append(mod_id)
+					todo_mod_ids.append(mod_id)
 		
 		mods.extend(lib_mods)
 	
@@ -242,25 +357,6 @@ class Compiler:
 
 
 
-	func error(self, msg, src_infos := null):
-	
-		self._print_msg("Error", msg, src_infos)
-		Sys::exit(1)
-
-
-
-	func warning(self, msg, src_infos := null):
-	
-		self._print_msg("Warning", msg, src_infos)
-
-
-
-	func info(self, msg):
-	
-		Sys::stderr.writeln(Strings::format("===> %s", msg))
-	
-	
-	
 	func _print_msg(self, pre_msg, msg, src_infos := null):
 	
 		if not src_infos is null:
@@ -307,43 +403,6 @@ class Compiler:
 		else:
 			Sys::stderr.writeln(Strings::format("%s: %s", pre_msg, msg))
 					
-
-
-	func find_import_location(self, import_name_list):
-
-		func match_path(i, dir):
-		
-			cnd_path := File::join_names(dir, import_name_list[i])
-
-			if File::exists(cnd_path) & File::is_dir(cnd_path):
-				if i + 1 == import_name_list.len():
-					return [cnd_path, i]
-				else:
-					return match_path(i + 1, cnd_path)
-
-			cnd_file_path := File::join_ext(cnd_path, CV_Module::CV_EXTENSION)
-			if File::exists(cnd_file_path) & File::is_file(cnd_file_path):
-				return [cnd_file_path, i]
-			
-			return fail
-			
-	
-		for include_dir := self.includes.iter():
-			if matched_path, extra_pos := match_path(0, include_dir):
-				import_full_name := File::canon_path(matched_path)
-				import_extras := import_name_list[extra_pos + 1 : ]
-				break
-		exhausted:
-			// If the first part of the import references a builtin, then looking up that module ID
-			// will succeed.
-			if VM::find_module(import_name_list[0]):
-				import_full_name := import_name_list[0]
-				import_extras := import_name_list[1 : ]
-			else:
-				return fail
-		
-		return [import_full_name, import_extras]
-
 
 
 	func _target_name_to_target(self, target_name):
@@ -470,5 +529,5 @@ func main():
 
 	compiler := Compiler.new()
 	Compiler_Vars::push_compiler(compiler)
-	compiler.compile()
+	compiler.from_cmd_line()
 	Compiler_Vars::pop_compiler()

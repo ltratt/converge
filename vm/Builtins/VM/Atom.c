@@ -1099,10 +1099,11 @@ Con_Obj *_Con_Builtins_VM_Atom_execute(Con_Obj *thread)
 				case CON_INSTR_IS: {
 					Con_Obj *x = Con_Builtins_Con_Stack_Atom_pop_object(thread, con_stack);
 					Con_Obj *y = Con_Builtins_Con_Stack_Atom_pop_object(thread, con_stack);
-					if (x != y)
+					Con_Obj *rtn = CON_GET_SLOT_APPLY_NO_FAIL(x, "is", y);
+					if (rtn == NULL)
 						goto fail_now;
 					
-					Con_Builtins_Con_Stack_Atom_push_object(thread, con_stack, y);
+					Con_Builtins_Con_Stack_Atom_push_object(thread, con_stack, rtn);
 					pc.pc.bytecode_offset += sizeof(Con_Int);
 					Con_Builtins_Con_Stack_Atom_update_continuation_frame_pc(thread, con_stack, pc);
 					break;

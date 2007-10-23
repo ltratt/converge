@@ -49,6 +49,7 @@ Con_Obj *_Con_Builtins_Object_Class_get_slots_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Object_Class_find_slot_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Object_Class_set_slot_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Object_Class_to_str_func(Con_Obj *);
+Con_Obj *_Con_Builtins_Object_Class_is_func(Con_Obj *);
 
 
 
@@ -77,6 +78,7 @@ void Con_Builtins_Object_Class_bootstrap(Con_Obj *thread)
 	CON_SET_FIELD(object_class, "find_slot", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Object_Class_find_slot_func, "find_slot", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), object_class));
 	CON_SET_FIELD(object_class, "set_slot", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Object_Class_set_slot_func, "set_slot", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), object_class));
 	CON_SET_FIELD(object_class, "to_str", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Object_Class_to_str_func, "to_str", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), object_class));
+	CON_SET_FIELD(object_class, "is", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Object_Class_is_func, "is", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), object_class));
 }
 
 
@@ -232,4 +234,21 @@ Con_Obj *_Con_Builtins_Object_Class_to_str_func(Con_Obj *thread)
 	size_t str_size = strlen(str);
 
 	return Con_Builtins_String_Atom_new_copy(thread, (u_char *) str, str_size, CON_STR_UTF_8);
+}
+
+
+
+//
+// 'is(o)' returns o if self 'is' o, or fails otherwise.
+//
+
+Con_Obj *_Con_Builtins_Object_Class_is_func(Con_Obj *thread)
+{
+	Con_Obj *o, *self;
+	CON_UNPACK_ARGS("OO", &self, &o);
+
+	if (self == o)
+		return o;
+	else
+		return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
 }

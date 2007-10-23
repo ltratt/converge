@@ -81,9 +81,9 @@ class Tokenizer:
 		self._re_keywords := PCRE::compile(Strings::format("(?:%s)\\b", Strings::join(KEYWORDS + extra_keywords, "|")))
 		escaped_symbols := []
 		nonescaped_symbols := SYMBOLS + extra_symbols
-		for nonescaped_symbol := nonescaped_symbols.iterate():
+		for nonescaped_symbol := nonescaped_symbols.iter():
 			escaped_symbol := ""
-			for char := nonescaped_symbol.iterate():
+			for char := nonescaped_symbol.iter():
 				if RE_CHARS_NOT_TO_ESCAPE.match(char):
 					escaped_symbol += char
 				else:
@@ -391,7 +391,7 @@ class Tokenizer:
 				// the valid QUOTES the string has been started with. That same quote type is the
 				// only one which can terminate the string.
 				
-				for quote_char := QUOTES.iterate():
+				for quote_char := QUOTES.iter():
 					if i + quote_char.len() < self._str.len() & self._str[i : i + quote_char.len()] == quote_char:
 						break
 				broken:
@@ -506,7 +506,7 @@ func tokenize(str, src_path, src_offset := 0, line_offset := 0, extra_keywords :
 func tokens_map(extra_symbols, extra_keywords):
 
 	tokens := ["NEWLINE", "INDENT", "DEDENT", "ID", "INT", "FLOAT", "STRING", "DSL_BLOCK"]
-	for keyword := (KEYWORDS + extra_keywords + SYMBOLS + extra_symbols).iterate():
+	for keyword := (KEYWORDS + extra_keywords + SYMBOLS + extra_symbols).iter():
 		tokens.append(keyword.to_upper_case())
 
 	return Tokens::tokens_map(tokens)
@@ -515,7 +515,7 @@ func tokens_map(extra_symbols, extra_keywords):
 
 func main():
 
-	for file_name := Sys::argv.iterate():
+	for file_name := Sys::argv.iter():
 		file := File::open(file_name, "r")
 		Sys::println(tokenize(file.read(), file_name)[0])
 

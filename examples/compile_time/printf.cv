@@ -93,7 +93,7 @@ func printf(format):
 		return_expr := null
 		parameters := []
 		parameter_num := 0
-		for i := 0.to(split.len()):
+		for i := 0.iter_to(split.len()):
 			part := split[i]
 			if Builtins::String.conformed_by(part):
 				// Strings are just inserted "as is".
@@ -210,7 +210,7 @@ func simple_printf(format):
 
 	params := []
 	i := 0
-	for part := split.iterate():
+	for part := split.iter():
 		if part == PRINTF_INT | part == PRINTF_STRING:
 			params.append(CEI::iparam(CEI::ivar("p" + i.to_str()), null))
 			i += 1

@@ -53,23 +53,23 @@ class Eval_Compiler:
 		body.append(ITree::IAssignment.new(ITree::STD_ASSIGN, [compiler_var], ITree::IApplication.new(peek_compiler, [], []), []))
 		
 		vars_val := ITree::ISlot_Lookup.new(compiler_var, "vars", [])
-		for var_name, _ := self.vars.iterate():
+		for var_name, _ := self.vars.iter():
 			var_val := ITree::IApplication.new(ITree::ISlot_Lookup.new(vars_val, "get", []), [ITree::IString.new(var_name, [])], [])
 			body.append(ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(var_name, [])], var_val, []))
 
 		expr := IModule_Gen::IModule_Gen.new().generate(parse_tree)
 
 		dict_vals := []
-		for var_name, var_val := self.vars.iterate():
+		for var_name, var_val := self.vars.iter():
 			dict_vals.append([ITree::IString.new(var_name, []), ITree::IVar.new(var_name, [])])
 		rtn_dict := ITree::IDict.new(dict_vals, [])
 
 		vars_assign := []
 		vars_assign_names := Set{}
-		for var_name, _ := self.vars.iterate():
+		for var_name, _ := self.vars.iter():
 			vars_assign_names.add(var_name)
 		vars_assign_names.extend(expr.bound_vars)
-		for var_name := vars_assign_names.iterate():
+		for var_name := vars_assign_names.iter():
 			var_val := ITree::IApplication.new(ITree::ISlot_Lookup.new(vars_val, "set", []), [ITree::IString.new(var_name, []), ITree::IVar.new(var_name, [])], [])
 			vars_assign.append(var_val)
 
@@ -116,7 +116,7 @@ class Eval_Compiler:
 			return fail
 			
 	
-		for include_dir := self.includes.iterate():
+		for include_dir := self.includes.iter():
 			if matched_path, extra_pos := match_path(0, include_dir):
 				import_full_name := File::canon_path(matched_path)
 				import_extras := import_name_list[extra_pos + 1 : ]

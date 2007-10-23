@@ -27,7 +27,7 @@ import Exceptions, Sys
 func map(func_, list):
 
 	new_list := []
-	for elem := list.iterate():
+	for elem := list.iter():
 		if not mapped := func_(elem):
 			raise Exceptions::Exception("Function passed to 'map' did not return an element.")
 		new_list.append(mapped)

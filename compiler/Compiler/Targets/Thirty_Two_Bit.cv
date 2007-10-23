@@ -636,7 +636,7 @@ class Instr_Unpack_Args(Instruction):
 			num_params := self.params_info.len()
 
 		bytecode := [b_8_8_1(INSTR_UNPACK_ARGS, num_params, self.has_var_args)]
-		for var_num, is_mandatory := self.params_info.iterate():
+		for var_num, is_mandatory := self.params_info.iter():
 			bytecode.append(b_8_1(var_num, is_mandatory))
 		
 		return bytecode
@@ -879,11 +879,11 @@ class Instr_Module_Lookup(Instruction):
 func encode_src_infos(all_src_infos):
 
 	src_infos_array := Array::Array.new("i32")
-	for num_instructions, src_infos := all_src_infos.iterate():
+	for num_instructions, src_infos := all_src_infos.iter():
 		i := 0
 		while i < num_instructions:
 			repeat := Maths::min(num_instructions - i, 7)
-			for j := 0.to(src_infos.len()):
+			for j := 0.iter_to(src_infos.len()):
 				import_num, src_offset := src_infos[j]
 				if import_num == -1:
 					encoded_src_info := repeat.or(16368).or(src_offset.lsl(14))

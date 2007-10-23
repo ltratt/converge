@@ -39,7 +39,7 @@ class CVD_To_HTML:
 		options.add(Parse_Options::Option_Spec.new("output", "o", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ONE))
 
 		parsed, extra := options.parse()
-		for option_name, option_val := parsed.iterate():
+		for option_name, option_val := parsed.iter():
 			ndif option_name == "output":
 				self._output_path := option_val
 
@@ -47,7 +47,7 @@ class CVD_To_HTML:
 			self._usage_callback("Not enough arguments.")
 
 		modules := []
-		for manual := extra.iterate():
+		for manual := extra.iter():
 			Sys::println("Processing ", File::split_ext(File::split_leaf(manual)[1])[0])
 
 			html_path := File::join_names(self._output_path, File::join_ext(File::split_ext(File::split_leaf(manual)[1])[0], _HTML_EXTENSION))
@@ -76,9 +76,9 @@ class CVD_To_HTML:
 			num_rows := modules.len().idiv(_NUM_MODULES_COLUMNS) + 1
 
 		column_width := 100.idiv(_NUM_MODULES_COLUMNS)
-		for row := 0.to(num_rows):
+		for row := 0.iter_to(num_rows):
 			modules_table.append("<tr>")
-			for column := 0.to(_NUM_MODULES_COLUMNS):
+			for column := 0.iter_to(_NUM_MODULES_COLUMNS):
 				i := row + column * num_rows
 				if i >= modules.len():
 					break
@@ -171,7 +171,7 @@ class CVD_To_HTML:
 	func _preorder_children(self, children):
 
 		s := []
-		for child := children.iterate():
+		for child := children.iter():
 			ndif Nodes::Element.instantiated(child):
 				s.append(self._preorder_elem(child))
 			elif Nodes::Text.instantiated(child):
@@ -194,7 +194,7 @@ class CVD_To_HTML:
 				name := node.name
 
 			attrs_text := []
-			for attr := node.attrs_iterate():
+			for attr := node.attrs_iter():
 				if not attr.namespace == "":
 					raise "XXX"
 
@@ -219,7 +219,7 @@ class CVD_To_HTML:
 
 		body_text := []
 		i := 0
-		for child := node.iterate():
+		for child := node.iter():
 			if Nodes::Text.instantiated(child):
 				body_text.append(child.str)
 			else:

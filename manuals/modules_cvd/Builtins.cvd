@@ -62,11 +62,11 @@ Returns the value of <code>key</code>. If 'key' is not found, 'default' is retur
 Returns the value of <code>key</code>. If 'key' is not found, 'default' is returned or, if no default value is specified, an exception is raised.
 </function>
 
-<function name="iterate">
+<function name="iter">
 Successively generates each <code>[key, val]</code> pair in this dictionary.
 </function>
 
-<function name="keys">
+<function name="iter_keys">
 Successively generates each key in this dictionary.
 </function>
 
@@ -80,7 +80,7 @@ Returns the number of keys in this dictionary.
 Sets the value of <code>key</code> to <code>val</code>. If <code>key</code> was previously associated with a value, <code>val</code> overwrites the previous association. Returns null.
 </function>
 
-<function name="vals">
+<function name="iter_vals">
 Successively generates each value in this dictionary.
 </function>
 </class>
@@ -112,7 +112,7 @@ Deletes the element at position <code>i</code>, raising an exception if <code>i<
 
 <function name="extend">
 <argument name="c" type="Object" />
-Appends each element returned by <code>c.iterate()</code>.
+Appends each element returned by <code>c.iter()</code>.
 </function>
 
 <function name="find">
@@ -146,7 +146,7 @@ Returns a sub-list of the elements from position <code>lower</code> (inclusive) 
 Inserts <code>o</code> at position <code>i</code>, causing the original values of position <code>i</code> (inclusive) to <code>self.len()</code> (exclusive) to be shuffled up by one position. An exception is raised if <code>i</code> is out of bounds.
 </function>
 
-<function name="iterate">
+<function name="iter">
 <argument name="lower" type="Number">0</argument>
 <argument name="upper" type="Number">self.len()</argument>
 Successively generates, in order, each value in the list.
@@ -165,7 +165,7 @@ Deletes the last position in the list, returning that positions value.
 Successively deletes, in order, each element which equals <code>o</code>. Returns the value of that entry on each successful deletion, failing when no elements remain to be deleted.
 </function>
 
-<function name="riterate">
+<function name="riter">
 Successively generates, in reverse order, each value in the list.
 </function>
 
@@ -179,7 +179,7 @@ Sets the value at position <code>i</code> to <code>o</code>. Raises an exception
 <argument name="lower" type="Number">0</argument>
 <argument name="upper" type="Number">self.len()</argument>
 <argument name="c" type="Object" />
-Effectively deletes the elements from position <code>lower</code> (inclusive) to <code>upper</code> (exclusive) and then successively inserts each element returned by <code>c.iterate()</code> at position <code>lower + <em>position in c</em></code>. An exception is raised if either index is out of bounds.
+Effectively deletes the elements from position <code>lower</code> (inclusive) to <code>upper</code> (exclusive) and then successively inserts each element returned by <code>c.iter()</code> at position <code>lower + <em>position in c</em></code>. An exception is raised if either index is out of bounds.
 </function>
 </class>
 
@@ -248,7 +248,7 @@ Returns a new set which contains every element of <code>self</code> which is not
 
 <function name="extend">
 <argument name="c" />
-Successively adds each element returned by <code>c.iterate()</code> to the set.
+Successively adds each element returned by <code>c.iter()</code> to the set.
 </function>
 
 <function name="find">
@@ -257,7 +257,7 @@ Successively adds each element returned by <code>c.iterate()</code> to the set.
 Returns the object which compares equal to <code>o</code>. If no such object is not found, 'default' is returned or, if no default value is specified, it fails. Note that unlike many other fuctions named <code>find</code>, this only returns a single value.
 </function>
 
-<function name="iterate">
+<function name="iter">
 Successively generates each value in the set.
 </function>
 
@@ -296,7 +296,7 @@ Returns this strings hash value.
 Returns a sub-string of the characters from position <code>lower</code> (inclusive) to <code>upper</code> (exclusive). An exception is raised if either index is out of bounds.
 </function>
 
-<function name="iterate">
+<function name="iter">
 <argument name="lower" type="Number">0</argument>
 <argument name="upper" type="Number">self.len()</argument>
 Successively generates, in order, each character in the string.

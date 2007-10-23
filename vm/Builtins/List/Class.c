@@ -62,11 +62,11 @@ Con_Obj *_Con_Builtins_List_Class_flattened_func(Con_Obj *);
 Con_Obj *_Con_Builtins_List_Class_get_func(Con_Obj *);
 Con_Obj *_Con_Builtins_List_Class_get_slice_func(Con_Obj *);
 Con_Obj *_Con_Builtins_List_Class_insert_func(Con_Obj *);
-Con_Obj *_Con_Builtins_List_Class_iterate_func(Con_Obj *);
+Con_Obj *_Con_Builtins_List_Class_iter_func(Con_Obj *);
 Con_Obj *_Con_Builtins_List_Class_len_func(Con_Obj *);
 Con_Obj *_Con_Builtins_List_Class_pop_func(Con_Obj *);
 Con_Obj *_Con_Builtins_List_Class_remove_func(Con_Obj *);
-Con_Obj *_Con_Builtins_List_Class_riterate_func(Con_Obj *);
+Con_Obj *_Con_Builtins_List_Class_riter_func(Con_Obj *);
 Con_Obj *_Con_Builtins_List_Class_set_func(Con_Obj *);
 Con_Obj *_Con_Builtins_List_Class_set_slice_func(Con_Obj *);
 
@@ -106,11 +106,11 @@ void Con_Builtins_List_Class_bootstrap(Con_Obj *thread)
 	CON_SET_FIELD(list_class, "get", CON_NEW_BOUND_C_FUNC(_Con_Builtins_List_Class_get_func, "get", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), list_class));
 	CON_SET_FIELD(list_class, "get_slice", CON_NEW_BOUND_C_FUNC(_Con_Builtins_List_Class_get_slice_func, "get_slice", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), list_class));
 	CON_SET_FIELD(list_class, "insert", CON_NEW_BOUND_C_FUNC(_Con_Builtins_List_Class_insert_func, "insert", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), list_class));
-	CON_SET_FIELD(list_class, "iterate", CON_NEW_BOUND_C_FUNC(_Con_Builtins_List_Class_iterate_func, "iterate", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), list_class));
+	CON_SET_FIELD(list_class, "iter", CON_NEW_BOUND_C_FUNC(_Con_Builtins_List_Class_iter_func, "iter", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), list_class));
 	CON_SET_FIELD(list_class, "len", CON_NEW_BOUND_C_FUNC(_Con_Builtins_List_Class_len_func, "len", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), list_class));
 	CON_SET_FIELD(list_class, "pop", CON_NEW_BOUND_C_FUNC(_Con_Builtins_List_Class_pop_func, "pop", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), list_class));
 	CON_SET_FIELD(list_class, "remove", CON_NEW_BOUND_C_FUNC(_Con_Builtins_List_Class_remove_func, "remove", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), list_class));
-	CON_SET_FIELD(list_class, "riterate", CON_NEW_BOUND_C_FUNC(_Con_Builtins_List_Class_riterate_func, "riterate", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), list_class));
+	CON_SET_FIELD(list_class, "riter", CON_NEW_BOUND_C_FUNC(_Con_Builtins_List_Class_riter_func, "riter", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), list_class));
 	CON_SET_FIELD(list_class, "set", CON_NEW_BOUND_C_FUNC(_Con_Builtins_List_Class_set_func, "set", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), list_class));
 	CON_SET_FIELD(list_class, "set_slice", CON_NEW_BOUND_C_FUNC(_Con_Builtins_List_Class_set_slice_func, "set_slice", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), list_class));
 }
@@ -229,7 +229,7 @@ Con_Obj *_Con_Builtins_List_Class_add_func(Con_Obj *thread)
 		new_list_list_atom->num_entries += self_list_atom->num_entries;
 		CON_MUTEXES_UNLOCK(&self->mutex, &new_list->mutex);
 
-		CON_PRE_GET_SLOT_APPLY_PUMP(o, "iterate");
+		CON_PRE_GET_SLOT_APPLY_PUMP(o, "iter");
 		while (1) {
 			Con_Obj *val = CON_APPLY_PUMP();
 			if (val == NULL)
@@ -570,7 +570,7 @@ Con_Obj *_Con_Builtins_List_Class_extend_func(Con_Obj *thread)
 	else {
 		CON_MUTEX_UNLOCK(&o->mutex);
 		
-		CON_PRE_GET_SLOT_APPLY_PUMP(o, "iterate");
+		CON_PRE_GET_SLOT_APPLY_PUMP(o, "iter");
 		while (1) {
 			Con_Obj *val = CON_APPLY_PUMP();
 			if (val == NULL)
@@ -787,10 +787,10 @@ Con_Obj *_Con_Builtins_List_Class_insert_func(Con_Obj *thread)
 
 
 //
-// 'iterate(lower := 0, upper := -1)' is a generator which returns each element of the list in order.
+// 'iter(lower := 0, upper := -1)' is a generator which returns each element of the list in order.
 //
 
-Con_Obj *_Con_Builtins_List_Class_iterate_func(Con_Obj *thread)
+Con_Obj *_Con_Builtins_List_Class_iter_func(Con_Obj *thread)
 {
 	Con_Obj *lower_obj, *self, *upper_obj;
 	CON_UNPACK_ARGS("L;OO", &self, &lower_obj, &upper_obj);
@@ -892,11 +892,11 @@ Con_Obj *_Con_Builtins_List_Class_remove_func(Con_Obj *thread)
 
 
 //
-// 'riterate(lower := 0, upper := -1)' is a generator which returns each element of the list in
+// 'riter(lower := 0, upper := -1)' is a generator which returns each element of the list in
 // reverse order.
 //
 
-Con_Obj *_Con_Builtins_List_Class_riterate_func(Con_Obj *thread)
+Con_Obj *_Con_Builtins_List_Class_riter_func(Con_Obj *thread)
 {
 	Con_Obj *lower_obj, *self, *upper_obj;
 	CON_UNPACK_ARGS("L;OO", &self, &lower_obj, &upper_obj);

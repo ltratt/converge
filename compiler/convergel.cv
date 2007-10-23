@@ -38,7 +38,7 @@ class Linker:
 		
 		target_name := Strings::format("%dbit", Properties::word_bits)
 		parsed_args, extra_args := options.parse()
-		for option_name, option_val := parsed_args.iterate():
+		for option_name, option_val := parsed_args.iter():
 			if option_name == "output":
 				output_path := option_val
 			elif option_name == "target":
@@ -55,7 +55,7 @@ class Linker:
 		input_paths.extend(Compiler_Vars::get_std_libraries())
 
 		cv_mods := []
-		for input_path := extra_args.iterate():
+		for input_path := extra_args.iter():
 			input_path := File::canon_path(input_path)
 			input_file := File::open(input_path, "r")
 			input_file_data := input_file.read()
@@ -64,7 +64,7 @@ class Linker:
 			
 			if file_type == CV_Library::LIBRARY_INIT_STRING:
 				library := CV_Library::CV_Library.new(target)
-				for cv_mod := library.deserialize(input_file_data).iterate():
+				for cv_mod := library.deserialize(input_file_data).iter():
 					cv_mods.append(cv_mod)
 			elif file_type == CV_Module::MODULE_INIT_STRING:
 				cv_mod := CV_Module::CV_Module.new(target)
@@ -93,7 +93,7 @@ class Linker:
 		
 		target_name := Strings::format("%dbit", Properties::word_bits)
 		parsed_args, extra_args := options.parse()
-		for option_name, option_val := parsed_args.iterate():
+		for option_name, option_val := parsed_args.iter():
 			if option_name == "library_mode":
 				pass
 			elif option_name == "output":
@@ -109,7 +109,7 @@ class Linker:
 		target := self.target_name_to_target(target_name)
 
 		modules := []
-		for input_path := extra_args.iterate():
+		for input_path := extra_args.iter():
 			input_path := File::canon_path(input_path)
 			input_file := File::open(input_path, "r")
 			input_file_data := input_file.read()
@@ -118,7 +118,7 @@ class Linker:
 			
 			if file_type == CV_Library::LIBRARY_INIT_STRING:
 				library := CV_Library::CV_Library.new(target)
-				for cv_mod := library.deserialize(input_file_data).iterate():
+				for cv_mod := library.deserialize(input_file_data).iter():
 					modules.append(cv_mod.serialize())
 			elif file_type == CV_Module::MODULE_INIT_STRING:
 				modules.append(input_file_data)
@@ -134,7 +134,7 @@ class Linker:
 		
 		offsets := Array::Array.new(target.ARRAY_TYPE)
 		serialized_modules := Array::Array.new(target.ARRAY_TYPE)
-		for module := modules.iterate():
+		for module := modules.iter():
 			offsets.append((library.len() + modules.len() + serialized_modules.len()) * target.WORDSIZE)
 			serialized_modules.extend_from_string(module)
 		
@@ -171,7 +171,7 @@ class Linker:
 
 		if not src_infos is null:
 			Sys::stderr.writeln(Strings::format("%s:", pre_msg))
-			for src_info := src_infos.iterate():
+			for src_info := src_infos.iter():
 				mod := Builtins::Module.new(self.modules[src_info[0]][0].serialize())
 				line, col := mod.src_offset_to_line_column(src_info[1])
 				
@@ -200,7 +200,7 @@ class Linker:
 	func _tn_src_infos(self, src_infos, mod):
 	
 		new_src_infos := []
-		for mod_num, offset := src_infos.iterate():
+		for mod_num, offset := src_infos.iter():
 			if mod_num == -1:
 				new_src_infos.append([mod.get_identifier(), offset])
 			else:

@@ -140,7 +140,7 @@ Con_Obj *_Con_Module_Sys_print_func(Con_Obj *thread)
 
 	Con_Obj *write_func = CON_GET_SLOT(CON_GET_MOD_DEFN(sys_mod, "stdout"), "write");
 
-	CON_PRE_GET_SLOT_APPLY_PUMP(var_args, "iterate");
+	CON_PRE_GET_SLOT_APPLY_PUMP(var_args, "iter");
 	while (1) {
 		Con_Obj *str = CON_APPLY_PUMP();
 		if (str == NULL)
@@ -166,7 +166,7 @@ Con_Obj *_Con_Module_Sys_println_func(Con_Obj *thread)
 
 	Con_Obj *write_func = CON_GET_SLOT(CON_GET_MOD_DEFN(sys_mod, "stdout"), "write");
 
-	CON_PRE_GET_SLOT_APPLY_PUMP(var_args, "iterate");
+	CON_PRE_GET_SLOT_APPLY_PUMP(var_args, "iter");
 	while (1) {
 		Con_Obj *str = CON_APPLY_PUMP();
 		if (str == NULL)

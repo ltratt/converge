@@ -28,7 +28,7 @@ import Compiler_Vars, CV_Exec, Mk_Packages
 func link_exec(mods, linker, target):
 
 	mods_map := Dict{}
-	for mod := mods.iterate():
+	for mod := mods.iter():
 		mods_map[mod.get_identifier()] := mod
 
 	linked_bytecode := Array::Array.new(target.ARRAY_TYPE)
@@ -58,13 +58,13 @@ func link_exec(mods, linker, target):
 		ser_mods.extend_from_string(mod.serialize())
 		done_mods.append(mod)
 
-		for imp_mod_id := mod.get_imports().iterate():
+		for imp_mod_id := mod.get_imports().iter():
 			if not Compiler_Vars::BUILTIN_MODULES.find(imp_mod_id):
 				if not (done_ids.find(imp_mod_id) | todo.find(imp_mod_id)):
 					if mods_map.find(imp_mod_id):
 						todo.append(imp_mod_id)
 
-		for mod_num, defn_names, src_infos := mod.get_mod_lookups().iterate():
+		for mod_num, defn_names, src_infos := mod.get_mod_lookups().iter():
 			lookedup_mod_id := mod.get_imports()[mod_num]
 			j := 1
 			while j < defn_names.len():
@@ -104,21 +104,21 @@ func link_exec(mods, linker, target):
 				j += 1
 
 	pkgs := Mk_Packages::mk_packages(done_mods, target)
-	for pkg := pkgs.iterate():
+	for pkg := pkgs.iter():
 		done_mods.append(pkg)
 		done_ids.add(pkg.get_identifier())
 		ser_mods_offsets.append(ser_mods.len_bytes())
 		ser_mods.extend_from_string(pkg.serialize())
 
-	for mod := done_mods.iterate():
-		for import_ := mod.get_imports().iterate():
+	for mod := done_mods.iter():
+		for import_ := mod.get_imports().iter():
 			if not Compiler_Vars::BUILTIN_MODULES.find(import_) & not done_ids.find(import_):
 				linker.error(Strings::format("Module '%s' referenced in '%s' not found in input files.", import_, mod_id))
 
 	linked_bytecode[target.LIBRARY_BYTECODE_NUM_MODULES] := ser_mods_offsets.len()
 
 	preamble_length := (linked_bytecode.len() + ser_mods_offsets.len()) * target.WORDSIZE
-	for mod_offset := ser_mods_offsets.iterate():
+	for mod_offset := ser_mods_offsets.iter():
 		linked_bytecode.append(preamble_length + mod_offset)
 
 	linked_bytecode.extend(ser_mods)
@@ -138,7 +138,7 @@ func link_exec(mods, linker, target):
 func _tn_src_infos(src_infos, mod):
 
 	new_src_infos := []
-	for mod_num, offset := src_infos.iterate():
+	for mod_num, offset := src_infos.iter():
 		if mod_num == -1:
 			new_src_infos.append([mod.get_identifier(), offset])
 		else:

@@ -92,7 +92,7 @@ Con_Obj *_Con_Module_C_Strings_join_func(Con_Obj *thread)
 	
 	Con_Int i = 0;
 	Con_Int str_mem_size = 0;
-	CON_PRE_GET_SLOT_APPLY_PUMP(list, "iterate");
+	CON_PRE_GET_SLOT_APPLY_PUMP(list, "iter");
 	while (1) {
 		Con_Obj *val = CON_APPLY_PUMP();
 		if (val == NULL)

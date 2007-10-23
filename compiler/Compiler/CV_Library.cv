@@ -52,7 +52,7 @@ class CV_Library:
 		library := Array::Array.new(self._target.ARRAY_TYPE, mod_str)
 	
 		self.modules := []
-		for i := 0.to(library[self._target.LIBRARY_BYTECODE_NUM_MODULES]):
+		for i := 0.iter_to(library[self._target.LIBRARY_BYTECODE_NUM_MODULES]):
 			cv_mod := CV_Module::CV_Module.new(self._target)
 			mod_offset := library[self._target.LIBRARY_BYTECODE_MODULE_OFFSETS + i] / self._target.WORDSIZE
 			to := mod_offset + library[mod_offset + self._target.MODULE_BYTECODE_SIZE] / self._target.WORDSIZE
@@ -75,7 +75,7 @@ class CV_Library:
 		library[self._target.LIBRARY_BYTECODE_MODULE_OFFSETS] := library.len_bytes()
 		
 		serialized_modules := Array::Array.new(self._target.ARRAY_TYPE)
-		for module := self.modules.iterate():
+		for module := self.modules.iter():
 			library.append(library.len_bytes() + serialized_modules.len_bytes())
 			serialized_modules.extend_from_string(module.serialize())
 		

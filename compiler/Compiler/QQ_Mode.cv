@@ -86,7 +86,7 @@ class QQ_Mode:
 				self._extra_src_infos_var := null
 
 			vars := Set{}
-			for var := node.body.exprs.iterate():
+			for var := node.body.exprs.iter():
 				vars.extend(var.qq_bound_vars)
 			self._add_vars(vars, [])
 			
@@ -106,7 +106,7 @@ class QQ_Mode:
 			// variable above as an optimisation (although that is perhaps making a virtue out of
 			// a very convenient necessity).
 			
-			for var_name := node.qq_bound_vars.iterate():
+			for var_name := node.qq_bound_vars.iter():
 				if not node.extra_src_infos is null & var_name == node.extra_src_infos_var_name:
 					continue
 				
@@ -132,7 +132,7 @@ class QQ_Mode:
 	func _add_vars(self, vars, renames):
 	
 		vars_dict := Dict{}
-		for var := vars.iterate():
+		for var := vars.iter():
 			vars_dict[var] := vars_dict.len()
 
 		self.closures.append([vars_dict, renames])
@@ -154,7 +154,7 @@ class QQ_Mode:
 	func _qq(self, node_type, args, node_src_infos):
 
 		src_infos := []
-		for src_file, src_offset := node_src_infos.iterate():
+		for src_file, src_offset := node_src_infos.iter():
 			src_infos.append(ITree::IList.new([ITree::IString.new(src_file, node_src_infos), ITree::IInt.new(src_offset, node_src_infos)], node_src_infos))
 		
 		full_src_infos := ITree::IList.new(src_infos, node_src_infos)
@@ -272,7 +272,7 @@ class QQ_Mode:
 
 		block := []
 		contains_iinsert := 0
-		for expr := node.exprs.iterate():
+		for expr := node.exprs.iter():
 			if ITree::IInsert.instantiated(expr):
 				// We need to check the result of an IInsert at "run-time". In an expression block,
 				// it's perfectly legitimite for an insert to return a list. So at "run-time" have
@@ -327,7 +327,7 @@ class QQ_Mode:
 					class_name := self._process_assign_name(node.class_name, node.src_infos)
 
 		supers := []
-		for super := node.supers.iterate():
+		for super := node.supers.iter():
 			supers.append(self._preorder(super))
 		
 		if node.metaclass_ is null:
@@ -341,7 +341,7 @@ class QQ_Mode:
 		self._nesting.append(_NEST_CLASS)
 		
 		fields := []
-		for field := node.fields.iterate():
+		for field := node.fields.iter():
 			fields.append(self._preorder(field))
 		
 		self._nesting.pop()
@@ -379,7 +379,7 @@ class QQ_Mode:
 		self._add_vars(node.internal_bound_vars, [])
 
 		params_list := []
-		for param := node.params.iterate():
+		for param := node.params.iter():
 			if ITree::IParam.instantiated(param):
 				var := self._preorder(param.var)
 				if param.default is null:
@@ -403,11 +403,11 @@ class QQ_Mode:
 			var_arg := self._process_assign_var(node.var_arg.var_name, node.src_infos)
 		
 		nonlocals := []
-		for nonlocal_ := node.nonlocals.iterate():
+		for nonlocal_ := node.nonlocals.iter():
 			raise "XXX"
 		
 		renames := []
-		for rename_ := node.renames.iterate():
+		for rename_ := node.renames.iter():
 			raise "XXX"
 		
 		body := self._preorder(node.body)
@@ -428,7 +428,7 @@ class QQ_Mode:
 	func _t_iif(self, node):
 
 		clauses := []
-		for clause := node.clauses.iterate():
+		for clause := node.clauses.iter():
 			clauses.append(self._preorder(clause))
 		
 		if node.else_body is null:
@@ -443,7 +443,7 @@ class QQ_Mode:
 	func _t_indif(self, node):
 
 		clauses := []
-		for clause := node.clauses.iterate():
+		for clause := node.clauses.iter():
 			clauses.append(self._preorder(clause))
 		
 		return self._qq("INDIf", [ITree::IList.new(clauses, node.src_infos)], node.src_infos)
@@ -528,7 +528,7 @@ class QQ_Mode:
 
 		// Processing all
 
-		for name := node.names.iterate(1):
+		for name := node.names.iter(1):
 			if ITree::IInsert.instantiated(name):
 				qq_name := name.expr
 			else:
@@ -542,7 +542,7 @@ class QQ_Mode:
 	func _t_ilist(self, node):
 
 		elems := []
-		for elem := node.elements.iterate():
+		for elem := node.elements.iter():
 			elems.append(self._preorder(elem))
 		
 		return self._qq("IList", [ITree::IList.new(elems, node.src_infos)], node.src_infos)
@@ -552,7 +552,7 @@ class QQ_Mode:
 	func _t_idict(self, node):
 
 		elems := []
-		for key, val := node.elements.iterate():
+		for key, val := node.elements.iter():
 			elems.append(ITree::IList.new([self._preorder(key), self._preorder(val)], node.src_infos))
 		
 		return self._qq("IDict", [ITree::IList.new(elems, node.src_infos)], node.src_infos)
@@ -562,7 +562,7 @@ class QQ_Mode:
 	func _t_iset(self, node):
 
 		elems := []
-		for elem := node.elements.iterate():
+		for elem := node.elements.iter():
 			elems.append(self._preorder(elem))
 		
 		return self._qq("ISet", [ITree::IList.new(elems, node.src_infos)], node.src_infos)
@@ -573,7 +573,7 @@ class QQ_Mode:
 
 		func_expr := self._preorder(node.func_expr)
 		args := []
-		for arg := node.args.iterate():
+		for arg := node.args.iter():
 			args.append(self._preorder(arg))
 		
 		return self._qq("IApplication", [func_expr, ITree::IList.new(args, node.src_infos)], node.src_infos)
@@ -646,7 +646,7 @@ class QQ_Mode:
 	func _t_iconjunction(self, node):
 	
 		exprs := []
-		for expr := node.exprs.iterate():
+		for expr := node.exprs.iter():
 			exprs.append(self._preorder(expr))
 		
 		return self._qq("IConjunction", [ITree::IList.new(exprs, node.src_infos)], node.src_infos)
@@ -656,7 +656,7 @@ class QQ_Mode:
 	func _t_ialternation(self, node):
 
 		exprs := []
-		for expr := node.exprs.iterate():
+		for expr := node.exprs.iter():
 			exprs.append(self._preorder(expr))
 
 		return self._qq("IAlternation", [ITree::IList.new(exprs, node.src_infos)], node.src_infos)
@@ -666,7 +666,7 @@ class QQ_Mode:
 	func _t_iassignment(self, node):
 
 		targets := []
-		for target := node.targets.iterate():
+		for target := node.targets.iter():
 			if ITree::IVar.instantiated(target):
 				if self._nesting.len() > 0 & self._nesting[-1] == _NEST_CLASS:
 					targets.append(self._qq("IVar", [ITree::IString.new(target.var_name, node.src_infos)], node.src_infos))
@@ -759,7 +759,7 @@ class QQ_Mode:
 
 		body := self._preorder(node.body)
 		catches := []
-		for catches.append(self._preorder(node.catches.iterate()))
+		for catches.append(self._preorder(node.catches.iter()))
 		
 		return self._qq("ITry", [body, ITree::IList.new(catches, node.src_infos)], node.src_infos)	
 
@@ -836,7 +836,7 @@ func _expr_block_magic(exprs):
 func _expr_block_insert(expr, src_infos):
 
 	if Builtins::List.instantiated(expr):
-		for e := expr.iterate():
+		for e := expr.iter():
 			if not ITree::IPass.instantiated(e):
 				ITree_TC::tc_expr(e, "in expression body", src_infos)
 	else:

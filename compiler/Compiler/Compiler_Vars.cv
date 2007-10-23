@@ -115,7 +115,7 @@ func find_std_includes():
 
 	bin_dir := File::split_leaf(Sys::program_path)[0]
 	lib_path_candidates := [File::join_names(bin_dir, "..", "lib", "converge-" + Sys::version), File::join_names(bin_dir, "..", "lib", "converge"), File::join_names(bin_dir, "..", "lib")]
-	for lib_path := lib_path_candidates.iterate():
+	for lib_path := lib_path_candidates.iter():
 		if File::exists(lib_path):
 			includes.append(File::canon_path(lib_path))
 			break
@@ -130,7 +130,7 @@ func find_std_includes():
 	// where ".." is relative to the directory convergec was contained in.
 
 	compiler_path_candidates := [File::join_names(bin_dir, "Compiler"), File::join_names(lib_path, "Compiler")]
-	for lib_path := compiler_path_candidates.iterate():
+	for lib_path := compiler_path_candidates.iter():
 		if File::exists(lib_path):
 			includes.append(File::canon_path(File::join_names(lib_path, "..")))
 			break
@@ -157,7 +157,7 @@ func get_std_libraries():
 	cnd_dirs := [File::join_names(bin_dir, "..", "lib", "converge-" + Sys::version), \
 	  File::join_names(bin_dir, "..", "lib", "converge"), \
 	  File::join_names(bin_dir, "..", "lib")]
-	for cnd_dir := cnd_dirs.iterate():
+	for cnd_dir := cnd_dirs.iter():
 		cnd_path := File::join_names(cnd_dir, "libconverge.cvl")
 		if File::exists(cnd_path):
 			libraries.append(File::canon_path(cnd_path))
@@ -176,7 +176,7 @@ func get_std_libraries():
 	cnd_dirs := [File::join_names(bin_dir, "..", "lib", "converge-" + Sys::version, "Compiler"), \
 	  File::join_names(bin_dir, "..", "lib", "converge", "Compiler"), \
 	  File::join_names(bin_dir, "..", "compiler")]
-	for cnd_dir := cnd_dirs.iterate():
+	for cnd_dir := cnd_dirs.iter():
 		cnd_path := File::join_names(cnd_dir, "libcompiler.cvl")
 		if File::exists(cnd_path):
 			libraries.append(File::canon_path(cnd_path))

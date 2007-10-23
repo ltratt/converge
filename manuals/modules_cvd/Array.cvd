@@ -26,7 +26,7 @@ Adds <code>o</code> to the end of the array. <code>o</code> must be of an approp
 
 <function name="Array#extend">
 <argument name="c" type="Object" />
-Appends each element returned by <code>c.iterate()</code>.
+Appends each element returned by <code>c.iter()</code>.
 </function>
 
 <function name="Array#extend_from_string">

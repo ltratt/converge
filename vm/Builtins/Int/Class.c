@@ -62,7 +62,7 @@ Con_Obj *_Con_Builtins_Int_Class_mul_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Int_Class_lsl_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Int_Class_lsr_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Int_Class_or_func(Con_Obj *);
-Con_Obj *_Con_Builtins_Int_Class_to_func(Con_Obj *);
+Con_Obj *_Con_Builtins_Int_Class_iter_to_func(Con_Obj *);
 
 
 
@@ -99,7 +99,7 @@ void Con_Builtins_Int_Class_bootstrap(Con_Obj *thread)
 	CON_SET_FIELD(int_class, "lsl", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Int_Class_lsl_func, "lsl", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), int_class));
 	CON_SET_FIELD(int_class, "lsr", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Int_Class_lsr_func, "lsr", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), int_class));
 	CON_SET_FIELD(int_class, "or", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Int_Class_or_func, "or", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), int_class));
-	CON_SET_FIELD(int_class, "to", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Int_Class_to_func, "to", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), int_class));
+	CON_SET_FIELD(int_class, "iter_to", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Int_Class_iter_to_func, "iter_to", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), int_class));
 }
 
 
@@ -440,10 +440,10 @@ Con_Obj *_Con_Builtins_Int_Class_or_func(Con_Obj *thread)
 
 
 //
-// '+(o)'.
+// 'iter_to(n)'.
 //
 
-Con_Obj *_Con_Builtins_Int_Class_to_func(Con_Obj *thread)
+Con_Obj *_Con_Builtins_Int_Class_iter_to_func(Con_Obj *thread)
 {
 	Con_Obj *self, *step_obj, *to_obj;
 	CON_UNPACK_ARGS("IN;N", &self, &to_obj, &step_obj);

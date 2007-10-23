@@ -128,7 +128,7 @@ class Bytecode_Gen:
 		
 		// Fudge for constants.
 		
-		for label := self._constants_labels.iterate():
+		for label := self._constants_labels.iter():
 			self._labels[label] += self._instructions.len()
 
 		self._instructions += self._constants_instructions
@@ -142,7 +142,7 @@ class Bytecode_Gen:
 		
 		pc := 0
 		bytecode_offsets := []
-		for instruction := self._instructions.iterate():
+		for instruction := self._instructions.iter():
 			bytecode_offsets.append(pc)
 			pc += instruction.bytecode_len_bytes()
 
@@ -161,7 +161,7 @@ class Bytecode_Gen:
 		all_src_infos := []
 		last_src_infos := null
 		src_infos_count := 0
-		for instruction := self._instructions.iterate():
+		for instruction := self._instructions.iter():
 			instruction_bytecode := instruction.to_bytecode()
 			if Builtins::List.conformed_by(instruction_bytecode) | Array::Array.conformed_by(instruction_bytecode):
 				instructions_bytecode.extend(instruction_bytecode)
@@ -185,24 +185,24 @@ class Bytecode_Gen:
 		// Calculate the imports that we'll populate the module with. Note that we calculate
 
 		module_imports := [null] * self._imports.len()
-		for import_name, import_num := self._imports.iterate():
+		for import_name, import_num := self._imports.iter():
 			module_imports[import_num] := import_name
 		
 		constants_offsets := []
-		for label := self._constants_labels.iterate():
+		for label := self._constants_labels.iter():
 			constants_offsets.append(bytecode_offsets[self._labels[label]])
 
 		// For each definition that is an import, create a map from the variable number to the import
 		// number.
 
 		import_defns := Dict{}
-		for defn_name, mod_id := self.closures[0][Compiler_Vars::CLOSURE_IMPORTS].iterate():
+		for defn_name, mod_id := self.closures[0][Compiler_Vars::CLOSURE_IMPORTS].iter():
 			import_defns[self.closures[0][Compiler_Vars::CLOSURE_VARS][defn_name]] := self._imports[mod_id]
 
 		// Calculate all the module lookups performed by this module.
 
 		mod_lookups := []
-		for mod_id, defn, src_infos := self._mod_lookups.iterate():
+		for mod_id, defn, src_infos := self._mod_lookups.iter():
 			mod_lookups.append([self._imports[mod_id], Strings::split(defn, "::"), self._tn_src_infos(src_infos)])
 		
 		module := CV_Module::CV_Module.new(self._target)
@@ -229,7 +229,7 @@ class Bytecode_Gen:
 	func _tn_src_infos(self, src_infos):
 
 		tn_src_infos := []
-		for module_id, src_offset := src_infos.iterate():
+		for module_id, src_offset := src_infos.iter():
 			if module_id == self._module_id:
 				import_num := -1
 			else:
@@ -268,11 +268,11 @@ class Bytecode_Gen:
 	func _add_vars(self, vars, renames, import_vars):
 	
 		vars_dict := Dict{}
-		for var := vars.iterate():
+		for var := vars.iter():
 			vars_dict[var] := vars_dict.len()
 		
 		import_vars_dict := Dict{}
-		for var := import_vars.iterate():
+		for var := import_vars.iter():
 			import_vars_dict[var] := null
 
 		self.closures.append([vars_dict, renames, import_vars_dict])
@@ -356,7 +356,7 @@ class Bytecode_Gen:
 			self._imports[import_id] := self._imports.len()
 			self._instructions.append(self._target.Instr_Import.new(src_infos, self._imports.len() - 1))
 		
-		for import_extra := import_extras.iterate():
+		for import_extra := import_extras.iter():
 			self._instructions.append(self._target.Instr_Module_Lookup.new(src_infos, import_extra))
 
 
@@ -413,7 +413,7 @@ class Bytecode_Gen:
 
 	func _t_iexpr_block(self, node):
 	
-		for expr := node.exprs.iterate():
+		for expr := node.exprs.iter():
 			end_of_expr_label := self._create_label()
 			self._nesting.append([NEST_NORMAL])
 			self._instructions.append(self._target.Instr_Add_Failure_Frame.new(expr.src_infos, end_of_expr_label))
@@ -445,7 +445,7 @@ class Bytecode_Gen:
 		self._instructions.append(self._target.Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_NULL_OBJ))
 		self._add_assign_to_var("null", node.src_infos)
 
-		for defn := node.defns.iterate():
+		for defn := node.defns.iter():
 			end_of_defn_label := self._create_label()
 			self._instructions.append(self._target.Instr_Add_Failure_Frame.new(node.src_infos, end_of_defn_label))
 			self.preorder(defn)
@@ -471,7 +471,7 @@ class Bytecode_Gen:
 		self._instructions.append(self._target.Instr_String.new(node.src_infos, node.class_name))
 		
 		if node.supers.len() > 0:
-			for super_ := node.supers.iterate():
+			for super_ := node.supers.iter():
 				self.preorder(super_)
 			self._instructions.append(self._target.Instr_List.new(node.src_infos, node.supers.len()))
 		else:
@@ -486,7 +486,7 @@ class Bytecode_Gen:
 		self._instructions.append(self._target.Instr_Apply.new(node.src_infos, 3))
 
 		self._nesting.append([NEST_CLASS])
-		for field := node.fields.iterate():
+		for field := node.fields.iter():
 			if ITree::IPass.instantiated(field):
 				continue
 			
@@ -518,7 +518,7 @@ class Bytecode_Gen:
 			return
 
 		inside_class := 0
-		for nest := self._nesting.riterate():
+		for nest := self._nesting.riter():
 			if nest[0] == NEST_CLASS:
 				inside_class := 1
 			elif nest[0] == NEST_FUNC:
@@ -534,7 +534,7 @@ class Bytecode_Gen:
 		bound_vars := node.internal_bound_vars
 		
 		renames := Dict{}
-		for rename_ := node.renames.iterate():
+		for rename_ := node.renames.iter():
 			raise "XXX"
 		
 		self._add_vars(bound_vars, renames, node.internal_import_vars)
@@ -549,7 +549,7 @@ class Bytecode_Gen:
 		self._instructions.append(self._target.Instr_Branch.new(node.src_infos, end_of_func_body_label))
 		
 		params_info := []
-		for param := node.params.iterate():
+		for param := node.params.iter():
 			closures_offset, var_num := self._get_var_offsets(param.var.var_name, param.var.src_infos)
 			assert(closures_offset == 0)
 			if param.default is null:
@@ -565,7 +565,7 @@ class Bytecode_Gen:
 			params_info.append([var_num, 0])
 			self._instructions.append(self._target.Instr_Unpack_Args.new(node.src_infos, params_info, 1))
 		
-		for param := node.params.iterate():
+		for param := node.params.iter():
 			if param.default is null:
 				continue
 			next_param_label := self._create_label()
@@ -592,7 +592,7 @@ class Bytecode_Gen:
 			return
 		
 		inside_class := 0
-		for nest := self._nesting.riterate():
+		for nest := self._nesting.riter():
 			if nest[0] == NEST_CLASS:
 				inside_class := 1
 			elif nest[0] == NEST_FUNC:
@@ -611,7 +611,7 @@ class Bytecode_Gen:
 	func _t_iif(self, node):
 	
 		end_of_if_label := self._create_label()
-		for clause := node.clauses.iterate():
+		for clause := node.clauses.iter():
 			end_of_clause_label := self._create_label()
 			self._nesting.append([NEST_NORMAL])
 			self._instructions.append(self._target.Instr_Add_Failure_Frame.new(node.src_infos, end_of_clause_label))
@@ -637,7 +637,7 @@ class Bytecode_Gen:
 	func _t_indif(self, node):
 	
 		end_of_ndif_label := self._create_label()
-		for clause := node.clauses.iterate():
+		for clause := node.clauses.iter():
 			end_of_clause_label := self._create_label()
 			self._nesting.append([NEST_NORMAL])
 			self._instructions.append(self._target.Instr_Add_Failure_Frame.new(node.src_infos, end_of_clause_label))
@@ -672,7 +672,7 @@ class Bytecode_Gen:
 			self._imports[import_id] := self._imports.len()
 			self._instructions.append(self._target.Instr_Import.new(node.src_infos, self._imports.len() - 1))
 		
-		for import_extra := import_extras.iterate():
+		for import_extra := import_extras.iter():
 			self._instructions.append(self._target.Instr_Module_Lookup.new(node.src_infos, import_extra))
 		
 		self._add_assign_to_var(node.var_name, node.src_infos, import_id)
@@ -826,7 +826,7 @@ class Bytecode_Gen:
 		self._instructions.append(self._target.Instr_Branch.new(node.src_infos, end_label))
 		
 		self._set_label(catches_label)
-		for catch_ := node.catches.iterate():
+		for catch_ := node.catches.iter():
 			next_label := self._create_label()
 			self._instructions.append(self._target.Instr_Dup.new(catch_.src_infos))
 			self._instructions.append(self._target.Instr_Add_Failure_Frame.new(catch_.src_infos, next_label))
@@ -877,14 +877,14 @@ class Bytecode_Gen:
 
 		self.preorder(node.names[0])
 		
-		for name := node.names.iterate(1):
+		for name := node.names.iter(1):
 			self._instructions.append(self._target.Instr_Module_Lookup.new(name.src_infos, name.var_name))
 
 
 
 	func _t_ilist(self, node):
 	
-		for elem := node.elements.iterate():
+		for elem := node.elements.iter():
 			self.preorder(elem)
 		self._instructions.append(self._target.Instr_List.new(node.src_infos, node.elements.len()))
 
@@ -892,7 +892,7 @@ class Bytecode_Gen:
 
 	func _t_idict(self, node):
 	
-		for key, val := node.elements.iterate():
+		for key, val := node.elements.iter():
 			self.preorder(key)
 			self.preorder(val)
 		self._instructions.append(self._target.Instr_Dict.new(node.src_infos, node.elements.len()))
@@ -901,7 +901,7 @@ class Bytecode_Gen:
 
 	func _t_iset(self, node):
 	
-		for elem := node.elements.iterate():
+		for elem := node.elements.iter():
 			self.preorder(elem)
 		self._instructions.append(self._target.Instr_Set.new(node.src_infos, node.elements.len()))
 
@@ -915,7 +915,7 @@ class Bytecode_Gen:
 		else:
 			self.preorder(node.func_expr)
 			
-		for arg := node.args.iterate():
+		for arg := node.args.iter():
 			self.preorder(arg)
 			
 		self._instructions.append(self._target.Instr_Apply.new(node.src_infos, node.args.len()))
@@ -1060,7 +1060,7 @@ class Bytecode_Gen:
 
 	func _t_iconjunction(self, node):
 
-		for i := 0.to(node.exprs.len()):
+		for i := 0.iter_to(node.exprs.len()):
 			next_expr_label := self._create_label()
 			self.preorder(node.exprs[i])
 			if i + 1 == node.exprs.len():
@@ -1074,7 +1074,7 @@ class Bytecode_Gen:
 	func _t_ialternation(self, node):
 
 		end_of_alternation_label := self._create_label()
-		for expr := node.exprs.iterate():
+		for expr := node.exprs.iter():
 			next_expr_label := self._create_label()
 			self._nesting.append([NEST_NORMAL])
 			self._instructions.append(self._target.Instr_Add_Failure_Frame.new(node.src_infos, next_expr_label))
@@ -1092,7 +1092,7 @@ class Bytecode_Gen:
 	func _t_iassignment(self, node):
 	
 		if node.type != ITree::STD_ASSIGN:
-			for target := node.targets.iterate():
+			for target := node.targets.iter():
 				if ITree::IVar.instantiated(target):
 					self._add_lookup_var(target.var_name, target.src_infos)
 				elif ITree::ISlot_Lookup.instantiated(target):
@@ -1107,7 +1107,7 @@ class Bytecode_Gen:
 		if node.targets.len() > 1:
 			self._instructions.append(self._target.Instr_Unpack_Assign.new(node.src_infos, node.targets.len()))
 		
-		for target := node.targets.iterate():
+		for target := node.targets.iter():
 			if node.type == ITree::ADD_ASSIGN:
 				self._instructions.append(self._target.Instr_Add.new(node.src_infos))
 			elif node.type == ITree::SUB_ASSIGN:

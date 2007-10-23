@@ -72,7 +72,7 @@ class IModule_Gen:
 				expr := self._eval_splice(node[i][1], extra_src_infos)
 				if Builtins::List.conformed_by(expr):
 					tmp_exprs := []
-					for e := expr.iterate():
+					for e := expr.iter():
 						ITree_TC::tc_expr(e, "splice result", extra_src_infos + node[i][1][1][1].src_infos)
 						if node[i][1][1][0] == "expr_splice":
 							// expr_splice  ::= "$" "<" expr ">"
@@ -135,20 +135,20 @@ class IModule_Gen:
 		// Determine all the definitions we've currently processed into ITree's.
 
 		already_bound_vars := Dict{}
-		for i := 0.to(self._defns.len()):
+		for i := 0.iter_to(self._defns.len()):
 			defn := self._defns[i]
-			for target_var := defn.bound_vars.iterate():
+			for target_var := defn.bound_vars.iter():
 				already_bound_vars[target_var] := i
 
 		defns_to_include := Set{}
-		for free_var := expr.free_vars.iterate():
+		for free_var := expr.free_vars.iter():
 			if defn_i := already_bound_vars.find(free_var):
 				defns_to_include.add(defn_i)
 
 		stack := Builtins::List.new(defns_to_include)
 		i := 0
 		while i < stack.len():
-			for free_var := self._defns[stack[i]].free_vars.iterate():
+			for free_var := self._defns[stack[i]].free_vars.iter():
 				if not defns_to_include.find(free_var) & defn_i := already_bound_vars.find(free_var) & not stack.find_index(defn_i) <= i:
 					stack.append(defn_i)
 					defns_to_include.add(defn_i)
@@ -160,7 +160,7 @@ class IModule_Gen:
 
 		defns := []
 		i := 0
-		for i := 0.to(self._defns.len()):
+		for i := 0.iter_to(self._defns.len()):
 			if defns_to_include.find(i):
 				defns.append(self._defns[i])
 
@@ -176,7 +176,7 @@ class IModule_Gen:
 			// In bootstrapping mode we have to make sure that anything we inject into the
 			// running VM is entirely in terms of old module ids.
 			new_imports := []
-			for import_ := dummy_module.get_imports().iterate():
+			for import_ := dummy_module.get_imports().iter():
 				if import_.prefixed_by(self._compiler.top_level_path):
 					new_imports.append(File::join_names(self._compiler.original_lc_top_level_path, import_[self._compiler.top_level_path.len() : ]))
 				else:
@@ -187,11 +187,11 @@ class IModule_Gen:
 		modules_to_add := [Builtins::Module.new(dummy_module.serialize())]
 		i := 0
 		known_module_names := Set{}
-		for known_module_names.add(VM::vm.modules.keys())
-		for known_module_names.add(Compiler_Vars::BUILTIN_MODULES.iterate())
+		for known_module_names.add(VM::vm.modules.iter_keys())
+		for known_module_names.add(Compiler_Vars::BUILTIN_MODULES.iter())
 		while modules_stack.len() > 0:
 			module := modules_stack.pop()
-			for import_ := module.get_imports().iterate():
+			for import_ := module.get_imports().iter():
 				if self._compiler.bootstrap == 1 & import_.prefixed_by(self._compiler.top_level_path):
 					// In bootstrapping mode we have to make sure that anything we inject into the
 					// running VM is entirely in terms of old module ids.
@@ -312,7 +312,7 @@ class IModule_Gen:
 			defn := self._eval_splice(node[1], extra_src_infos)
 			if Builtins::List.conformed_by(defn):
 				tmp_defns := []
-				for d := defn.iterate():
+				for d := defn.iter():
 					ITree_TC::tc_expr(d, "splice result", extra_src_infos + node[1][1][1].src_infos)
 					if node[1][1][0] == "expr_splice":
 						// expr_splice  ::= "$" "<" expr ">"

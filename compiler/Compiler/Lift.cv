@@ -40,17 +40,17 @@ func lift(obj, src_infos := null):
 		return ITree::IInt.new(obj, src_infos)
 	elif Builtins::List.conformed_by(obj):
 		elems := []
-		for e := obj.iterate():
+		for e := obj.iter():
 			elems.append(lift(e, src_infos))
 		return ITree::IList.new(elems, src_infos)
 	elif Builtins::Set.conformed_by(obj):
 		elems := []
-		for e := obj.iterate():
+		for e := obj.iter():
 			elems.append(lift(e, src_infos))
 		return ITree::ISet.new(elems, src_infos)
 	elif Builtins::Dict.conformed_by(obj):
 		elems := []
-		for key, val := obj.iterate():
+		for key, val := obj.iter():
 			elems.append([lift(key, src_infos), lift(val, src_infos)])
 		return ITree::IDict.new(elems, src_infos)
 	else:

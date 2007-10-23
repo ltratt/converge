@@ -48,7 +48,7 @@ class Compiler:
 		target_name := Strings::format("%dbit", Properties::word_bits)
 		internal_target_name := Strings::format("%dbit", Properties::word_bits)
 		parsed, extra := options.parse()
-		for option_name, option_val := parsed.iterate():
+		for option_name, option_val := parsed.iter():
 			ndif option_name == "output":
 				self.output_path := option_val
 			elif option_name == "bootstrap":
@@ -103,7 +103,7 @@ class Compiler:
 			// module ids.
 			
 			existing_mod_ids := []
-			for mod_id := VM::vm.modules.keys():
+			for mod_id := VM::vm.modules.iter_keys():
 				if not Compiler_Vars::BUILTIN_MODULES.find(mod_id):
 					existing_mod_ids.append(mod_id)
 			
@@ -177,12 +177,12 @@ class Compiler:
 
 		lib_mods := [] // CV_Module instances.
 		mod_ids := Set{} // All module ids already dealt with.
-		for lib_path := Compiler_Vars::get_std_libraries().iterate():
+		for lib_path := Compiler_Vars::get_std_libraries().iter():
 			lib := CV_Library::CV_Library.new(self.target)
 			lib_file := File::open(lib_path, "r")
 			lib_data := lib_file.read()
 			lib_file.close()
-			for cv_mod := lib.deserialize(lib_data).iterate():
+			for cv_mod := lib.deserialize(lib_data).iter():
 				lib_mods.append(cv_mod)
 				mod_ids.add(cv_mod.get_identifier())
 
@@ -201,7 +201,7 @@ class Compiler:
 
 			mods.append(cv_mod)
 			
-			for mod_id := cv_mod.get_imports().iterate():
+			for mod_id := cv_mod.get_imports().iter():
 				if Compiler_Vars::BUILTIN_MODULES.find(mod_id) | mod_ids.find(mod_id):
 					continue
 				
@@ -270,7 +270,7 @@ class Compiler:
 			// other_files will be set to 1. This then changes the way we format error messages.
 
 			other_files := 0
-			for src_info := src_infos.iterate():
+			for src_info := src_infos.iter():
 				if src_info[0] != self.module_id:
 					other_files := 1
 					break
@@ -280,7 +280,7 @@ class Compiler:
 			else:
 				Sys::stderr.writeln(Strings::format("%s:", pre_msg))
 
-			for src_info := src_infos.iterate():
+			for src_info := src_infos.iter():
 				if src_info[0] == self.module_id:
 					src_offset := src_info[1]
 					newlines := self.tokenizer.newlines
@@ -328,7 +328,7 @@ class Compiler:
 			return fail
 			
 	
-		for include_dir := self.includes.iterate():
+		for include_dir := self.includes.iter():
 			if matched_path, extra_pos := match_path(0, include_dir):
 				import_full_name := File::canon_path(matched_path)
 				import_extras := import_name_list[extra_pos + 1 : ]
@@ -448,8 +448,8 @@ class Linker:
 
 		if not src_infos is null:
 			Sys::stderr.writeln(Strings::format("%s:", pre_msg))
-			for src_info := src_infos.iterate():
-				for cv_mod := self.mods.iterate():
+			for src_info := src_infos.iter():
+				for cv_mod := self.mods.iter():
 					if cv_mod.get_identifier() == src_info[0]:
 						break
 				exhausted:

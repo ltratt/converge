@@ -54,7 +54,7 @@ Con_Obj *_Con_Builtins_String_Class_find_index_func(Con_Obj *);
 Con_Obj *_Con_Builtins_String_Class_get_func(Con_Obj *);
 Con_Obj *_Con_Builtins_String_Class_get_slice_func(Con_Obj *);
 Con_Obj *_Con_Builtins_String_Class_hash_func(Con_Obj *);
-Con_Obj *_Con_Builtins_String_Class_iterate_func(Con_Obj *);
+Con_Obj *_Con_Builtins_String_Class_iter_func(Con_Obj *);
 Con_Obj *_Con_Builtins_String_Class_len_func(Con_Obj *);
 Con_Obj *_Con_Builtins_String_Class_prefixed_by_func(Con_Obj *);
 Con_Obj *_Con_Builtins_String_Class_replaced_func(Con_Obj *);
@@ -96,7 +96,7 @@ void Con_Builtins_String_Class_bootstrap(Con_Obj *thread)
 	CON_SET_FIELD(string_class, "get", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_get_func, "get", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
 	CON_SET_FIELD(string_class, "get_slice", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_get_slice_func, "get_slice", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
 	CON_SET_FIELD(string_class, "hash", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_hash_func, "hash", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
-	CON_SET_FIELD(string_class, "iterate", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_iterate_func, "iterate", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
+	CON_SET_FIELD(string_class, "iter", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_iter_func, "iter", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
 	CON_SET_FIELD(string_class, "len", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_len_func, "len", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
 	CON_SET_FIELD(string_class, "prefixed_by", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_prefixed_by_func, "prefixed_by", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
 	CON_SET_FIELD(string_class, "rfind_index", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_rfind_index_func, "rfind_index", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
@@ -392,10 +392,10 @@ Con_Obj *_Con_Builtins_String_Class_get_slice_func(Con_Obj *thread)
 
 
 //
-// 'iterate(lower := 0, upper := -1)' is a generator which returns each character of the string in order.
+// 'iter(lower := 0, upper := -1)' is a generator which returns each character of the string in order.
 //
 
-Con_Obj *_Con_Builtins_String_Class_iterate_func(Con_Obj *thread)
+Con_Obj *_Con_Builtins_String_Class_iter_func(Con_Obj *thread)
 {
 	Con_Obj *lower_obj, *self, *upper_obj;
 	CON_UNPACK_ARGS("S;OO", &self, &lower_obj, &upper_obj);

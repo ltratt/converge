@@ -54,7 +54,7 @@ Con_Obj *_Con_Builtins_Set_Class_complement_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Set_Class_extend_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Set_Class_find_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Set_Class_intersect_func(Con_Obj *);
-Con_Obj *_Con_Builtins_Set_Class_iterate_func(Con_Obj *);
+Con_Obj *_Con_Builtins_Set_Class_iter_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Set_Class_len_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Set_Class_scopy_func(Con_Obj *);
 
@@ -88,7 +88,7 @@ void Con_Builtins_Set_Class_bootstrap(Con_Obj *thread)
 	CON_SET_FIELD(set_class, "extend", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Set_Class_extend_func, "extend", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), set_class));
 	CON_SET_FIELD(set_class, "find", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Set_Class_find_func, "find", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), set_class));
 	CON_SET_FIELD(set_class, "intersect", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Set_Class_intersect_func, "intersect", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), set_class));
-	CON_SET_FIELD(set_class, "iterate", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Set_Class_iterate_func, "iterate", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), set_class));
+	CON_SET_FIELD(set_class, "iter", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Set_Class_iter_func, "iter", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), set_class));
 	CON_SET_FIELD(set_class, "len", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Set_Class_len_func, "len", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), set_class));
 	CON_SET_FIELD(set_class, "scopy", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Set_Class_scopy_func, "scopy", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), set_class));
 }
@@ -403,7 +403,7 @@ Con_Obj *_Con_Builtins_Set_Class_extend_func(Con_Obj *thread)
 		CON_MUTEX_UNLOCK(&o_obj->mutex);
 	}
 	else {
-		CON_PRE_GET_SLOT_APPLY_PUMP(o_obj, "iterate");
+		CON_PRE_GET_SLOT_APPLY_PUMP(o_obj, "iter");
 		while (1) {
 			Con_Obj *e = CON_APPLY_PUMP();
 			if (e == NULL)
@@ -504,10 +504,10 @@ Con_Obj *_Con_Builtins_Set_Class_intersect_func(Con_Obj *thread)
 
 
 //
-// 'iterate()'. Notice that with a set one can't specify lower and upper indices to iterate over.
+// 'iter()'. Notice that with a set one can't specify lower and upper indices to iter over.
 //
 
-Con_Obj *_Con_Builtins_Set_Class_iterate_func(Con_Obj *thread)
+Con_Obj *_Con_Builtins_Set_Class_iter_func(Con_Obj *thread)
 {
 	Con_Obj *self;
 	CON_UNPACK_ARGS("W", &self);

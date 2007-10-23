@@ -180,7 +180,7 @@ class Grammar:
 		
 		rules_count := 0
 		alternatives_map := Dict{}
-		for rule_name := rule_names.iterate():
+		for rule_name := rule_names.iter():
 			if rule_name == "__start__":
 				alternatives_map["__start__"] := [[0, 0, 2, _COMPILED_RULE_REF, self._start_rule]]
 				rules_count += 1
@@ -188,7 +188,7 @@ class Grammar:
 			
 			assert(not alternatives_map.find(rule_name))
 			alternatives_map[rule_name] := []
-			for alternative := rules[rule_name].iterate():
+			for alternative := rules[rule_name].iter():
 				semi_compiled_alternative := [0, 0, 0]
 				rules_count += 1
 				alternatives_map[rule_name].append(semi_compiled_alternative)
@@ -254,8 +254,8 @@ class Grammar:
 		
 		nullables := Set{}
 		tbd := Set{}
-		for rule_name := rule_names.iterate():
-			for alternative := alternatives_map[rule_name].iterate():
+		for rule_name := rule_names.iter():
+			for alternative := alternatives_map[rule_name].iter():
 				i := _RULE_ENTRIES
 				brackets_count := 0
 				while i < alternative.len():
@@ -284,9 +284,9 @@ class Grammar:
 
 		while 1:
 			changes := 0
-			for rule_name := tbd.iterate():
+			for rule_name := tbd.iter():
 				if not nullables.find(rule_name):
-					for alternative := alternatives_map[rule_name].iterate():
+					for alternative := alternatives_map[rule_name].iter():
 						i := _RULE_ENTRIES
 						brackets_count := 0
 						while i < alternative.len():
@@ -319,13 +319,13 @@ class Grammar:
 		// for the algorithms use.
 		
 		rule_names_map := Dict{}
-		for rule_name := rule_names.iterate():
+		for rule_name := rule_names.iter():
 			rule_names_map[rule_name] := rule_names_map.len()
 		
 		compiled_alternatives := []
 		
-		for rule_name := rule_names.iterate():
-			for alternative := alternatives_map[rule_name].iterate():
+		for rule_name := rule_names.iter():
+			for alternative := alternatives_map[rule_name].iter():
 				compiled_rule := Array::Array.new("i")
 				compiled_rule.extend([alternative[_RULE_PRECEDENCE], rule_names_map[rule_name], alternative[_RULE_NUM_ENTRIES]])
 				i := _RULE_ENTRIES
@@ -357,7 +357,7 @@ class Grammar:
 		
 		recogniser_brackets_map := []
 		parser_brackets_map := []
-		for rule_name, compiled_alternative := compiled_alternatives.iterate():
+		for rule_name, compiled_alternative := compiled_alternatives.iter():
 			i := _RULE_ENTRIES
 			while i < compiled_alternative.len():
 				type := compiled_alternative[i]
@@ -381,7 +381,7 @@ class Grammar:
 		compiled_grammar.extend([-1] * compiled_alternatives.len())
 		mapped_rule_names_to_compiled_alternatives_map := Dict{} // Maps rule_num => list of alternatives.
 		
-		for i := 0.to(compiled_alternatives.len()):
+		for i := 0.iter_to(compiled_alternatives.len()):
 			compiled_grammar[compiled_alternatives_offsets_start + i] := compiled_grammar.len_bytes()
 			rule_name, compiled_rule := compiled_alternatives[i]
 			if not mapped_rule_names_to_compiled_alternatives_map.find(rule_name):
@@ -393,7 +393,7 @@ class Grammar:
 		compiled_grammar.append(rule_names.len())
 		compiled_alternatives_map_start := compiled_grammar.len()
 		compiled_grammar.extend([-1] * rule_names.len())
-		for i := 0.to(rule_names.len()):
+		for i := 0.iter_to(rule_names.len()):
 			compiled_grammar[compiled_alternatives_map_start + i] := compiled_grammar.len_bytes()
 			alternatives := mapped_rule_names_to_compiled_alternatives_map[i]
 			if nullables.find(rule_names[i]):
@@ -407,7 +407,7 @@ class Grammar:
 		compiled_grammar.append(recogniser_brackets_map.len())
 		compiled_recogniser_brackets_map_start := compiled_grammar.len()
 		compiled_grammar.extend([-1] * recogniser_brackets_map.len())
-		for i := 0.to(recogniser_brackets_map.len()):
+		for i := 0.iter_to(recogniser_brackets_map.len()):
 			compiled_grammar[compiled_recogniser_brackets_map_start + i] := compiled_grammar.len_bytes()
 			compiled_grammar.append(recogniser_brackets_map[i].len())
 			compiled_grammar.extend(recogniser_brackets_map[i])
@@ -416,7 +416,7 @@ class Grammar:
 		compiled_grammar.append(parser_brackets_map.len())
 		compiled_parser_brackets_map_start := compiled_grammar.len()
 		compiled_grammar.extend([-1] * parser_brackets_map.len())
-		for i := 0.to(parser_brackets_map.len()):
+		for i := 0.iter_to(parser_brackets_map.len()):
 			compiled_grammar[compiled_parser_brackets_map_start + i] := compiled_grammar.len_bytes()
 			compiled_grammar.append(parser_brackets_map[i].len())
 			compiled_grammar.extend(parser_brackets_map[i])
@@ -458,7 +458,7 @@ class Grammar:
 				return bracket_map
 			else:
 				raise "XXX"
-			for new_j := self._make_recogniser_brackets_map(compiled_alternative, j).iterate():
+			for new_j := self._make_recogniser_brackets_map(compiled_alternative, j).iter():
 				if not bracket_map.find(new_j):
 					bracket_map.append(new_j)
 			return bracket_map

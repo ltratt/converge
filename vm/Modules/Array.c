@@ -69,7 +69,7 @@ Con_Obj *_Con_Module_Array_Array_extend_func(Con_Obj *);
 Con_Obj *_Con_Module_Array_Array_extend_from_string_func(Con_Obj *);
 Con_Obj *_Con_Module_Array_Array_get_func(Con_Obj *);
 Con_Obj *_Con_Module_Array_Array_get_slice_func(Con_Obj *);
-Con_Obj *_Con_Module_Array_Array_iterate_func(Con_Obj *);
+Con_Obj *_Con_Module_Array_Array_iter_func(Con_Obj *);
 Con_Obj *_Con_Module_Array_Array_len_func(Con_Obj *);
 Con_Obj *_Con_Module_Array_Array_len_bytes_func(Con_Obj *);
 Con_Obj *_Con_Module_Array_Array_serialize_func(Con_Obj *);
@@ -92,7 +92,7 @@ Con_Obj *_Con_Module_Array_Array_to_str_func(Con_Obj *);
 
 Con_Obj *Con_Module_Array_init(Con_Obj *thread, Con_Obj *identifier)
 {
-	const char* defn_names[] = {"Array_Exception", "Array_Atom_Def", "Array", "append", "extend", "extend_from_string", "get", "get_slice", "iterate", "len", "len_bytes", "serialize", "set", "to_str", NULL};
+	const char* defn_names[] = {"Array_Exception", "Array_Atom_Def", "Array", "append", "extend", "extend_from_string", "get", "get_slice", "iter", "len", "len_bytes", "serialize", "set", "to_str", NULL};
 
 	return Con_Builtins_Module_Atom_new_c(thread, identifier, CON_NEW_STRING("Array"), defn_names, CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
 }
@@ -121,7 +121,7 @@ Con_Obj *Con_Module_Array_import(Con_Obj *thread, Con_Obj *array_mod)
 	CON_SET_FIELD(array_class, "extend_from_string", CON_NEW_BOUND_C_FUNC(_Con_Module_Array_Array_extend_from_string_func, "extend_from_string", array_mod, array_class));
 	CON_SET_FIELD(array_class, "get", CON_NEW_BOUND_C_FUNC(_Con_Module_Array_Array_get_func, "get", array_mod, array_class));
 	CON_SET_FIELD(array_class, "get_slice", CON_NEW_BOUND_C_FUNC(_Con_Module_Array_Array_get_slice_func, "get_slice", array_mod, array_class));
-	CON_SET_FIELD(array_class, "iterate", CON_NEW_BOUND_C_FUNC(_Con_Module_Array_Array_iterate_func, "iterate", array_mod, array_class));
+	CON_SET_FIELD(array_class, "iter", CON_NEW_BOUND_C_FUNC(_Con_Module_Array_Array_iter_func, "iter", array_mod, array_class));
 	CON_SET_FIELD(array_class, "len", CON_NEW_BOUND_C_FUNC(_Con_Module_Array_Array_len_func, "len", array_mod, array_class));
 	CON_SET_FIELD(array_class, "len_bytes", CON_NEW_BOUND_C_FUNC(_Con_Module_Array_Array_len_bytes_func, "len_bytes", array_mod, array_class));
 	CON_SET_FIELD(array_class, "serialize", CON_NEW_BOUND_C_FUNC(_Con_Module_Array_Array_serialize_func, "serialize", array_mod, array_class));
@@ -345,7 +345,7 @@ Con_Obj *_Con_Module_Array_Array_extend_func(Con_Obj *thread)
 
 	// The default - and slow - behaviour...
 
-	CON_PRE_GET_SLOT_APPLY_PUMP(container, "iterate");
+	CON_PRE_GET_SLOT_APPLY_PUMP(container, "iter");
 	while (1) {
 		Con_Obj *val = CON_APPLY_PUMP();
 		if (val == NULL)
@@ -495,10 +495,10 @@ Con_Obj *_Con_Module_Array_Array_get_slice_func(Con_Obj *thread)
 
 
 //
-// 'iterate(lower := 0, upper := -1)'.
+// 'iter(lower := 0, upper := -1)'.
 //
 
-Con_Obj *_Con_Module_Array_Array_iterate_func(Con_Obj *thread)
+Con_Obj *_Con_Module_Array_Array_iter_func(Con_Obj *thread)
 {
 	Con_Obj *array_atom_def = CON_GET_MOD_DEFN(Con_Builtins_VM_Atom_get_functions_module(thread), "Array_Atom_Def");
 

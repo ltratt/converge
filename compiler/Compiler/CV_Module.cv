@@ -75,7 +75,7 @@ class CV_Module:
 		self._num_top_level_vars := module[self._target.MODULE_BYTECODE_NUM_TOP_LEVEL_VARS]
 		
 		self._constants_offsets := []
-		for constant_offset := module[module[self._target.MODULE_BYTECODE_CONSTANTS_OFFSETS] / self._target.WORDSIZE : module[self._target.MODULE_BYTECODE_CONSTANTS_OFFSETS] / self._target.WORDSIZE + module[self._target.MODULE_BYTECODE_NUM_CONSTANTS]].iterate():
+		for constant_offset := module[module[self._target.MODULE_BYTECODE_CONSTANTS_OFFSETS] / self._target.WORDSIZE : module[self._target.MODULE_BYTECODE_CONSTANTS_OFFSETS] / self._target.WORDSIZE + module[self._target.MODULE_BYTECODE_NUM_CONSTANTS]].iter():
 			self._constants_offsets.append(constant_offset - module[self._target.MODULE_BYTECODE_INSTRUCTIONS])
 
 		self._mod_lookups := module[module[self._target.MODULE_BYTECODE_MOD_LOOKUPS] / self._target.WORDSIZE : (module[self._target.MODULE_BYTECODE_MOD_LOOKUPS] + module[self._target.MODULE_BYTECODE_MOD_LOOKUPS_SIZE]) / self._target.WORDSIZE]
@@ -144,7 +144,7 @@ class CV_Module:
 	func set_imports(self, imports):
 
 		self._imports := Array::Array.new(self._target.ARRAY_TYPE)
-		for import_ := imports.iterate():
+		for import_ := imports.iter():
 			self._imports.append(import_.len())
 			self._imports.extend(self._target.b_aligned_string(import_))
 		self._num_imports := imports.len()
@@ -182,7 +182,7 @@ class CV_Module:
 
 		top_level_vars_map := Dict{}
 		top_level_vars_pos := 0
-		for i := 0.to(self._num_top_level_vars):
+		for i := 0.iter_to(self._num_top_level_vars):
 			var_num := self._top_level_vars_map[(top_level_vars_pos / self._target.WORDSIZE) + self._target.BYTECODE_TOP_LEVEL_VAR_NUM]
 			var_name_size := self._top_level_vars_map[(top_level_vars_pos / self._target.WORDSIZE) + self._target.BYTECODE_TOP_LEVEL_VAR_NAME_SIZE]
 			var_name := self._decode_string(self._top_level_vars_map, top_level_vars_pos + self._target.BYTECODE_TOP_LEVEL_VAR_NAME * self._target.WORDSIZE, var_name_size)
@@ -198,7 +198,7 @@ class CV_Module:
 	func set_top_level_vars_map(self, top_level_vars_map):
 
 		self._top_level_vars_map := Array::Array.new(self._target.ARRAY_TYPE)
-		for var_name, var_num := top_level_vars_map.iterate():
+		for var_name, var_num := top_level_vars_map.iter():
 			self._top_level_vars_map.append(var_num)
 			self._top_level_vars_map.append(var_name.len())
 			self._top_level_vars_map.extend(self._target.b_aligned_string(var_name))
@@ -225,13 +225,13 @@ class CV_Module:
 
 		mod_lookups := []
 		i := 0
-		for 0.to(self._num_mod_lookups):
+		for 0.iter_to(self._num_mod_lookups):
 			mod_num := self._mod_lookups[i / self._target.WORDSIZE]
 			i += self._target.WORDSIZE
 			defns := []
 			num_defns := self._mod_lookups[i / self._target.WORDSIZE]
 			i += self._target.WORDSIZE
-			for 0.to(num_defns):
+			for 0.iter_to(num_defns):
 				defn_len := self._mod_lookups[i / self._target.WORDSIZE]
 				i += self._target.WORDSIZE
 				defns.append(self._decode_string(self._mod_lookups, i, defn_len))
@@ -239,7 +239,7 @@ class CV_Module:
 			src_infos := []
 			num_src_infos := self._mod_lookups[i / self._target.WORDSIZE]
 			i += self._target.WORDSIZE
-			for 0.to(num_src_infos):
+			for 0.iter_to(num_src_infos):
 				src_infos.append([self._mod_lookups[i / self._target.WORDSIZE], self._mod_lookups[(i + self._target.WORDSIZE) / self._target.WORDSIZE]])
 				i += 2 * self._target.WORDSIZE
 			mod_lookups.append([mod_num, defns, src_infos])
@@ -253,10 +253,10 @@ class CV_Module:
 	func set_mod_lookups(self, mod_lookups):
 
 		ar := Array::Array.new(self._target.ARRAY_TYPE)
-		for mod_num, defns, src_infos := mod_lookups.iterate():
+		for mod_num, defns, src_infos := mod_lookups.iter():
 			ar.append(mod_num)
 			ar.append(defns.len())
-			for defn := defns.iterate():
+			for defn := defns.iter():
 				ar.append(defn.len())
 				ar.extend(self._target.b_aligned_string(defn))
 			ar.append(src_infos.len())
@@ -282,7 +282,7 @@ class CV_Module:
 	func set_import_defns(self, import_defns):
 	
 		self._import_defns := Array::Array.new(self._target.ARRAY_TYPE)
-		for self._import_defns.extend(import_defns.iterate())
+		for self._import_defns.extend(import_defns.iter())
 
 
 
@@ -364,7 +364,7 @@ class CV_Module:
 		// Constants offsets
 		
 		module[self._target.MODULE_BYTECODE_CONSTANTS_OFFSETS] := module.len_bytes()
-		for constant_offset := self._constants_offsets.iterate():
+		for constant_offset := self._constants_offsets.iter():
 			module.append(constant_offset + module[self._target.MODULE_BYTECODE_INSTRUCTIONS])
 		module[self._target.MODULE_BYTECODE_NUM_CONSTANTS] := self._constants_offsets.len()
 		

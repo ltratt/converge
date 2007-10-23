@@ -85,7 +85,7 @@ Con_Obj *_Con_Module_VM_add_modules_func(Con_Obj *thread)
 	Con_Obj *mods;
 	CON_UNPACK_ARGS("L", &mods);
 	
-	CON_PRE_GET_SLOT_APPLY_PUMP(mods, "iterate");
+	CON_PRE_GET_SLOT_APPLY_PUMP(mods, "iter");
 	while (1) {
 		Con_Obj *mod = CON_APPLY_PUMP();
 		if (mod == NULL)

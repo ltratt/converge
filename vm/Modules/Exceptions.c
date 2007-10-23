@@ -559,7 +559,7 @@ Con_Obj *_Con_Module_Exception_backtrace_func(Con_Obj *thread)
 			Con_Obj *src_locations = Con_Builtins_Module_Atom_pc_to_src_locations(thread, pc);
 			
 			int j = 0;
-			CON_PRE_GET_SLOT_APPLY_PUMP(src_locations, "iterate");
+			CON_PRE_GET_SLOT_APPLY_PUMP(src_locations, "iter");
 			while (true) {
 				Con_Obj *src_location = CON_APPLY_PUMP();
 				if (src_location == NULL)

@@ -48,11 +48,11 @@ Con_Obj *_Con_Builtins_Dict_Class_del_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Dict_Class_extend_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Dict_Class_find_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Dict_Class_get_func(Con_Obj *);
-Con_Obj *_Con_Builtins_Dict_Class_iterate_func(Con_Obj *);
-Con_Obj *_Con_Builtins_Dict_Class_keys_func(Con_Obj *);
+Con_Obj *_Con_Builtins_Dict_Class_iter_func(Con_Obj *);
+Con_Obj *_Con_Builtins_Dict_Class_iter_keys_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Dict_Class_len_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Dict_Class_set_func(Con_Obj *);
-Con_Obj *_Con_Builtins_Dict_Class_vals_func(Con_Obj *);
+Con_Obj *_Con_Builtins_Dict_Class_iter_vals_func(Con_Obj *);
 
 
 
@@ -80,11 +80,11 @@ void Con_Builtins_Dict_Class_bootstrap(Con_Obj *thread)
 	CON_SET_FIELD(dict_class, "extend", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Dict_Class_extend_func, "extend", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), dict_class));
 	CON_SET_FIELD(dict_class, "find", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Dict_Class_find_func, "find", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), dict_class));
 	CON_SET_FIELD(dict_class, "get", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Dict_Class_get_func, "get", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), dict_class));
-	CON_SET_FIELD(dict_class, "iterate", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Dict_Class_iterate_func, "iterate", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), dict_class));
-	CON_SET_FIELD(dict_class, "keys", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Dict_Class_keys_func, "keys", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), dict_class));
+	CON_SET_FIELD(dict_class, "iter", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Dict_Class_iter_func, "iter", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), dict_class));
+	CON_SET_FIELD(dict_class, "iter_keys", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Dict_Class_iter_keys_func, "iter_keys", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), dict_class));
 	CON_SET_FIELD(dict_class, "len", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Dict_Class_len_func, "len", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), dict_class));
 	CON_SET_FIELD(dict_class, "set", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Dict_Class_set_func, "set", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), dict_class));
-	CON_SET_FIELD(dict_class, "vals", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Dict_Class_vals_func, "vals", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), dict_class));
+	CON_SET_FIELD(dict_class, "iter_vals", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Dict_Class_iter_vals_func, "iter_vals", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), dict_class));
 }
 
 
@@ -330,10 +330,10 @@ Con_Obj *_Con_Builtins_Dict_Class_get_func(Con_Obj *thread)
 
 
 //
-// 'iterate()' .
+// 'iter()' .
 //
 
-Con_Obj *_Con_Builtins_Dict_Class_iterate_func(Con_Obj *thread)
+Con_Obj *_Con_Builtins_Dict_Class_iter_func(Con_Obj *thread)
 {
 	Con_Obj *self_obj;
 	CON_UNPACK_ARGS("D", &self_obj);
@@ -364,7 +364,7 @@ Con_Obj *_Con_Builtins_Dict_Class_iterate_func(Con_Obj *thread)
 // 'keys()' .
 //
 
-Con_Obj *_Con_Builtins_Dict_Class_keys_func(Con_Obj *thread)
+Con_Obj *_Con_Builtins_Dict_Class_iter_keys_func(Con_Obj *thread)
 {
 	Con_Obj *self_obj;
 	CON_UNPACK_ARGS("D", &self_obj);
@@ -465,7 +465,7 @@ Con_Obj *_Con_Builtins_Dict_Class_set_func(Con_Obj *thread)
 // 'vals()'.
 //
 
-Con_Obj *_Con_Builtins_Dict_Class_vals_func(Con_Obj *thread)
+Con_Obj *_Con_Builtins_Dict_Class_iter_vals_func(Con_Obj *thread)
 {
 	Con_Obj *self_obj;
 	CON_UNPACK_ARGS("D", &self_obj);

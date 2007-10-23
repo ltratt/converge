@@ -96,7 +96,7 @@ func join_names(*names):
 
 	flattened := []
 	i := 0
-	for name := names.iterate():
+	for name := names.iter():
 		// When joining names together, we try to avoid unnecessary directory separator characters.
 		// The rules are simple: we always strip directory seperators from the end of each name, and
 		// we strip directory separators off the beginning of all but the first name. This last

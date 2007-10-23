@@ -43,7 +43,7 @@ func serialize(target, modules):
 	
 	exec.extend([-1] * modules.len())
 
-	for i := 0.to(modules.len()):
+	for i := 0.iter_to(modules.len()):
 		exec[EXEC_BYTECODE_MODULE_OFFSETS + i] := exec.len_bytes()
 		exec.extend_from_string(modules[i])
 	
@@ -59,7 +59,7 @@ func deserialize(target, exec_str):
 		raise "XXX"
 	
 	modules := []
-	for i := 0.to(exec_array[EXEC_BYTECODE_NUM_MODULES]):
+	for i := 0.iter_to(exec_array[EXEC_BYTECODE_NUM_MODULES]):
 		module_offset := exec_array[EXEC_BYTECODE_MODULE_OFFSETS + i] / target.WORDSIZE
 		to := module_offset + (exec_array[module_offset + target.MODULE_BYTECODE_SIZE] / target.WORDSIZE)
 		module := CV_Module::CV_Module.new(target)

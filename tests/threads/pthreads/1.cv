@@ -31,10 +31,10 @@ func run():
 
 	result.append(result.len())
 	
-	for x := result.iterate():
+	for x := result.iter():
 		pass
 	
-	for i := 0.to(1000):
+	for i := 0.iter_to(1000):
 		if i == result.len():
 			result.append(i)
 	
@@ -44,12 +44,12 @@ func run():
 func main():
 
 	threads := []
-	for i := 0.to(100):
+	for i := 0.iter_to(100):
 		thread := PThreads::PThread.new(run)
 		threads.append(thread)
 		thread.start()
 	
-	for thread := threads.iterate():
+	for thread := threads.iter():
 		thread.join()
 
 	Sys::println("Final: ", result)

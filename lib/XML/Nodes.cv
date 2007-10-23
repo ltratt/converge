@@ -7,7 +7,7 @@ class Document(Builtins::List):
 
 	func get_root_elem(self):
 	
-		for elem := self.iterate():
+		for elem := self.iter():
 			if Element.instantiated(elem):
 				return elem
 		
@@ -43,7 +43,7 @@ class Element(Builtins::List):
 	
 		self.name := name
 		self._attr_namespaces := Dict{}
-		for attr := attrs.iterate():
+		for attr := attrs.iter():
 			if not (namespace := self._attr_namespaces.find(attr.namespace)):
 				self._attr_namespaces[attr.namespace] := namespace := Dict{}
 			namespace[attr.name] := attr
@@ -67,19 +67,19 @@ class Element(Builtins::List):
 
 
 
-	func attrs_iterate(self):
+	func attrs_iter(self):
 	
-		for x, attrs := self._attr_namespaces.iterate():
-			for name, attr := attrs.iterate():
+		for x, attrs := self._attr_namespaces.iter():
+			for name, attr := attrs.iter():
 				yield attr
 			
 		return fail
 
 
 
-	func iterate_elements(self):
+	func iter_elements(self):
 
-		for node := self.iterate():
+		for node := self.iter():
 			if Element.instantiated(node):
 				yield node
 
@@ -89,7 +89,7 @@ class Element(Builtins::List):
 
 	func get_first_element(self, name, namespace := ""):
 
-		for node := self.iterate():
+		for node := self.iter():
 			if Element.instantiated(node) & node.name == "name" & node.namespace == namespace:
 				return node
 

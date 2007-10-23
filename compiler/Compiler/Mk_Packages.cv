@@ -41,24 +41,24 @@ class Mk_Packages:
 
 		// First, discover every reference to a package.
 
-		for module := mods.iterate():
-			for import_ := module.get_imports().iterate():
+		for module := mods.iter():
+			for import_ := module.get_imports().iter():
 				if not (Compiler_Vars::BUILTIN_MODULES.find(import_) | import_.suffixed_by(Compiler_Vars::CV_EXTENSION)):
 					pkg_ids.add(import_)
 		
-		for pkg_id := pkg_ids.iterate():
+		for pkg_id := pkg_ids.iter():
 			defns := Dict{}
 
 			// For a given package, discover which subpackages and modules it contains.
 
-			for sub_pkg_id := pkg_ids.iterate():
+			for sub_pkg_id := pkg_ids.iter():
 				if sub_pkg_id == pkg_id:
 					continue
 				if File::is_entry_in_dir(pkg_id, sub_pkg_id):
 					defn_name := File::split_ext(sub_pkg_id)[1]
 					defns[defn_name] := sub_pkg_id
 
-			for mod := mods.iterate():
+			for mod := mods.iter():
 				mod_id := mod.get_identifier()
 				if File::is_entry_in_dir(pkg_id, mod_id):
 					defn_name := File::split_ext(File::split_leaf(mod_id)[1])[0]
@@ -67,7 +67,7 @@ class Mk_Packages:
 			// XXX: It's not entirely clear what reasonable src infos for the ITree module are.
 
 			idefns := []
-			for defn_name, mod_id := defns.iterate():
+			for defn_name, mod_id := defns.iter():
 				mod_import := ITree::IMod_Id_Import.new(mod_id, [])
 				var_name := ITree::IVar.new(defn_name, [])
 				asgn := ITree::IAssignment.new(ITree::STD_ASSIGN, [var_name], mod_import, [])

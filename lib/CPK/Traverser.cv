@@ -44,7 +44,7 @@ class Liberal_Traverser(Traverser):
 
 	func _default(self, node):
 	
-		for c := node[1 : ].iterate():
+		for c := node[1 : ].iter():
 			self.preorder(c)
 
 		return null

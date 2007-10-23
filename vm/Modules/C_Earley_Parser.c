@@ -254,7 +254,7 @@ Con_Obj *_Con_Module_C_Earley_Parser_Parser_parse_func(Con_Obj *thread)
 	Con_Int num_tokens_allocated = Con_Numbers_Number_to_Con_Int(thread, CON_GET_SLOT_APPLY(tokens_obj, "len"));
 	parse_func_Token *tokens = Con_Memory_malloc(thread, num_tokens_allocated * sizeof(parse_func_Token), CON_MEMORY_CHUNK_CONSERVATIVE);
 
-	CON_PRE_GET_SLOT_APPLY_PUMP(tokens_obj, "iterate");
+	CON_PRE_GET_SLOT_APPLY_PUMP(tokens_obj, "iter");
 	Con_Int i = 0;
 	while (1) {
 		Con_Obj *token = CON_APPLY_PUMP();
@@ -285,7 +285,7 @@ Con_Obj *_Con_Module_C_Earley_Parser_Parser_parse_func(Con_Obj *thread)
 	Con_Int num_rule_names_allocated = Con_Numbers_Number_to_Con_Int(thread, CON_GET_SLOT_APPLY(rule_names, "len"));
 	parser->rule_names = Con_Memory_malloc(thread, num_rule_names_allocated * sizeof(Con_Obj *), CON_MEMORY_CHUNK_CONSERVATIVE);
 
-	CON_PRE_GET_SLOT_APPLY_PUMP(rule_names, "iterate");
+	CON_PRE_GET_SLOT_APPLY_PUMP(rule_names, "iter");
 	i = 0;
 	while (1) {
 		Con_Obj *rule_name = CON_APPLY_PUMP();

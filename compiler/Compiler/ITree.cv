@@ -62,7 +62,7 @@ class IModule:
 
 		self.bound_vars := Compiler_Vars::DEFAULT_VARS.scopy()
 		self.import_vars := Set{}
-		for defn := defns.iterate():
+		for defn := defns.iter():
 			self.bound_vars.extend(defn.bound_vars)
 			self.import_vars.extend(defn.import_vars)
 
@@ -98,21 +98,21 @@ class IClass_Defn:
 			self.bound_vars := Set{class_name}
 			self.qq_bound_vars := Set{class_name}
 		self.import_vars := Set{}
-		for super := supers.iterate():
+		for super := supers.iter():
 			self.bound_vars.extend(super.bound_vars)
 			self.qq_bound_vars.extend(super.qq_bound_vars)
 		if not metaclass_ is null:
 			self.bound_vars.extend(metaclass_.bound_vars)
 			self.qq_bound_vars.extend(metaclass_.qq_bound_vars)
-		for field := fields.iterate():
+		for field := fields.iter():
 			self.qq_bound_vars.extend(field.qq_bound_vars)
 		
 		self.free_vars := Set{}
-		for super := supers.iterate():
+		for super := supers.iter():
 			self.free_vars.extend(super.free_vars)
 		if not metaclass_ is null:
 			self.free_vars.extend(metaclass_.free_vars)
-		for field := fields.iterate():
+		for field := fields.iter():
 			self.free_vars.extend(field.free_vars)
 
 
@@ -152,7 +152,7 @@ class IFunc_Defn:
 
 		all_internal_bound_vars := Set{}
 
-		for param := params.iterate():
+		for param := params.iter():
 			all_internal_bound_vars.extend(param.bound_vars)
 			self.qq_bound_vars.extend(param.qq_bound_vars)
 			self.internal_import_vars.extend(param.import_vars)
@@ -170,16 +170,16 @@ class IFunc_Defn:
 		self.internal_import_vars.extend(body.import_vars)
 
 		nonlocals_ := Set{}
-		for nonlocal_ := nonlocals.iterate():
+		for nonlocal_ := nonlocals.iter():
 			nonlocals_.extend(Set{nonlocal_.var_name})
 
-		for rename_from, rename_as := renames.iterate():
+		for rename_from, rename_as := renames.iter():
 			nonlocals_.add(rename_as.var_name)
 
 		self.internal_bound_vars := all_internal_bound_vars.complement(nonlocals_)
 		
 		all_free_vars := Set{}
-		for param := params.iterate():
+		for param := params.iter():
 			all_free_vars.extend(param.free_vars)
 		all_free_vars.extend(self.body.free_vars)
 		
@@ -220,7 +220,7 @@ class IIf:
 		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		self.free_vars := Set{}
-		for clause := clauses.iterate():
+		for clause := clauses.iter():
 			self.bound_vars.extend(clause.bound_vars)
 			self.import_vars.extend(clause.import_vars)
 			self.qq_bound_vars.extend(clause.qq_bound_vars)
@@ -256,7 +256,7 @@ class INDIf:
 		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		self.free_vars := Set{}
-		for clause := clauses.iterate():
+		for clause := clauses.iter():
 			self.bound_vars.extend(clause.bound_vars)
 			self.import_vars.extend(clause.import_vars)
 			self.qq_bound_vars.extend(clause.qq_bound_vars)
@@ -417,10 +417,10 @@ class ITry:
 		self.qq_bound_vars := body.qq_bound_vars.scopy()
 		self.free_vars := body.free_vars.scopy()
 		
-		for self.bound_vars.extend(catches.iterate().bound_vars)
-		for self.import_vars.extend(catches.iterate().import_vars)
-		for self.qq_bound_vars.extend(catches.iterate().qq_bound_vars)
-		for self.free_vars.extend(catches.iterate().free_vars)
+		for self.bound_vars.extend(catches.iter().bound_vars)
+		for self.import_vars.extend(catches.iter().import_vars)
+		for self.qq_bound_vars.extend(catches.iter().qq_bound_vars)
+		for self.free_vars.extend(catches.iter().free_vars)
 
 
 
@@ -553,7 +553,7 @@ class IList:
 		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		self.free_vars := Set{}
-		for elem := elements.iterate():
+		for elem := elements.iter():
 			self.bound_vars.extend(elem.bound_vars)
 			self.import_vars.extend(elem.import_vars)
 			self.qq_bound_vars.extend(elem.qq_bound_vars)
@@ -581,7 +581,7 @@ class IDict:
 		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		self.free_vars := Set{}
-		for key, val := elements.iterate():
+		for key, val := elements.iter():
 			self.bound_vars.extend(key.bound_vars)
 			self.bound_vars.extend(val.bound_vars)
 			self.import_vars.extend(key.import_vars)
@@ -596,7 +596,7 @@ class IDict:
 	func extended_src_infos(self, extra_src_infos):
 	
 		elems := []
-		for key, val := self.elements.iterate():
+		for key, val := self.elements.iter():
 			elems.append([key.extended_src_infos(extra_src_infos), val.extended_src_infos(extra_src_infos)])
 		
 		return IDict.new(elems, self.src_infos + extra_src_infos)
@@ -615,7 +615,7 @@ class ISet:
 		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		self.free_vars := Set{}
-		for elem := elements.iterate():
+		for elem := elements.iter():
 			self.bound_vars.extend(elem.bound_vars)
 			self.import_vars.extend(elem.import_vars)
 			self.qq_bound_vars.extend(elem.qq_bound_vars)
@@ -641,16 +641,16 @@ class IApplication:
 		self.src_infos := src_infos
 
 		self.bound_vars := func_expr.bound_vars.scopy()
-		for self.bound_vars.extend(args.iterate().bound_vars)
+		for self.bound_vars.extend(args.iter().bound_vars)
 
 		self.import_vars := func_expr.import_vars.scopy()
-		for self.import_vars.extend(args.iterate().import_vars)
+		for self.import_vars.extend(args.iter().import_vars)
 
 		self.qq_bound_vars := func_expr.qq_bound_vars.scopy()
-		for self.qq_bound_vars.extend(args.iterate().qq_bound_vars)
+		for self.qq_bound_vars.extend(args.iter().qq_bound_vars)
 
 		self.free_vars := func_expr.free_vars.scopy()
-		for self.free_vars.extend(args.iterate().free_vars)
+		for self.free_vars.extend(args.iter().free_vars)
 
 
 
@@ -901,7 +901,7 @@ class IConjunction:
 		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		self.free_vars := Set{}
-		for expr := exprs.iterate():
+		for expr := exprs.iter():
 			self.bound_vars.extend(expr.bound_vars)
 			self.import_vars.extend(expr.import_vars)
 			self.qq_bound_vars.extend(expr.qq_bound_vars)
@@ -929,7 +929,7 @@ class IAlternation:
 		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		self.free_vars := Set{}
-		for expr := exprs.iterate():
+		for expr := exprs.iter():
 			self.bound_vars.extend(expr.bound_vars)
 			self.import_vars.extend(expr.import_vars)
 			self.qq_bound_vars.extend(expr.qq_bound_vars)
@@ -959,7 +959,7 @@ class IAssignment:
 		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		self.free_vars := Set{}
-		for target := targets.iterate():
+		for target := targets.iter():
 			if IVar.instantiated(target):
 				self.bound_vars.add(target.var_name)
 				self.qq_bound_vars.add(target.var_name)
@@ -1114,7 +1114,7 @@ class IStandard_Quasi_Quotes:
 		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		self.free_vars := body.free_vars.scopy()
-		for var := body.qq_bound_vars.iterate():
+		for var := body.qq_bound_vars.iter():
 			self.qq_bound_vars.add(Strings::format(Compiler_Vars::QUASI_QUOTES_NAME, var))
 			self.bound_vars.add(Strings::format(Compiler_Vars::QUASI_QUOTES_NAME, var))
 		
@@ -1176,13 +1176,13 @@ class IExpr_Block:
 		self.bound_vars := Set{}
 		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
-		for expr := self.exprs.iterate():
+		for expr := self.exprs.iter():
 			self.bound_vars.extend(expr.bound_vars)
 			self.import_vars.extend(expr.import_vars)
 			self.qq_bound_vars.extend(expr.qq_bound_vars)
 
 		self.free_vars := Set{}
-		for expr := self.exprs.iterate():
+		for expr := self.exprs.iter():
 			self.free_vars.extend(expr.free_vars)
 
 

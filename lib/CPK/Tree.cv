@@ -33,7 +33,7 @@ _INDENT := "  "
 func pp_tree(list, indent_level := 0):
 
 	output := [list[0]]
-	for elem := list.iterate(1):
+	for elem := list.iter(1):
 		output.append("\n")
 		output.append(_INDENT * (indent_level + 1))
 		output.append("-> ")

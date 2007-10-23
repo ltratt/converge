@@ -71,7 +71,7 @@ class ITree_Format:
 		self._indent_level += 1
 		self._nesting.append(_NEST_CLASS)
 		fields := []
-		for field := node.fields.iterate():
+		for field := node.fields.iter():
 			fields.append(self._preorder(field))
 		self._nesting.pop()
 		self._indent_level -= 1
@@ -124,7 +124,7 @@ class ITree_Format:
 	func _t_iif(self, node):
 	
 		pp := []
-		for i := 0.to(node.clauses.len()):
+		for i := 0.iter_to(node.clauses.len()):
 			if i == 0:
 				pp.append("if ")
 			else:
@@ -409,7 +409,7 @@ class ITree_Format:
 	func _t_iexpr_block(self, node):
 
 		pp := []
-		for expr := node.exprs.iterate():
+		for expr := node.exprs.iter():
 			pp.append(self._preorder(expr))
 		
 		return Strings::join(pp, "\n" + (_INDENT_STRING * self._indent_level))

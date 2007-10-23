@@ -61,9 +61,10 @@
 extern char* __progname;
 
 int main_do(int, char **, u_char *);
+void usage(void);
 char *find_con_exec(const char *, const char *);
 ssize_t find_bytecode_start(u_char *, size_t);
-void make_mode(char *, u_char **, size_t *, char *);
+void make_mode(char *, u_char **, size_t *, char *, int);
 
 
 
@@ -84,6 +85,25 @@ int main(int argc, char** argv)
 
 int main_do(int argc, char** argv, u_char *root_stack_start)
 {
+	assert(argc > 0);
+
+	char *argv0 = argv[0];
+
+	int verbosity = 0;
+
+	char ch;
+	while ((ch = getopt(argc, argv, "v")) != -1) {
+		switch (ch) {
+			case 'v':
+				verbosity += 1;
+				break;
+			default:
+				usage();
+		}
+	}
+	argc -= optind;
+	argv += optind;
+
 #if CON_FULL_DEBUG
 		printf("%s %s (%s) %s\n", CON_NAME, CON_VERSION, CON_DATE, CON_COPYRIGHT);
 		printf("stack root %p\n", root_stack_start);
@@ -111,7 +131,7 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 
 	if (vm_path == NULL) {
 		vm_path = malloc(PATH_MAX);
-		if (realpath(argv[0], vm_path) == NULL || stat(vm_path, &tmp_stat) != 0) {
+		if (realpath(argv0, vm_path) == NULL || stat(vm_path, &tmp_stat) != 0) {
 			// Since realpath failed, we fall back on searching through $PATH and try and find
 			// the executable on it.
 			char *path;
@@ -133,7 +153,7 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 					}
 					else
 						cnd[j - i] = '\0';
-					strcat(cnd, argv[0]);
+					strcat(cnd, argv0);
 
 					if (realpath(cnd, vm_path) != NULL && stat(vm_path, &tmp_stat) == 0)
 						break;
@@ -149,12 +169,12 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 	}
 
 	char *prog_path;
-	if (argc == 1) {
+	if (argc == 0) {
 		// If we've been called without arguments, we try to load convergei.
 		prog_path = find_con_exec("convergei", vm_path);
 	}
 	else
-		prog_path = argv[1];
+		prog_path = argv[0];
 	
 	char *canon_prog_path = malloc(PATH_MAX);
 	if (realpath(prog_path, canon_prog_path) == NULL) {
@@ -194,7 +214,7 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 	
 	ssize_t bytecode_start = find_bytecode_start(bytecode, bytecode_size);
 	if (bytecode_start == -1) {
-		make_mode(prog_path, &bytecode, &bytecode_size, vm_path);
+		make_mode(prog_path, &bytecode, &bytecode_size, vm_path, verbosity);
 		bytecode_start = find_bytecode_start(bytecode, bytecode_size);
 		if (bytecode_start == -1) {
 			fprintf(stderr, "convergec does not appear to have produced an executeable.\n");
@@ -265,6 +285,14 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 	Con_Memory_gc_force(thread);
 	
 	return 0;
+}
+
+
+
+void usage()
+{
+	fprintf(stderr, "Usage: %s [-v] [source file | executeable file\n", __progname);
+	exit(1);
 }
 
 
@@ -340,7 +368,7 @@ ssize_t find_bytecode_start(u_char *bytecode, size_t bytecode_size)
 // Compile and link 'prog_path'.
 //
 
-void make_mode(char *prog_path, u_char **bytecode, size_t *bytecode_size, char *vm_path)
+void make_mode(char *prog_path, u_char **bytecode, size_t *bytecode_size, char *vm_path, int verbosity)
 {
 	// Fire up convergec -m on progpath. We do this by creating a pipe, forking, getting the child
 	// to output to the pipe (although note that we leave stdin and stdout unmolested on the child
@@ -359,8 +387,26 @@ void make_mode(char *prog_path, u_char **bytecode, size_t *bytecode_size, char *
 		char fd_path[PATH_MAX];
 		if (snprintf(fd_path, PATH_MAX, "/dev/fd/%d", filedes[1]) >= PATH_MAX)
 			CON_XXX;
-		execlp(vm_path, vm_path, convergec_path, "-m", "-o", fd_path, prog_path, (char *) NULL);
-		CON_XXX;
+
+		const char *first_args[] = {vm_path, convergec_path, "-m", "-o", fd_path, (char *) NULL};
+		int num_first_args = verbosity;
+		for (int i = 0; first_args[i] != NULL; i += 1) {
+			num_first_args += 1;
+		}
+		
+		const char *args[num_first_args + verbosity + 1];
+		int j = 0;
+		for (int i = 0; first_args[j] != NULL; i += 1) {
+			args[j] = first_args[j];
+			j += 1;
+		}
+		for (int i = 0; i < verbosity; i += 1) {
+			args[j++] = "-v";
+		}
+		args[j++] = prog_path;
+		args[j++] = NULL;
+		execv(vm_path, (char **const) args);
+		err(1, ": trying to execv convergec");
 	}
 	
 	// Parent process.

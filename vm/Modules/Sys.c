@@ -95,10 +95,10 @@ Con_Obj *Con_Module_Sys_import(Con_Obj *thread, Con_Obj *sys_mod)
 	char **argv;
 	Con_Builtins_VM_Atom_read_prog_args(thread, &argc, &argv);
 	
-	// The command line arguments that users see do not include the VM or Converge program.
+	// The command line arguments that users see do not include the Converge program.
 	
-	Con_Obj *argv_list = Con_Builtins_List_Atom_new_sized(thread, argc - 2);
-	for (int i = 2; i < argc; i += 1) {
+	Con_Obj *argv_list = Con_Builtins_List_Atom_new_sized(thread, argc - 1);
+	for (int i = 1; i < argc; i += 1) {
 		CON_GET_SLOT_APPLY(argv_list, "append", Con_Builtins_String_Atom_new_no_copy(thread, (u_char *) argv[i], strlen(argv[i]), CON_STR_UTF_8));
 	}
 	CON_SET_MOD_DEFN(sys_mod, "argv", argv_list);

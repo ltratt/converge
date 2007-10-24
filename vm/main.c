@@ -370,12 +370,58 @@ ssize_t find_bytecode_start(u_char *bytecode, size_t bytecode_size)
 
 void make_mode(char *prog_path, u_char **bytecode, size_t *bytecode_size, char *vm_path, int verbosity)
 {
+	// First of all we try and work out if we can construct a cached path name.
+
+	char cache_path[PATH_MAX];
+	bool have_cache_path = false;
+	struct stat st;
+	int i;
+	for (i = strlen(prog_path) - 1; i >= 0 && prog_path[i] != '.'; i -= 1) {}
+	FILE *cache_file;
+	if (i >= 0) {
+		have_cache_path = true;
+		memmove(cache_path, prog_path, i);
+		cache_path[i] = '\0';
+	}
+
+	if (have_cache_path) {
+		if (stat(cache_path, &st) == -1)
+			goto make;
+
+		// There is a cached path, so now we try and load it and see if it is upto date. If any part
+		// of this fails, we simply go straight to full make mode.
+		
+		*bytecode_size = st.st_size;
+		*bytecode = realloc(*bytecode, *bytecode_size);
+		if (*bytecode == NULL)
+			CON_XXX;
+	
+		cache_file = fopen(cache_path, "rb");
+		if (cache_file == NULL)
+			goto make;
+		
+		if (fread(*bytecode, 1, *bytecode_size, cache_file) < *bytecode_size) {
+			if (ferror(cache_file) != 0) {
+				fclose(cache_file); // Ignore errors
+				goto make;
+			}
+		}
+
+		ssize_t bytecode_start = find_bytecode_start(*bytecode, *bytecode_size);		
+		if (Con_Bytecode_upto_date(NULL, *bytecode + bytecode_start, &st.STAT_ST_MTIMESPEC)) {
+			// The cached file is completely upto date. We don't need to do anything else.
+			return;
+		}
+	}
+
+	// GCC 3.3.5 (at least) barfs if a label comes before a variable declaration.
+	int filedes[2];
+make:
 	// Fire up convergec -m on progpath. We do this by creating a pipe, forking, getting the child
 	// to output to the pipe (although note that we leave stdin and stdout unmolested on the child
 	// process, as user programs might want to print stuff to screen) and reading from that pipe
 	// to get the necessary bytecode.
 
-	int filedes[2];
 	pipe(filedes);
 	
 	pid_t pid = fork();
@@ -415,7 +461,7 @@ void make_mode(char *prog_path, u_char **bytecode, size_t *bytecode_size, char *
 
 	// Read in the output from the child process.
 
-	int i = sizeof(Con_Int) * 2 * *bytecode_size;
+	i = sizeof(Con_Int) * 2 * *bytecode_size;
 	*bytecode_size = 0;
 	*bytecode = malloc(i);
 	while (1) {
@@ -458,15 +504,9 @@ void make_mode(char *prog_path, u_char **bytecode, size_t *bytecode_size, char *
 	// Try and write the file to its cached equivalent. Since this isn't strictly necessary, if at
 	// any point anything fails, we simply give up without reporting an error.
 
-	for (i = strlen(prog_path) - 1; i >= 0 && prog_path[i] != '.'; i -= 1) {}
-	if (i >= 0) {
-		char cache_path[PATH_MAX];
-		memmove(cache_path, prog_path, i);
-		cache_path[i] = '\0';
-
+	if (have_cache_path) {
 		FILE *cache_file;
 
-		struct stat st;
 		if (stat(cache_path, &st) != -1) {
 			// A file with the cached name already exists, we we want to ensure that it's a Converge
 			// executeable to be reasonably sure that we're not overwriting a normal user file.

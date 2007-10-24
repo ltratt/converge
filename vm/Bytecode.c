@@ -21,6 +21,11 @@
 
 #include "Config.h"
 
+#include <sys/param.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <errno.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "Arch.h"
@@ -43,6 +48,8 @@
 
 
 
+#	define ID_BYTECODE_GET_WORD(x) (*(Con_Int*) (bytecode + (x)))
+
 //
 // Import an exec file from memory. bytecode should be a chunk of memory that will not be written to
 // and which will not be freed until after this function has completed. Note that holding a lock on
@@ -53,8 +60,6 @@ Con_Obj *Con_Bytecode_add_executable(Con_Obj *thread, u_char *bytecode)
 {
 	int i, num_modules, module_offset;
 	Con_Obj *main_module_identifier;
-
-#	define ID_BYTECODE_GET_WORD(x) (*(Con_Int*) (bytecode + (x)))
 
 	num_modules = ID_BYTECODE_GET_WORD(CON_BYTECODE_NUMBER_OF_MODULES);
 	
@@ -74,4 +79,44 @@ Con_Obj *Con_Bytecode_add_executable(Con_Obj *thread, u_char *bytecode)
 		CON_XXX;
 
 	return main_module_identifier;
+}
+
+
+
+//
+// Returns false if any of the constituent modules in bytecode is newer than 'mtime'.
+//
+
+bool Con_Bytecode_upto_date(Con_Obj *thread, u_char *bytecode, struct timespec *mtime)
+{
+	int num_modules = ID_BYTECODE_GET_WORD(CON_BYTECODE_NUMBER_OF_MODULES);
+	
+	char path[PATH_MAX];
+	for (int i = 0; i < num_modules; i += 1) {
+		int module_offset = ID_BYTECODE_GET_WORD(CON_BYTECODE_MODULES + i * sizeof(Con_Int));
+
+#		define ID_MODULE_GET_WORD(x) (*(Con_Int*) (bytecode + module_offset + (x)))
+#		define ID_MODULE_GET_OFFSET(x) ((void *) (bytecode + module_offset + (ID_MODULE_GET_WORD(x))))
+
+		int id_size = ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_IDENTIFIER_SIZE);
+
+		assert(id_size + 2 < PATH_MAX);
+
+		memmove(path, ID_MODULE_GET_OFFSET(CON_BYTECODE_MODULE_IDENTIFIER), id_size);
+		path[ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_IDENTIFIER_SIZE)] = '\0';
+		
+		struct stat cv_sb;
+		if (stat(path, &cv_sb) != 0) {
+			if (errno == ENOENT)
+				continue;
+		}
+		
+		if (cv_sb.STAT_ST_MTIMESPEC.tv_sec > mtime->tv_sec)
+			return false;
+		else if (cv_sb.STAT_ST_MTIMESPEC.tv_sec == mtime->tv_sec &&
+			cv_sb.STAT_ST_MTIMESPEC.tv_nsec >= mtime->tv_nsec)
+			return false;
+	}
+	
+	return true;
 }

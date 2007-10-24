@@ -25,5 +25,6 @@
 #include "Core.h"
 
 Con_Obj *Con_Bytecode_add_executable(Con_Obj *, u_char *);
+bool Con_Bytecode_upto_date(Con_Obj *, u_char *, struct timespec *);
 
 #endif

@@ -61,12 +61,15 @@ Con_Obj *Con_Modules_find(Con_Obj *thread, Con_Obj *mod_id)
 
 	Con_Obj *mod = CON_GET_SLOT_APPLY_NO_FAIL(modules, "get", mod_id, CON_BUILTIN(CON_BUILTIN_FAIL_OBJ));
 	if (mod == NULL) {
-		for (int i = 0; Con_Builtin_Modules[i].mod_name != NULL; i += 1) {
+		int i;
+		for (i = 0; Con_Builtin_Modules[i].mod_name != NULL; i += 1) {
 			if (Con_Builtins_String_Atom_c_string_eq(thread, Con_Builtin_Modules[i].mod_name, strlen(Con_Builtin_Modules[i].mod_name), mod_id)) {
 				mod = Con_Builtin_Modules[i].init_func(thread, mod_id);
 				break;
 			}
 		}
+		if (Con_Builtin_Modules[i].mod_name == NULL)
+			return NULL;
 		CON_GET_SLOT_APPLY(modules, "set", mod_id, mod);
 	}
 		

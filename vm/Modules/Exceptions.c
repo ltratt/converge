@@ -199,7 +199,7 @@ Con_Obj *Con_Module_Exceptions_import(Con_Obj *thread, Con_Obj *exceptions_mod)
 	
 	// func backtrace
 	
-	CON_SET_MOD_DEFN(exceptions_mod, "backtrace", CON_NEW_UNBOUND_C_FUNC(_Con_Module_Exception_backtrace_func, "unbound", exceptions_mod));
+	CON_SET_MOD_DEFN(exceptions_mod, "backtrace", CON_NEW_UNBOUND_C_FUNC(_Con_Module_Exception_backtrace_func, "backtrace", exceptions_mod));
 	
 	return exceptions_mod;
 }

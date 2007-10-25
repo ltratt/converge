@@ -91,18 +91,26 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 
 	int verbosity = 0;
 
-	char ch;
-	while ((ch = getopt(argc, argv, "v")) != -1) {
-		switch (ch) {
-			case 'v':
-				verbosity += 1;
-				break;
-			default:
+	int i = 1;
+	while (i < argc) {
+		if (argv[i][0] == '-') {
+			if (strlen(argv[i]) == 1 || strlen(argv[i]) > 2)
 				usage();
+
+			switch (argv[i][1]) {
+				case 'v':
+					verbosity += 1;
+					i += 1;
+					break;
+				default:
+					usage();
+			}
 		}
+		else
+			break;
 	}
-	argc -= optind;
-	argv += optind;
+	argc -= i;
+	argv += i;
 
 #if CON_FULL_DEBUG
 		printf("%s %s (%s) %s\n", CON_NAME, CON_VERSION, CON_DATE, CON_COPYRIGHT);

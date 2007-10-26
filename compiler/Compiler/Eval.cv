@@ -90,10 +90,27 @@ class Eval_Compiler:
 		cv_mod := _Eval_Bytecode_Gen.new().generate(dummy_imodule, self.target)
 		mod := Builtins::Module.new(cv_mod.serialize())
 		
-		module_identifiers := VM::add_modules([mod])
-		VM::import_module(mod)
+		cv_mod_stack := [cv_mod]
+		mod_stack := [mod]
+		mod_ids := Set{}
+		i := 0
+		while i < mod_stack.len():
+			cv_mod := cv_mod_stack[i]
+			for import_ := cv_mod.get_imports().iter():
+				if not VM::find_module(import_) & not mod_ids.find(import_):
+					cv_mod := self.get_cv_mod(import_, [])
+					cv_mod_stack.append(cv_mod)
+					mod_stack.append(Builtins::Module.new(cv_mod.serialize()))
+					mod_ids.add(import_)
+
+			i += 1
 		
-		return mod.get_defn(eval_name)()
+		VM::add_modules(mod_stack)
+		main_mod := VM::import_module(mod_stack[0])
+		for mod := mod_stack.iter(1):
+			VM::import_module(mod)
+		
+		return main_mod.get_defn(eval_name)()
 
 
 
@@ -131,6 +148,24 @@ class Eval_Compiler:
 				return fail
 		
 		return [import_full_name, import_extras]
+
+
+
+	func get_cv_mod(self, src_path, src_infos):
+
+		name, ext := File::split_ext(src_path)
+		if ext == Compiler_Vars::CV_EXTENSION:
+			cvb_path := File::join_ext(name, Compiler_Vars::CVB_EXTENSION)
+			if File::exists(cvb_path):
+				cvb_file := File::open(cvb_path, "r")
+				cvb_data := cvb_file.read()
+				cvb_file.close()
+				if cvb_data.prefixed_by(CV_Module::MODULE_INIT_STRING):
+					mod := CV_Module::CV_Module.new(self.target)
+					mod.deserialize_str(cvb_data)
+					return mod
+		
+		self.error(Strings::format("Unable to import '%s'.", src_path), src_infos)
 
 
 

@@ -48,7 +48,7 @@ DEFAULT_VARS := Set{"self_module", "null", "fail"}
 
 //
 
-BUILTIN_MODULES := Set{"Sys", "Backtrace", "Builtins", "POSIX_File", "Array", "OS", "Exceptions", "C_Earley_Parser", "PCRE", "VM", "Processes", "PThreads", "CEI", "C_Strings", "Thread", "libXML2", "Random", "C_Platform_Properties", "C_Platform_Env", "C_Platform_Exec"}
+BUILTIN_MODULES := Set{"Sys", "Backtrace", "Builtins", "POSIX_File", "Array", "OS", "Exceptions", "C_Earley_Parser", "PCRE", "VM", "Processes", "PThreads", "CEI", "C_Strings", "Thread", "libXML2", "Random", "C_Platform_Properties", "C_Platform_Env", "C_Platform_Exec", "C_Time"}
 
 
 

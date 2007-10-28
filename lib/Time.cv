@@ -19,7 +19,7 @@
 // IN THE SOFTWARE.
 
 
-import Exceptions
+import C_Time, Exceptions
 
 
 
@@ -80,6 +80,13 @@ class Instant:
 		
 		return fail
 
+
+
+
+
+func current():
+
+	return Instant.new.apply(C_Time::current())
 
 
 

@@ -19,7 +19,7 @@
 // IN THE SOFTWARE.
 
 
-import Builtins, Exceptions, File, Parse_Options, Platform::Properties, Strings, Sys, VM
+import Builtins, Exceptions, File, Parse_Options, Platform::Properties, Strings, Sys, Time, VM
 import Compiler::Bytecode_Gen, Compiler::Compiler_Vars, Compiler::CV_Exec, Compiler::CV_Library, Compiler::CV_Module, Compiler::CV_Parser, Compiler::IModule_Gen, Compiler::Link, Compiler::Targets, Compiler::Tokenizer
 
 
@@ -45,7 +45,7 @@ class Compiler:
 		options.add(Parse_Options::Option_Spec.new("verbose", "v", Parse_Options::NONE, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_MORE))
 		
 		self.bootstrap := 0
-		self.make_mode := 0
+		self.mk_mode := 0
 		self.output_path := null
 		self.start_includes := []
 		self.verbosity := 0
@@ -60,7 +60,7 @@ class Compiler:
 			elif option_name == "includes":
 				self.start_includes.extend(option_val)
 			elif option_name == "make":
-				self.make_mode := 1
+				self.mk_mode := 1
 			elif option_name == "target":
 				target_name := option_val
 			elif option_name == "verbose":
@@ -72,7 +72,7 @@ class Compiler:
 			self._usage_callback("Too many arguments.")
 
 		if self.output_path is null:
-			if self.make_mode == 1:
+			if self.mk_mode == 1:
 				main, ext := File::split_ext(extra[0])
 				if ext != Compiler_Vars::CV_EXTENSION:
 					self._usage_callback(Strings::format("-o can not be left out if input file does not end in '.%s'.", Compiler_Vars::CV_EXTENSION))
@@ -123,7 +123,7 @@ class Compiler:
 				// Sanity checks failed.
 				raise "XXX"
 
-		if self.make_mode == 1:
+		if self.mk_mode == 1:
 			self._make(extra[0])
 		else:
 			cv_module := self._compile_path(extra[0])
@@ -133,20 +133,23 @@ class Compiler:
 
 
 
-	func from_make_mode(self, src_path, start_includes, verbosity, target, internal_target, make_done_cv_mods):
+	func from_mk_mode(self, src_path, start_includes, verbosity, target, internal_target, mk_done_cv_mods, mk_mtime_map):
 
 		self.bootstrap := 0
-		self.make_mode := 1
+		self.mk_mode := 1
 		self.output_path := null
 		self.start_includes := start_includes
 		self.verbosity := verbosity
 		self.target := target
 		self.internal_target := internal_target
 		
-		self.make_done_cv_mods := make_done_cv_mods
+		self.mk_done_cv_mods := mk_done_cv_mods
 
 		cv_mod := self._compile_path(src_path)
 		self._write_cache_cvb(src_path, cv_mod.serialize())
+
+		mk_done_cv_mods[src_path] := cv_mod
+		mk_mtime_map[src_path] := Time::current()
 		
 		return cv_mod
 
@@ -172,26 +175,29 @@ class Compiler:
 
 	func info(self, msg):
 	
-		Sys::stderr.writeln(Strings::format("===> %s", msg))
+		Sys::stderr.writeln(Strings::format("===> %s%s", " " * ((Compiler_Vars::num_compilers() - 1) * 2), msg))
 
 
 
 	func get_cv_mod(self, src_path, src_infos := null):
 	
-		if cv_mod := self._read_cache_cvb(src_path):
+		if cv_mod, mtime := self._read_cache_cvb(src_path):
 			return cv_mod
 
-		if self.make_mode == 0:
+		if self.mk_mode == 0:
 			self.error(Strings::format("Can not find compiled version of '%s'.", src_path), src_infos)
 		
-		if cv_mod := self.make_done_cv_mods.find(src_path):
+		if cv_mod := self.mk_done_cv_mods.find(src_path):
 			return cv_mod
 	
 		compiler := Compiler.new()
 		Compiler_Vars::push_compiler(compiler)
-		cv_mod := compiler.from_make_mode(src_path, self.start_includes, self.verbosity, self.target, self.internal_target, self.make_done_cv_mods)
+		cv_mod := compiler.from_mk_mode(src_path, self.start_includes, self.verbosity, self.target, self.internal_target, self.mk_done_cv_mods, self.mk_mtime_map)
 		Compiler_Vars::pop_compiler()
 		
+		if self.verbosity > 0:
+			self.info(Strings::format("Returning to compile of %s...", self.module_id))
+
 		return cv_mod
 
 
@@ -246,7 +252,7 @@ class Compiler:
 			self.error(Strings::format("Source file '%s' not found.", src_path))
 
 		if self.verbosity > 0:
-			self.info(Strings::format("Compiling %s", src_path))
+			self.info(Strings::format("Compiling %s...", src_path))
 
 		self.module_id := File::canon_path(src_path)
 
@@ -273,24 +279,43 @@ class Compiler:
 
 		imodule := IModule_Gen::IModule_Gen.new().generate(parse_tree)
 		
-		return Bytecode_Gen::Bytecode_Gen.new().generate(imodule, self.target)
+		bc := Bytecode_Gen::Bytecode_Gen.new().generate(imodule, self.target)
+		
+		if self.verbosity > 0:
+			self.info(Strings::format("Finished compiling %s.", src_path))
+		
+		return bc
 
 
+
+	//
+	// Compile 'src_path', and its dependencies, in a make-like fashion.
+	//
 
 	func _make(self, src_path):
 
+		// This function has more to it than it might first appear. The basic strategy is this: we
+		// compile the given module and all its obvious imports. Life becomes trickier because of
+		// CTMP. This means that when we're half way through compiling x.cv, we realise we need
+		// to compile y.cv in order that x.cv can execute CTMP. This means that we have to start
+		// up sub-compiler(s).
+
 		if File::exists(self.output_path):
 			if File::mtime(self.output_path) < File::mtime(src_path):
-				update := 1
+				do_link := 1
 			else:
-				update := 0
+				do_link := 0
 		else:
-			update := 1
+			do_link := 1
 
-		self.make_done_cv_mods := Dict{} // module id : CV_Module instances map.
-		todo_mod_ids := [src_path]
+		main_mod_id := File::canon_path(src_path)
+		self.mk_done_cv_mods := Dict{main_mod_id : null} // module id : CV_Module instances map.
+
+		// We want to ensure that we never try to compile any of the stuff in the builtin libraries,
+		// so read these in to make sure this doesn't happen.
 		
 		lib_mods := []
+		lib_mod_ids := Set{}
 		for lib_path := Compiler_Vars::get_std_libraries().iter():
 			lib := CV_Library::CV_Library.new(self.target)
 			lib_file := File::open(lib_path, "r")
@@ -298,44 +323,93 @@ class Compiler:
 			lib_file.close()
 			for cv_mod := lib.deserialize(lib_data).iter():
 				lib_mods.append(cv_mod)
-				self.make_done_cv_mods[cv_mod.get_identifier()] := cv_mod
+				lib_mod_ids.add(cv_mod.get_identifier())
+				self.mk_done_cv_mods[cv_mod.get_identifier()] := cv_mod
 
-		mods := []
-		while todo_mod_ids.len() > 0:
-			src_path := todo_mod_ids[0]
-			todo_mod_ids.del(0)
-			
-			if self.make_done_cv_mods.find(src_path):
-				continue
-			
-			if not (cv_mod := self._read_cache_cvb(src_path)):
-				cv_mod := self._compile_path(src_path)
-				self._write_cache_cvb(src_path, cv_mod.serialize())
-				update := 1
+		// The main loop. Basically we keep on going around this, reading in cached files or
+		// compiling new files; and updating any modules who are older than their import
+		// dependencies to ensure that any CTMP works on the latest version of the module available.
+		// Assuming there are no circular imports this will eventually hit a fixed point (possibly
+		// having compiled the same module multiple times), and the loop is finished. Although this
+		// is not as efficient as a customised Makefile with static dependencies could be, it is
+		// easier to use and is (hopefully) guaranteed to make sure everything is upto date.
 
-			self.make_done_cv_mods[cv_mod.get_identifier()] := cv_mod
-			mods.append(cv_mod)
-			
-			for mod_id := cv_mod.get_imports().iter():
-				if Compiler_Vars::BUILTIN_MODULES.find(mod_id) | self.make_done_cv_mods.find(mod_id):
+		main_mod := null
+		self.mk_mtime_map := Dict{} // module id : mtime
+
+		while 1:
+			again := 0 // Set to 1 to force another round of the loop.
+			for mod_id, cv_mod := self.mk_done_cv_mods.iter():
+				if lib_mod_ids.find(mod_id):
 					continue
 				
-				if not File::exists(mod_id):
-					self.error(Strings::format("Source file '%s' not found.", src_path))
+				compile := 0
+				if cv_mod is null:
+					// We haven't previously encountered this module, so try seeing if we can read in
+					// a cached version.
+					if cv_mod, mtime := self._read_cache_cvb(mod_id):
+						mod_id := cv_mod.get_identifier()
+						self.mk_done_cv_mods[mod_id] := cv_mod
+						self.mk_mtime_map[mod_id] := mtime
+					else:
+						compile := 1
 				
-				if File::is_dir(mod_id):
-					// This must be a package.
-					todo_mod_ids.extend(self._locate_cv_files(mod_id))
-				else:
-					todo_mod_ids.append(mod_id)
+				if not cv_mod is null:
+					// We check to see whether this module is "stale" i.e. is older than any of its
+					// import dependencies.
+					assert(mod_id == cv_mod.get_identifier())
+					mtime := self.mk_mtime_map[mod_id]
+					for imp_mod_id := cv_mod.get_imports().iter():
+						if Compiler_Vars::BUILTIN_MODULES.find(imp_mod_id):
+							continue
+
+						if File::is_dir(imp_mod_id):
+							// This must be a package. We therefore expand things so that this module
+							// is dependent on all the packages sub-modules. We could be more
+							// efficient about this by only depending on the package modules that
+							// this module uses.
+							imp_mod_ids := self._locate_cv_files(imp_mod_id)
+						else:
+							imp_mod_ids := [imp_mod_id]
+						
+						for cnd_mod_id := imp_mod_ids.iter():
+							if not self.mk_done_cv_mods.find(cnd_mod_id):
+								self.mk_done_cv_mods[cnd_mod_id] := null
+								again := 1
+								continue
+
+							if mtime < self.mk_mtime_map.find(cnd_mod_id):
+								compile := 1
+				
+				if compile == 1:
+					// Compilation has been forced.
+					cv_mod := self._compile_path(mod_id)
+					self._write_cache_cvb(mod_id, cv_mod.serialize())
+					self.mk_done_cv_mods[mod_id] := cv_mod
+					self.mk_mtime_map[mod_id] := Time::current()
+					again := 1
+					do_link := 1
+					
+				if mod_id == main_mod_id:
+					main_mod := cv_mod
+
+			if again == 0:
+				break
 		
-		mods.extend(lib_mods)
-	
-		if update == 1:
+		// Everything is compiled. If anything has been updated, then we need to link things.
+		
+		if do_link == 1:
+			// Create the list of modules to link, including all library modules.
+			link_mods := [main_mod]
+			for mod := self.mk_done_cv_mods.iter_vals():
+				if not mod is main_mod:
+					link_mods.append(mod)
+			link_mods.extend(lib_mods)
+
 			if self.verbosity > 0:
 				self.info("Linking.")
-			self.module_id := mods[0].get_identifier()
-			ser_cv_exec := Linker.new().link(mods, self.target)
+			self.module_id := link_mods[0].get_identifier()
+			ser_cv_exec := Linker.new().link(link_mods, self.target)
 
 			output_file := File::File.new(self.output_path, "w")
 			output_file.write(ser_cv_exec)
@@ -421,17 +495,16 @@ class Compiler:
 
 	func _read_cache_cvb(self, src_path):
 
-		name, ext := File::split_ext(src_path)
-		if ext == Compiler_Vars::CV_EXTENSION:
-			cvb_path := File::join_ext(name, Compiler_Vars::CVB_EXTENSION)
-			if File::exists(cvb_path) & File::mtime(cvb_path) > File::mtime(src_path):
+		if (cvb_path := Compiler_Vars::cvb_cache_path(src_path)) & File::exists(cvb_path):
+			cvb_mtime := File::mtime(cvb_path)
+			if cvb_mtime > File::mtime(src_path):
 				cvb_file := File::open(cvb_path, "r")
 				cvb_data := cvb_file.read()
 				cvb_file.close()
 				if cvb_data.prefixed_by(CV_Module::MODULE_INIT_STRING):
 					mod := CV_Module::CV_Module.new(self.target)
 					mod.deserialize_str(cvb_data)
-					return mod
+					return [mod, cvb_mtime]
 		
 		return fail
 
@@ -444,9 +517,7 @@ class Compiler:
 
 	func _write_cache_cvb(self, src_path, bc):
 
-		name, ext := File::split_ext(src_path)
-		if ext == Compiler_Vars::CV_EXTENSION:
-			cvb_path := File::join_ext(name, Compiler_Vars::CVB_EXTENSION)
+		if cvb_path := Compiler_Vars::cvb_cache_path(src_path):
 			can_write := 1
 			if File::exists(cvb_path):
 				cvb_file := File::open(cvb_path, "r")

@@ -101,6 +101,22 @@ func pop_compiler():
 
 
 
+func num_compilers():
+
+	return _compilers.len()
+
+
+
+func cvb_cache_path(path):
+
+	name, ext := File::split_ext(path)
+	if ext == CV_EXTENSION:
+		return File::join_ext(name, CVB_EXTENSION)
+	
+	return fail
+
+
+
 func find_std_includes():
 
 	includes := []

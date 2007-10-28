@@ -360,14 +360,14 @@ char *find_con_exec(const char *name, const char *vm_path)
 ssize_t find_bytecode_start(u_char *bytecode, size_t bytecode_size)
 {
 	ssize_t bytecode_start = 0;
-	while (bytecode_size - bytecode_start >= 8 && bytecode_start < BYTES_TO_FIND_EXEC &&
-	  strncmp(bytecode + bytecode_start, "CONVEXEC", 8) != 0) {
+	while (bytecode_size - bytecode_start >= 8 && bytecode_start < BYTES_TO_FIND_EXEC) {
+		if (memcmp(bytecode + bytecode_start, "CONVEXEC", 8) == 0)
+			return bytecode_start;
+		
 		bytecode_start += 1;
 	}
-	if (bytecode_size - bytecode_start < 8 || bytecode_start == BYTES_TO_FIND_EXEC)
-		return -1;
 
-	return bytecode_start;
+	return -1;
 }
 
 
@@ -415,8 +415,8 @@ void make_mode(char *prog_path, u_char **bytecode, size_t *bytecode_size, char *
 			}
 		}
 
-		ssize_t bytecode_start = find_bytecode_start(*bytecode, *bytecode_size);		
-		if (Con_Bytecode_upto_date(NULL, *bytecode + bytecode_start, &st.STAT_ST_MTIMESPEC)) {
+		ssize_t bytecode_start = find_bytecode_start(*bytecode, *bytecode_size);
+		if (bytecode_start != -1 && Con_Bytecode_upto_date(NULL, *bytecode + bytecode_start, &st.STAT_ST_MTIMESPEC)) {
 			// The cached file is completely upto date. We don't need to do anything else.
 			return;
 		}

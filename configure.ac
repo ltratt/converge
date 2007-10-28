@@ -482,10 +482,18 @@ int main()
 if [[ "$GCC" = "yes" ]]; then
 	CFLAGS="-std=c99 -g -DNDEBUG -Wall -Wstrict-prototypes -Wmissing-prototypes -Wwrite-strings -Wpointer-arith -Wbad-function-cast -Wsign-compare $extra_cflags"
 
+	AC_MSG_CHECKING([for gcc version])
+	version=`gcc -v 2>&1 /dev/null | grep "gcc version" | sed "s/gcc version //" | sed "s/ .*//"`
+	AC_MSG_RESULT($version)
+
 	# We only enable optimisation on GCC 3.3 - on later versions it seems to cause problems.
+	AC_MSG_CHECKING([for safe gcc optimisation level])
 	$CC -v 2>&1 /dev/null | grep "gcc version 3\.3" > /dev/null
 	if [[ $? -eq 0 ]]; then
+		AC_MSG_RESULT(-O2)
 		CFLAGS="$CFLAGS -O2"
+	else
+		AC_MSG_RESULT(none)
 	fi
 else
 	CFLAGS="-DNDEBUG"

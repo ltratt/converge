@@ -73,6 +73,10 @@ class Linker:
 			else:
 				self.error(Strings::format("File '%s' is not of a known type.", input_path))
 
+		self.cv_mods_map := Dict{}
+		for cv_mod := cv_mods.iter():
+			self.cv_mods_map[cv_mod.get_identifier()] := cv_mod
+
 		ser_cv_exec := Link::link_exec(cv_mods, self, target)
 
 		output_file := File::File.new(output_path, "w")
@@ -108,7 +112,7 @@ class Linker:
 
 		target := self.target_name_to_target(target_name)
 
-		modules := []
+		ser_mods := []
 		for input_path := extra_args.iter():
 			input_path := File::canon_path(input_path)
 			input_file := File::open(input_path, "r")
@@ -119,9 +123,9 @@ class Linker:
 			if file_type == CV_Library::LIBRARY_INIT_STRING:
 				library := CV_Library::CV_Library.new(target)
 				for cv_mod := library.deserialize(input_file_data).iter():
-					modules.append(cv_mod.serialize())
+					ser_mods.append(cv_mod.serialize())
 			elif file_type == CV_Module::MODULE_INIT_STRING:
-				modules.append(input_file_data)
+				ser_mods.append(input_file_data)
 
 		// In one sense, the following should belong in CV_Library::CV_Library.serialize. But by
 		// doing it here we can forego the pointless string -> array -> string conversion.
@@ -130,12 +134,12 @@ class Linker:
 		library.extend_from_string(CV_Library::LIBRARY_INIT_STRING)
 		library.append(CV_Library::LIBRARY_VERSION)
 
-		library.append(modules.len())
+		library.append(ser_mods.len())
 		
 		offsets := Array::Array.new(target.ARRAY_TYPE)
 		serialized_modules := Array::Array.new(target.ARRAY_TYPE)
-		for module := modules.iter():
-			offsets.append((library.len() + modules.len() + serialized_modules.len()) * target.WORDSIZE)
+		for module := ser_mods.iter():
+			offsets.append((library.len() + ser_mods.len() + serialized_modules.len()) * target.WORDSIZE)
 			serialized_modules.extend_from_string(module)
 		
 		library.extend(offsets)
@@ -172,7 +176,7 @@ class Linker:
 		if not src_infos is null:
 			Sys::stderr.writeln(Strings::format("%s:", pre_msg))
 			for src_info := src_infos.iter():
-				mod := Builtins::Module.new(self.modules[src_info[0]][0].serialize())
+				mod := Builtins::Module.new(self.cv_mods_map[src_info[0]].serialize())
 				line, col := mod.src_offset_to_line_column(src_info[1])
 				
 				Sys::stderr.writeln(Strings::format("  %s, line %d, column %d", src_info[0], line, col))

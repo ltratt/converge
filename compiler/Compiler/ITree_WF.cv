@@ -30,9 +30,9 @@ _EXPRS := [ITree::IClass_Defn, ITree::IFunc_Defn, ITree::IIf, ITree::INDIf, ITre
 
 
 
-class ITree_TC:
+class ITree_WF:
 
-	func tc(self, itree):
+	func wf(self, itree):
 	
 		self._indent_level := 0
 		
@@ -502,20 +502,20 @@ class ITree_TC:
 
 
 //
-// Typecheck the ITree 'itree' which can be of any valid ITree type.
+// Check the ITree 'itree', which can be of any valid ITree type, for well-formedness.
 //
 
-func tc(itree):
+func wf(itree):
 
-	return ITree_TC.new().tc(itree)
+	return ITree_WF.new().wf(itree)
 
 
 
 //
-// Typecheck the ITree 'itree' to ensure it is a valid expression.
+// Check the ITree 'itree' to ensure it is a well-formed expression.
 //
 
-func tc_expr(itree, msg, src_infos):
+func wf_expr(itree, msg, src_infos):
 
 	for elem_class := _EXPRS.iter():
 		if elem_class.instantiated(itree):
@@ -523,7 +523,7 @@ func tc_expr(itree, msg, src_infos):
 	exhausted:
 		Compiler_Vars::peek_compiler().error(Strings::format("Node %s is of type %s instead of IExpr.", msg, itree.instance_of.name), src_infos)
 
-	return ITree_TC.new().tc(itree)
+	return ITree_WF.new().wf(itree)
 
 
 

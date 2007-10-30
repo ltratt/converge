@@ -20,7 +20,7 @@
 
 
 import Builtins, Strings
-import Compiler_Vars, ITree, ITree_TC, Lift
+import Compiler_Vars, ITree, ITree_WF, Lift
 
 
 
@@ -116,7 +116,7 @@ class QQ_Mode:
 				return_exprs.append(ITree::IAssignment.new(ITree::STD_ASSIGN, [qq_bound_var], fresh_name, node.src_infos))
 
 			e := self._lift_func_call(_expr_block_magic, [self._eval_expr_block(node.body)], node.src_infos)
-			ITree_TC::tc(e)
+			ITree_WF::wf(e)
 			return_exprs.append(e)
 
 			// We don't strictly need to pop the last lot of variables, but do so for completeness.
@@ -838,10 +838,10 @@ func _expr_block_insert(expr, src_infos):
 	if Builtins::List.instantiated(expr):
 		for e := expr.iter():
 			if not ITree::IPass.instantiated(e):
-				ITree_TC::tc_expr(e, "in expression body", src_infos)
+				ITree_WF::wf_expr(e, "in expression body", src_infos)
 	else:
 		if not ITree::IPass.instantiated(expr):
-			ITree_TC::tc_expr(expr, "in expression body", src_infos)
+			ITree_WF::wf_expr(expr, "in expression body", src_infos)
 
 	return expr
 
@@ -853,7 +853,7 @@ func _expr_block_insert(expr, src_infos):
 
 func _insert_check(expr, src_infos):
 
-	ITree_TC::tc_expr(expr, "in expression", src_infos)
+	ITree_WF::wf_expr(expr, "in expression", src_infos)
 	
 	return expr
 
@@ -866,7 +866,7 @@ func _insert_check(expr, src_infos):
 func _class_name(name, src_infos):
 
 	if not Builtins::String.instantiated(name):
-		ITree_TC::type_error("Class_Defn", "name", name, "String", src_infos)
+		ITree_WF::type_error("Class_Defn", "name", name, "String", src_infos)
 
 	return name
 
@@ -879,6 +879,6 @@ func _class_name(name, src_infos):
 func _func_name(name, src_infos):
 
 	if not Builtins::String.instantiated(name):
-		ITree_TC::type_error("Func_Defn", "name", name, "String", src_infos)
+		ITree_WF::type_error("Func_Defn", "name", name, "String", src_infos)
 
 	return name

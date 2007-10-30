@@ -21,7 +21,7 @@
 
 import Builtins, Exceptions, Strings, Thread
 import CPK::Earley::Grammar
-import Compiler_Vars, CV_Parser, Eval, ITree, ITree_Format, ITree_TC, Lift, Tokenizer
+import Compiler_Vars, CV_Parser, Eval, ITree, ITree_Format, ITree_WF, Lift, Tokenizer
 
 
 
@@ -105,7 +105,7 @@ func dsl_parse(dsl_block, src_infos, extra_keywords, extra_symbols, grammar, sta
 //				// Create the element and immediately type check it.
 //
 //				elem := ITree::${ITree::IVar.new(def_name, __SRC_INFO__)}.new.apply(args)
-//				ITree_TC::tc(elem)
+//				ITree_WF::wf(elem)
 //				
 //				return elem
 //		|])
@@ -127,7 +127,7 @@ func imodule(*args):
 		args := args + [Thread::get_continuation_src_infos(2)]
 
 	elem := elem.new.apply(args)
-	ITree_TC::tc(elem)
+	ITree_WF::wf(elem)
 
 	return elem
 
@@ -143,7 +143,7 @@ func iclass_defn(*args):
 		args := args + [Thread::get_continuation_src_infos(2)]
 
 	elem := elem.new.apply(args)
-	ITree_TC::tc(elem)
+	ITree_WF::wf(elem)
 
 	return elem
 
@@ -159,7 +159,7 @@ func ifunc_defn(*args):
 		args := args + [Thread::get_continuation_src_infos(2)]
 
 	elem := elem.new.apply(args)
-	ITree_TC::tc(elem)
+	ITree_WF::wf(elem)
 
 	return elem
 
@@ -175,7 +175,7 @@ func iif(*args):
 		args := args + [Thread::get_continuation_src_infos(2)]
 
 	elem := elem.new.apply(args)
-	ITree_TC::tc(elem)
+	ITree_WF::wf(elem)
 
 	return elem
 
@@ -191,7 +191,7 @@ func indif(*args):
 		args := args + [Thread::get_continuation_src_infos(2)]
 
 	elem := elem.new.apply(args)
-	ITree_TC::tc(elem)
+	ITree_WF::wf(elem)
 
 	return elem
 
@@ -207,7 +207,7 @@ func ivar(*args):
 		args := args + [Thread::get_continuation_src_infos(2)]
 
 	elem := elem.new.apply(args)
-	ITree_TC::tc(elem)
+	ITree_WF::wf(elem)
 
 	return elem
 
@@ -223,7 +223,7 @@ func iimport(*args):
 		args := args + [Thread::get_continuation_src_infos(2)]
 
 	elem := elem.new.apply(args)
-	ITree_TC::tc(elem)
+	ITree_WF::wf(elem)
 
 	return elem
 
@@ -239,7 +239,7 @@ func iwhile(*args):
 		args := args + [Thread::get_continuation_src_infos(2)]
 
 	elem := elem.new.apply(args)
-	ITree_TC::tc(elem)
+	ITree_WF::wf(elem)
 
 	return elem
 
@@ -255,7 +255,7 @@ func ifor(*args):
 		args := args + [Thread::get_continuation_src_infos(2)]
 
 	elem := elem.new.apply(args)
-	ITree_TC::tc(elem)
+	ITree_WF::wf(elem)
 
 	return elem
 
@@ -271,7 +271,7 @@ func iint(*args):
 		args := args + [Thread::get_continuation_src_infos(2)]
 
 	elem := elem.new.apply(args)
-	ITree_TC::tc(elem)
+	ITree_WF::wf(elem)
 
 	return elem
 
@@ -287,7 +287,7 @@ func istring(*args):
 		args := args + [Thread::get_continuation_src_infos(2)]
 
 	elem := elem.new.apply(args)
-	ITree_TC::tc(elem)
+	ITree_WF::wf(elem)
 
 	return elem
 
@@ -303,7 +303,7 @@ func islot_lookup(*args):
 		args := args + [Thread::get_continuation_src_infos(2)]
 
 	elem := elem.new.apply(args)
-	ITree_TC::tc(elem)
+	ITree_WF::wf(elem)
 
 	return elem
 
@@ -319,7 +319,7 @@ func imodule_lookup(*args):
 		args := args + [Thread::get_continuation_src_infos(2)]
 
 	elem := elem.new.apply(args)
-	ITree_TC::tc(elem)
+	ITree_WF::wf(elem)
 
 	return elem
 
@@ -335,7 +335,7 @@ func ilist(*args):
 		args := args + [Thread::get_continuation_src_infos(2)]
 
 	elem := elem.new.apply(args)
-	ITree_TC::tc(elem)
+	ITree_WF::wf(elem)
 
 	return elem
 
@@ -351,7 +351,7 @@ func idict(*args):
 		args := args + [Thread::get_continuation_src_infos(2)]
 
 	elem := elem.new.apply(args)
-	ITree_TC::tc(elem)
+	ITree_WF::wf(elem)
 
 	return elem
 
@@ -367,7 +367,7 @@ func iset(*args):
 		args := args + [Thread::get_continuation_src_infos(2)]
 
 	elem := elem.new.apply(args)
-	ITree_TC::tc(elem)
+	ITree_WF::wf(elem)
 
 	return elem
 
@@ -383,7 +383,7 @@ func iapplication(*args):
 		args := args + [Thread::get_continuation_src_infos(2)]
 
 	elem := elem.new.apply(args)
-	ITree_TC::tc(elem)
+	ITree_WF::wf(elem)
 
 	return elem
 
@@ -399,7 +399,7 @@ func iget(*args):
 		args := args + [Thread::get_continuation_src_infos(2)]
 
 	elem := elem.new.apply(args)
-	ITree_TC::tc(elem)
+	ITree_WF::wf(elem)
 
 	return elem
 
@@ -415,7 +415,7 @@ func islice(*args):
 		args := args + [Thread::get_continuation_src_infos(2)]
 
 	elem := elem.new.apply(args)
-	ITree_TC::tc(elem)
+	ITree_WF::wf(elem)
 
 	return elem
 
@@ -431,7 +431,7 @@ func iexbi(*args):
 		args := args + [Thread::get_continuation_src_infos(2)]
 
 	elem := elem.new.apply(args)
-	ITree_TC::tc(elem)
+	ITree_WF::wf(elem)
 
 	return elem
 
@@ -447,7 +447,7 @@ func ireturn(*args):
 		args := args + [Thread::get_continuation_src_infos(2)]
 
 	elem := elem.new.apply(args)
-	ITree_TC::tc(elem)
+	ITree_WF::wf(elem)
 
 	return elem
 
@@ -463,7 +463,7 @@ func iyield(*args):
 		args := args + [Thread::get_continuation_src_infos(2)]
 
 	elem := elem.new.apply(args)
-	ITree_TC::tc(elem)
+	ITree_WF::wf(elem)
 
 	return elem
 
@@ -479,7 +479,7 @@ func iraise(*args):
 		args := args + [Thread::get_continuation_src_infos(2)]
 
 	elem := elem.new.apply(args)
-	ITree_TC::tc(elem)
+	ITree_WF::wf(elem)
 
 	return elem
 
@@ -495,7 +495,7 @@ func iassert(*args):
 		args := args + [Thread::get_continuation_src_infos(2)]
 
 	elem := elem.new.apply(args)
-	ITree_TC::tc(elem)
+	ITree_WF::wf(elem)
 
 	return elem
 
@@ -511,7 +511,7 @@ func ibreak(*args):
 		args := args + [Thread::get_continuation_src_infos(2)]
 
 	elem := elem.new.apply(args)
-	ITree_TC::tc(elem)
+	ITree_WF::wf(elem)
 
 	return elem
 
@@ -527,7 +527,7 @@ func icontinue(*args):
 		args := args + [Thread::get_continuation_src_infos(2)]
 
 	elem := elem.new.apply(args)
-	ITree_TC::tc(elem)
+	ITree_WF::wf(elem)
 
 	return elem
 
@@ -543,7 +543,7 @@ func iconjunction(*args):
 		args := args + [Thread::get_continuation_src_infos(2)]
 
 	elem := elem.new.apply(args)
-	ITree_TC::tc(elem)
+	ITree_WF::wf(elem)
 
 	return elem
 
@@ -559,7 +559,7 @@ func ialternation(*args):
 		args := args + [Thread::get_continuation_src_infos(2)]
 
 	elem := elem.new.apply(args)
-	ITree_TC::tc(elem)
+	ITree_WF::wf(elem)
 
 	return elem
 
@@ -575,7 +575,7 @@ func iassignment(*args):
 		args := args + [Thread::get_continuation_src_infos(2)]
 
 	elem := elem.new.apply(args)
-	ITree_TC::tc(elem)
+	ITree_WF::wf(elem)
 
 	return elem
 
@@ -591,7 +591,7 @@ func inot(*args):
 		args := args + [Thread::get_continuation_src_infos(2)]
 
 	elem := elem.new.apply(args)
-	ITree_TC::tc(elem)
+	ITree_WF::wf(elem)
 
 	return elem
 
@@ -607,7 +607,7 @@ func ibinary(*args):
 		args := args + [Thread::get_continuation_src_infos(2)]
 
 	elem := elem.new.apply(args)
-	ITree_TC::tc(elem)
+	ITree_WF::wf(elem)
 
 	return elem
 
@@ -623,7 +623,7 @@ func icomparison(*args):
 		args := args + [Thread::get_continuation_src_infos(2)]
 
 	elem := elem.new.apply(args)
-	ITree_TC::tc(elem)
+	ITree_WF::wf(elem)
 
 	return elem
 
@@ -639,7 +639,7 @@ func ipass(*args):
 		args := args + [Thread::get_continuation_src_infos(2)]
 
 	elem := elem.new.apply(args)
-	ITree_TC::tc(elem)
+	ITree_WF::wf(elem)
 
 	return elem
 
@@ -655,7 +655,7 @@ func iinsert(*args):
 		args := args + [Thread::get_continuation_src_infos(2)]
 
 	elem := elem.new.apply(args)
-	ITree_TC::tc(elem)
+	ITree_WF::wf(elem)
 
 	return elem
 
@@ -671,7 +671,7 @@ func istandard_quasi_quotes(*args):
 		args := args + [Thread::get_continuation_src_infos(2)]
 
 	elem := elem.new.apply(args)
-	ITree_TC::tc(elem)
+	ITree_WF::wf(elem)
 
 	return elem
 
@@ -687,7 +687,7 @@ func imod_id_import(*args):
 		args := args + [Thread::get_continuation_src_infos(2)]
 
 	elem := elem.new.apply(args)
-	ITree_TC::tc(elem)
+	ITree_WF::wf(elem)
 
 	return elem
 
@@ -703,7 +703,7 @@ func iexpr_block(*args):
 		args := args + [Thread::get_continuation_src_infos(2)]
 
 	elem := elem.new.apply(args)
-	ITree_TC::tc(elem)
+	ITree_WF::wf(elem)
 
 	return elem
 
@@ -719,7 +719,7 @@ func iparam(*args):
 		args := args + [Thread::get_continuation_src_infos(2)]
 
 	elem := elem.new.apply(args)
-	ITree_TC::tc(elem)
+	ITree_WF::wf(elem)
 
 	return elem
 
@@ -735,6 +735,6 @@ func iclause(*args):
 		args := args + [Thread::get_continuation_src_infos(2)]
 
 	elem := elem.new.apply(args)
-	ITree_TC::tc(elem)
+	ITree_WF::wf(elem)
 
 	return elem

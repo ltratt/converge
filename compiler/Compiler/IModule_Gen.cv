@@ -20,7 +20,7 @@
 
 
 import Builtins, Exceptions, File, Strings, Sys, VM
-import Bytecode_Gen, Compiler_Vars, CV_Module, ITree, ITree_TC, Lift
+import Bytecode_Gen, Compiler_Vars, CV_Module, ITree, ITree_WF, Lift
 
 
 
@@ -47,7 +47,7 @@ class IModule_Gen:
 		self._module_id := self._compiler.module_id
 
 		itree := self._preorder(parse_tree)
-		ITree_TC::tc(itree)
+		ITree_WF::wf(itree)
 
 		return itree
 
@@ -73,7 +73,7 @@ class IModule_Gen:
 				if Builtins::List.conformed_by(expr):
 					tmp_exprs := []
 					for e := expr.iter():
-						ITree_TC::tc_expr(e, "splice result", extra_src_infos + node[i][1][1][1].src_infos)
+						ITree_WF::wf_expr(e, "splice result", extra_src_infos + node[i][1][1][1].src_infos)
 						if node[i][1][1][0] == "expr_splice":
 							// expr_splice  ::= "$" "<" expr ">"
 
@@ -86,7 +86,7 @@ class IModule_Gen:
 							tmp_exprs.append(e)
 					exprs.extend(tmp_exprs)
 				else:
-					ITree_TC::tc_expr(expr, "splice result", extra_src_infos + node[i][1][1][1].src_infos)
+					ITree_WF::wf_expr(expr, "splice result", extra_src_infos + node[i][1][1][1].src_infos)
 					if node[i][1][1][0] == "expr_splice":
 						// expr_splice  ::= "$" "<" expr ">"
 
@@ -168,7 +168,7 @@ class IModule_Gen:
 		dummy_defns := defns + [ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(splice_name, extra_src_infos + node[1][1].src_infos)], dummy_func, extra_src_infos + node[1][1].src_infos)]
 		dummy_imodule := ITree::IModule.new(splice_name, dummy_defns, extra_src_infos + node[1][1].src_infos)
 
-		ITree_TC::tc(dummy_imodule)
+		ITree_WF::wf(dummy_imodule)
 
 		dummy_module := Bytecode_Gen::Bytecode_Gen.new().generate(dummy_imodule, self._compiler.internal_target)
 
@@ -307,7 +307,7 @@ class IModule_Gen:
 			if Builtins::List.conformed_by(defn):
 				tmp_defns := []
 				for d := defn.iter():
-					ITree_TC::tc_expr(d, "splice result", extra_src_infos + node[1][1][1].src_infos)
+					ITree_WF::wf_expr(d, "splice result", extra_src_infos + node[1][1][1].src_infos)
 					if node[1][1][0] == "expr_splice":
 						// expr_splice  ::= "$" "<" expr ">"
 
@@ -319,7 +319,7 @@ class IModule_Gen:
 						tmp_defns.append(d)
 				return tmp_defns
 			else:
-				ITree_TC::tc_expr(defn, "splice result", extra_src_infos + node[1][1][1].src_infos)
+				ITree_WF::wf_expr(defn, "splice result", extra_src_infos + node[1][1][1].src_infos)
 				if node[1][1][0] == "expr_splice":
 					// expr_splice  ::= "$" "<" expr ">"
 
@@ -390,7 +390,7 @@ class IModule_Gen:
 				//        ::= dsl_splice
 				class_name := self._eval_splice(node[2][1], extra_src_infos)
 				if not Builtins::String.instantiated(class_name):
-					ITree_TC::type_error("Class", "name", class_name, "String", extra_src_infos + node[2][1][1][1].src_infos)
+					ITree_WF::type_error("Class", "name", class_name, "String", extra_src_infos + node[2][1][1][1].src_infos)
 			else:
 				class_name := self._preorder(node[2][1], extra_src_infos)
 		else:
@@ -485,7 +485,7 @@ class IModule_Gen:
 				//        ::= dsl_splice
 				func_name := self._eval_splice(node[2][1], extra_src_infos)
 				if not Builtins::String.instantiated(func_name):
-					ITree_TC::type_error("Func", "name", func_name, "String", extra_src_infos + node[2][1][1][1].src_infos)
+					ITree_WF::type_error("Func", "name", func_name, "String", extra_src_infos + node[2][1][1][1].src_infos)
 			else:
 				func_name := self._preorder(node[2][1], extra_src_infos)
 		elif node[2][1].type == "ID":
@@ -1199,7 +1199,7 @@ class IModule_Gen:
 		//        ::= dsl_splice
 
 		result := self._eval_splice(node, extra_src_infos)
-		ITree_TC::tc_expr(result, "splice", extra_src_infos + node[1][1].src_infos)
+		ITree_WF::wf_expr(result, "splice", extra_src_infos + node[1][1].src_infos)
 		
 		if node[1][0] == "expr_splice":
 			// expr_splice  ::= "$" "<" expr ">"
@@ -1253,6 +1253,6 @@ class IModule_Gen:
 
 		sqq := ITree::IStandard_Quasi_Quotes.new(body, qq_extra_src_infos, extra_src_infos + node[1][1].src_infos)
 
-		ITree_TC::tc(sqq)
+		ITree_WF::wf(sqq)
 
 		return sqq

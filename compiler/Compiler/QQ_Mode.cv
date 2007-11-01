@@ -25,9 +25,6 @@ import Compiler_Vars, ITree, ITree_WF, Lift
 
 
 
-_QQ_STANDARD := 0
-_QQ_DEFINITION := 1
-
 _NEST_CLASS := 0
 _NEST_FUNC := 1
 
@@ -57,75 +54,70 @@ class QQ_Mode:
 		
 		self._nesting := []
 		
-		if ITree::IStandard_Quasi_Quotes.instantiated(node):
-			self._type := _QQ_STANDARD
+		// To build up a normal quasi-quotes statement we construct a conjunction whose first
+		// elements safeguard variables bound in the quasi-quotes, and whose last element(s)
+		// construct the ITree itself.
+		//
+		// e.g.
+		//
+		//   [|
+		//     x := 2
+		//     Sys.println(x)
+		//   |]
+		//
+		// gets converted to something along the lines of:
+		//
+		//   $$qq$$x$$ := CEI::fresh_name("x") | [CEI.iassignment(..., [CEI::ivar($$qq$$x$$)],
+		//     CEI::iint(2)), CEI::iapplication(CEI::islot_lookup(CEI::ivar("Sys"), "println"),
+		//     [CEI::ivar($$qq$$x$$)])]
 
-			// To build up a normal quasi-quotes statement we construct a conjunction whose first
-			// elements safeguard variables bound in the quasi-quotes, and whose last element(s)
-			// construct the ITree itself.
-			//
-			// e.g.
-			//
-			//   [|
-			//     x := 2
-			//     Sys.println(x)
-			//   |]
-			//
-			// gets converted to something along the lines of:
-			//
-			//   $$qq$$x$$ := CEI::fresh_name("x") | [CEI.iassignment(..., [CEI::ivar($$qq$$x$$)],
-			//     CEI::iint(2)), CEI::iapplication(CEI::islot_lookup(CEI::ivar("Sys"), "println"),
-			//     [CEI::ivar($$qq$$x$$)])]
+		return_exprs := []
 
-			return_exprs := []
-			
-			if not node.extra_src_infos is null:
-				self._extra_src_infos_var := ITree::IVar.new(node.extra_src_infos_var_name, node.src_infos)
-				return_exprs.append(ITree::IAssignment.new(ITree::STD_ASSIGN, [self._extra_src_infos_var], node.extra_src_infos, node.src_infos))
-			else:
-				self._extra_src_infos_var := null
-
-			vars := Set{}
-			for var := node.body.exprs.iter():
-				vars.extend(var.qq_bound_vars)
-			self._add_vars(vars, [])
-			
-			// We now do the $$qq$x$$ := CEI::fresh_name("x") constrution.
-			//
-			// Note that it might seem unsafe to do things in this fashion, since two consecutive
-			// quasi-quotes could use the same $$qq$$...$$ name. e.g.:
-			//
-			//   [| x := 2 |]
-			//
-			//   [| x := 3 |]
-			//
-			// The two x's might "clash" and there may be a chance to trick the VM into using a
-			// previous value of $$qq$$x$$ instead of giving an unused variable error. In fact,
-			// this isn't a problem because QQ_Mode guarantees to initialise all $$qq$$..$$
-			// variables each time it constructs an ITree. One can view the reuse of the $$qq$$x$$
-			// variable above as an optimisation (although that is perhaps making a virtue out of
-			// a very convenient necessity).
-			
-			for var_name := node.qq_bound_vars.iter():
-				if not node.extra_src_infos is null & var_name == node.extra_src_infos_var_name:
-					continue
-				
-				qq_bound_var := ITree::IVar.new(var_name, node.src_infos)
-				fresh_name_func := self._get_module_defn_at_qq("Compiler_Vars", "fresh_name", node.src_infos)
-				fresh_name := ITree::IApplication.new(fresh_name_func, [ITree::IString.new(var_name, node.src_infos)], node.src_infos)
-				return_exprs.append(ITree::IAssignment.new(ITree::STD_ASSIGN, [qq_bound_var], fresh_name, node.src_infos))
-
-			e := self._lift_func_call(_expr_block_magic, [self._eval_expr_block(node.body)], node.src_infos)
-			ITree_WF::wf(e)
-			return_exprs.append(e)
-
-			// We don't strictly need to pop the last lot of variables, but do so for completeness.
-			
-			self._pop_vars()
-
-			return ITree::IConjunction.new(return_exprs, node.src_infos)
+		if not node.extra_src_infos is null:
+			self._extra_src_infos_var := ITree::IVar.new(node.extra_src_infos_var_name, node.src_infos)
+			return_exprs.append(ITree::IAssignment.new(ITree::STD_ASSIGN, [self._extra_src_infos_var], node.extra_src_infos, node.src_infos))
 		else:
-			raise "XXX"
+			self._extra_src_infos_var := null
+
+		vars := Set{}
+		for var := node.body.exprs.iter():
+			vars.extend(var.qq_bound_vars)
+		self._add_vars(vars, [])
+
+		// We now do the $$qq$x$$ := CEI::fresh_name("x") constrution.
+		//
+		// Note that it might seem unsafe to do things in this fashion, since two consecutive
+		// quasi-quotes could use the same $$qq$$...$$ name. e.g.:
+		//
+		//   [| x := 2 |]
+		//
+		//   [| x := 3 |]
+		//
+		// The two x's might "clash" and there may be a chance to trick the VM into using a
+		// previous value of $$qq$$x$$ instead of giving an unused variable error. In fact,
+		// this isn't a problem because QQ_Mode guarantees to initialise all $$qq$$..$$
+		// variables each time it constructs an ITree. One can view the reuse of the $$qq$$x$$
+		// variable above as an optimisation (although that is perhaps making a virtue out of
+		// a very convenient necessity).
+
+		for var_name := node.qq_bound_vars.iter():
+			if not node.extra_src_infos is null & var_name == node.extra_src_infos_var_name:
+				continue
+
+			qq_bound_var := ITree::IVar.new(var_name, node.src_infos)
+			fresh_name_func := self._get_module_defn_at_qq("Compiler_Vars", "fresh_name", node.src_infos)
+			fresh_name := ITree::IApplication.new(fresh_name_func, [ITree::IString.new(var_name, node.src_infos)], node.src_infos)
+			return_exprs.append(ITree::IAssignment.new(ITree::STD_ASSIGN, [qq_bound_var], fresh_name, node.src_infos))
+
+		e := self._lift_func_call(_expr_block_magic, [self._eval_expr_block(node.body)], node.src_infos)
+		ITree_WF::wf(e)
+		return_exprs.append(e)
+
+		// We don't strictly need to pop the last lot of variables, but do so for completeness.
+
+		self._pop_vars()
+
+		return ITree::IConjunction.new(return_exprs, node.src_infos)
 
 
 

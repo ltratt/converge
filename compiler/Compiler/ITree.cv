@@ -1102,7 +1102,7 @@ class IInsert:
 
 
 
-class IStandard_Quasi_Quotes:
+class IQuasi_Quotes:
 
 	func init(self, body, extra_src_infos, src_infos):
 	
@@ -1135,7 +1135,7 @@ class IStandard_Quasi_Quotes:
 		body := self.body.extended_src_infos(extra_src_infos)
 		esi := _extended_obj_src_infos(self.extra_src_infos, extra_src_infos)
 	
-		return IStandard_Quasi_Quotes.new(body, esi, self.src_infos + extra_src_infos)
+		return IQuasi_Quotes.new(body, esi, self.src_infos + extra_src_infos)
 
 
 

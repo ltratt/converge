@@ -1222,18 +1222,9 @@ class IModule_Gen:
 
 
 	func _t_quasi_quotes(self, node, extra_src_infos):
-		
-		// quasi_quotes ::= expr_quasi_quotes
-		//              ::= defn_quasi_quotes
-		
-		return self._preorder(node[1], extra_src_infos)
 
-
-
-	func _t_expr_quasi_quotes(self, node, extra_src_infos):
-
-		// expr_quasi_quotes ::= quasi_quotes_customize "INDENT" expr_body "DEDENT" "NEWLINE" "|]"
-		//                   ::= quasi_quotes_customize expr "|]"
+		// quasi_quotes ::= quasi_quotes_customize "INDENT" expr_body "DEDENT" "NEWLINE" "|]"
+		//              ::= quasi_quotes_customize expr "|]"
 
 		if node.len() == 7:
 			// expr_quasi_quotes ::= quasi_quotes_customize "INDENT" expr_body "DEDENT" "NEWLINE"
@@ -1251,7 +1242,7 @@ class IModule_Gen:
 			// quasi_quotes_customize ::= "[" "<" expr ">" "|"
 			qq_extra_src_infos := self._preorder(node[1][3], extra_src_infos)
 
-		sqq := ITree::IStandard_Quasi_Quotes.new(body, qq_extra_src_infos, extra_src_infos + node[1][1].src_infos)
+		sqq := ITree::IQuasi_Quotes.new(body, qq_extra_src_infos, extra_src_infos + node[1][1].src_infos)
 
 		ITree_WF::wf(sqq)
 

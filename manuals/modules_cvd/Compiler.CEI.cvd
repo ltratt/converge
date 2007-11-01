@@ -343,11 +343,11 @@ Returns an INot which inserts the expression specified by the IExpr <code>expr</
 </function>
 
 
-<function name="istandard_quasi_quotes">
+<function name="iquasi_quotes">
 <argument name="body" />
 <argument name="extra_src_infos" />
 <argument name="src_infos" />
-Returns an IStandard_Quasi_Quotes which quasi-quotes the IExpr_Block <code>body</code>, adding extra src infos specified by <code>extra_src_infos</code> which may be <code>null</code> if no extra src infos are to be added to the resulting ITree.
+Returns an IQuasi_Quotes which quasi-quotes the IExpr_Block <code>body</code>, adding extra src infos specified by <code>extra_src_infos</code> which may be <code>null</code> if no extra src infos are to be added to the resulting ITree.
 </function>
 
 

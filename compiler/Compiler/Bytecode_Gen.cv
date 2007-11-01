@@ -1212,7 +1212,7 @@ class Bytecode_Gen:
 
 
 
-	func _t_istandard_quasi_quotes(self, node):
+	func _t_iquasi_quotes(self, node):
 	
 		self.preorder(QQ_Mode::QQ_Mode.new().generate(self, node))
 

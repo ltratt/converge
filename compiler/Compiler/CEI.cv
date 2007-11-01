@@ -661,9 +661,9 @@ func iinsert(*args):
 
 
 
-func istandard_quasi_quotes(*args):
+func iquasi_quotes(*args):
 
-	elem := ITree::IStandard_Quasi_Quotes
+	elem := ITree::IQuasi_Quotes
 
 	if args.len() == elem.get_field("init").num_params - 1:
 		args := args[ : -1] + [(args[-1] + Thread::get_continuation_src_infos(2))]

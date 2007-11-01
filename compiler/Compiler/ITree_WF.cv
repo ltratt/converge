@@ -25,7 +25,7 @@ import Compiler_Vars, ITree
 
 
 
-_EXPRS := [ITree::IClass_Defn, ITree::IFunc_Defn, ITree::IIf, ITree::INDIf, ITree::IVar, ITree::IImport, ITree::IWhile, ITree::IFor, ITree::ITry, ITree::IInt, ITree::IFloat, ITree::IString, ITree::ISlot_Lookup, ITree::IModule_Lookup, ITree::IList, ITree::IDict, ITree::ISet, ITree::IApplication, ITree::IGet, ITree::ISlice, ITree::IEXBI, ITree::IReturn, ITree::IYield, ITree::IRaise, ITree::IAssert, ITree::IBreak, ITree::IContinue, ITree::IConjunction, ITree::IAlternation, ITree::IAssignment, ITree::INot, ITree::IBinary, ITree::IComparison, ITree::IInsert, ITree::IStandard_Quasi_Quotes, ITree::IMod_Id_Import]
+_EXPRS := [ITree::IClass_Defn, ITree::IFunc_Defn, ITree::IIf, ITree::INDIf, ITree::IVar, ITree::IImport, ITree::IWhile, ITree::IFor, ITree::ITry, ITree::IInt, ITree::IFloat, ITree::IString, ITree::ISlot_Lookup, ITree::IModule_Lookup, ITree::IList, ITree::IDict, ITree::ISet, ITree::IApplication, ITree::IGet, ITree::ISlice, ITree::IEXBI, ITree::IReturn, ITree::IYield, ITree::IRaise, ITree::IAssert, ITree::IBreak, ITree::IContinue, ITree::IConjunction, ITree::IAlternation, ITree::IAssignment, ITree::INot, ITree::IBinary, ITree::IComparison, ITree::IInsert, ITree::IQuasi_Quotes, ITree::IMod_Id_Import]
 
 
 
@@ -446,7 +446,7 @@ class ITree_WF:
 	
 	
 	
-	func _t_istandard_quasi_quotes(self, node):
+	func _t_iquasi_quotes(self, node):
 	
 		self._check_expr_block(node, "body", node.body)
 		

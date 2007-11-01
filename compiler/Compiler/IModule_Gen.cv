@@ -813,7 +813,8 @@ class IModule_Gen:
 				return ITree::IVar.new(node[1].value, extra_src_infos + node[1].src_infos)
 		elif node.len() == 3:
 			// name ::= "&" "ID"
-			raise "XXX"
+			ivar := [| ITree::IVar.new(${ITree::IString.new(node[2].value, node[1].src_infos)}, ${Lift::lift(extra_src_infos + node[1].src_infos)}) |]
+			return ITree::IInsert.new(ivar, extra_src_infos + node[1].src_infos)
 		elif node[1][0] == "splice":
 			// name ::= splice
 			raise "XXX"
@@ -1078,12 +1079,7 @@ class IModule_Gen:
 			//                   ::= lookup
 			//                   ::= slice
 			if node[i][1][0] == "name":
-				if node[i][1].len() == 2 & not Builtins::List.conformed_by(node[i][1][1]):
-					// name ::= "ID"
-					targets.append(self._preorder(node[i][1], extra_src_infos))
-				else:
-					Sys.println(node[i][1])
-					raise "XXX"
+				targets.append(self._preorder(node[i][1], extra_src_infos))
 			else:
 				targets.append(self._preorder(node[i][1], extra_src_infos))
 			i += 2

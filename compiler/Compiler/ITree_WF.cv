@@ -402,7 +402,7 @@ class ITree_WF:
 			if ITree::IVar.instantiated(target) | ITree::IGet.instantiated(target) | ITree::ISlot_Lookup.instantiated(target) | ITree::IInsert.instantiated(target) | ITree::ISlice.instantiated(target):
 				self._preorder(target)
 			else:
-				self._type_error(node, "target", target, "[IVar, IGet, ISlot_Lookup, ISlice]")
+				self._type_error(node, "target", target, "[IVar, IGet, ISlot_Lookup, IInsert, ISlice]")
 		
 		self._check_expr(node, "expr", node.expr)
 

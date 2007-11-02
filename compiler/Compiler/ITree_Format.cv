@@ -97,6 +97,11 @@ class ITree_Format:
 			else:
 				func_type := "unbound_func"
 
+		if node.func_name is null:
+			func_name := ""
+		else:
+			func_name := self._preorder(node.func_name)
+
 		params := Strings::join(Functional::map(self._preorder, node.params), ", ")
 		if not node.var_arg is null:
 			var_arg := self._preorder(node.var_arg)
@@ -117,7 +122,7 @@ class ITree_Format:
 
 		return Strings::format("""%s %s(%s%s):
 
-%s%s""", func_type, node.func_name, params, var_arg, _INDENT_STRING * (self._indent_level + 1), body)
+%s%s""", func_type, func_name, params, var_arg, _INDENT_STRING * (self._indent_level + 1), body)
 
 
 

@@ -417,8 +417,8 @@ class Bytecode_Gen:
 			end_of_expr_label := self._create_label()
 			self._nesting.append([NEST_NORMAL])
 			self._instructions.append(self._target.Instr_Add_Failure_Frame.new(expr.src_infos, end_of_expr_label))
-			if ITree::IFunc_Defn.instantiated(expr):
-				self.preorder(ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(expr.func_name, expr.src_infos)], expr, expr.src_infos))
+			if ITree::IFunc_Defn.instantiated(expr) & not expr.func_name is null:
+				self.preorder(ITree::IAssignment.new(ITree::STD_ASSIGN, [expr.func_name], expr, expr.src_infos))
 			else:
 				self.preorder(expr)
 
@@ -494,9 +494,9 @@ class Bytecode_Gen:
 			self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(field.src_infos, "set_field"))
 		
 			if ITree::IFunc_Defn.instantiated(field):
-				if field.func_name == "":
+				if field.func_name is null:
 					self._compiler.error("Functions as class fields can not be anonymous.", node.src_infos)
-				self._instructions.append(self._target.Instr_String.new(field.src_infos, field.func_name))
+				self._instructions.append(self._target.Instr_String.new(field.src_infos, field.func_name.var_name))
 				self.preorder(field)
 			elif ITree::IClass_Defn.instantiated(field):
 				if field.class_name == "":
@@ -541,7 +541,10 @@ class Bytecode_Gen:
 		
 		self._nesting.append([NEST_FUNC, node.is_bound])
 		
-		self._instructions.append(self._target.Instr_String.new(node.src_infos, node.func_name))
+		if node.func_name is null:
+			self._instructions.append(self._target.Instr_String.new(node.src_infos, ""))
+		else:
+			self._instructions.append(self._target.Instr_String.new(node.src_infos, node.func_name.var_name))
 		self._instructions.append(self._target.Instr_Int.new(node.src_infos, bound_vars.len() + node.is_bound))
 		self._instructions.append(self._target.Instr_Int.new(node.src_infos, node.params.len()))
 		self._instructions.append(self._target.Instr_Func_Defn.new(node.src_infos, node.is_bound))
@@ -588,7 +591,7 @@ class Bytecode_Gen:
 		
 		self._set_label(end_of_func_body_label)
 		
-		if node.func_name == "":
+		if node.func_name is null:
 			return
 		
 		inside_class := 0
@@ -598,8 +601,8 @@ class Bytecode_Gen:
 			elif nest[0] == NEST_FUNC:
 				break
 
-		if inside_class == 0:
-			self._add_assign_to_var(node.func_name, node.src_infos)
+		if inside_class == 0 & not node.func_name is null:
+			self._add_assign_to_var(node.func_name.var_name, node.src_infos)
 			
 
 

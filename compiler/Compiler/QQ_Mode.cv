@@ -346,23 +346,16 @@ class QQ_Mode:
 
 		is_bound := ITree::IInt.new(node.is_bound, node.src_infos)
 		if ITree::IInsert.instantiated(node.func_name):
-			// Function names are a little odd because the function "name" is also used as a variable
-			// to be assigned to. The function name is actually just the string part of this variable
-			// name, which means we have to manually pluck it out. If the user gives us a variable
-			// which isn't of type IVar, they would get an odd error message along the lines of
-			// "1 doesn't have a func_name slot" which wouldn't really help them track things down.
-			// To cope with this eventuality, we put a manual check in that catches such an error
-			// at the earliest possible stage.
-			func_name := self._lift_func_call(_func_name, [node.func_name.expr, Lift::lift(node.src_infos)], node.src_infos)
+			func_name := node.func_name.expr
 		else:
-			if node.func_name == "":
-				func_name := ITree::IString.new("", node.src_infos)
+			if node.func_name is null:
+				func_name := ITree::IVar.new("null", node.src_infos)
 			else:
 				if self._nesting.len() > 0 & self._nesting[-1] == _NEST_CLASS:
 					// Functions which are class fields are not alpha-renamed.
-					func_name := ITree::IString.new(node.func_name, node.src_infos)
+					func_name := self._qq("IVar", [ITree::IString.new(node.func_name.var_name, node.func_name.src_infos)], node.func_name.src_infos)
 				else:
-					func_name := self._process_assign_name(node.func_name, node.src_infos)
+					func_name := self._process_assign_var(node.func_name.var_name, node.func_name.src_infos)
 
 		// Note that we consider ourselves nested within a function even when processing parameters.
 

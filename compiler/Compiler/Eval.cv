@@ -83,7 +83,7 @@ class Eval_Compiler:
 		|])
 
 		eval_name := Compiler_Vars::fresh_name()		
-		dummy_func := ITree::IFunc_Defn.new(0, eval_name, [], null, [], [], ITree::IExpr_Block.new(body, []), [])
+		dummy_func := ITree::IFunc_Defn.new(0, ITree::IVar.new(eval_name, []), [], null, [], [], ITree::IExpr_Block.new(body, []), [])
 		dummy_defns := [ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(eval_name, [])], dummy_func, [])]
 		dummy_imodule := ITree::IModule.new(eval_name, dummy_defns, [])
 		

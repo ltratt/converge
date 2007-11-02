@@ -73,7 +73,7 @@ func_defn            ::= func_type func_name "(" func_params ")" ":" "INDENT" fu
 func_type           ::= "FUNC"
                     ::= "BOUND_FUNC"
                     ::= "UNBOUND_FUNC"
-func_name           ::= "ID"
+func_name           ::= name
                     ::= "+"
                     ::= "-"
                     ::= "/"
@@ -84,8 +84,6 @@ func_name           ::= "ID"
                     ::= "!="
                     ::= ">="
                     ::= "<="
-                    ::= splice
-					::= insert
                     ::=
 func_params         ::= func_params_elems "," func_varargs
                     ::= func_params_elems

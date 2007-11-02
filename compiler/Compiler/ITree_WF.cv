@@ -123,8 +123,8 @@ class ITree_WF:
 		if not (node.is_bound == 0 | node.is_bound == 1):
 			raise "XXX"
 		
-		if not (Builtins::String.instantiated(node.func_name) | ITree::IInsert.instantiated(node.func_name)):
-			self._type_error(node, "func_name", node.func_name, "[String, IInsert]")
+		if not (node.func_name is null | ITree::IVar.instantiated(node.func_name) | ITree::IInsert.instantiated(node.func_name)):
+			self._type_error(node, "func_name", node.func_name, "[IVar, IInsert]")
 		
 		if not Builtins::List.conformed_by(node.params):
 			self._type_error(node, "params", node.params, "List")

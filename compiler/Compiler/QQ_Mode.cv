@@ -786,7 +786,7 @@ class QQ_Mode:
 
 
 
-	func _t_istandard_quasi_quotes(self, node):
+	func _t_iquasi_quotes(self, node):
 	
 		return self._preorder(QQ_Mode.new().generate(self, node))
 

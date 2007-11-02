@@ -464,7 +464,7 @@ Con_Obj	*Con_Builtins_Module_Atom_get_defn(Con_Obj *thread, Con_Obj *module, con
 	Con_Obj *closure = module_atom->closure;
 	Con_Obj *slot_val;
 	if (!Con_Slots_get_slot(thread, &module_atom->top_level_vars, defn_name, defn_name_size, &slot_val))
-		CON_RAISE_EXCEPTION("Mod_Defn_Exception", Con_Builtins_String_Atom_new_copy(thread, defn_name, defn_name_size, CON_STR_UTF_8));
+		CON_RAISE_EXCEPTION("Mod_Defn_Exception", Con_Builtins_String_Atom_new_copy(thread, defn_name, defn_name_size, CON_STR_UTF_8), module);
 	
 	if (closure == NULL) {
 		// Builtin module.

@@ -386,12 +386,14 @@ Con_Obj *_Con_Module_Exception_Key_Exception_init_func(Con_Obj *thread)
 
 Con_Obj *_Con_Module_Exception_Mod_Defn_Exception_init_func(Con_Obj *thread)
 {
-	Con_Obj *key, *self;
-	CON_UNPACK_ARGS("OO", &self, &key);
+	Con_Obj *key, *mod, *self;
+	CON_UNPACK_ARGS("OOO", &self, &key, &mod);
 
 	Con_Obj *msg = CON_NEW_STRING("Definition '");
 	msg = CON_ADD(msg, key);
-	msg = CON_ADD(msg, CON_NEW_STRING("' not found."));
+	msg = CON_ADD(msg, CON_NEW_STRING("' not found in '"));
+	msg = CON_ADD(msg, CON_GET_SLOT(mod, "name"));
+	msg = CON_ADD(msg, CON_NEW_STRING("'."));
 	
 	CON_SET_SLOT(self, "msg", msg);
 	

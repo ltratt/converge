@@ -203,6 +203,9 @@ Con_Obj *_Con_Builtins_Module_Class_get_slot_func(Con_Obj *thread)
 	if (CON_C_STRING_EQ("module_id", slot_name)) {
 		return self_module_atom->identifier;
 	}
+	else if (CON_C_STRING_EQ("name", slot_name)) {
+		return self_module_atom->name;
+	}
 	else
 		return CON_APPLY(CON_EXBI(CON_BUILTIN(CON_BUILTIN_OBJECT_CLASS), "get_slot", self), slot_name);
 }

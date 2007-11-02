@@ -402,7 +402,7 @@ class ITree_Format:
 
 	func _t_imod_id_import(self, node):
 	
-		return node.module_id
+		return Strings::format("$<CEI::imod_id_import(\"%s\")>", node.module_id)
 
 
 

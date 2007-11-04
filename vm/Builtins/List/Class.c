@@ -552,6 +552,9 @@ Con_Obj *_Con_Builtins_List_Class_extend_func(Con_Obj *thread)
 		
 		Con_Int o_num_entries = o_list_atom->num_entries;
 		CON_MUTEX_UNLOCK(&o->mutex);
+
+		if (o_num_entries == 0)
+			return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 		
 		CON_MUTEX_LOCK(&self->mutex);
 

@@ -225,7 +225,7 @@ void _Con_Builtins_String_Atom_set_cached(Con_Obj *thread, Con_Builtins_String_C
 				break;
 			}
 		
-			if (old_cache[j].str == NULL || old_cache[j].num_users < 2)
+			if (old_cache[j].str == NULL || old_cache[j].num_users < 5)
 				continue;
 			
 			Con_Builtins_String_Atom *new_string_atom = CON_GET_ATOM(old_cache[j].str, CON_BUILTIN(CON_BUILTIN_STRING_ATOM_DEF_OBJECT));

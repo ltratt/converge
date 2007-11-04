@@ -459,6 +459,9 @@ bool Con_Object_eq(Con_Obj *thread, Con_Obj *lhs, Con_Obj *rhs)
 	}
 	else if (lhs->virgin && rhs->virgin && lhs->first_atom->atom_type == CON_BUILTIN(CON_BUILTIN_STRING_ATOM_DEF_OBJECT) && rhs->first_atom->atom_type == CON_BUILTIN(CON_BUILTIN_STRING_ATOM_DEF_OBJECT)) {
 		CON_MUTEXES_UNLOCK(&lhs->mutex, &rhs->mutex);
+		if (lhs == rhs)
+			return true;
+
 		Con_Builtins_String_Atom *lhs_string_atom = (Con_Builtins_String_Atom *) lhs->first_atom;
 		Con_Builtins_String_Atom *rhs_string_atom = (Con_Builtins_String_Atom *) rhs->first_atom;
 

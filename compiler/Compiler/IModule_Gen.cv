@@ -145,14 +145,25 @@ class IModule_Gen:
 		for free_var := expr.free_vars.iter():
 			if defn_i := already_bound_vars.find(free_var):
 				defns_to_include.add(defn_i)
+		if lookups := expr.mod_id_lookups.find(self._module_id):
+			for lookup := expr.free_vars.iter():
+				if defn_i := already_bound_vars.find(lookup):
+					defns_to_include.add(defn_i)
 
 		stack := Builtins::List.new(defns_to_include)
 		i := 0
 		while i < stack.len():
-			for free_var := self._defns[stack[i]].free_vars.iter():
+			defn := self._defns[stack[i]]
+			
+			rlv_vars := defn.free_vars.scopy()
+			if lookups := defn.mod_id_lookups.find(self._module_id):
+				rlv_vars.extend(lookups)
+			
+			for free_var := rlv_vars.iter():
 				if not defns_to_include.find(free_var) & defn_i := already_bound_vars.find(free_var) & not stack.find_index(defn_i) <= i:
 					stack.append(defn_i)
 					defns_to_include.add(defn_i)
+
 			i += 1
 
 		// Only include the definitions so far processed if they're absolutely necessary (i.e.

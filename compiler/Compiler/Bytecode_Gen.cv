@@ -86,7 +86,7 @@ NEST_FUNC := 4   // [NEST_FUNC, <bound = 1> | <unbound = 0>]
 class Bytecode_Gen:
 
 	func generate(self, imodule, target):
-	
+
 		// 'closures' is a list of '(variables, renames)' tuples for each closure level.
 		//
 		// 'vars' maps variable names to an integer denoting the number of that variable in the
@@ -875,13 +875,38 @@ class Bytecode_Gen:
 
 	func _t_imodule_lookup(self, node):
 	
-		if not ITree::IMod_Id_Import.instantiated(node.names[0]):
+		fst := node.names[0]
+		if ITree::IMod_Id_Import.instantiated(fst):
+			// If we have a IMod_Id_Import as the first part of the module lookup, then things
+			// proceed differently.
+			if fst.module_id == self._module_id:
+				// The module ID we want to lookup in is the same as the module we're currently
+				// building, so we try and turn the module lookup into a simple variable lookup.
+				var := node.names[1]
+				if var_num := self.closures[0][Compiler_Vars::CLOSURE_VARS].find(var.var_name, var.src_infos):
+					self._instructions.append(self._target.Instr_Lookup_Var.new(var.src_infos, self.closures.len() - 1, var_num))
+					i := 2
+				else:
+					// A variable doesn't exist with the name we were given. This almost certainly
+					// means someone, somewhere, has buggered up although there are some pathological
+					// cases where this is possible (although I doubt anyone would use them).
+					// Therefore we fall back to the "normal" way of evaluating things, which will
+					// either give the right behaviour or give an nice error message later.
+					self.preorder(fst)
+					i := 1
+			else:
+				self.preorder(fst)
+				i := 1
+		else:
 			self._prc_mod_lookup(node)
 
-		self.preorder(node.names[0])
+			self.preorder(node.names[0])
+			
+			i := 1
 		
-		for name := node.names.iter(1):
-			self._instructions.append(self._target.Instr_Module_Lookup.new(name.src_infos, name.var_name))
+		if node.names.len() > i:
+			for name := node.names.iter(i):
+				self._instructions.append(self._target.Instr_Module_Lookup.new(name.src_infos, name.var_name))
 
 
 

@@ -98,14 +98,18 @@ class IClass_Defn:
 			self.bound_vars := Set{class_name}
 			self.qq_bound_vars := Set{class_name}
 		self.import_vars := Set{}
+		self.mod_id_lookups := Dict{}
 		for super := supers.iter():
 			self.bound_vars.extend(super.bound_vars)
 			self.qq_bound_vars.extend(super.qq_bound_vars)
+			_merge_mod_id_lookups(self.mod_id_lookups, super.mod_id_lookups)
 		if not metaclass_ is null:
 			self.bound_vars.extend(metaclass_.bound_vars)
 			self.qq_bound_vars.extend(metaclass_.qq_bound_vars)
+			_merge_mod_id_lookups(self.mod_id_lookups, metaclass_.mod_id_lookups)
 		for field := fields.iter():
 			self.qq_bound_vars.extend(field.qq_bound_vars)
+			_merge_mod_id_lookups(self.mod_id_lookups, field.mod_id_lookups)
 		
 		self.free_vars := Set{}
 		for super := supers.iter():
@@ -148,6 +152,7 @@ class IFunc_Defn:
 			self.bound_vars := Set{}
 			self.qq_bound_vars := Set{}
 		self.import_vars := Set{}
+		self.mod_id_lookups := Dict{}
 		self.internal_import_vars := Set{}
 
 		all_internal_bound_vars := Set{}
@@ -155,18 +160,22 @@ class IFunc_Defn:
 		for param := params.iter():
 			all_internal_bound_vars.extend(param.bound_vars)
 			self.qq_bound_vars.extend(param.qq_bound_vars)
+			_merge_mod_id_lookups(self.mod_id_lookups, param.mod_id_lookups)
 			self.internal_import_vars.extend(param.import_vars)
 			
 		if not var_arg is null:
 			if IInsert.instantiated(var_arg):
 				all_internal_bound_vars.extend(var_arg.bound_vars)
 				self.qq_bound_vars.extend(var_arg.qq_bound_vars)
+				_merge_mod_id_lookups(self.mod_id_lookups, var_arg.mod_id_lookups)
 			else:
-				all_internal_bound_vars.add(self.var_arg.var_name)
-				self.qq_bound_vars.add(self.var_arg.var_name)
+				all_internal_bound_vars.add(var_arg.var_name)
+				self.qq_bound_vars.add(var_arg.var_name)
+				_merge_mod_id_lookups(self.mod_id_lookups, var_arg.mod_id_lookups)
 
-		all_internal_bound_vars.extend(self.body.bound_vars)
-		self.qq_bound_vars.extend(self.body.qq_bound_vars)
+		all_internal_bound_vars.extend(body.bound_vars)
+		self.qq_bound_vars.extend(body.qq_bound_vars)
+		_merge_mod_id_lookups(self.mod_id_lookups, body.mod_id_lookups)
 		self.internal_import_vars.extend(body.import_vars)
 
 		nonlocals_ := Set{}
@@ -224,16 +233,19 @@ class IIf:
 		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		self.free_vars := Set{}
+		self.mod_id_lookups := Dict{}
 		for clause := clauses.iter():
 			self.bound_vars.extend(clause.bound_vars)
 			self.import_vars.extend(clause.import_vars)
 			self.qq_bound_vars.extend(clause.qq_bound_vars)
 			self.free_vars.extend(clause.free_vars)
+			_merge_mod_id_lookups(self.mod_id_lookups, clause.mod_id_lookups)
 		
 		if not else_body is null:
 			self.bound_vars.extend(else_body.bound_vars)
 			self.import_vars.extend(else_body.import_vars)
 			self.free_vars.extend(else_body.free_vars)
+			_merge_mod_id_lookups(self.mod_id_lookups, else_body.mod_id_lookups)
 
 
 
@@ -260,11 +272,13 @@ class INDIf:
 		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		self.free_vars := Set{}
+		self.mod_id_lookups := Dict{}
 		for clause := clauses.iter():
 			self.bound_vars.extend(clause.bound_vars)
 			self.import_vars.extend(clause.import_vars)
 			self.qq_bound_vars.extend(clause.qq_bound_vars)
 			self.free_vars.extend(clause.free_vars)
+			_merge_mod_id_lookups(self.mod_id_lookups, clause.mod_id_lookups)
 
 
 
@@ -288,6 +302,7 @@ class IVar:
 		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		self.free_vars := Set{self.var_name}
+		self.mod_id_lookups := Dict{}
 
 
 
@@ -310,6 +325,7 @@ class IImport:
 		self.import_vars := Set{var_name}
 		self.qq_bound_vars := Set{var_name}
 		self.free_vars := Set{}
+		self.mod_id_lookups := Dict{}
 
 
 
@@ -334,21 +350,25 @@ class IWhile:
 		self.import_vars := condition.import_vars.scopy()
 		self.qq_bound_vars := condition.qq_bound_vars.scopy()
 		self.free_vars := condition.free_vars.scopy()
+		self.mod_id_lookups := condition.mod_id_lookups.scopy()
 		if not body is null:
 			self.bound_vars.extend(body.bound_vars)
 			self.import_vars.extend(body.import_vars)
 			self.qq_bound_vars.extend(body.qq_bound_vars)
 			self.free_vars.extend(body.free_vars)
+			_merge_mod_id_lookups(self.mod_id_lookups, body.mod_id_lookups)
 		if not exhausted_body is null:
 			self.bound_vars.extend(exhausted_body.bound_vars)
 			self.import_vars.extend(exhausted_body.import_vars)
 			self.qq_bound_vars.extend(exhausted_body.qq_bound_vars)
 			self.free_vars.extend(exhausted_body.free_vars)
+			_merge_mod_id_lookups(self.mod_id_lookups, exhausted_body.mod_id_lookups)
 		if not broken_body is null:
 			self.bound_vars.extend(broken_body.bound_vars)
 			self.import_vars.extend(broken_body.import_vars)
 			self.qq_bound_vars.extend(broken_body.qq_bound_vars)
 			self.free_vars.extend(broken_body.free_vars)
+			_merge_mod_id_lookups(self.mod_id_lookups, broken_body.mod_id_lookups)
 
 
 
@@ -378,21 +398,25 @@ class IFor:
 		self.import_vars := condition.import_vars.scopy()
 		self.qq_bound_vars := condition.qq_bound_vars.scopy()
 		self.free_vars := condition.free_vars.scopy()
+		self.mod_id_lookups := condition.mod_id_lookups.scopy()
 		if not body is null:
 			self.bound_vars.extend(body.bound_vars)
 			self.import_vars.extend(body.import_vars)
 			self.qq_bound_vars.extend(body.qq_bound_vars)
 			self.free_vars.extend(body.free_vars)
+			_merge_mod_id_lookups(self.mod_id_lookups, body.mod_id_lookups)
 		if not exhausted_body is null:
 			self.bound_vars.extend(exhausted_body.bound_vars)
 			self.import_vars.extend(exhausted_body.import_vars)
 			self.qq_bound_vars.extend(exhausted_body.qq_bound_vars)
 			self.free_vars.extend(exhausted_body.free_vars)
+			_merge_mod_id_lookups(self.mod_id_lookups, exhausted_body.mod_id_lookups)
 		if not broken_body is null:
 			self.bound_vars.extend(broken_body.bound_vars)
 			self.import_vars.extend(broken_body.import_vars)
 			self.qq_bound_vars.extend(broken_body.qq_bound_vars)
 			self.free_vars.extend(broken_body.free_vars)
+			_merge_mod_id_lookups(self.mod_id_lookups, broken_body.mod_id_lookups)
 
 
 
@@ -420,11 +444,13 @@ class ITry:
 		self.import_vars := body.import_vars.scopy()
 		self.qq_bound_vars := body.qq_bound_vars.scopy()
 		self.free_vars := body.free_vars.scopy()
+		self.mod_id_lookups := body.mod_id_lookups.scopy()
 		
 		for self.bound_vars.extend(catches.iter().bound_vars)
 		for self.import_vars.extend(catches.iter().import_vars)
 		for self.qq_bound_vars.extend(catches.iter().qq_bound_vars)
 		for self.free_vars.extend(catches.iter().free_vars)
+		for _merge_mod_id_lookups(self.mod_id_lookups, catches.iter().mod_id_lookups)
 
 
 
@@ -449,6 +475,7 @@ class IInt:
 		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		self.free_vars := Set{}
+		self.mod_id_lookups := Dict{}
 
 
 
@@ -470,6 +497,7 @@ class IFloat:
 		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		self.free_vars := Set{}
+		self.mod_id_lookups := Dict{}
 
 
 
@@ -491,6 +519,7 @@ class IString:
 		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		self.free_vars := Set{}
+		self.mod_id_lookups := Dict{}
 
 
 
@@ -509,10 +538,11 @@ class ISlot_Lookup:
 		self.slot_name := slot_name
 		self.src_infos := src_infos
 
-		self.bound_vars := self.object_expr.bound_vars
-		self.import_vars := self.object_expr.import_vars
-		self.qq_bound_vars := self.object_expr.qq_bound_vars
-		self.free_vars := self.object_expr.free_vars
+		self.bound_vars := object_expr.bound_vars
+		self.import_vars := object_expr.import_vars
+		self.qq_bound_vars := object_expr.qq_bound_vars
+		self.free_vars := object_expr.free_vars
+		self.mod_id_lookups := object_expr.mod_id_lookups
 
 
 
@@ -535,7 +565,12 @@ class IModule_Lookup:
 		self.bound_vars := Set{}
 		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
-		self.free_vars := names[0].free_vars
+		if IMod_Id_Import.instantiated(names[0]):
+			self.free_vars := Set{}
+			self.mod_id_lookups := Dict{names[0].module_id : Set{names[1].var_name}}
+		else:
+			self.free_vars := names[0].free_vars
+			self.mod_id_lookups := Dict{}
 
 
 
@@ -557,11 +592,13 @@ class IList:
 		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		self.free_vars := Set{}
+		self.mod_id_lookups := Dict{}
 		for elem := elements.iter():
 			self.bound_vars.extend(elem.bound_vars)
 			self.import_vars.extend(elem.import_vars)
 			self.qq_bound_vars.extend(elem.qq_bound_vars)
 			self.free_vars.extend(elem.free_vars)
+			_merge_mod_id_lookups(self.mod_id_lookups, elem.mod_id_lookups)
 
 
 
@@ -585,6 +622,7 @@ class IDict:
 		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		self.free_vars := Set{}
+		self.mod_id_lookups := Dict{}
 		for key, val := elements.iter():
 			self.bound_vars.extend(key.bound_vars)
 			self.bound_vars.extend(val.bound_vars)
@@ -594,6 +632,8 @@ class IDict:
 			self.qq_bound_vars.extend(val.qq_bound_vars)
 			self.free_vars.extend(key.free_vars)
 			self.free_vars.extend(val.free_vars)
+			_merge_mod_id_lookups(self.mod_id_lookups, key.mod_id_lookups)
+			_merge_mod_id_lookups(self.mod_id_lookups, val.mod_id_lookups)
 
 
 
@@ -619,11 +659,13 @@ class ISet:
 		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		self.free_vars := Set{}
+		self.mod_id_lookups := Dict{}
 		for elem := elements.iter():
 			self.bound_vars.extend(elem.bound_vars)
 			self.import_vars.extend(elem.import_vars)
 			self.qq_bound_vars.extend(elem.qq_bound_vars)
 			self.free_vars.extend(elem.free_vars)
+			_merge_mod_id_lookups(self.mod_id_lookups, elem.mod_id_lookups)
 
 
 
@@ -645,16 +687,16 @@ class IApplication:
 		self.src_infos := src_infos
 
 		self.bound_vars := func_expr.bound_vars.scopy()
-		for self.bound_vars.extend(args.iter().bound_vars)
-
 		self.import_vars := func_expr.import_vars.scopy()
-		for self.import_vars.extend(args.iter().import_vars)
-
 		self.qq_bound_vars := func_expr.qq_bound_vars.scopy()
-		for self.qq_bound_vars.extend(args.iter().qq_bound_vars)
-
 		self.free_vars := func_expr.free_vars.scopy()
-		for self.free_vars.extend(args.iter().free_vars)
+		self.mod_id_lookups := func_expr.mod_id_lookups.scopy()
+		for arg := args.iter():
+			self.bound_vars.extend(arg.bound_vars)
+			self.import_vars.extend(arg.import_vars)
+			self.qq_bound_vars.extend(arg.qq_bound_vars)
+			self.free_vars.extend(arg.free_vars)
+			_merge_mod_id_lookups(self.mod_id_lookups, arg.mod_id_lookups)
 
 
 
@@ -680,6 +722,8 @@ class IGet:
 		self.import_vars := get_object.import_vars + index.import_vars
 		self.qq_bound_vars := get_object.qq_bound_vars + index.qq_bound_vars
 		self.free_vars := get_object.free_vars + index.free_vars
+		self.mod_id_lookups := get_object.mod_id_lookups.scopy()
+		_merge_mod_id_lookups(self.mod_id_lookups, index.mod_id_lookups)
 
 
 
@@ -706,16 +750,19 @@ class ISlice:
 		self.import_vars := slice_object.import_vars.scopy()
 		self.qq_bound_vars := slice_object.qq_bound_vars.scopy()
 		self.free_vars := slice_object.free_vars.scopy()
+		self.mod_id_lookups := slice_object.mod_id_lookups.scopy()
 		if not lower_bound is null:
 			self.bound_vars.extend(lower_bound.bound_vars)
 			self.import_vars.extend(lower_bound.import_vars)
 			self.qq_bound_vars.extend(lower_bound.qq_bound_vars)
 			self.free_vars.extend(lower_bound.free_vars)
+			_merge_mod_id_lookups(self.mod_id_lookups, lower_bound.mod_id_lookups)
 		if not upper_bound is null:
 			self.bound_vars.extend(upper_bound.bound_vars)
 			self.import_vars.extend(upper_bound.import_vars)
 			self.qq_bound_vars.extend(upper_bound.qq_bound_vars)
 			self.free_vars.extend(upper_bound.free_vars)
+			_merge_mod_id_lookups(self.mod_id_lookups, upper_bound.mod_id_lookups)
 
 
 
@@ -738,10 +785,11 @@ class IEXBI:
 		self.field_name := field_name
 		self.src_infos := src_infos
 
-		self.bound_vars := self.object_expr.bound_vars
-		self.import_vars := self.object_expr.import_vars
-		self.qq_bound_vars := self.object_expr.qq_bound_vars
-		self.free_vars := self.object_expr.free_vars
+		self.bound_vars := object_expr.bound_vars
+		self.import_vars := object_expr.import_vars
+		self.qq_bound_vars := object_expr.qq_bound_vars
+		self.free_vars := object_expr.free_vars
+		self.mod_id_lookups := object_expr.mod_id_lookups
 
 
 
@@ -768,11 +816,13 @@ class IReturn:
 			self.import_vars := Set{}
 			self.qq_bound_vars := Set{}
 			self.free_vars := Set{}
+			self.mod_id_lookups := Dict{}
 		else:
 			self.bound_vars := return_expr.bound_vars
 			self.import_vars := return_expr.import_vars
 			self.qq_bound_vars := return_expr.qq_bound_vars
 			self.free_vars := return_expr.free_vars
+			self.mod_id_lookups := return_expr.mod_id_lookups
 
 
 
@@ -796,6 +846,7 @@ class IYield:
 		self.import_vars := yield_expr.import_vars
 		self.qq_bound_vars := yield_expr.qq_bound_vars
 		self.free_vars := yield_expr.free_vars
+		self.mod_id_lookups := yield_expr.mod_id_lookups
 
 
 
@@ -819,6 +870,7 @@ class IRaise:
 		self.import_vars := raise_expr.import_vars
 		self.qq_bound_vars := raise_expr.qq_bound_vars
 		self.free_vars := raise_expr.free_vars
+		self.mod_id_lookups := raise_expr.mod_id_lookups
 
 
 
@@ -842,6 +894,7 @@ class IAssert:
 		self.import_vars := assert_expr.import_vars
 		self.qq_bound_vars := assert_expr.qq_bound_vars
 		self.free_vars := assert_expr.free_vars
+		self.mod_id_lookups := assert_expr.mod_id_lookups
 
 
 
@@ -864,6 +917,7 @@ class IBreak:
 		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		self.free_vars := Set{}
+		self.mod_id_lookups := Dict{}
 
 
 
@@ -884,6 +938,7 @@ class IContinue:
 		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		self.free_vars := Set{}
+		self.mod_id_lookups := Dict{}
 
 
 
@@ -905,11 +960,13 @@ class IConjunction:
 		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		self.free_vars := Set{}
+		self.mod_id_lookups := Dict{}
 		for expr := exprs.iter():
 			self.bound_vars.extend(expr.bound_vars)
 			self.import_vars.extend(expr.import_vars)
 			self.qq_bound_vars.extend(expr.qq_bound_vars)
 			self.free_vars.extend(expr.free_vars)
+			_merge_mod_id_lookups(self.mod_id_lookups, expr.mod_id_lookups)
 
 
 
@@ -933,11 +990,13 @@ class IAlternation:
 		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		self.free_vars := Set{}
+		self.mod_id_lookups := Dict{}
 		for expr := exprs.iter():
 			self.bound_vars.extend(expr.bound_vars)
 			self.import_vars.extend(expr.import_vars)
 			self.qq_bound_vars.extend(expr.qq_bound_vars)
 			self.free_vars.extend(expr.free_vars)
+			_merge_mod_id_lookups(self.mod_id_lookups, expr.mod_id_lookups)
 
 
 
@@ -963,6 +1022,7 @@ class IAssignment:
 		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		self.free_vars := Set{}
+		self.mod_id_lookups := Dict{}
 		for target := targets.iter():
 			if IVar.instantiated(target):
 				self.bound_vars.add(target.var_name)
@@ -972,9 +1032,11 @@ class IAssignment:
 				self.import_vars.extend(target.import_vars)
 				self.qq_bound_vars.extend(target.qq_bound_vars)
 				self.free_vars.extend(target.free_vars)
+				_merge_mod_id_lookups(self.mod_id_lookups, target.mod_id_lookups)
 		self.bound_vars.extend(expr.bound_vars)
 		self.qq_bound_vars.extend(expr.qq_bound_vars)
 		self.free_vars.extend(expr.free_vars)
+		_merge_mod_id_lookups(self.mod_id_lookups, expr.mod_id_lookups)
 
 
 
@@ -999,6 +1061,7 @@ class INot:
 		self.import_vars := expr.import_vars
 		self.qq_bound_vars := expr.qq_bound_vars
 		self.free_vars := expr.free_vars
+		self.mod_id_lookups := expr.mod_id_lookups
 
 
 
@@ -1024,6 +1087,8 @@ class IBinary:
 		self.import_vars := lhs.import_vars + rhs.import_vars
 		self.qq_bound_vars := lhs.qq_bound_vars + rhs.qq_bound_vars
 		self.free_vars := lhs.free_vars + rhs.free_vars
+		self.mod_id_lookups := lhs.mod_id_lookups.scopy()
+		_merge_mod_id_lookups(self.mod_id_lookups, rhs.mod_id_lookups)
 
 
 
@@ -1050,6 +1115,8 @@ class IComparison:
 		self.import_vars := lhs.import_vars + rhs.import_vars
 		self.qq_bound_vars := lhs.qq_bound_vars + rhs.qq_bound_vars
 		self.free_vars := lhs.free_vars + rhs.free_vars
+		self.mod_id_lookups := lhs.mod_id_lookups.scopy()
+		_merge_mod_id_lookups(self.mod_id_lookups, rhs.mod_id_lookups)
 
 
 
@@ -1073,6 +1140,7 @@ class IPass:
 		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		self.free_vars := Set{}
+		self.mod_id_lookups := Dict{}
 
 
 
@@ -1094,6 +1162,7 @@ class IInsert:
 		self.import_vars := expr.import_vars
 		self.qq_bound_vars := expr.qq_bound_vars
 		self.free_vars := expr.free_vars
+		self.mod_id_lookups := expr.mod_id_lookups
 
 
 
@@ -1118,6 +1187,7 @@ class IQuasi_Quotes:
 		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		self.free_vars := body.free_vars.scopy()
+		self.mod_id_lookups := body.mod_id_lookups.scopy()
 		for var := body.qq_bound_vars.iter():
 			self.qq_bound_vars.add(Strings::format(Compiler_Vars::QUASI_QUOTES_NAME, var))
 			self.bound_vars.add(Strings::format(Compiler_Vars::QUASI_QUOTES_NAME, var))
@@ -1131,6 +1201,7 @@ class IQuasi_Quotes:
 			self.import_vars.extend(extra_src_infos.import_vars)
 			self.qq_bound_vars.extend(extra_src_infos.qq_bound_vars)
 			self.free_vars.extend(extra_src_infos.free_vars)
+			_merge_mod_id_lookups(self.mod_id_lookups, extra_src_infos.mod_id_lookups)
 
 
 
@@ -1155,6 +1226,7 @@ class IMod_Id_Import:
 		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
 		self.free_vars := Set{}
+		self.mod_id_lookups := Dict{}
 
 
 
@@ -1180,10 +1252,12 @@ class IExpr_Block:
 		self.bound_vars := Set{}
 		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
+		self.mod_id_lookups := Dict{}
 		for expr := self.exprs.iter():
 			self.bound_vars.extend(expr.bound_vars)
 			self.import_vars.extend(expr.import_vars)
 			self.qq_bound_vars.extend(expr.qq_bound_vars)
+			_merge_mod_id_lookups(self.mod_id_lookups, expr.mod_id_lookups)
 
 		self.free_vars := Set{}
 		for expr := self.exprs.iter():
@@ -1211,10 +1285,12 @@ class IParam:
 		self.bound_vars := Set{var.var_name}
 		self.import_vars := Set{}
 		self.qq_bound_vars := Set{var.var_name}
+		self.mod_id_lookups := Dict{}
 		if not default is null:
 			self.bound_vars.extend(default.bound_vars)
 			self.import_vars.extend(default.import_vars)
 			self.qq_bound_vars.extend(default.qq_bound_vars)
+			_merge_mod_id_lookups(self.mod_id_lookups, default.mod_id_lookups)
 		
 		if default is null:
 			self.free_vars := Set{}
@@ -1245,6 +1321,8 @@ class IClause:
 		self.import_vars := condition.import_vars + body.import_vars
 		self.qq_bound_vars := condition.qq_bound_vars + body.qq_bound_vars
 		self.free_vars := condition.free_vars + body.free_vars
+		self.mod_id_lookups := condition.mod_id_lookups.scopy()
+		_merge_mod_id_lookups(self.mod_id_lookups, body.mod_id_lookups)
 
 
 
@@ -1271,6 +1349,7 @@ class ICatch:
 		self.import_vars := expr.import_vars.scopy()
 		self.qq_bound_vars := expr.qq_bound_vars.scopy()
 		self.free_vars := expr.free_vars.scopy()
+		self.mod_id_lookups := expr.mod_id_lookups.scopy()
 		
 		if not var is null:
 			self.bound_vars.add(var.var_name)
@@ -1280,6 +1359,7 @@ class ICatch:
 		self.import_vars.extend(body.import_vars)
 		self.qq_bound_vars.extend(body.qq_bound_vars)
 		self.free_vars.extend(body.free_vars)
+		_merge_mod_id_lookups(self.mod_id_lookups, body.mod_id_lookups)
 
 
 
@@ -1312,3 +1392,12 @@ func _extended_obj_src_infos(o, extra_src_infos):
 		return o
 	else:
 		return o.extended_src_infos(extra_src_infos)
+
+
+
+func _merge_mod_id_lookups(dest, from):
+
+	for mod_id, new_lookups := from.iter():
+		if not (lookups := dest.find(mod_id)):
+			dest[mod_id] := (lookups := Set{})
+		lookups.extend(new_lookups)

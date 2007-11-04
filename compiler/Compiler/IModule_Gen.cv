@@ -224,23 +224,7 @@ class IModule_Gen:
 
 	func _preorder(self, node, extra_src_infos := []):
 
-		if not Builtins::List.conformed_by(node):
-			raise "XXX"
-			return fail
-		
-		name := "_t_" + node[0]
-		if f := self.find_slot(name):
-			// Many users won't care about making use of the 'extra_src_infos' argument, so we allow
-			// all traversal functions to be defined with only a 'node' argument. Therefore if the
-			// bound function only has 2 arguments (i.e. 'self, node') we don't pass on the
-			// 'extra_src_infos' argument.
-			if f.func_.num_params == 2:
-				return f(node)
-			else:
-				assert(f.func_.num_params == 3)
-				return f(node, extra_src_infos)
-		else:
-			raise Exceptions::User_Exception.new(Strings::format("Unknown node type '%s'.", node[0]))
+		return self.find_slot("_t_" + node[0])(node, extra_src_infos)
 
 
 

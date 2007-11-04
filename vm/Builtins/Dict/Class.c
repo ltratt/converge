@@ -52,6 +52,7 @@ Con_Obj *_Con_Builtins_Dict_Class_iter_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Dict_Class_iter_keys_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Dict_Class_len_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Dict_Class_set_func(Con_Obj *);
+Con_Obj *_Con_Builtins_Dict_Class_scopy_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Dict_Class_iter_vals_func(Con_Obj *);
 
 
@@ -84,6 +85,7 @@ void Con_Builtins_Dict_Class_bootstrap(Con_Obj *thread)
 	CON_SET_FIELD(dict_class, "iter_keys", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Dict_Class_iter_keys_func, "iter_keys", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), dict_class));
 	CON_SET_FIELD(dict_class, "len", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Dict_Class_len_func, "len", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), dict_class));
 	CON_SET_FIELD(dict_class, "set", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Dict_Class_set_func, "set", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), dict_class));
+	CON_SET_FIELD(dict_class, "scopy", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Dict_Class_scopy_func, "scopy", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), dict_class));
 	CON_SET_FIELD(dict_class, "iter_vals", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Dict_Class_iter_vals_func, "iter_vals", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), dict_class));
 }
 
@@ -457,6 +459,23 @@ Con_Obj *_Con_Builtins_Dict_Class_set_func(Con_Obj *thread)
 	CON_MUTEX_UNLOCK(&self->mutex);
 	
 	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
+}
+
+
+
+//
+// 'scopy()'.
+//
+
+Con_Obj *_Con_Builtins_Dict_Class_scopy_func(Con_Obj *thread)
+{
+	Con_Obj *self_obj;
+	CON_UNPACK_ARGS("D", &self_obj);
+	
+	Con_Obj *copy = Con_Builtins_Dict_Atom_new(thread);
+	CON_GET_SLOT_APPLY(copy, "extend", self_obj);
+	
+	return copy;
 }
 
 

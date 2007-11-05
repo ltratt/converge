@@ -1,10 +1,13 @@
-all: printf
+all: nested printf
+
+nested: nested.cvb
+	${CONVERGE_VM} ${CONVERGEL} -o nested nested.cvb
 
 printf: printf.cvb
 	${CONVERGE_VM} ${CONVERGEL} -o printf printf.cvb
 
 clean:
-	rm -f printf printf.cvb
+	rm -f nested printf *.cvb
 
 distclean: clean
 	rm -f Makefile .depend

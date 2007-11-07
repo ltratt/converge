@@ -42,7 +42,7 @@ class Eval_Compiler:
 	func eval(self):
 		
 		self.tokenizer := Tokenizer::Tokenizer.new()
-		parse_tree := CV_Parser::parse_expr(self._str)
+		parse_tree := CV_Parser::parse_expr_body(self._str)
 		self.newlines := self.tokenizer.newlines
 		
 		body := []
@@ -57,7 +57,13 @@ class Eval_Compiler:
 			var_val := ITree::IApplication.new(ITree::ISlot_Lookup.new(vars_val, "get", []), [ITree::IString.new(var_name, [])], [])
 			body.append(ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(var_name, [])], var_val, []))
 
-		expr := IModule_Gen::IModule_Gen.new().generate(parse_tree)
+		expr_body := IModule_Gen::IModule_Gen.new().gen_expr_body(parse_tree)
+		if expr_body.exprs.len() == 0:
+			return fail
+		elif expr_body.exprs.len() > 1:
+			raise "XXX"
+			
+		expr := expr_body.exprs[0]
 
 		dict_vals := []
 		for var_name, var_val := self.vars.iter():

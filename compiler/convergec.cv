@@ -277,7 +277,7 @@ class Compiler:
 		parse_tree := CV_Parser::parse(src_data)
 		self.newlines := self.tokenizer.newlines
 
-		imodule := IModule_Gen::IModule_Gen.new().generate(parse_tree)
+		imodule := IModule_Gen::IModule_Gen.new().gen(parse_tree)
 		
 		bc := Bytecode_Gen::Bytecode_Gen.new().generate(imodule, self.target)
 		

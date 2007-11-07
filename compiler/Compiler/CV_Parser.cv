@@ -304,12 +304,12 @@ func parse(src_data):
 
 
 
-func parse_expr(src_data):
+func parse_expr_body(src_data):
 
 	compiler := Compiler_Vars::peek_compiler()
 
 	compiler.tokenizer.tokenize(src_data, [[compiler.module_id, 0]], [], [])
 	tokens_map := Tokenizer::tokens_map([], [])
-	grammar, rule_names := Grammar::compile(GRAMMAR, "expr", tokens_map)
+	grammar, rule_names := Grammar::compile(GRAMMAR, "expr_body", tokens_map)
 
 	return CV_Parser.new().parse(grammar, rule_names, tokens_map, compiler.tokenizer.tokens)

@@ -43,7 +43,7 @@ class Switch_Translator(IModule_Gen::IModule_Gen):
 	
 		// switch ::= "SWITCH" "ID" ":" "INDENT" clauses default "DEDENT"
 		
-		self._var := CEI::ivar(node[2].value)
+		self._var := CEI::ivar(node[2].value, node[2].src_infos)
 		
 		clauses := self._preorder(node[5], extra_src_infos + __SRC_INFO__)
 		default := self._preorder(node[6], extra_src_infos + __SRC_INFO__)

@@ -115,16 +115,16 @@ func printf(format):
 				
 				if part == PRINTF_INT:
 					body.append([|
-						if not Builtins::Int.conformed_by(${param_var}):
-							raise Exceptions::Type_Exception.new(Builtins::Int.path(), ${param_var}, ${CEI::lift("parameter " + parameter_num.to_str())})
+						if not Builtins::Int.conformed_by($c{param_var}):
+							raise Exceptions::Type_Exception.new(Builtins::Int.path(), $c{param_var}, ${CEI::lift("parameter " + parameter_num.to_str())})
 					|])
-					expr_part := [| ${param_var}.to_str() |]
+					expr_part := [| $c{param_var}.to_str() |]
 				elif part == PRINTF_STRING:
 					body.append([|
-						if not Builtins::String.conformed_by(${param_var}):
-							raise Exceptions::Type_Exception.new(Builtins::String.path(), ${param_var}, ${CEI::lift("parameter " + parameter_num.to_str())})
+						if not Builtins::String.conformed_by($c{param_var}):
+							raise Exceptions::Type_Exception.new(Builtins::String.path(), $c{param_var}, ${CEI::lift("parameter " + parameter_num.to_str())})
 					|])
-					expr_part := [| ${param_var} |]
+					expr_part := [| $c{param_var} |]
 				parameter_num += 1
 			if return_expr is null:
 				// If this is the first part of the return expression, it simply becomes the return
@@ -135,7 +135,7 @@ func printf(format):
 				// If this is a subsequent part of the return expression, we need to add the output
 				// of the current argument to the existing part of the return expression.
 			
-				return_expr := [| ${return_expr} + ${expr_part} |]
+				return_expr := [| $c{return_expr} + $c{expr_part} |]
 	
 	// Now we actually generate the function - it's essentially a case of pasting in the code chunks
 	// we've already generated into a simple stub. Et voila.
@@ -143,10 +143,10 @@ func printf(format):
 	// The function is anonymous since giving it a name doesn't affect its usage.
 	
 	func_ := [|
-		func (${parameters}):
-			${body}
+		func ($c{parameters}):
+			$c{body}
 		
-			return ${return_expr}
+			return $c{return_expr}
 	|]
 	
 	// For the users convenience we pretty print the function so that they can see what's actually
@@ -216,8 +216,8 @@ func simple_printf(format):
 			i += 1
 
 	return [|
-		func (${params}):
-			return ${simple_printf_expr(split, 0)}
+		func ($c{params}):
+			return $c{simple_printf_expr(split, 0)}
 	|]
 
 
@@ -229,11 +229,11 @@ func simple_printf_expr(split, param_i):
 
 	param := CEI::ivar("p" + param_i.to_str())
 	if Builtins::String.conformed_by(split[0]):
-		return [| ${CEI::lift(split[0])} + ${simple_printf_expr(split[1 : ], param_i)} |]
+		return [| ${CEI::lift(split[0])} + $c{simple_printf_expr(split[1 : ], param_i)} |]
 	elif split[0] == PRINTF_INT:
-		return [| ${param}.to_str() + ${simple_printf_expr(split[1 : ], param_i + 1)} |]
+		return [| $c{param}.to_str() + $c{simple_printf_expr(split[1 : ], param_i + 1)} |]
 	elif split[0] == PRINTF_STRING:
-		return [| ${param} + ${simple_printf_expr(split[1 : ], param_i + 1)} |]
+		return [| $c{param} + $c{simple_printf_expr(split[1 : ], param_i + 1)} |]
 	
 
 

@@ -20,7 +20,7 @@
 
 
 import Builtins, Strings
-import Compiler_Vars, ITree, ITree_WF, Lift
+import Compiler_Vars, ITree, ITree_Rename, ITree_WF, Lift
 
 
 
@@ -266,12 +266,7 @@ class QQ_Mode:
 		contains_iinsert := 0
 		for expr := node.exprs.iter():
 			if ITree::IInsert.instantiated(expr):
-				// We need to check the result of an IInsert at "run-time". In an expression block,
-				// it's perfectly legitimite for an insert to return a list. So at "run-time" have
-				// to check if we've got a list, in which case we check that each element of the
-				// list is an expression; if it's not a list, we check that the returned element
-				// itself is an expression.
-				block.append(self._lift_func_call(_expr_block_insert, [expr.expr, Lift::lift(expr.src_infos)], expr.src_infos))
+				block.append(self._process_insert(expr, _pi_expr_body))
 				contains_iinsert := 1
 			else:
 				block.append(self._preorder(expr))
@@ -284,6 +279,16 @@ class QQ_Mode:
 
 		return exprs
 
+
+
+	func _process_insert(self, node, check_func):
+
+		post_insert := self._lift_func_call(check_func, [node.expr, Lift::lift(node.src_infos)], node.src_infos)
+		
+		if node.type == ITree::INSERT_CAPTURING:
+			return post_insert
+		
+		return self._lift_func_call(ITree_Rename::rename_all, [post_insert], node.src_infos)
 		
 
 
@@ -300,14 +305,7 @@ class QQ_Mode:
 	func _t_iclass_defn(self, node):
 
 		if ITree::IInsert.instantiated(node.class_name):
-			// Class names are a little odd because the class "name" is also used as a variable
-			// to be assigned to. The class name is actually just the string part of this variable
-			// name, which means we have to manually pluck it out. If the user gives us a variable
-			// which isn't of type IVar, they would get an odd error message along the lines of
-			// "1 doesn't have a class_name slot" which wouldn't really help them track things down.
-			// To cope with this eventuality, we put a manual check in that catches such an error
-			// at the earliest possible stage.
-			class_name := self._lift_func_call(_class_name, [node.class_name.expr, Lift::lift(node.src_infos)], node.src_infos)
+			class_name := self._process_insert(node.class_name, _pi_class_name)
 		else:
 			if node.class_name == "":
 				class_name := ITree::IString.new("", node.src_infos)
@@ -346,7 +344,7 @@ class QQ_Mode:
 
 		is_bound := ITree::IInt.new(node.is_bound, node.src_infos)
 		if ITree::IInsert.instantiated(node.func_name):
-			func_name := node.func_name.expr
+			func_name := self._process_insert(node.func_name, _pi_func_name)
 		else:
 			if node.func_name is null:
 				func_name := ITree::IVar.new("null", node.src_infos)
@@ -375,15 +373,14 @@ class QQ_Mode:
 					default := ITree::IVar.new(self._qq_bound_var_name(var.var_name), param.src_infos)
 				params_list.append(self._qq("IParam", [var, default], param.src_infos))
 			else:
-				assert ITree::IInsert.instantiated(param)
-				params_list.append(param.expr)
+				params_list.append(self._process_insert(param, _pi_params))
 		
 		params := ITree::IApplication.new(ITree::ISlot_Lookup.new(ITree::IList.new(params_list, node.src_infos), "flattened", node.src_infos), [], node.src_infos)
 		
 		if node.var_arg is null:
 			var_arg := ITree::IVar.new("null", node.src_infos)
 		elif ITree::IInsert.instantiated(node.var_arg):
-			var_arg := node.var_arg.expr
+			var_arg := self._process_insert(node.var_arg, _pi_var_arg)
 		else:
 			var_arg := self._process_assign_var(node.var_arg.var_name, node.src_infos)
 		
@@ -478,6 +475,7 @@ class QQ_Mode:
 		names := []
 
 		if ITree::IInsert.instantiated(node.names[0]):
+			names.append(self._process_insert(node.names[0], _pi_initial_mod_lookup))
 			names.append(node.names[0].expr)
 		elif ITree::IMod_Id_Import.instantiated(node.names[0]):
 			names.append(self._preorder(node.names[0]))
@@ -509,13 +507,14 @@ class QQ_Mode:
 					self._compiler.error(Strings::format("Trying to reference variable '%s' which is not defined in the outer-most scope.", var_name), node.src_infos)
 			else:
 				// Variable is inside the quasi-quotes.
-				names.append(self._qq("IVar", [ITree::IString.new(renamed_var_name, node.src_infos)], node.src_infos))
+				qq_var := ITree::IVar.new(self._qq_bound_var_name(var_name), node.names[0].src_infos)
+				names.append(self._qq("IVar", [qq_var], node.names[0].src_infos))
 
 		// Processing all
 
 		for name := node.names.iter(1):
 			if ITree::IInsert.instantiated(name):
-				qq_name := name.expr
+				qq_name := self._process_insert(name, _pi_subsequent_mod_lookup)
 			else:
 				qq_name := self._qq("IVar", [ITree::IString.new(name.var_name, name.src_infos)], name.src_infos)
 			names.append(qq_name)
@@ -690,7 +689,10 @@ class QQ_Mode:
 
 	func _t_iimport(self, node):
 	
-		return self._qq("IImport", [ITree::IString.new(node.module_path, node.src_infos), ITree::IString.new(node.var_name, node.src_infos)], node.src_infos)
+		as_var := self._process_assign_var(node.var_name, node.src_infos)
+		as_name := ITree::ISlot_Lookup.new(as_var, "var_name", node.src_infos)
+	
+		return self._qq("IImport", [ITree::IString.new(node.module_path, node.src_infos), as_name], node.src_infos)
 
 
 
@@ -775,7 +777,7 @@ class QQ_Mode:
 
 	func _t_iinsert(self, node):
 	
-		return self._lift_func_call(_insert_check, [node.expr, Lift::lift(node.src_infos)], node.src_infos)
+		return self._process_insert(node, _pi_expr)
 
 
 
@@ -797,6 +799,10 @@ class QQ_Mode:
 //
 // These functions are only called via _lift_func_call.
 //
+// With the exception of _expr_block_magic, these functions are all "post insertion processing" -
+// functions which do simple type checking of the return of an insertion, and add to the src infos
+// of the returned ITree.
+//
 
 //
 // When we evaluate an expression block inside a quasi-quotes, we treat a list of length 1 as if it
@@ -813,22 +819,26 @@ func _expr_block_magic(exprs):
 
 
 //
-// Insertions in expression blocks can return either a single expression, or a list of expressions.
+// Insertions in expression bodies can return either a single expression, or a list of expressions.
 // Furthermore it's acceptable for any of these expressions to be a pass statement (which wouldn't
 // normally count as an expression).
 //
 
-func _expr_block_insert(expr, src_infos):
+func _pi_expr_body(expr, src_infos):
 
 	if Builtins::List.instantiated(expr):
+		post := []
 		for e := expr.iter():
 			if not ITree::IPass.instantiated(e):
 				ITree_WF::wf_expr(e, "in expression body", src_infos)
+			post.append(e.extended_src_infos(src_infos))
+		
+		return post
 	else:
 		if not ITree::IPass.instantiated(expr):
 			ITree_WF::wf_expr(expr, "in expression body", src_infos)
 
-	return expr
+		return expr.extended_src_infos(src_infos)
 
 
 
@@ -836,11 +846,11 @@ func _expr_block_insert(expr, src_infos):
 // For inserts that are used as bog-standard expressions, check that expr is a valid expression.
 //
 
-func _insert_check(expr, src_infos):
+func _pi_expr(expr, src_infos):
 
 	ITree_WF::wf_expr(expr, "in expression", src_infos)
 	
-	return expr
+	return expr.extended_src_infos(src_infos)
 
 
 
@@ -848,7 +858,7 @@ func _insert_check(expr, src_infos):
 // Check that 'name' is valid for a class name.
 //
 
-func _class_name(name, src_infos):
+func _pi_class_name(name, src_infos):
 
 	if not Builtins::String.instantiated(name):
 		ITree_WF::type_error("Class_Defn", "name", name, "String", src_infos)
@@ -861,9 +871,74 @@ func _class_name(name, src_infos):
 // Check that 'name' is valid for a function name.
 //
 
-func _func_name(name, src_infos):
+func _pi_func_name(name, src_infos):
 
-	if not Builtins::String.instantiated(name):
-		ITree_WF::type_error("Func_Defn", "name", name, "String", src_infos)
+	if not ITree::IVar.instantiated(name):
+		ITree_WF::type_error("Func_Defn", "name", name, "IVar", src_infos)
 
-	return name
+	return name.extended_src_infos(src_infos)
+
+
+
+//
+// Check that param is a valid parameter, or list of valid parameters.
+//
+
+func _pi_params(param, src_infos):
+
+	if Builtins::List.instantiated(param):
+		params := param
+	else:
+		params := [param]
+
+	post := []
+	for p := params.iter():
+		if not ITree::IParam.instantiated(p):
+			ITree_WF::type_error("Func_Defn", "parameter", p, "[List, IParam]", src_infos)
+		
+		post.append(p.extended_src_infos(src_infos))
+	
+	if Builtins::List.instantiated(param):
+		return post
+	else:
+		assert post.len() == 1
+		return post[0]
+
+
+
+//
+// Check that var_arg is valid
+//
+
+func _pi_var_arg(var_arg, src_infos):
+
+	if var_arg is null | ITree::IVar.instantiated(var_arg):
+		return var_arg.extended_src_infos(src_infos)
+	
+	ITree_WF::type_error("Func_Defn", "var arg", var_arg, "[null, IVar]", src_infos)
+
+
+
+//
+// Check that lookup is valid as the first part a mod lookup.
+//
+
+func _pi_initial_mod_lookup(lookup, src_infos):
+
+	if ITree::IMod_Id_Import.instantiated(lookup) | ITree::IVar.instantiated(lookup):
+		return lookup.extended_src_infos(src_infos)
+	
+	ITree_WF::type_error("IMod_Lookup", "first elements", lookup, "[IMod_Id_Import, IVar]", src_infos)
+
+
+
+//
+// Check that lookup is valid as the second or subsequent part a mod lookup.
+//
+
+func _pi_subsequent_mod_lookup(lookup, src_infos):
+
+	if ITree::IVar.instantiated(lookup):
+		return lookup.extended_src_infos(src_infos)
+	
+	ITree_WF::type_error("IMod_Lookup", "first elements", lookup, "IVar", src_infos)

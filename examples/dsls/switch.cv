@@ -71,7 +71,7 @@ class Switch_Translator(IModule_Gen::IModule_Gen):
 	
 		// clause ::= "CASE" expr ":" "INDENT" expr_body "DEDENT"
 		
-		return CEI::iclause([<node[1].src_infos>| ${self._var} == ${self._preorder(node[2], extra_src_infos + __SRC_INFO__)} |], self._eval_expr_body(node[5], extra_src_infos + __SRC_INFO__))
+		return CEI::iclause([<node[1].src_infos>| $c{self._var} == ${self._preorder(node[2], extra_src_infos + __SRC_INFO__)} |], self._eval_expr_body(node[5], extra_src_infos + __SRC_INFO__))
 		
 
 
@@ -104,7 +104,7 @@ func switch(dsl_block, src_infos):
 func f():
 
 	x := 2
-	$<<switch>>:
+	$c<<switch>>:
 		switch x:
 			case 1:
 				Sys::println("c1")

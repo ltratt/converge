@@ -1,0 +1,572 @@
+// Copyright (c) 2007 Laurence Tratt <laurie@tratt.net>
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to
+// deal in the Software without restriction, including without limitation the
+// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+// sell copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+// IN THE SOFTWARE.
+
+
+import Builtins, Strings
+import Compiler_Vars, ITree
+
+
+
+
+CLOSURE_VARS := 0
+CLOSURE_RENAMES := 1
+
+_NEST_CLASS := 0
+_NEST_FUNC := 1
+
+
+
+
+class _Renamer:
+
+	func process(self, itrees, rename_vars):
+	
+		self._preorders := Dict{}
+		for var := rename_vars.iter():
+			self._preorders[var] := Compiler_Vars::fresh_name(var)
+
+		// closures is a list of (set{variable names}, list(renames)) tuples. This is different, and
+		// rather simpler, than in many other parts of the compiler.
+
+		self._closures := []
+		
+		// We need to track when we're dealing with class fields or not. So we track when we're nested
+		// within nothing (i.e. at the top level), a class (meaning we're at the class field level
+		// when we don't alpha rename functions or classes), or within a function (meaning we can
+		// merrily alpha rename things).
+
+		self._nesting := []
+		
+		bound_vars := Set{}
+		for itree := itrees.iter():
+			bound_vars.extend(itree.bound_vars)
+		
+		self._add_vars(bound_vars, Dict{})
+		
+		out_itrees := []
+		for itree := itrees.iter():
+			out_itrees.append(self._preorder(itree))
+		
+		self._pop_vars()
+		
+		return out_itrees
+
+
+
+	func _add_vars(self, vars, renames):
+	
+		self._closures.append([vars, renames])
+
+
+
+	func _pop_vars(self):
+	
+		self._closures.del(-1)
+
+
+
+	//
+	// Return the closure offset of 'name' or -1 if is this variable is not bound in any known scope.
+	//
+
+	func _get_var_offset(self, name):
+	
+		i := self._closures.len() - 1
+		srch_name := name
+		while i >= 0:
+			if self._closures[i][CLOSURE_VARS].find(srch_name):
+				break
+			if rename_as := self._closures[i][CLOSURE_RENAMES].find(srch_name):
+				srch_name := rename_as
+			i -= 1
+		exhausted:
+			return -1
+		
+		return (self._closures.len() - i) - 1
+
+
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////
+	// Node traversal
+	//
+
+	func _preorder(self, node):
+	
+		return self.get_slot("_t_" + node.instance_of.name.to_lower_case())(node)
+
+
+
+	func _t_imodule(self, node):
+
+		raise "XXX"
+
+
+
+	func _t_iclass_defn(self, node):
+
+		if self._nesting.len() > 0 & self._nesting[-1] == _NEST_CLASS:
+			name := node.class_name
+		else:
+			name := node.class_name // XXX
+			//name := self._preorder(node.class_name)
+		
+		supers := []
+		for supers.append(self._preorder(node.supers.iter()))
+		
+		if node.metaclass_ is null:
+			metaclass_ := null
+		else:
+			metaclass_ := self._preorder(node.metaclass_)
+		
+		self._nesting.append(_NEST_CLASS)
+		fields := []
+		for fields.append(self._preorder(node.fields.iter()))
+		self._nesting.pop()
+		
+		return ITree::IClass_Defn.new(name, supers, metaclass_, fields, node.src_infos)
+
+
+
+	func _t_ifunc_defn(self, node):
+
+		is_bound := node.is_bound
+		
+		if self._nesting.len() > 0 & self._nesting[-1] == _NEST_CLASS:
+			func_name := node.func_name
+		else:
+			ndif node.func_name is null:
+				func_name := null
+			elif ITree::IVar.instantiated(node.func_name):
+				func_name := self._preorder(node.func_name)
+			elif ITree::IInsert.instantiated(node.func_name):
+				raise "XXX"
+
+		nonlocals := []
+		for nonlocal_ := node.nonlocals.iter():
+			raise "XXX"
+
+		renames := []
+		for rename_ := node.renames.iter():
+			raise "XXX"
+
+		self._nesting.append(_NEST_FUNC)
+		self._add_vars(node.body.bound_vars, renames)
+		
+		params := []
+		for params.append(self._preorder(node.params.iter()))
+		
+		if node.var_arg is null:
+			var_arg := null
+		else:
+			raise "XXX"
+		
+		body := self._preorder(node.body)
+		
+		self._nesting.pop()
+		self._pop_vars()
+		
+		return ITree::IFunc_Defn.new(is_bound, func_name, params, var_arg, nonlocals, renames, body, node.src_infos)
+
+
+
+	func _t_iif(self, node):
+
+		clauses := []
+		for clauses.append(self._preorder(node.clauses.iter()))
+		
+		if node.else_body is null:
+			else_body := null
+		else:
+			else_body := self._preorder(node.else_body)
+		
+		return ITree::IIf.new(clauses, else_body, node.src_infos)
+
+
+
+	func _t_indif(self, node):
+
+		clauses := []
+		for clauses.append(self._preorder(node.clauses.iter()))
+		
+		return ITree::INDIf.new(clauses, node.src_infos)
+
+
+
+	func _t_ivar(self, node):
+
+		if self._get_var_offset(node.var_name) <= 0 & renamed := self._preorders.find(node.var_name):
+			return ITree::IVar.new(renamed, node.src_infos)
+		else:
+			return node
+
+
+
+	func _t_iimport(self, node):
+	
+		// XXX this should be a proper var, not a string
+		if self._get_var_offset(node.var_name) <= 0 & renamed := self._preorders.find(node.var_name):
+			var := renamed
+		else:
+			var := node.var_name
+		
+		return ITree::IImport.new(node.module_path, var, node.src_infos)
+
+
+
+	func _t_iwhile(self, node):
+
+		cond := self._preorder(node.condition)
+		
+		if node.body is null:
+			body := null
+		else:
+			body := self._preorder(node.body)
+
+		if node.exhausted_body is null:
+			exhausted_body := null
+		else:
+			exhausted_body := self._preorder(node.body)
+			
+		if node.broken_body is null:
+			broken_body := null
+		else:
+			broken_body := self._preorder(node.body)
+
+		return ITree::IWhile.new(cond, body, exhausted_body, broken_body, node.src_infos)
+
+
+
+	func _t_ifor(self, node):
+
+		cond := self._preorder(node.condition)
+		
+		if node.body is null:
+			body := null
+		else:
+			body := self._preorder(node.body)
+
+		if node.exhausted_body is null:
+			exhausted_body := null
+		else:
+			exhausted_body := self._preorder(node.body)
+			
+		if node.broken_body is null:
+			broken_body := null
+		else:
+			broken_body := self._preorder(node.body)
+
+		return ITree::IFor.new(cond, body, exhausted_body, broken_body, node.src_infos)
+
+
+
+	func _t_itry(self, node):
+
+		body := self._preorder(node.body)
+
+		catches := []
+		for catches.append(self._preorder(node.catches.iter()))
+		
+		return ITree::ITry.new(body, catches, node.src_infos)
+
+
+
+	func _t_iint(self, node):
+
+		return node
+
+
+
+	func _t_ifloat(self, node):
+
+		raise node
+
+
+
+	func _t_istring(self, node):
+
+		return node
+
+
+
+	func _t_islot_lookup(self, node):
+
+		obj_expr := self._preorder(node.object_expr)
+		
+		return ITree::ISlot_Lookup.new(obj_expr, node.slot_name, node.src_infos)
+
+
+
+	func _t_imodule_lookup(self, node):
+
+		names := [self._preorder(node.names[0])]
+		for names.append(node.names.iter(1))
+		
+		return ITree::IModule_Lookup.new(names, node.src_infos)
+
+
+
+	func _t_ilist(self, node):
+
+		elems := []
+		for elems.append(self._preorder(node.elements.iter()))
+		
+		return ITree::IList.new(elems, node.src_infos)
+
+
+
+	func _t_idict(self, node):
+
+		elems := []
+		for key, val := node.elements.iter():
+			elems.append([self._preorder(key), self._preorder(val)])
+		
+		return ITree::IDict.new(elems, node.src_infos)
+
+
+
+	func _t_iset(self, node):
+
+		elems := []
+		for elems.append(self._preorder(node.elements.iter()))
+		
+		return ITree::ISet.new(elems, node.src_infos)
+
+
+
+	func _t_iapplication(self, node):
+
+		func_expr := self._preorder(node.func_expr)
+		args := []
+		for args.append(self._preorder(node.args.iter()))
+		
+		return ITree::IApplication.new(func_expr, args, node.src_infos)
+
+
+
+	func _t_iget(self, node):
+
+		target := self._preorder(node.get_object)
+		index := self._preorder(node.index)
+		
+		return ITree::IGet.new(target, index, node.src_infos)
+
+
+
+	func _t_islice(self, node):
+
+		target := self._preorder(node.slice_object)
+
+		if node.lower_bound is null:
+			lower_bound := null
+		else:
+			lower_bound := self._preorder(node.lower_bound)
+
+		if node.upper_bound is null:
+			upper_bound := null
+		else:
+			upper_bound := self._preorder(node.upper_bound)
+		
+		return ITree::ISlice.new(target, lower_bound, upper_bound, node.src_infos)
+
+
+
+	func _t_iexbi(self, node):
+
+		raise "XXX"
+
+
+
+	func _t_ireturn(self, node):
+
+		if node.return_expr is null:
+			return node
+		
+		return_expr := self._preorder(node.return_expr)
+		
+		return ITree::IReturn.new(return_expr, node.src_infos)
+
+
+
+	func _t_iyield(self, node):
+
+		yield_expr := self._preorder(node.return_expr)
+		
+		return ITree::IYield.new(yield_expr, node.src_infos)
+
+
+
+	func _t_iraise(self, node):
+
+		raise_expr := self._preorder(node.raise_expr)
+		
+		return ITree::IRaise.new(raise_expr, node.src_infos)
+
+
+
+	func _t_iassert(self, node):
+
+		assert_expr := self._preorder(node.assert_expr)
+		
+		return ITree::IAssert.new(assert_expr, node.src_infos)
+
+
+
+	func _t_ibreak(self, node):
+
+		return node
+
+
+
+	func _t_icontinue(self, node):
+
+		raise node
+
+
+
+	func _t_iconjunction(self, node):
+
+		exprs := []
+		for exprs.append(self._preorder(node.exprs.iter()))
+		
+		return ITree::IConjunction.new(exprs, node.src_infos)
+
+
+
+	func _t_ialternation(self, node):
+
+		exprs := []
+		for exprs.append(self._preorder(node.exprs.iter()))
+		
+		return ITree::IAlternation.new(exprs, node.src_infos)
+
+
+
+	func _t_iassignment(self, node):
+
+		targets := []
+		for targets.append(self._preorder(node.targets.iter()))
+		
+		expr := self._preorder(node.expr)
+		
+		return ITree::IAssignment.new(node.type, targets, expr, node.src_infos)
+
+
+
+	func _t_inot(self, node):
+
+		expr := self._preorder(node.expr)
+		
+		return ITree::INot.new(expr, node.src_infos)
+
+
+
+	func _t_ibinary(self, node):
+
+		lhs := self._preorder(node.lhs)
+		rhs := self._preorder(node.rhs)
+		
+		return ITree::IBinary.new(node.type, lhs, rhs, node.src_infos)
+
+
+
+	func _t_icomparison(self, node):
+
+		lhs := self._preorder(node.lhs)
+		rhs := self._preorder(node.rhs)
+		
+		return ITree::IComparison.new(node.type, lhs, rhs, node.src_infos)
+
+
+
+	func _t_ipass(self, node):
+
+		return node
+
+
+
+	func _t_imod_id_import(self, node):
+
+		return node
+
+
+
+	func _t_iexpr_block(self, node):
+
+		exprs := []
+		for exprs.append(self._preorder(node.exprs.iter()))
+	
+		return ITree::IExpr_Block.new(exprs, node.src_infos)
+
+
+
+	func _t_iparam(self, node):
+
+		var := self._preorder(node.var)
+		if node.default is null:
+			default := null
+		else:
+			default := self._preorder(node.default)
+		
+		return ITree::IParam.new(var, default, node.src_infos)
+
+
+
+	func _t_iclause(self, node):
+
+		cond := self._preorder(node.condition)
+		body := self._preorder(node.body)
+		
+		return ITree::IClause.new(cond, body, node.src_infos)
+
+
+
+	func _t_icatch(self, node):
+
+		expr := self._preorder(node.expr)
+		var := self._preorder(node.var)
+		body := self._preorder(node.body)
+		
+		return ITree::ICatch.new(expr, var, body, node.src_infos)
+
+
+
+
+//
+// Rename all externally visible variables in 'itree' (which may be a list) to new fresh names.
+//
+
+func rename_all(itree):
+
+	if Builtins::List.instantiated(itree):
+		itrees := itree
+	else:
+		itrees := [itree]
+
+	vars := Set{}
+	for it := itrees.iter():
+		vars.extend(it.bound_vars)
+		vars.extend(it.free_vars)
+
+	renamed := _Renamer.new().process(itrees, vars)
+
+	if Builtins::List.instantiated(itree):
+		return renamed
+	else:
+		return renamed[0]

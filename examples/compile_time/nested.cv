@@ -76,7 +76,7 @@ func f(s):
 // and so on work as expected (most of the variables above get renamed to something else to
 // ensure hygiene); you can see the real tree by running this file.
 
-$<f("foo")>
+$c<f("foo")>
 
 
 
@@ -89,7 +89,7 @@ $<f("foo")>
 //   func h(s3):
 //     return Strings::format("Nested '%s' '%s' '%s'.", "foo", "woo", s3))
 
-$<g("woo")>
+$c<g("woo")>
 
 
 func main():

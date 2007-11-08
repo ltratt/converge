@@ -49,6 +49,13 @@ LE_COMPARISON := 5
 GE_COMPARISON := 6
 ALL_COMPARISONS := [IS_COMPARISON, EQ_COMPARISON, NEQ_COMPARISON, LEQ_COMPARISON, GEQ_COMPARISON, LE_COMPARISON, GE_COMPARISON]
 
+SPLICE_DEFAULT := 0
+SPLICE_CAPTURING := 1
+SPLICE_PRAGMA := 2
+
+INSERT_DEFAULT := 0
+INSERT_CAPTURING := 1
+
 
 
 
@@ -1153,8 +1160,9 @@ class IPass:
 
 class IInsert:
 
-	func init(self, expr, src_infos):
+	func init(self, type, expr, src_infos):
 	
+		self.type := type
 		self.expr := expr
 		self.src_infos := src_infos
 		
@@ -1168,9 +1176,10 @@ class IInsert:
 
 	func extended_src_infos(self, extra_src_infos):
 	
+		type := self.type
 		expr := self.expr.extended_src_infos(extra_src_infos)
 	
-		return IInsert.new(expr, self.src_infos + extra_src_infos)
+		return IInsert.new(type, expr, self.src_infos + extra_src_infos)
 
 
 

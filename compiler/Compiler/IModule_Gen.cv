@@ -20,7 +20,7 @@
 
 
 import Builtins, Exceptions, File, Strings, Sys, VM
-import Bytecode_Gen, Compiler_Vars, CV_Module, ITree, ITree_WF, Lift
+import Bytecode_Gen, Compiler_Vars, CV_Module, ITree, ITree_Rename, ITree_WF, Lift
 
 
 
@@ -89,7 +89,7 @@ class IModule_Gen:
 					for e := expr.iter():
 						ITree_WF::wf_expr(e, "splice result", extra_src_infos + node[i][1][1][1].src_infos)
 						if node[i][1][1][0] == "expr_splice":
-							// expr_splice  ::= "$" "<" expr ">"
+							// expr_splice  ::= "$" splice_type "<" expr ">"
 
 							// With normal splices, we augment the src infos with the position of the
 							// splice (as well as the src infos that the returned itree has as
@@ -99,10 +99,13 @@ class IModule_Gen:
 						else:
 							tmp_exprs.append(e)
 					exprs.extend(tmp_exprs)
-				else:
+				elif not ITree::IPass.instantiated(expr):
+					// Note that we only execute this clause if the expression returned wasn't a
+					// "pass" statement; if it was, we let it sail on harmlessly by.
+
 					ITree_WF::wf_expr(expr, "splice result", extra_src_infos + node[i][1][1][1].src_infos)
 					if node[i][1][1][0] == "expr_splice":
-						// expr_splice  ::= "$" "<" expr ">"
+						// expr_splice  ::= "$" splice_type "<" expr ">"
 
 						// With normal splices, we augment the src infos with the position of the
 						// splice (as well as the src infos that the returned itree has as standard).
@@ -116,7 +119,10 @@ class IModule_Gen:
 				exprs.append(self._preorder(node[i], extra_src_infos))
 			i += 2
 
-		return ITree::IExpr_Block.new(exprs, extra_src_infos + exprs[0].src_infos)
+		if exprs.len() == 0:
+			return ITree::IExpr_Block.new(exprs, extra_src_infos)
+		else:
+			return ITree::IExpr_Block.new(exprs, extra_src_infos + exprs[0].src_infos)
 
 
 
@@ -129,20 +135,34 @@ class IModule_Gen:
 		//
 		// This is a euphemism for "it's a bit complicated".
 		
-		if node[1][0] == "expr_splice":
-			// expr_splice  ::= "$" "<" expr ">"
-			expr := self._preorder(node[1][3], extra_src_infos)
+		st_node := node[1][2]
+		if st_node.len() == 2:
+			// splice_type ::= "ID"
+			type_str := st_node[1].value
+			if type_str == "c":
+				st := ITree::SPLICE_CAPTURING
+			elif type_str == "p":
+				st := ITree::SPLICE_PRAGMA
+			else:
+				msg := Strings::format("Unknown splice type '%s'.", type_str)
+				self._compiler.error(msg, st_node[1].src_infos)
 		else:
-			// dsl_splice ::= "$" "<<" expr ">>" ":" "DSL_BLOCK"
-			//            ::= "$" "<<" expr ">>" "<<" "DSL_BLOCK" ">>"
-			dsl_block := ITree::IString.new(node[1][6].value, extra_src_infos + node[1][6].src_infos)
+			st := ITree::SPLICE_DEFAULT
+		
+		if node[1][0] == "expr_splice":
+			// expr_splice  ::= "$" splice_type "<" expr ">"
+			expr := self._preorder(node[1][4], extra_src_infos)
+		else:
+			// dsl_splice ::= "$" splice_type "<<" expr ">>" ":" "DSL_BLOCK"
+			//            ::= "$" splice_type "<<" expr ">>" "<<" "DSL_BLOCK" ">>"
+			dsl_block := ITree::IString.new(node[1][7].value, extra_src_infos + node[1][7].src_infos)
 
 			assert(node[1][1].src_infos.len() == 1)			
 			src_path := ITree::IString.new(node[1][1].src_infos[0][0], extra_src_infos + node[1][1].src_infos)
-			src_offset := ITree::IInt.new(node[1][6].src_infos[0][1], extra_src_infos + node[1][1].src_infos)
+			src_offset := ITree::IInt.new(node[1][7].src_infos[0][1], extra_src_infos + node[1][1].src_infos)
 			src_infos := ITree::IList.new([ITree::IList.new([src_path, src_offset], extra_src_infos + node[1][1].src_infos)], extra_src_infos + node[1][1].src_infos)
 			
-			expr := ITree::IApplication.new(self._preorder(node[1][3], extra_src_infos), [dsl_block, src_infos], extra_src_infos + node[1][1].src_infos)
+			expr := ITree::IApplication.new(self._preorder(node[1][4], extra_src_infos), [dsl_block, src_infos], extra_src_infos + node[1][1].src_infos)
 
 		splice_name := Compiler_Vars::fresh_name()
 		splice_var := ITree::IVar.new(splice_name, extra_src_infos + node[1][1].src_infos)
@@ -234,11 +254,35 @@ class IModule_Gen:
 
 		module_identifiers := VM::add_modules(modules_to_add)
 		module := VM::import_module(modules_to_add[0])
+		
+		if st == ITree::SPLICE_PRAGMA:
+			// Pragmas are nice and easy to deal with as we ignore the splices return value and
+			// return a simple "pass" statement.
+			module.get_defn(splice_name)()
+			return ITree::IPass.new(node[1][1].src_infos)
+
 		if not out_itree := module.get_defn(splice_name)():
 			self._compiler.error("Splice did not return a value.", expr.src_infos)
 		if out_itree is null:
 			self._compiler.error("Splice returned null.", expr.src_infos)
-		
+
+		if node[1][0] == "expr_splice":
+			// expr_splice  ::= "$" splice_type "<" expr ">"
+
+			// With normal splices, we augment the src infos with the position of the
+			// splice (as well as the src infos that the returned itree has as standard).
+
+			if Builtins::List.instantiated(out_itree):
+				tmp := []
+				for itree := out_itree.iter():
+					tmp.append(itree.extended_src_infos(node[1][1].src_infos))
+				out_itree := tmp
+			else:
+				out_itree := out_itree.extended_src_infos(node[1][1].src_infos)
+
+		if st == ITree::SPLICE_DEFAULT:
+			out_itree := ITree_Rename::rename_all(out_itree)
+
 		return out_itree
 
 
@@ -319,7 +363,7 @@ class IModule_Gen:
 				for d := defn.iter():
 					ITree_WF::wf_expr(d, "splice result", extra_src_infos + node[1][1][1].src_infos)
 					if node[1][1][0] == "expr_splice":
-						// expr_splice  ::= "$" "<" expr ">"
+						// expr_splice  ::= "$" splice_type "<" expr ">"
 
 						// With normal splices, we augment the src infos with the position of the
 						// splice (as well as the src infos that the returned itree has as standard).
@@ -328,10 +372,13 @@ class IModule_Gen:
 					else:
 						tmp_defns.append(d)
 				return tmp_defns
-			else:
+			elif not ITree::IPass.instantiated(defn):
+				// Note that we only execute this clause if the expression returned wasn't a
+				// "pass" statement; if it was, we let it sail on harmlessly by.
+
 				ITree_WF::wf_expr(defn, "splice result", extra_src_infos + node[1][1][1].src_infos)
 				if node[1][1][0] == "expr_splice":
-					// expr_splice  ::= "$" "<" expr ">"
+					// expr_splice  ::= "$" splice_type "<" expr ">"
 
 					// With normal splices, we augment the src infos with the position of the
 					// splice (as well as the src infos that the returned itree has as standard).
@@ -546,7 +593,7 @@ class IModule_Gen:
 							else:
 								param := [| ITree::IParam.new(${var}, ${param_default}, ${Lift::lift(extra_src_infos + var_def[2].src_infos)}) |]
 							
-							params.append(ITree::IInsert.new(param, extra_src_infos + var_def[2].src_infos))
+							params.append(ITree::IInsert.new(ITree::INSERT_CAPTURING, param, extra_src_infos + var_def[2].src_infos))
 						i += 3
 			if node[4][-1][0] == "func_varargs":
 				// func_varargs ::= "*" name
@@ -813,7 +860,7 @@ class IModule_Gen:
 		elif node.len() == 3:
 			// name ::= "&" "ID"
 			ivar := [| ITree::IVar.new(${ITree::IString.new(node[2].value, node[1].src_infos)}, ${Lift::lift(extra_src_infos + node[1].src_infos)}) |]
-			return ITree::IInsert.new(ivar, extra_src_infos + node[1].src_infos)
+			return ITree::IInsert.new(ITree::INSERT_CAPTURING, ivar, extra_src_infos + node[1].src_infos)
 		elif node[1][0] == "splice":
 			// name ::= splice
 			raise "XXX"
@@ -839,7 +886,7 @@ class IModule_Gen:
 				return ITree::IVar.new(node[1].value, extra_src_infos + node[1].src_infos)
 		elif node.len() == 3:
 			// name ::= "&" "ID"
-			return ITree::IInsert.new([<node[2].src_infos>| ITree::IVar.new(${ITree::IString.new(node[2].value, node[2].src_infos)}, ${Lift::lift(node[2].src_infos)}) |], node[2].src_infos)
+			return ITree::IInsert.new(ITree::INSERT_CAPTURING, [<node[2].src_infos>| ITree::IVar.new(${ITree::IString.new(node[2].value, node[2].src_infos)}, ${Lift::lift(node[2].src_infos)}) |], node[2].src_infos)
 
 
 
@@ -1196,23 +1243,29 @@ class IModule_Gen:
 		result := self._eval_splice(node, extra_src_infos)
 		ITree_WF::wf_expr(result, "splice", extra_src_infos + node[1][1].src_infos)
 		
-		if node[1][0] == "expr_splice":
-			// expr_splice  ::= "$" "<" expr ">"
-
-			// With normal splices, we augment the src infos with the position of the
-			// splice (as well as the src infos that the returned itree has as standard).
-
-			result := result.extended_src_infos(node[1][1].src_infos)
-		
 		return result
 
 
 
 	func _t_insert(self, node, extra_src_infos):
 	
-		// insert ::= "$" "{" expr "}"
-		
-		return ITree::IInsert.new(self._preorder(node[3], extra_src_infos), extra_src_infos + node[1].src_infos)
+		// insert ::= "$" insert_type "{" expr "}"
+
+		it_node := node[2]
+		if it_node.len() == 2:
+			// insert_type ::= "ID"
+			type_itr := it_node[1].value
+			if type_itr == "c":
+				it := ITree::INSERT_CAPTURING
+			else:
+				msg := Strings::format("Unknown insert type '%s'.", type_itr)
+				self._compiler.error(msg, it_node[1].src_infos)
+		else:
+			it := ITree::INSERT_DEFAULT
+
+		expr := self._preorder(node[4], extra_src_infos)
+
+		return ITree::IInsert.new(it, expr, extra_src_infos + node[1].src_infos)
 
 
 

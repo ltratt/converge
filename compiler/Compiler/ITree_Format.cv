@@ -146,12 +146,35 @@ class ITree_Format:
 			self._indent_level -= 1
 		
 		return Strings::join(pp, "")
+
+
+
+	func _t_indif(self, node):
+
+		pp := []
+		for i := 0.iter_to(node.clauses.len()):
+			if i == 0:
+				pp.append("ndif ")
+			else:
+				pp.append(Strings::format("\n%selif ", _INDENT_STRING * self._indent_level))
+			self._indent_level += 1
+			pp.append(Strings::format("%s:", self._preorder(node.clauses[i].condition)))
+			pp.append("\n" + (_INDENT_STRING * self._indent_level))
+			pp.append(self._preorder(node.clauses[i].body))
+			self._indent_level -= 1
+
+		return Strings::join(pp, "")
 	
 
 
 	func _t_iimport(self, node):
 	
-		return Strings::format("import %s", File::split_ext(File::split_leaf(node.module_path)[1])[0])
+		mod_path := Strings::split(node.module_path, "::")
+		
+		if node.var_name != mod_path[0]:
+			return Strings::format("import %s as %s", node.module_path, node.var_name)
+		else:
+			return Strings::format("import %s", node.module_path)
 
 
 
@@ -208,6 +231,33 @@ class ITree_Format:
 				self._indent_level += 1
 				pp.append(self._preorder(node.broken_body))
 				self._indent_level -= 1
+
+		return Strings::join(pp, "")
+
+
+
+	func _t_itry(self, node):
+
+		pp := ["try:\n"]
+		
+		self._indent_level += 1
+		pp.append(_INDENT_STRING * self._indent_level)
+		pp.append(self._preorder(node.body))
+		self._indent_level -= 1
+		
+		for catch_ := node.catches.iter():
+			pp.append("\n")
+			pp.append(_INDENT_STRING * self._indent_level)
+			pp.append("catch ")
+			pp.append(self._preorder(catch_.expr))
+			if not catch_.var is null:
+				pp.append(" into ")
+				pp.append(self._preorder(catch_.var))
+			pp.append(":\n")
+			self._indent_level += 1
+			pp.append(_INDENT_STRING * self._indent_level)
+			pp.append(self._preorder(catch_.body))
+			self._indent_level -= 1
 
 		return Strings::join(pp, "")
 

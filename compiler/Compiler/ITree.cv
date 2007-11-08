@@ -671,7 +671,7 @@ class ISet:
 
 	func extended_src_infos(self, extra_src_infos):
 
-		elems := _extended_collection_src_infos(self.elems, extra_src_infos)
+		elems := _extended_collection_src_infos(self.elements, extra_src_infos)
 		
 		return ISet.new(elems, self.src_infos + extra_src_infos)
 

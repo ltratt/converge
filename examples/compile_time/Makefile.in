@@ -1,7 +1,10 @@
-all: nested printf
+all: nested powers printf
 
 nested: nested.cvb
 	${CONVERGE_VM} ${CONVERGEL} -o nested nested.cvb
+
+powers: powers.cvb
+	${CONVERGE_VM} ${CONVERGEL} -o powers powers.cvb
 
 printf: printf.cvb
 	${CONVERGE_VM} ${CONVERGEL} -o printf printf.cvb

@@ -56,6 +56,7 @@ compiler/id_fix$
 ^converge-.*$
 examples/dsls/switch$
 examples/compile_time/nested$
+examples/compile_time/powers$
 examples/compile_time/printf$
 examples/metaclasses/singleton$
 bootstrap/convergec.bootstrap$

@@ -10,7 +10,7 @@ printf: printf.cvb
 	${CONVERGE_VM} ${CONVERGEL} -o printf printf.cvb
 
 clean:
-	rm -f nested printf *.cvb
+	rm -f nested powers printf *.cvb
 
 distclean: clean
 	rm -f Makefile .depend

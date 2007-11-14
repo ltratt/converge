@@ -69,6 +69,15 @@ Parse the string <code>dsl_block</code>, relative to the src infos <code>src_inf
 
 <h3>ITree functions</h3>
 
+<h4>Hygiene</h4>
+
+<function name="mk_hygienic">
+<argument name="itree" />
+<argument name="vars" type="Set{String}">Set{}</argument>
+Returns a version of <code>itree</code> which is made hygienic except for variable names in the set of strings <code>vars</code>. If <code>vars</code> is the empty set, this means that <code>itree</code> will be made fully hygienic.
+</function>
+
+
 <h4>Pretty printing</h4>
 
 <function name="itree_format">

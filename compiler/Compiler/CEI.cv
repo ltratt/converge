@@ -21,7 +21,7 @@
 
 import Builtins, Exceptions, Strings, Thread
 import CPK::Earley::Grammar
-import Compiler_Vars, CV_Parser, Eval, ITree, ITree_Format, ITree_WF, Lift, Tokenizer
+import Compiler_Vars, CV_Parser, Eval, ITree, ITree_Format, ITree_Rename, ITree_WF, Lift, Tokenizer
 
 
 
@@ -59,6 +59,12 @@ func fresh_name(name := null):
 func itree_format(itree):
 
 	return ITree_Format::format(itree)
+
+
+
+func mk_hygienic(itree, vars := Set{}):
+
+	return ITree_Rename::rename_except(itree, vars)
 
 
 

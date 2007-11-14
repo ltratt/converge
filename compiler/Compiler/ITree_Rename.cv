@@ -570,3 +570,28 @@ func rename_all(itree):
 		return renamed
 	else:
 		return renamed[0]
+
+
+
+//
+// Rename all externally visible variables in 'itree' (which may be a list) to new fresh names.
+//
+
+func rename_except(itree, vars):
+
+	if Builtins::List.instantiated(itree):
+		itrees := itree
+	else:
+		itrees := [itree]
+
+	fb_vars := Set{}
+	for it := itrees.iter():
+		fb_vars.extend(it.bound_vars)
+		fb_vars.extend(it.free_vars)
+	
+	renamed := _Renamer.new().process(itrees, fb_vars.complement(vars))
+
+	if Builtins::List.instantiated(itree):
+		return renamed
+	else:
+		return renamed[0]

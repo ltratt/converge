@@ -80,11 +80,11 @@ class Eval_Compiler:
 			vars_assign.append(var_val)
 
 		body.append([|
-			if rtn := ${expr}:
-				${vars_assign}
+			if rtn := $c{expr}:
+				$c{vars_assign}
 				return rtn
 			else:
-				${vars_assign}
+				$c{vars_assign}
 				return fail
 		|])
 

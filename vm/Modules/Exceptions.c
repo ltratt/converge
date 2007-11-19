@@ -412,7 +412,7 @@ Con_Obj *_Con_Module_Exception_Number_Exception_init_func(Con_Obj *thread)
 	CON_UNPACK_ARGS("OO", &self, &num);
 
 	Con_Obj *msg = CON_NEW_STRING("Number '");
-	msg = CON_ADD(msg, num);
+	msg = CON_ADD(msg, CON_GET_SLOT_APPLY(num, "to_str"));
 	msg = CON_ADD(msg, CON_NEW_STRING("' not valid."));
 	
 	CON_SET_SLOT(self, "msg", msg);

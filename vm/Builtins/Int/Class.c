@@ -130,9 +130,10 @@ Con_Obj *_Con_Builtins_Int_Class_new_object(Con_Obj *thread)
 			XXX;
 #			endif
 		}
+		atom = atom->next_atom;
 	}
 
-	CON_XXX;
+	CON_RAISE_EXCEPTION("Number_Exception", o);
 }
 
 

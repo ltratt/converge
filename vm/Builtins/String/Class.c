@@ -46,6 +46,7 @@
 Con_Obj *_Con_Builtins_String_Class_eq_func(Con_Obj *);
 Con_Obj *_Con_Builtins_String_Class_neq_func(Con_Obj *);
 Con_Obj *_Con_Builtins_String_Class_less_than_func(Con_Obj *);
+Con_Obj *_Con_Builtins_String_Class_greater_than_func(Con_Obj *);
 Con_Obj *_Con_Builtins_String_Class_add_func(Con_Obj *);
 Con_Obj *_Con_Builtins_String_Class_mul_func(Con_Obj *);
 Con_Obj *_Con_Builtins_String_Class_to_str_func(Con_Obj *);
@@ -88,6 +89,7 @@ void Con_Builtins_String_Class_bootstrap(Con_Obj *thread)
 	CON_SET_FIELD(string_class, "==", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_eq_func, "==", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
 	CON_SET_FIELD(string_class, "!=", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_neq_func, "!=", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
 	CON_SET_FIELD(string_class, "<", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_less_than_func, "<", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
+	CON_SET_FIELD(string_class, ">", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_greater_than_func, ">", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
 	CON_SET_FIELD(string_class, "+", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_add_func, "+", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
 	CON_SET_FIELD(string_class, "*", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_mul_func, "*", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
 	CON_SET_FIELD(string_class, "to_str", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_to_str_func, "to_str", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
@@ -194,6 +196,42 @@ Con_Obj *_Con_Builtins_String_Class_less_than_func(Con_Obj *thread)
 
 			for (Con_Int i = 0; i < self_string_atom->size && i < o_string_atom->size; i += 1) {
 				if (self_string_atom->str[i] < o_string_atom->str[i])
+					return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
+				else if (self_string_atom->str[i] != o_string_atom->str[i])
+					return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
+			}
+
+			// If we've got this far then the strings have compared equal so fail straight away.
+			return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
+		}
+	}
+	else
+		CON_XXX;
+}
+
+
+
+//
+// '>(o)'.
+//
+
+Con_Obj *_Con_Builtins_String_Class_greater_than_func(Con_Obj *thread)
+{
+	Con_Obj *o, *self;
+	CON_UNPACK_ARGS("SO", &self, &o);
+	
+	Con_Builtins_String_Atom *self_string_atom = CON_GET_ATOM(self, CON_BUILTIN(CON_BUILTIN_STRING_ATOM_DEF_OBJECT));
+	Con_Builtins_String_Atom *o_string_atom = CON_FIND_ATOM(o, CON_BUILTIN(CON_BUILTIN_STRING_ATOM_DEF_OBJECT));
+	
+	if (o_string_atom != NULL) {
+		if (self_string_atom->hash == o_string_atom->hash && self_string_atom->size == o_string_atom->size && self_string_atom->encoding == o_string_atom->encoding && memcmp(self_string_atom->str, o_string_atom->str, self_string_atom->size) == 0)
+			return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
+		else {
+			if (self_string_atom->encoding != o_string_atom->encoding)
+				CON_XXX;
+
+			for (Con_Int i = 0; i < self_string_atom->size && i < o_string_atom->size; i += 1) {
+				if (self_string_atom->str[i] > o_string_atom->str[i])
 					return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 				else if (self_string_atom->str[i] != o_string_atom->str[i])
 					return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);

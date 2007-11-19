@@ -44,7 +44,7 @@ class IModule_Gen:
 		// These next two slots are purely for convenience.
 
 		self._compiler := Compiler_Vars::peek_compiler()
-		self._module_id := self._compiler.module_id
+		self._mod_id := self._compiler.mod_id
 
 
 
@@ -179,7 +179,7 @@ class IModule_Gen:
 		for free_var := expr.free_vars.iter():
 			if defn_i := already_bound_vars.find(free_var):
 				defns_to_include.add(defn_i)
-		if lookups := expr.mod_id_lookups.find(self._module_id):
+		if lookups := expr.mod_id_lookups.find(self._mod_id):
 			for lookup := expr.free_vars.iter():
 				if defn_i := already_bound_vars.find(lookup):
 					defns_to_include.add(defn_i)
@@ -190,7 +190,7 @@ class IModule_Gen:
 			defn := self._defns[stack[i]]
 			
 			rlv_vars := defn.free_vars.scopy()
-			if lookups := defn.mod_id_lookups.find(self._module_id):
+			if lookups := defn.mod_id_lookups.find(self._mod_id):
 				rlv_vars.extend(lookups)
 			
 			for free_var := rlv_vars.iter():
@@ -252,7 +252,7 @@ class IModule_Gen:
 
 		// Import all the modules into the VM.
 
-		module_identifiers := VM::add_modules(modules_to_add)
+		VM::add_modules(modules_to_add)
 		module := VM::import_module(modules_to_add[0])
 		
 		if st == ITree::SPLICE_PRAGMA:
@@ -307,7 +307,7 @@ class IModule_Gen:
 			self._defns.extend(self._preorder(node[i], extra_src_infos))
 			i += 2
 
-		return ITree::IModule.new(self._compiler.src_module_name, self._defns, extra_src_infos + [[self._module_id, null]])
+		return ITree::IModule.new(self._compiler.src_module_name, self._defns, extra_src_infos + [[self._mod_id, null]])
 
 
 
@@ -403,10 +403,10 @@ class IModule_Gen:
 		i := 2
 		while i < node.len():
 			// import_name ::= "ID" ( "::" "ID" )*
-			module_path_list := [node[i][1].value]
+			mod_path_list := [node[i][1].value]
 			j := 2
 			while j < node[i].len() & node[i][j].type == "::":
-				module_path_list.append(node[i][j + 1].value)
+				mod_path_list.append(node[i][j + 1].value)
 				j += 2
 
 			if node[i + 1].len() > 1:
@@ -416,7 +416,7 @@ class IModule_Gen:
 				// import_as ::=
 				import_as := node[i][-1].value
 
-			import_ := ITree::IImport.new(Strings::join(module_path_list, "::"), import_as, extra_src_infos + node[1].src_infos)
+			import_ := ITree::IImport.new(Strings::join(mod_path_list, "::"), import_as, extra_src_infos + node[1].src_infos)
 			
 			imports.append(import_)
 			i += 3
@@ -933,13 +933,13 @@ class IModule_Gen:
 		// list ::= "[" expr { "," expr }* "]"
 		//      ::= "[" "]"
 		
-		elements := []
+		elems := []
 		i := 2
 		while i < node.len() & Builtins::List.conformed_by(node[i]):
-			elements.append(self._preorder(node[i], extra_src_infos))
+			elems.append(self._preorder(node[i], extra_src_infos))
 			i += 2
 		
-		return ITree::IList.new(elements, extra_src_infos + node[1].src_infos)
+		return ITree::IList.new(elems, extra_src_infos + node[1].src_infos)
 
 
 
@@ -948,13 +948,13 @@ class IModule_Gen:
 		// dict ::= "DICT{" expr ":" expr ( "," expr ":" expr )* "CLOSE_CURLY"
 		//      ::= "DICT{" "CLOSE_CURLY"
 		
-		elements := []
+		elems := []
 		i := 2
 		while i < node.len() & Builtins::List.conformed_by(node[i]):
-			elements.append([self._preorder(node[i], extra_src_infos), self._preorder(node[i + 2], extra_src_infos)])
+			elems.append([self._preorder(node[i], extra_src_infos), self._preorder(node[i + 2], extra_src_infos)])
 			i += 4
 		
-		return ITree::IDict.new(elements, extra_src_infos + node[1].src_infos)
+		return ITree::IDict.new(elems, extra_src_infos + node[1].src_infos)
 
 
 
@@ -963,13 +963,13 @@ class IModule_Gen:
 		// set ::= "SET{" expr ( "," expr )* "CLOSE_CURLY"
 		//     ::= "SET{" "CLOSE_CURLY"
 		
-		elements := []
+		elems := []
 		i := 2
 		while i < node.len() & Builtins::List.conformed_by(node[i]):
-			elements.append(self._preorder(node[i], extra_src_infos))
+			elems.append(self._preorder(node[i], extra_src_infos))
 			i += 2
 		
-		return ITree::ISet.new(elements, extra_src_infos + node[1].src_infos)
+		return ITree::ISet.new(elems, extra_src_infos + node[1].src_infos)
 
 
 
@@ -1037,11 +1037,11 @@ class IModule_Gen:
 		//        ::= "RETURN"
 		
 		if node.len() == 3:
-			return_expr := self._preorder(node[2], extra_src_infos)
+			expr := self._preorder(node[2], extra_src_infos)
 		else:
-			return_expr := null
+			expr := null
 		
-		return ITree::IReturn.new(return_expr, extra_src_infos + node[1].src_infos)
+		return ITree::IReturn.new(expr, extra_src_infos + node[1].src_infos)
 
 
 

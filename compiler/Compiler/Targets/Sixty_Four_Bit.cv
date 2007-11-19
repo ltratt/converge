@@ -311,16 +311,16 @@ class Instr_Pop(Instruction):
 
 class Instr_List(Instruction):
 
-	func init(self, src_infos, num_elements):
+	func init(self, src_infos, num_elems):
 		
 		self.src_infos := src_infos
-		self.num_elements := num_elements
+		self.num_elems := num_elems
 
 
 
 	func to_bytecode(self):
 	
-		return b_8_24(INSTR_LIST, self.num_elements)
+		return b_8_24(INSTR_LIST, self.num_elems)
 
 
 
@@ -462,16 +462,16 @@ class Instr_Import(Instruction):
 
 class Instr_Dict(Instruction):
 
-	func init(self, src_infos, num_elements):
+	func init(self, src_infos, num_elems):
 		
 		self.src_infos := src_infos
-		self.num_elements := num_elements
+		self.num_elems := num_elems
 
 
 
 	func to_bytecode(self):
 	
-		return b_8_24(INSTR_DICT, self.num_elements)
+		return b_8_24(INSTR_DICT, self.num_elems)
 
 
 
@@ -638,16 +638,16 @@ class Instr_Unpack_Args(Instruction):
 
 class Instr_Set(Instruction):
 
-	func init(self, src_infos, num_elements):
+	func init(self, src_infos, num_elems):
 		
 		self.src_infos := src_infos
-		self.num_elements := num_elements
+		self.num_elems := num_elems
 
 
 
 	func to_bytecode(self):
 	
-		return b_8_24(INSTR_SET, self.num_elements)
+		return b_8_24(INSTR_SET, self.num_elems)
 
 
 
@@ -748,16 +748,16 @@ class Instr_Is(Instruction):
 
 class Instr_Unpack_Assign(Instruction):
 
-	func init(self, src_infos, num_elements):
+	func init(self, src_infos, num_elems):
 	
 		self.src_infos := src_infos
-		self.num_elements := num_elements
+		self.num_elems := num_elems
 
 
 
 	func to_bytecode(self):
 	
-		return b_8_24(INSTR_UNPACK_ASSIGN, self.num_elements)
+		return b_8_24(INSTR_UNPACK_ASSIGN, self.num_elems)
 
 
 

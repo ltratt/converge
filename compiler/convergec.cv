@@ -196,7 +196,7 @@ class Compiler:
 		Compiler_Vars::pop_compiler()
 		
 		if self.verbosity > 0:
-			self.info(Strings::format("Returning to compile of %s...", self.module_id))
+			self.info(Strings::format("Returning to compile of %s...", self.mod_id))
 
 		return cv_mod
 
@@ -254,9 +254,9 @@ class Compiler:
 		if self.verbosity > 0:
 			self.info(Strings::format("Compiling %s...", src_path))
 
-		self.module_id := File::canon_path(src_path)
+		self.mod_id := File::canon_path(src_path)
 
-		if (input_file_dir := File::split_leaf(self.module_id)[0]) == "":
+		if (input_file_dir := File::split_leaf(self.mod_id)[0]) == "":
 			self.includes.insert(0, ".")
 		else:
 			self.includes.insert(0, input_file_dir)
@@ -265,11 +265,11 @@ class Compiler:
 		// extension). On platforms with non-case preserving filesystems, perhaps there is a need
 		// for a more sophisticated mechanism?
 
-		self.src_module_name := File::split_ext(File::split_leaf(self.module_id)[1])[0]
+		self.src_module_name := File::split_ext(File::split_leaf(self.mod_id)[1])[0]
 
 		self.includes.extend(Compiler_Vars::find_std_includes())
 
-		src_file := File::open(self.module_id, "r")
+		src_file := File::open(self.mod_id, "r")
 		src_data := src_file.read()
 		src_file.close()
 
@@ -408,7 +408,7 @@ class Compiler:
 
 			if self.verbosity > 0:
 				self.info("Linking.")
-			self.module_id := link_mods[0].get_identifier()
+			self.mod_id := link_mods[0].get_identifier()
 			ser_cv_exec := Linker.new().link(link_mods, self.target)
 
 			output_file := File::File.new(self.output_path, "w")
@@ -441,7 +441,7 @@ class Compiler:
 
 			other_files := 0
 			for src_info := src_infos.iter():
-				if src_info[0] != self.module_id:
+				if src_info[0] != self.mod_id:
 					other_files := 1
 					break
 
@@ -451,7 +451,7 @@ class Compiler:
 				Sys::stderr.writeln(Strings::format("%s:", pre_msg))
 
 			for src_info := src_infos.iter():
-				if src_info[0] == self.module_id:
+				if src_info[0] == self.mod_id:
 					src_offset := src_info[1]
 					newlines := self.tokenizer.newlines
 					line := 0

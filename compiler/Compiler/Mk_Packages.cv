@@ -77,7 +77,7 @@ class Mk_Packages:
 			// We now setup a minimal compiler and compile the ITree into a CV_Module.
 
 			self.bootstrap := 0
-			self.module_id := pkg_id
+			self.mod_id := pkg_id
 			self.newlines := []
 			Compiler_Vars::push_compiler(self)
 			pkg_as_mod := Bytecode_Gen::Bytecode_Gen.new().generate(imod, target)

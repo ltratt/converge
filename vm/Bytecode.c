@@ -68,7 +68,7 @@ Con_Obj *Con_Bytecode_add_executable(Con_Obj *thread, u_char *bytecode)
 		module_offset = ID_BYTECODE_GET_WORD(CON_BYTECODE_MODULES + i * sizeof(Con_Int));
 
 		Con_Obj *module = Con_Builtins_Module_Atom_new_from_bytecode(thread, bytecode + module_offset);
-		Con_Obj *identifier = CON_GET_SLOT(module, "module_id");
+		Con_Obj *identifier = CON_GET_SLOT(module, "mod_id");
 		CON_GET_SLOT_APPLY(CON_GET_SLOT(Con_Builtins_Thread_Atom_get_vm(thread), "modules"), "set", identifier, module);
 
 		if (i == 0)

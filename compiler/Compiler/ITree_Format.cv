@@ -169,18 +169,18 @@ class ITree_Format:
 
 	func _t_iimport(self, node):
 	
-		mod_path := Strings::split(node.module_path, "::")
+		mod_path := Strings::split(node.mod_path, "::")
 		
 		if node.var_name != mod_path[0]:
-			return Strings::format("import %s as %s", node.module_path, node.var_name)
+			return Strings::format("import %s as %s", node.mod_path, node.var_name)
 		else:
-			return Strings::format("import %s", node.module_path)
+			return Strings::format("import %s", node.mod_path)
 
 
 
 	func _t_ivar(self, node):
 	
-		return node.var_name
+		return node.name
 
 
 
@@ -271,13 +271,13 @@ class ITree_Format:
 
 	func _t_ilist(self, node):
 
-		return Strings::format("[%s]", Strings::join(Functional::map(self._preorder, node.elements), ", "))
+		return Strings::format("[%s]", Strings::join(Functional::map(self._preorder, node.elems), ", "))
 
 
 
 	func _t_idict(self, node):
 
-		elems := Functional::map(func (e) { return Strings::format("%s : %s", self._preorder(e[0]), self._preorder(e[1])) }, node.elements)
+		elems := Functional::map(func (e) { return Strings::format("%s : %s", self._preorder(e[0]), self._preorder(e[1])) }, node.elems)
 
 		return Strings::format("Dict{%s}", Strings::join(elems, ", "))
 
@@ -285,19 +285,19 @@ class ITree_Format:
 
 	func _t_iset(self, node):
 
-		return Strings::format("Set{%s}", Strings::join(Functional::map(self._preorder, node.elements), ", "))
+		return Strings::format("Set{%s}", Strings::join(Functional::map(self._preorder, node.elems), ", "))
 
 
 
 	func _t_istring(self, node):
 	
-		return Strings::format("\"%s\"", node.string)
+		return Strings::format("\"%s\"", node.val)
 
 
 
 	func _t_islot_lookup(self, node):
 
-		return Strings::format("%s.%s", self._preorder(node.object_expr), node.slot_name)
+		return Strings::format("%s.%s", self._preorder(node.target), node.slot_name)
 
 
 
@@ -309,58 +309,58 @@ class ITree_Format:
 
 	func _t_ilist(self, node):
 	
-		return Strings::format("[%s]", Strings::join(Functional::map(self._preorder, node.elements), ", "))
+		return Strings::format("[%s]", Strings::join(Functional::map(self._preorder, node.elems), ", "))
 
 
 
 	func _t_iapplication(self, node):
 	
-		return Strings::format("%s(%s)", self._preorder(node.func_expr), Strings::join(Functional::map(self._preorder, node.args), ", "))
+		return Strings::format("%s(%s)", self._preorder(node.target), Strings::join(Functional::map(self._preorder, node.args), ", "))
 
 
 
 	func _t_iget(self, node):
 
-		return Strings::format("%s[%s]", self._preorder(node.get_object), self._preorder(node.index))
+		return Strings::format("%s[%s]", self._preorder(node.target), self._preorder(node.index))
 
 
 
 	func _t_islice(self, node):
 
 		if node.lower_bound is null & node.upper_bound is null:
-			return Strings::format("%s[ : ]", self._preorder(node.slice_object))
+			return Strings::format("%s[ : ]", self._preorder(node.target))
 		elif node.lower_bound is null:
-			return Strings::format("%s[ : %s]", self._preorder(node.slice_object), self._preorder(node.upper_bound))
+			return Strings::format("%s[ : %s]", self._preorder(node.target), self._preorder(node.upper_bound))
 		elif node.upper_bound is null:
-			return Strings::format("%s[%s : ]", self._preorder(node.slice_object), self._preorder(node.lower_bound))
+			return Strings::format("%s[%s : ]", self._preorder(node.target), self._preorder(node.lower_bound))
 		else:
-			return Strings::format("%s[%s : %s]", self._preorder(node.slice_object), self._preorder(node.lower_bound), self._preorder(node.upper_bound))
+			return Strings::format("%s[%s : %s]", self._preorder(node.target), self._preorder(node.lower_bound), self._preorder(node.upper_bound))
 
 
 	func _t_ireturn(self, node):
 	
-		if node.return_expr is null:
+		if node.expr is null:
 			return "return"
 		else:
-			return Strings::format("return %s", self._preorder(node.return_expr))
+			return Strings::format("return %s", self._preorder(node.expr))
 
 
 
 	func _t_iyield(self, node):
 
-		return Strings::format("yield %s", self._preorder(node.yield_expr))
+		return Strings::format("yield %s", self._preorder(node.expr))
 
 
 
 	func _t_iraise(self, node):
 
-		return Strings::format("raise %s", self._preorder(node.raise_expr))
+		return Strings::format("raise %s", self._preorder(node.expr))
 
 
 
 	func _t_iassert(self, node):
 
-		return Strings::format("assert %s", self._preorder(node.assert_expr))
+		return Strings::format("assert %s", self._preorder(node.expr))
 
 
 
@@ -457,7 +457,7 @@ class ITree_Format:
 
 	func _t_imod_id_import(self, node):
 	
-		return Strings::format("$<CEI::imod_id_import(\"%s\")>", node.module_id)
+		return Strings::format("$<CEI::imod_id_import(\"%s\")>", node.mod_id)
 
 
 

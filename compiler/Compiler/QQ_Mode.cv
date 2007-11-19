@@ -45,7 +45,7 @@ class QQ_Mode:
 		// These next two slots are purely for convenience.
 
 		self._compiler := Compiler_Vars::peek_compiler()
-		self._module_id := self._compiler.module_id
+		self._mod_id := self._compiler.mod_id
 		
 		// We need to track when we're dealing with class fields or not. So we track when we're nested
 		// within nothing (i.e. at the top level), a class (meaning we're at the class field level
@@ -186,7 +186,7 @@ class QQ_Mode:
 		if not mode is self:
 			// This variable is outside of the quasi-quotes.
 			if mode.parent_mode is null & i == 0:
-				mod_id_import := self._qq("IMod_Id_Import", [ITree::IString.new(self._module_id, node_src_infos)], node_src_infos)
+				mod_id_import := self._qq("IMod_Id_Import", [ITree::IString.new(self._mod_id, node_src_infos)], node_src_infos)
 				defn_name := self._qq("IVar", [ITree::IString.new(renamed_var_name, node_src_infos)], node_src_infos)
 				mod_lookup_names := ITree::IList.new([mod_id_import, defn_name], node_src_infos)
 				return self._qq("IModule_Lookup", [mod_lookup_names], node_src_infos)
@@ -228,13 +228,13 @@ class QQ_Mode:
 	
 	func _get_module_defn_at_qq(self, module_name, defn_name, src_infos):
 	
-		if not module_id, import_extras := self._compiler.find_import_location(["Compiler", module_name]):
+		if not mod_id, import_extras := self._compiler.find_import_location(["Compiler", module_name]):
 			raise "XXX"
 				
 		if import_extras.len() > 0:
 			raise "XXX"
 		
-		mod_id_import := ITree::IMod_Id_Import.new(module_id, src_infos)
+		mod_id_import := ITree::IMod_Id_Import.new(mod_id, src_infos)
 		return ITree::IModule_Lookup.new([mod_id_import, ITree::IVar.new(defn_name, src_infos)], src_infos)
 
 
@@ -249,7 +249,7 @@ class QQ_Mode:
 		if not Builtins::Module.instantiated(f.container):
 			raise "XXX"
 		
-		mod_id_import := ITree::IMod_Id_Import.new(f.container.module_id, src_infos)
+		mod_id_import := ITree::IMod_Id_Import.new(f.container.mod_id, src_infos)
 		func_ref := ITree::IModule_Lookup.new([mod_id_import, ITree::IVar.new(f.name, src_infos)], src_infos)
 		
 		return ITree::IApplication.new(func_ref, args, src_infos)
@@ -351,9 +351,9 @@ class QQ_Mode:
 			else:
 				if self._nesting.len() > 0 & self._nesting[-1] == _NEST_CLASS:
 					// Functions which are class fields are not alpha-renamed.
-					func_name := self._qq("IVar", [ITree::IString.new(node.func_name.var_name, node.func_name.src_infos)], node.func_name.src_infos)
+					func_name := self._qq("IVar", [ITree::IString.new(node.func_name.name, node.func_name.src_infos)], node.func_name.src_infos)
 				else:
-					func_name := self._process_assign_var(node.func_name.var_name, node.func_name.src_infos)
+					func_name := self._process_assign_var(node.func_name.name, node.func_name.src_infos)
 
 		// Note that we consider ourselves nested within a function even when processing parameters.
 
@@ -370,7 +370,7 @@ class QQ_Mode:
 				else:
 					// When we're processing a parameter, we're converting its name from a string
 					// "x" to a variable lookup "$qq_x".
-					default := ITree::IVar.new(self._qq_bound_var_name(var.var_name), param.src_infos)
+					default := ITree::IVar.new(self._qq_bound_var_name(var.name), param.src_infos)
 				params_list.append(self._qq("IParam", [var, default], param.src_infos))
 			else:
 				params_list.append(self._process_insert(param, _pi_params))
@@ -382,7 +382,7 @@ class QQ_Mode:
 		elif ITree::IInsert.instantiated(node.var_arg):
 			var_arg := self._process_insert(node.var_arg, _pi_var_arg)
 		else:
-			var_arg := self._process_assign_var(node.var_arg.var_name, node.src_infos)
+			var_arg := self._process_assign_var(node.var_arg.name, node.src_infos)
 		
 		nonlocals := []
 		for nonlocal_ := node.nonlocals.iter():
@@ -452,7 +452,7 @@ class QQ_Mode:
 
 	func _t_ivar(self, node):
 
-		return self._process_lookup_var(node.var_name, node.src_infos)
+		return self._process_lookup_var(node.name, node.src_infos)
 
 
 
@@ -464,7 +464,7 @@ class QQ_Mode:
 
 	func _t_islot_lookup(self, node):
 
-		return self._qq("ISlot_Lookup", [self._preorder(node.object_expr), ITree::IString.new(node.slot_name, node.src_infos)], node.src_infos)
+		return self._qq("ISlot_Lookup", [self._preorder(node.target), ITree::IString.new(node.slot_name, node.src_infos)], node.src_infos)
 
 
 
@@ -495,13 +495,13 @@ class QQ_Mode:
 			// This means we have to manually deal with the variable which constitutes the first entry in
 			// a module lookup.
 
-			var_name := node.names[0].var_name
+			var_name := node.names[0].name
 			renamed_var_name, mode, i := self._get_var_offset(var_name, node.src_infos)
 			if not mode is self:
 				// Variable is outside of the quasi-quotes.
 				if mode.parent_mode is null & i == 0:
 					// This is where we do the unpacking mentioned above.
-					names.append(self._qq("IMod_Id_Import", [ITree::IString.new(self._module_id, node.src_infos)], node.src_infos))
+					names.append(self._qq("IMod_Id_Import", [ITree::IString.new(self._mod_id, node.src_infos)], node.src_infos))
 					names.append(self._qq("IVar", [ITree::IString.new(renamed_var_name, node.src_infos)], node.src_infos))
 				else:
 					self._compiler.error(Strings::format("Trying to reference variable '%s' which is not defined in the outer-most scope.", var_name), node.src_infos)
@@ -516,7 +516,7 @@ class QQ_Mode:
 			if ITree::IInsert.instantiated(name):
 				qq_name := self._process_insert(name, _pi_subsequent_mod_lookup)
 			else:
-				qq_name := self._qq("IVar", [ITree::IString.new(name.var_name, name.src_infos)], name.src_infos)
+				qq_name := self._qq("IVar", [ITree::IString.new(name.name, name.src_infos)], name.src_infos)
 			names.append(qq_name)
 
 		return self._qq("IModule_Lookup", [ITree::IList.new(names, node.src_infos)], node.src_infos)
@@ -526,7 +526,7 @@ class QQ_Mode:
 	func _t_ilist(self, node):
 
 		elems := []
-		for elem := node.elements.iter():
+		for elem := node.elems.iter():
 			elems.append(self._preorder(elem))
 		
 		return self._qq("IList", [ITree::IList.new(elems, node.src_infos)], node.src_infos)
@@ -536,7 +536,7 @@ class QQ_Mode:
 	func _t_idict(self, node):
 
 		elems := []
-		for key, val := node.elements.iter():
+		for key, val := node.elems.iter():
 			elems.append(ITree::IList.new([self._preorder(key), self._preorder(val)], node.src_infos))
 		
 		return self._qq("IDict", [ITree::IList.new(elems, node.src_infos)], node.src_infos)
@@ -546,7 +546,7 @@ class QQ_Mode:
 	func _t_iset(self, node):
 
 		elems := []
-		for elem := node.elements.iter():
+		for elem := node.elems.iter():
 			elems.append(self._preorder(elem))
 		
 		return self._qq("ISet", [ITree::IList.new(elems, node.src_infos)], node.src_infos)
@@ -555,24 +555,24 @@ class QQ_Mode:
 
 	func _t_iapplication(self, node):
 
-		func_expr := self._preorder(node.func_expr)
+		target := self._preorder(node.target)
 		args := []
 		for arg := node.args.iter():
 			args.append(self._preorder(arg))
 		
-		return self._qq("IApplication", [func_expr, ITree::IList.new(args, node.src_infos)], node.src_infos)
+		return self._qq("IApplication", [target, ITree::IList.new(args, node.src_infos)], node.src_infos)
 
 
 
 	func _t_iget(self, node):
 		
-		return self._qq("IGet", [self._preorder(node.get_object), self._preorder(node.index)], node.src_infos)
+		return self._qq("IGet", [self._preorder(node.target), self._preorder(node.index)], node.src_infos)
 
 
 
 	func _t_islice(self, node):
 
-		slice_object := self._preorder(node.slice_object)
+		target := self._preorder(node.target)
 		
 		if node.lower_bound is null:
 			lower_bound := ITree::IVar.new("null", node.src_infos)
@@ -584,34 +584,34 @@ class QQ_Mode:
 		else:
 			upper_bound := self._preorder(node.upper_bound)
 			
-		return self._qq("ISlice", [slice_object, lower_bound, upper_bound], node.src_infos)
+		return self._qq("ISlice", [target, lower_bound, upper_bound], node.src_infos)
 
 
 
 	func _t_ireturn(self, node):
 	
-		if node.return_expr is null:
+		if node.expr is null:
 			return self._qq("IReturn", [ITree::IVar.new("null", node.src_infos)], node.src_infos)
 		else:
-			return self._qq("IReturn", [self._preorder(node.return_expr)], node.src_infos)
+			return self._qq("IReturn", [self._preorder(node.expr)], node.src_infos)
 
 
 
 	func _t_iyield(self, node):
 	
-		return self._qq("IYield", [self._preorder(node.yield_expr)], node.src_infos)
+		return self._qq("IYield", [self._preorder(node.expr)], node.src_infos)
 
 
 
 	func _t_iraise(self, node):
 	
-		return self._qq("IRaise", [self._preorder(node.raise_expr)], node.src_infos)
+		return self._qq("IRaise", [self._preorder(node.expr)], node.src_infos)
 
 
 
 	func _t_iassert(self, node):
 
-		return self._qq("IAssert", [self._preorder(node.assert_expr)], node.src_infos)
+		return self._qq("IAssert", [self._preorder(node.expr)], node.src_infos)
 
 
 
@@ -653,9 +653,9 @@ class QQ_Mode:
 		for target := node.targets.iter():
 			if ITree::IVar.instantiated(target):
 				if self._nesting.len() > 0 & self._nesting[-1] == _NEST_CLASS:
-					targets.append(self._qq("IVar", [ITree::IString.new(target.var_name, node.src_infos)], node.src_infos))
+					targets.append(self._qq("IVar", [ITree::IString.new(target.name, node.src_infos)], node.src_infos))
 				else:
-					targets.append(self._process_assign_var(target.var_name, target.src_infos))
+					targets.append(self._process_assign_var(target.name, target.src_infos))
 			else:
 				targets.append(self._preorder(target))
 
@@ -692,7 +692,7 @@ class QQ_Mode:
 		as_var := self._process_assign_var(node.var_name, node.src_infos)
 		as_name := ITree::ISlot_Lookup.new(as_var, "var_name", node.src_infos)
 	
-		return self._qq("IImport", [ITree::IString.new(node.module_path, node.src_infos), as_name], node.src_infos)
+		return self._qq("IImport", [ITree::IString.new(node.mod_path, node.src_infos), as_name], node.src_infos)
 
 
 
@@ -758,7 +758,7 @@ class QQ_Mode:
 		if node.var is null:
 			var := ITree::IVar.new("null", node.src_infos)
 		else:
-			var := self._process_assign_var(node.var.var_name, node.var.src_infos)
+			var := self._process_assign_var(node.var.name, node.var.src_infos)
 		body := self._preorder(node.body)
 		
 		return self._qq("ICatch", [expr, var, body], node.src_infos)
@@ -789,7 +789,7 @@ class QQ_Mode:
 
 	func _t_imod_id_import(self, node):
 	
-		return self._qq("IMod_Id_Import", [ITree::IString.new(node.module_id, node.src_infos)], node.src_infos)
+		return self._qq("IMod_Id_Import", [ITree::IString.new(node.mod_id, node.src_infos)], node.src_infos)
 
 
 

@@ -121,7 +121,7 @@ class Bytecode_Gen:
 		// The next three slots are purely for convenience.
 		
 		self._compiler := Compiler_Vars::peek_compiler()
-		self._module_id := self._compiler.module_id
+		self._mod_id := self._compiler.mod_id
 		self._target := target
 		
 		self.preorder(imodule)
@@ -207,7 +207,7 @@ class Bytecode_Gen:
 		
 		module := CV_Module::CV_Module.new(self._target)
 		module.set_name(imodule.module_name)
-		module.set_identifier(self._module_id)
+		module.set_identifier(self._mod_id)
 		module.set_top_level_vars_map(self.closures[0][Compiler_Vars::CLOSURE_VARS])
 		module.set_instructions_bytecode(instructions_bytecode)
 		module.set_imports(module_imports)
@@ -229,17 +229,17 @@ class Bytecode_Gen:
 	func _tn_src_infos(self, src_infos):
 
 		tn_src_infos := []
-		for module_id, src_offset := src_infos.iter():
-			if module_id == self._module_id:
+		for mod_id, src_offset := src_infos.iter():
+			if mod_id == self._mod_id:
 				import_num := -1
 			else:
-				if self._compiler.bootstrap == 1 & module_id.prefixed_by(self._compiler.original_lc_top_level_path):
+				if self._compiler.bootstrap == 1 & mod_id.prefixed_by(self._compiler.original_lc_top_level_path):
 					// In bootstrapping mode we have to make sure that anything we output is
 					// entirely in terms of new module ids.
-					module_id := File::join_names(self._compiler.top_level_path, module_id[self._compiler.original_lc_top_level_path.len() : ])
-				if not (import_num := self._imports.find(module_id)):
+					mod_id := File::join_names(self._compiler.top_level_path, mod_id[self._compiler.original_lc_top_level_path.len() : ])
+				if not (import_num := self._imports.find(mod_id)):
 					import_num := self._imports.len()
-					self._imports[module_id] := import_num
+					self._imports[mod_id] := import_num
 
 			if src_offset is null:
 				tn_src_infos.append([import_num, -1])
@@ -361,12 +361,12 @@ class Bytecode_Gen:
 
 
 
-	func _find_import_location(self, module_path, src_infos):
+	func _find_import_location(self, mod_path, src_infos):
 	
-		import_name_list := Strings::split(module_path, "::")
+		import_name_list := Strings::split(mod_path, "::")
 	
 		if not import_id, import_extras := self._compiler.find_import_location(import_name_list):
-			self._compiler.error(Strings::format("Can't find module / package '%s'", module_path), src_infos)
+			self._compiler.error(Strings::format("Can't find module / package '%s'", mod_path), src_infos)
 		
 		return [import_id, import_extras]
 
@@ -374,22 +374,22 @@ class Bytecode_Gen:
 
 	func _get_original_name_mod_id(self, orig_name):
 
-		if self._compiler.bootstrap == 1 & orig_name.module_id.prefixed_by(self._compiler.original_lc_top_level_path):
+		if self._compiler.bootstrap == 1 & orig_name.mod_id.prefixed_by(self._compiler.original_lc_top_level_path):
 			// In bootstrapping mode we have to make sure that anything we output is entirely in
 			// terms of new module ids.
-			return File::join_names(self._compiler.top_level_path, orig_name.module_id[self._compiler.original_lc_top_level_path.len() : ])
+			return File::join_names(self._compiler.top_level_path, orig_name.mod_id[self._compiler.original_lc_top_level_path.len() : ])
 		else:
-			return orig_name.module_id
+			return orig_name.mod_id
 
 
 
 	func _prc_mod_lookup(self, mod_lookup):
 
-		closures_offset, var_num := self._get_var_offsets(mod_lookup.names[0].var_name, mod_lookup.names[0].src_infos)
+		closures_offset, var_num := self._get_var_offsets(mod_lookup.names[0].name, mod_lookup.names[0].src_infos)
 
 		reversed_closures_offset := self.closures.len() - closures_offset - 1
-		if mod_id := self.closures[reversed_closures_offset][Compiler_Vars::CLOSURE_IMPORTS].find(mod_lookup.names[0].var_name):
-			lookup := Strings::join(Functional::map(func (x) { return x.var_name }, mod_lookup.names), "::")
+		if mod_id := self.closures[reversed_closures_offset][Compiler_Vars::CLOSURE_IMPORTS].find(mod_lookup.names[0].name):
+			lookup := Strings::join(Functional::map(func (x) { return x.name }, mod_lookup.names), "::")
 			if not (lookups := self._mod_lookups_seen.find(mod_id)):
 				lookups := Set{}
 				self._mod_lookups_seen[mod_id] := lookups
@@ -496,7 +496,7 @@ class Bytecode_Gen:
 			if ITree::IFunc_Defn.instantiated(field):
 				if field.func_name is null:
 					self._compiler.error("Functions as class fields can not be anonymous.", node.src_infos)
-				self._instructions.append(self._target.Instr_String.new(field.src_infos, field.func_name.var_name))
+				self._instructions.append(self._target.Instr_String.new(field.src_infos, field.func_name.name))
 				self.preorder(field)
 			elif ITree::IClass_Defn.instantiated(field):
 				if field.class_name == "":
@@ -505,7 +505,7 @@ class Bytecode_Gen:
 				self.preorder(field)
 			elif ITree::IAssignment.instantiated(field):
 				assert field.targets.len() == 1
-				self._instructions.append(self._target.Instr_String.new(field.src_infos, field.targets[0].var_name))
+				self._instructions.append(self._target.Instr_String.new(field.src_infos, field.targets[0].name))
 				self.preorder(field.expr)
 			else:
 				Sys::println(field.pp(0))
@@ -544,7 +544,7 @@ class Bytecode_Gen:
 		if node.func_name is null:
 			self._instructions.append(self._target.Instr_String.new(node.src_infos, ""))
 		else:
-			self._instructions.append(self._target.Instr_String.new(node.src_infos, node.func_name.var_name))
+			self._instructions.append(self._target.Instr_String.new(node.src_infos, node.func_name.name))
 		self._instructions.append(self._target.Instr_Int.new(node.src_infos, bound_vars.len() + node.is_bound))
 		self._instructions.append(self._target.Instr_Int.new(node.src_infos, node.params.len()))
 		self._instructions.append(self._target.Instr_Func_Defn.new(node.src_infos, node.is_bound))
@@ -553,7 +553,7 @@ class Bytecode_Gen:
 		
 		params_info := []
 		for param := node.params.iter():
-			closures_offset, var_num := self._get_var_offsets(param.var.var_name, param.var.src_infos)
+			closures_offset, var_num := self._get_var_offsets(param.var.name, param.var.src_infos)
 			assert(closures_offset == 0)
 			if param.default is null:
 				params_info.append([var_num, 0])
@@ -563,7 +563,7 @@ class Bytecode_Gen:
 		if node.var_arg is null:
 			self._instructions.append(self._target.Instr_Unpack_Args.new(node.src_infos, params_info, 0))
 		else:
-			closures_offset, var_num := self._get_var_offsets(node.var_arg.var_name, node.var_arg.src_infos)
+			closures_offset, var_num := self._get_var_offsets(node.var_arg.name, node.var_arg.src_infos)
 			assert(closures_offset == 0)
 			params_info.append([var_num, 0])
 			self._instructions.append(self._target.Instr_Unpack_Args.new(node.src_infos, params_info, 1))
@@ -573,11 +573,11 @@ class Bytecode_Gen:
 				continue
 			next_param_label := self._create_label()
 			self._nesting.append([NEST_NORMAL])
-			closures_offset, var_num := self._get_var_offsets(param.var.var_name, param.var.src_infos)
+			closures_offset, var_num := self._get_var_offsets(param.var.name, param.var.src_infos)
 			self._instructions.append(self._target.Instr_Is_Assigned.new(node.src_infos, closures_offset, var_num, next_param_label))
 			self._instructions.append(self._target.Instr_Add_Failure_Frame.new(node.src_infos, next_param_label))
 			self.preorder(param.default)
-			self._add_assign_to_var(param.var.var_name, node.src_infos)
+			self._add_assign_to_var(param.var.name, node.src_infos)
 			self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
 			self._nesting.del(-1)
 			self._set_label(next_param_label)
@@ -602,7 +602,7 @@ class Bytecode_Gen:
 				break
 
 		if inside_class == 0 & not node.func_name is null:
-			self._add_assign_to_var(node.func_name.var_name, node.src_infos)
+			self._add_assign_to_var(node.func_name.name, node.src_infos)
 			
 
 
@@ -667,7 +667,7 @@ class Bytecode_Gen:
 
 	func _t_iimport(self, node):
 	
-		import_id, import_extras := self._find_import_location(node.module_path, node.src_infos)
+		import_id, import_extras := self._find_import_location(node.mod_path, node.src_infos)
 
 		if import_num := self._imports.find(import_id):
 			self._instructions.append(self._target.Instr_Import.new(node.src_infos, import_num))
@@ -684,7 +684,7 @@ class Bytecode_Gen:
 
 	func _t_ivar(self, node):
 	
-		self._add_lookup_var(node.var_name, node.src_infos)
+		self._add_lookup_var(node.name, node.src_infos)
 
 
 
@@ -839,7 +839,7 @@ class Bytecode_Gen:
 			self._instructions.append(self._target.Instr_Apply.new(catch_.expr.src_infos, 1))
 			self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(catch_.src_infos))
 			if not catch_.var is null:
-				self._add_assign_to_var(catch_.var.var_name, catch_.var.src_infos)
+				self._add_assign_to_var(catch_.var.name, catch_.var.src_infos)
 			self._instructions.append(self._target.Instr_Pop.new(catch_.src_infos))
 			self.preorder(catch_.body)
 			self._instructions.append(self._target.Instr_Branch.new(node.src_infos, end_label))
@@ -852,13 +852,13 @@ class Bytecode_Gen:
 
 	func _t_istring(self, node):
 	
-		constant_name := Strings::format(_CONSTANT_STRING_TEMPLATE, node.string)
+		constant_name := Strings::format(_CONSTANT_STRING_TEMPLATE, node.val)
 		if not self._constants.find(constant_name):
 			self._constants[constant_name] := self._constants.len()
 			label := self._create_label()
 			self._set_label(label, self._constants_instructions.len())
 			self._constants_labels.append(label)
-			self._constants_instructions.append(self._target.Instr_String.new(node.src_infos, node.string))
+			self._constants_instructions.append(self._target.Instr_String.new(node.src_infos, node.val))
 			self._constants_instructions.append(self._target.Instr_Constant_Set.new(node.src_infos, self._constants[constant_name]))
 			self._constants_instructions.append(self._target.Instr_Fail_Now.new(node.src_infos))
 		
@@ -868,7 +868,7 @@ class Bytecode_Gen:
 
 	func _t_islot_lookup(self, node):
 	
-		self.preorder(node.object_expr)
+		self.preorder(node.target)
 		self._instructions.append(self._target.Instr_Slot_Lookup.new(node.src_infos, node.slot_name))
 
 
@@ -879,11 +879,11 @@ class Bytecode_Gen:
 		if ITree::IMod_Id_Import.instantiated(fst):
 			// If we have a IMod_Id_Import as the first part of the module lookup, then things
 			// proceed differently.
-			if fst.module_id == self._module_id:
+			if fst.mod_id == self._mod_id:
 				// The module ID we want to lookup in is the same as the module we're currently
 				// building, so we try and turn the module lookup into a simple variable lookup.
 				var := node.names[1]
-				if var_num := self.closures[0][Compiler_Vars::CLOSURE_VARS].find(var.var_name, var.src_infos):
+				if var_num := self.closures[0][Compiler_Vars::CLOSURE_VARS].find(var.name, var.src_infos):
 					self._instructions.append(self._target.Instr_Lookup_Var.new(var.src_infos, self.closures.len() - 1, var_num))
 					i := 2
 				else:
@@ -906,42 +906,42 @@ class Bytecode_Gen:
 		
 		if node.names.len() > i:
 			for name := node.names.iter(i):
-				self._instructions.append(self._target.Instr_Module_Lookup.new(name.src_infos, name.var_name))
+				self._instructions.append(self._target.Instr_Module_Lookup.new(name.src_infos, name.name))
 
 
 
 	func _t_ilist(self, node):
 	
-		for elem := node.elements.iter():
+		for elem := node.elems.iter():
 			self.preorder(elem)
-		self._instructions.append(self._target.Instr_List.new(node.src_infos, node.elements.len()))
+		self._instructions.append(self._target.Instr_List.new(node.src_infos, node.elems.len()))
 
 
 
 	func _t_idict(self, node):
 	
-		for key, val := node.elements.iter():
+		for key, val := node.elems.iter():
 			self.preorder(key)
 			self.preorder(val)
-		self._instructions.append(self._target.Instr_Dict.new(node.src_infos, node.elements.len()))
+		self._instructions.append(self._target.Instr_Dict.new(node.src_infos, node.elems.len()))
 
 
 
 	func _t_iset(self, node):
 	
-		for elem := node.elements.iter():
+		for elem := node.elems.iter():
 			self.preorder(elem)
-		self._instructions.append(self._target.Instr_Set.new(node.src_infos, node.elements.len()))
+		self._instructions.append(self._target.Instr_Set.new(node.src_infos, node.elems.len()))
 
 
 
 	func _t_iapplication(self, node):
 	
-		if ITree::ISlot_Lookup.instantiated(node.func_expr):
-			self.preorder(node.func_expr.object_expr)
-			self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(node.func_expr.src_infos, node.func_expr.slot_name))
+		if ITree::ISlot_Lookup.instantiated(node.target):
+			self.preorder(node.target.target)
+			self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(node.target.src_infos, node.target.slot_name))
 		else:
-			self.preorder(node.func_expr)
+			self.preorder(node.target)
 			
 		for arg := node.args.iter():
 			self.preorder(arg)
@@ -952,7 +952,7 @@ class Bytecode_Gen:
 
 	func _t_iget(self, node):
 
-		self.preorder(node.get_object)
+		self.preorder(node.target)
 		self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(node.src_infos, "get"))
 		self.preorder(node.index)
 		self._instructions.append(self._target.Instr_Apply.new(node.src_infos, 1))
@@ -961,7 +961,7 @@ class Bytecode_Gen:
 
 	func _t_islice(self, node):
 	
-		self.preorder(node.slice_object)
+		self.preorder(node.target)
 		self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(node.src_infos, "get_slice"))
 		
 		if node.lower_bound is null:
@@ -989,21 +989,21 @@ class Bytecode_Gen:
 			self._compiler.error("exbi can only be used when in scope of a bound function.", node.src_infos)
 
 		self._add_lookup_var("self", node.src_infos)
-		self.preorder(node.object_expr)
+		self.preorder(node.target)
 		self._instructions.append(self._target.Instr_EXBI.new(node.src_infos, node.field_name))
 
 
 
 	func _t_ireturn(self, node):
 	
-		if node.return_expr is null:
+		if node.expr is null:
 			self._instructions.append(self._target.Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_NULL_OBJ))
 			self._instructions.append(self._target.Instr_Return.new(node.src_infos))
 		else:
 			return_failed_label := self._create_label()
 			self._instructions.append(self._target.Instr_Add_Failure_Frame.new(node.src_infos, return_failed_label))
 			self._nesting.append([NEST_NORMAL])
-			self.preorder(node.return_expr)
+			self.preorder(node.expr)
 			self._nesting.del(-1)
 			self._instructions.append(self._target.Instr_Return.new(node.src_infos))
 
@@ -1015,14 +1015,14 @@ class Bytecode_Gen:
 
 	func _t_iyield(self, node):
 	
-		self.preorder(node.yield_expr)
+		self.preorder(node.expr)
 		self._instructions.append(self._target.Instr_Yield.new(node.src_infos))
 
 
 
 	func _t_iraise(self, node):
 	
-		self.preorder(node.raise_expr)
+		self.preorder(node.expr)
 		self._instructions.append(self._target.Instr_Raise.new(node.src_infos))
 
 
@@ -1122,7 +1122,7 @@ class Bytecode_Gen:
 		if node.type != ITree::STD_ASSIGN:
 			for target := node.targets.iter():
 				if ITree::IVar.instantiated(target):
-					self._add_lookup_var(target.var_name, target.src_infos)
+					self._add_lookup_var(target.name, target.src_infos)
 				elif ITree::ISlot_Lookup.instantiated(target):
 					self.preorder(target)
 				elif ITree::IGet.instantiated(target):
@@ -1142,18 +1142,18 @@ class Bytecode_Gen:
 				self._instructions.append(self._target.Instr_Sub.new(node.src_infos))
 
 			if ITree::IVar.instantiated(target):
-				self._add_assign_to_var(target.var_name, target.src_infos)
+				self._add_assign_to_var(target.name, target.src_infos)
 			elif ITree::ISlot_Lookup.instantiated(target):
-				self.preorder(target.object_expr)
+				self.preorder(target.target)
 				self._instructions.append(self._target.Instr_Assign_Slot.new(target.src_infos, target.slot_name))
 			elif ITree::IGet.instantiated(target):
-				self.preorder(target.get_object)
+				self.preorder(target.target)
 				self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(target.src_infos, "set"))
 				self.preorder(target.index)
 				self._instructions.append(self._target.Instr_Pull.new(target.src_infos, 2))
 				self._instructions.append(self._target.Instr_Apply.new(target.src_infos, 2))
 			elif ITree::ISlice.instantiated(target):
-				self.preorder(target.slice_object)
+				self.preorder(target.target)
 				self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(target.src_infos, "set_slice"))
 
 				if target.lower_bound is null:
@@ -1248,10 +1248,10 @@ class Bytecode_Gen:
 
 	func _t_imod_id_import(self, node):
 	
-		module_id := self._get_original_name_mod_id(node)
+		mod_id := self._get_original_name_mod_id(node)
 		
-		if import_num := self._imports.find(module_id):
+		if import_num := self._imports.find(mod_id):
 			self._instructions.append(self._target.Instr_Import.new(node.src_infos, import_num))
 		else:
-			self._imports[module_id] := self._imports.len()
+			self._imports[mod_id] := self._imports.len()
 			self._instructions.append(self._target.Instr_Import.new(node.src_infos, self._imports.len() - 1))

@@ -90,7 +90,7 @@ Returns a string representing the pretty-printed ITree <code>itree</code>.
 
 <function name="imodule">
 <argument name="module_name" />
-<argument name="definitions" />
+<argument name="defns" />
 <argument name="src_infos" />
 </function>
 
@@ -134,17 +134,17 @@ Returns an INDIf whose main clauses are defined by the list of IClause's <code>c
 
 
 <function name="ivar">
-<argument name="var_name" type="String" />
+<argument name="name" type="String" />
 <argument name="src_infos" />
-Returns an IVar whose name is defined by the string <code>var_name</code>.
+Returns an IVar whose name is defined by the string <code>name</code>.
 </function>
 
 
 <function name="iimport">
-<argument name="module_id" type="String" />
+<argument name="mod_path" type="String" />
 <argument name="var_name" />
 <argument name="src_infos" />
-Returns an IImport which imports the module with ID <code>module_id</code> to the variable whose name is defined by the string <code>var_name</code>.
+Returns an IImport which imports the module referenced by <code>mod_path</code> to the variable whose name is defined by the string <code>var_name</code>.
 </function>
 
 
@@ -176,106 +176,106 @@ Returns an IInt whose value is that of the integer <code>val</code>.
 
 
 <function name="istring">
-<argument name="str" />
+<argument name="val" />
 <argument name="src_infos" />
-Returns an IString whose value is that of the string <code>str</code>.
+Returns an IString whose value is that of the string <code>val</code>.
 </function>
 
 
 <function name="islot_lookup">
-<argument name="object_expr" />
+<argument name="target" />
 <argument name="slot_name" />
 <argument name="src_infos" />
-Returns an ISlot_Lookup which looks up the slot defined in the string <code>slot_name</code> in the IExpr defined in <code>object_expr</code>.
+Returns an ISlot_Lookup which looks up the slot defined in the string <code>slot_name</code> in the IExpr defined in <code>target</code>.
 </function>
 
 
 <function name="imodule_lookup">
-<argument name="object_expr" />
+<argument name="target" />
 <argument name="def_name" />
 <argument name="src_infos" />
-Returns an IModule_Lookup which looks up the slot defined in the string <code>slot_name</code> in the IExpr defined in <code>object_expr</code>.
+Returns an IModule_Lookup which looks up the slot defined in the string <code>slot_name</code> in the IExpr defined in <code>target</code>.
 </function>
 
 
 <function name="ilist">
-<argument name="elements" />
+<argument name="elems" />
 <argument name="src_infos" />
-Returns an IList whose elements are the list of IExpr's in <code>elements</code>.
+Returns an IList whose elements are the list of IExpr's in <code>elems</code>.
 </function>
 
 
 <function name="idict">
-<argument name="elements" />
+<argument name="elems" />
 <argument name="src_infos" />
-Returns an IDict whose elements are specified in the list of pairs <code>[<emph>key</emph>, <emph>val</emph>]</code> (both elements of which are IExpr's) in <code>elements</code>.
+Returns an IDict whose elements are specified in the list of pairs <code>[<emph>key</emph>, <emph>val</emph>]</code> (both elements of which are IExpr's) in <code>elems</code>.
 </function>
 
 
 <function name="iset">
-<argument name="elements" />
+<argument name="elems" />
 <argument name="src_infos" />
-Returns an ISet whose elements are the list of IExpr's in <code>elements</code>.
+Returns an ISet whose elements are the list of IExpr's in <code>elems</code>.
 </function>
 
 
 <function name="iapplication">
-<argument name="func_expr" />
+<argument name="target" />
 <argument name="args" />
 <argument name="src_infos" />
-Returns an IApplication of the list of IExpr <code>args</code> to the function specified in the IExpr <code>func_expr</code>.
+Returns an IApplication of the list of IExpr <code>args</code> to the function specified in the IExpr <code>target</code>.
 </function>
 
 
 <function name="iget">
-<argument name="get_object" />
+<argument name="target" />
 <argument name="index" />
 <argument name="src_infos" />
-Returns an IGet (i.e. <code><emph>get_object</emph>[<emph>index</emph>]</code>) which looks up the index element specified by the IExpr <code>index</code> in the object specified by the IExpr <code>get_object</code>.
+Returns an IGet (i.e. <code><emph>target</emph>[<emph>index</emph>]</code>) which looks up the index element specified by the IExpr <code>index</code> in the object specified by the IExpr <code>target</code>.
 </function>
 
 
 <function name="islice">
-<argument name="slice_object" />
+<argument name="target" />
 <argument name="lower_bound" />
 <argument name="upper_bound" />
 <argument name="src_infos" />
-Returns an ISlice (i.e. <code><emph>get_object</emph>[<emph>index</emph>]</code>) which looks up the index element specified by the IExpr <code>index</code> in the object specified by the IExpr <code>get_object</code>.
+Returns an ISlice (i.e. <code><emph>target</emph>[<emph>index</emph>]</code>) which looks up the index element specified by the IExpr <code>index</code> in the object specified by the IExpr <code>target</code>.
 </function>
 
 
 <function name="iexbi">
-<argument name="object_expr" />
+<argument name="target" />
 <argument name="field_name" />
 <argument name="src_infos" />
-Returns an IEXBI which looks up the field specified by the string <code>field_name</code> in the IExpr <code>object_expr</code>.
+Returns an IEXBI which looks up the field specified by the string <code>field_name</code> in the IExpr <code>target</code>.
 </function>
 
 
 <function name="ireturn">
-<argument name="return_expr" />
-Returns an IReturn which returns the value of the IExpr <code>return_expr</code>, which may be <code>null</code> if the default return value is to be returned.
+<argument name="expr" />
+Returns an IReturn which returns the value of the IExpr <code>expr</code>, which may be <code>null</code> if the default return value is to be returned.
 </function>
 
 
 <function name="iyield">
-<argument name="yield_expr" />
+<argument name="expr" />
 <argument name="src_infos" />
-Returns an IYield which returns the value of the IExpr <code>yield_expr</code>.
+Returns an IYield which returns the value of the IExpr <code>expr</code>.
 </function>
 
 
 <function name="iraise">
-<argument name="raise_expr" />
+<argument name="expr" />
 <argument name="src_infos" />
-Returns an IRaise which raises the expression specified by the IExpr <code>raise_expr</code>.
+Returns an IRaise which raises the expression specified by the IExpr <code>expr</code>.
 </function>
 
 
 <function name="iassert">
-<argument name="assert_expr" />
+<argument name="expr" />
 <argument name="src_infos" />
-Returns an IAssert which checks the assertion in the expression specified by the IExpr <code>assert_expr</code>.
+Returns an IAssert which checks the assertion in the expression specified by the IExpr <code>expr</code>.
 </function>
 
 
@@ -360,11 +360,10 @@ Returns an IQuasi_Quotes which quasi-quotes the IExpr_Block <code>body</code>, a
 </function>
 
 
-<function name="ioriginal_name">
-<argument name="module_id" />
-<argument name="def_name" type="String" />
+<function name="imod_id_import">
+<argument name="mod_id" />
 <argument name="src_infos" />
-Returns an IOriginal_Name which looks up the definition specified by the string <code>def_name</code> in the module with ID <code>module_id</code>.
+Returns an <code>IMod_Id_Import</code> which imports and returns the module with ID <code>mod_id</code>.
 </function>
 
 

@@ -211,7 +211,7 @@ class _Renamer:
 
 	func _t_ivar(self, node):
 
-		if self._get_var_offset(node.var_name) <= 0 & renamed := self._preorders.find(node.var_name):
+		if self._get_var_offset(node.name) <= 0 & renamed := self._preorders.find(node.name):
 			return ITree::IVar.new(renamed, node.src_infos)
 		else:
 			return node
@@ -226,7 +226,7 @@ class _Renamer:
 		else:
 			var := node.var_name
 		
-		return ITree::IImport.new(node.module_path, var, node.src_infos)
+		return ITree::IImport.new(node.mod_path, var, node.src_infos)
 
 
 
@@ -307,9 +307,9 @@ class _Renamer:
 
 	func _t_islot_lookup(self, node):
 
-		obj_expr := self._preorder(node.object_expr)
+		target := self._preorder(node.target)
 		
-		return ITree::ISlot_Lookup.new(obj_expr, node.slot_name, node.src_infos)
+		return ITree::ISlot_Lookup.new(target, node.slot_name, node.src_infos)
 
 
 
@@ -325,7 +325,7 @@ class _Renamer:
 	func _t_ilist(self, node):
 
 		elems := []
-		for elems.append(self._preorder(node.elements.iter()))
+		for elems.append(self._preorder(node.elems.iter()))
 		
 		return ITree::IList.new(elems, node.src_infos)
 
@@ -334,7 +334,7 @@ class _Renamer:
 	func _t_idict(self, node):
 
 		elems := []
-		for key, val := node.elements.iter():
+		for key, val := node.elems.iter():
 			elems.append([self._preorder(key), self._preorder(val)])
 		
 		return ITree::IDict.new(elems, node.src_infos)
@@ -344,7 +344,7 @@ class _Renamer:
 	func _t_iset(self, node):
 
 		elems := []
-		for elems.append(self._preorder(node.elements.iter()))
+		for elems.append(self._preorder(node.elems.iter()))
 		
 		return ITree::ISet.new(elems, node.src_infos)
 
@@ -352,17 +352,17 @@ class _Renamer:
 
 	func _t_iapplication(self, node):
 
-		func_expr := self._preorder(node.func_expr)
+		target := self._preorder(node.target)
 		args := []
 		for args.append(self._preorder(node.args.iter()))
 		
-		return ITree::IApplication.new(func_expr, args, node.src_infos)
+		return ITree::IApplication.new(target, args, node.src_infos)
 
 
 
 	func _t_iget(self, node):
 
-		target := self._preorder(node.get_object)
+		target := self._preorder(node.target)
 		index := self._preorder(node.index)
 		
 		return ITree::IGet.new(target, index, node.src_infos)
@@ -371,7 +371,7 @@ class _Renamer:
 
 	func _t_islice(self, node):
 
-		target := self._preorder(node.slice_object)
+		target := self._preorder(node.target)
 
 		if node.lower_bound is null:
 			lower_bound := null
@@ -395,36 +395,36 @@ class _Renamer:
 
 	func _t_ireturn(self, node):
 
-		if node.return_expr is null:
+		if node.expr is null:
 			return node
 		
-		return_expr := self._preorder(node.return_expr)
+		expr := self._preorder(node.expr)
 		
-		return ITree::IReturn.new(return_expr, node.src_infos)
+		return ITree::IReturn.new(expr, node.src_infos)
 
 
 
 	func _t_iyield(self, node):
 
-		yield_expr := self._preorder(node.return_expr)
+		expr := self._preorder(node.expr)
 		
-		return ITree::IYield.new(yield_expr, node.src_infos)
+		return ITree::IYield.new(expr, node.src_infos)
 
 
 
 	func _t_iraise(self, node):
 
-		raise_expr := self._preorder(node.raise_expr)
+		expr := self._preorder(node.expr)
 		
-		return ITree::IRaise.new(raise_expr, node.src_infos)
+		return ITree::IRaise.new(expr, node.src_infos)
 
 
 
 	func _t_iassert(self, node):
 
-		assert_expr := self._preorder(node.assert_expr)
+		expr := self._preorder(node.expr)
 		
-		return ITree::IAssert.new(assert_expr, node.src_infos)
+		return ITree::IAssert.new(expr, node.src_infos)
 
 
 

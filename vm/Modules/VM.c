@@ -91,7 +91,7 @@ Con_Obj *_Con_Module_VM_add_modules_func(Con_Obj *thread)
 		if (mod == NULL)
 			break;
 		
-		Con_Obj *mod_id = CON_GET_SLOT(mod, "module_id");
+		Con_Obj *mod_id = CON_GET_SLOT(mod, "mod_id");
 		CON_GET_SLOT_APPLY(CON_GET_SLOT(Con_Builtins_Thread_Atom_get_vm(thread), "modules"), "set", mod_id, mod);
 	}
 	

@@ -153,8 +153,8 @@ class IFunc_Defn:
 		self.src_infos := src_infos
 
 		if IVar.instantiated(func_name):
-			self.bound_vars := Set{func_name.var_name}
-			self.qq_bound_vars := Set{func_name.var_name}
+			self.bound_vars := Set{func_name.name}
+			self.qq_bound_vars := Set{func_name.name}
 		else:
 			self.bound_vars := Set{}
 			self.qq_bound_vars := Set{}
@@ -176,8 +176,8 @@ class IFunc_Defn:
 				self.qq_bound_vars.extend(var_arg.qq_bound_vars)
 				_merge_mod_id_lookups(self.mod_id_lookups, var_arg.mod_id_lookups)
 			else:
-				all_internal_bound_vars.add(var_arg.var_name)
-				self.qq_bound_vars.add(var_arg.var_name)
+				all_internal_bound_vars.add(var_arg.name)
+				self.qq_bound_vars.add(var_arg.name)
 				_merge_mod_id_lookups(self.mod_id_lookups, var_arg.mod_id_lookups)
 
 		all_internal_bound_vars.extend(body.bound_vars)
@@ -187,10 +187,10 @@ class IFunc_Defn:
 
 		nonlocals_ := Set{}
 		for nonlocal_ := nonlocals.iter():
-			nonlocals_.extend(Set{nonlocal_.var_name})
+			nonlocals_.extend(Set{nonlocal_.name})
 
 		for rename_from, rename_as := renames.iter():
-			nonlocals_.add(rename_as.var_name)
+			nonlocals_.add(rename_as.name)
 
 		self.internal_bound_vars := all_internal_bound_vars.complement(nonlocals_)
 		
@@ -300,31 +300,31 @@ class INDIf:
 
 class IVar:
 
-	func init(self, var_name, src_infos):
+	func init(self, name, src_infos):
 	
-		self.var_name := var_name
+		self.name := name
 		self.src_infos := src_infos
 
 		self.bound_vars := Set{}
 		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
-		self.free_vars := Set{self.var_name}
+		self.free_vars := Set{name}
 		self.mod_id_lookups := Dict{}
 
 
 
 	func extended_src_infos(self, extra_src_infos):
 		
-		return IVar.new(self.var_name, self.src_infos + extra_src_infos)
+		return IVar.new(self.name, self.src_infos + extra_src_infos)
 
 
 
 
 class IImport:
 
-	func init(self, module_path, var_name, src_infos):
+	func init(self, mod_path, var_name, src_infos):
 
-		self.module_path := module_path
+		self.mod_path := mod_path
 		self.var_name := var_name
 		self.src_infos := src_infos
 
@@ -338,7 +338,7 @@ class IImport:
 
 	func extended_src_infos(self, extra_src_infos):
 		
-		return IImport.new(self.module_path, self.var_name, self.src_infos + extra_src_infos)
+		return IImport.new(self.mod_path, self.var_name, self.src_infos + extra_src_infos)
 
 
 
@@ -523,9 +523,9 @@ class IFloat:
 
 class IString:
 
-	func init(self, string, src_infos):
+	func init(self, val, src_infos):
 
-		self.string := string
+		self.val := val
 		self.src_infos := src_infos
 
 		self.bound_vars := Set{}
@@ -538,32 +538,32 @@ class IString:
 
 	func extended_src_infos(self, extra_src_infos):
 	
-		return IString.new(self.string, self.src_infos + extra_src_infos)
+		return IString.new(self.val, self.src_infos + extra_src_infos)
 
 
 
 
 class ISlot_Lookup:
 
-	func init(self, object_expr, slot_name, src_infos):
+	func init(self, target, slot_name, src_infos):
 	
-		self.object_expr := object_expr
+		self.target := target
 		self.slot_name := slot_name
 		self.src_infos := src_infos
 
-		self.bound_vars := object_expr.bound_vars
-		self.import_vars := object_expr.import_vars
-		self.qq_bound_vars := object_expr.qq_bound_vars
-		self.free_vars := object_expr.free_vars
-		self.mod_id_lookups := object_expr.mod_id_lookups
+		self.bound_vars := target.bound_vars
+		self.import_vars := target.import_vars
+		self.qq_bound_vars := target.qq_bound_vars
+		self.free_vars := target.free_vars
+		self.mod_id_lookups := target.mod_id_lookups
 
 
 
 	func extended_src_infos(self, extra_src_infos):
 	
-		object_expr := self.object_expr.extended_src_infos(extra_src_infos)
+		target := self.target.extended_src_infos(extra_src_infos)
 		
-		return ISlot_Lookup.new(object_expr, self.slot_name, self.src_infos + extra_src_infos)
+		return ISlot_Lookup.new(target, self.slot_name, self.src_infos + extra_src_infos)
 
 
 
@@ -580,7 +580,7 @@ class IModule_Lookup:
 		self.qq_bound_vars := Set{}
 		if IMod_Id_Import.instantiated(names[0]):
 			self.free_vars := Set{}
-			self.mod_id_lookups := Dict{names[0].module_id : Set{names[1].var_name}}
+			self.mod_id_lookups := Dict{names[0].mod_id : Set{names[1].name}}
 		else:
 			self.free_vars := names[0].free_vars
 			self.mod_id_lookups := Dict{}
@@ -596,9 +596,9 @@ class IModule_Lookup:
 
 class IList:
 
-	func init(self, elements, src_infos):
+	func init(self, elems, src_infos):
 	
-		self.elements := elements
+		self.elems := elems
 		self.src_infos := src_infos
 
 		self.bound_vars := Set{}
@@ -606,7 +606,7 @@ class IList:
 		self.qq_bound_vars := Set{}
 		self.free_vars := Set{}
 		self.mod_id_lookups := Dict{}
-		for elem := elements.iter():
+		for elem := elems.iter():
 			self.bound_vars.extend(elem.bound_vars)
 			self.import_vars.extend(elem.import_vars)
 			self.qq_bound_vars.extend(elem.qq_bound_vars)
@@ -617,7 +617,7 @@ class IList:
 
 	func extended_src_infos(self, extra_src_infos):
 	
-		elems := _extended_collection_src_infos(self.elements, extra_src_infos)
+		elems := _extended_collection_src_infos(self.elems, extra_src_infos)
 		
 		return IList.new(elems, self.src_infos + extra_src_infos)
 
@@ -626,9 +626,9 @@ class IList:
 
 class IDict:
 
-	func init(self, elements, src_infos):
+	func init(self, elems, src_infos):
 	
-		self.elements := elements
+		self.elems := elems
 		self.src_infos := src_infos
 
 		self.bound_vars := Set{}
@@ -636,7 +636,7 @@ class IDict:
 		self.qq_bound_vars := Set{}
 		self.free_vars := Set{}
 		self.mod_id_lookups := Dict{}
-		for key, val := elements.iter():
+		for key, val := elems.iter():
 			self.bound_vars.extend(key.bound_vars)
 			self.bound_vars.extend(val.bound_vars)
 			self.import_vars.extend(key.import_vars)
@@ -653,7 +653,7 @@ class IDict:
 	func extended_src_infos(self, extra_src_infos):
 	
 		elems := []
-		for key, val := self.elements.iter():
+		for key, val := self.elems.iter():
 			elems.append([key.extended_src_infos(extra_src_infos), val.extended_src_infos(extra_src_infos)])
 		
 		return IDict.new(elems, self.src_infos + extra_src_infos)
@@ -663,9 +663,9 @@ class IDict:
 
 class ISet:
 
-	func init(self, elements, src_infos):
+	func init(self, elems, src_infos):
 	
-		self.elements := elements
+		self.elems := elems
 		self.src_infos := src_infos
 
 		self.bound_vars := Set{}
@@ -673,7 +673,7 @@ class ISet:
 		self.qq_bound_vars := Set{}
 		self.free_vars := Set{}
 		self.mod_id_lookups := Dict{}
-		for elem := elements.iter():
+		for elem := elems.iter():
 			self.bound_vars.extend(elem.bound_vars)
 			self.import_vars.extend(elem.import_vars)
 			self.qq_bound_vars.extend(elem.qq_bound_vars)
@@ -684,7 +684,7 @@ class ISet:
 
 	func extended_src_infos(self, extra_src_infos):
 
-		elems := _extended_collection_src_infos(self.elements, extra_src_infos)
+		elems := _extended_collection_src_infos(self.elems, extra_src_infos)
 		
 		return ISet.new(elems, self.src_infos + extra_src_infos)
 
@@ -693,17 +693,17 @@ class ISet:
 
 class IApplication:
 
-	func init(self, func_expr, args, src_infos):
+	func init(self, target, args, src_infos):
 	
-		self.func_expr := func_expr
+		self.target := target
 		self.args := args
 		self.src_infos := src_infos
 
-		self.bound_vars := func_expr.bound_vars.scopy()
-		self.import_vars := func_expr.import_vars.scopy()
-		self.qq_bound_vars := func_expr.qq_bound_vars.scopy()
-		self.free_vars := func_expr.free_vars.scopy()
-		self.mod_id_lookups := func_expr.mod_id_lookups.scopy()
+		self.bound_vars := target.bound_vars.scopy()
+		self.import_vars := target.import_vars.scopy()
+		self.qq_bound_vars := target.qq_bound_vars.scopy()
+		self.free_vars := target.free_vars.scopy()
+		self.mod_id_lookups := target.mod_id_lookups.scopy()
 		for arg := args.iter():
 			self.bound_vars.extend(arg.bound_vars)
 			self.import_vars.extend(arg.import_vars)
@@ -715,55 +715,55 @@ class IApplication:
 
 	func extended_src_infos(self, extra_src_infos):
 	
-		func_expr := self.func_expr.extended_src_infos(extra_src_infos)
+		target := self.target.extended_src_infos(extra_src_infos)
 		args := _extended_collection_src_infos(self.args, extra_src_infos)
 		
-		return IApplication.new(func_expr, args, self.src_infos + extra_src_infos)
+		return IApplication.new(target, args, self.src_infos + extra_src_infos)
 
 
 
 
 class IGet:
 
-	func init(self, get_object, index, src_infos):
+	func init(self, target, index, src_infos):
 	
-		self.get_object := get_object
+		self.target := target
 		self.index := index
 		self.src_infos := src_infos
 
-		self.bound_vars := get_object.bound_vars + index.bound_vars
-		self.import_vars := get_object.import_vars + index.import_vars
-		self.qq_bound_vars := get_object.qq_bound_vars + index.qq_bound_vars
-		self.free_vars := get_object.free_vars + index.free_vars
-		self.mod_id_lookups := get_object.mod_id_lookups.scopy()
+		self.bound_vars := target.bound_vars + index.bound_vars
+		self.import_vars := target.import_vars + index.import_vars
+		self.qq_bound_vars := target.qq_bound_vars + index.qq_bound_vars
+		self.free_vars := target.free_vars + index.free_vars
+		self.mod_id_lookups := target.mod_id_lookups.scopy()
 		_merge_mod_id_lookups(self.mod_id_lookups, index.mod_id_lookups)
 
 
 
 	func extended_src_infos(self, extra_src_infos):
 	
-		get_object := self.get_object.extended_src_infos(extra_src_infos)
+		target := self.target.extended_src_infos(extra_src_infos)
 		index := self.index.extended_src_infos(extra_src_infos)
 		
-		return IGet.new(get_object, index, self.src_infos + extra_src_infos)
+		return IGet.new(target, index, self.src_infos + extra_src_infos)
 
 
 
 
 class ISlice:
 
-	func init(self, slice_object, lower_bound, upper_bound, src_infos):
+	func init(self, target, lower_bound, upper_bound, src_infos):
 	
-		self.slice_object := slice_object
+		self.target := target
 		self.lower_bound := lower_bound
 		self.upper_bound := upper_bound
 		self.src_infos := src_infos
 
-		self.bound_vars := slice_object.bound_vars.scopy()
-		self.import_vars := slice_object.import_vars.scopy()
-		self.qq_bound_vars := slice_object.qq_bound_vars.scopy()
-		self.free_vars := slice_object.free_vars.scopy()
-		self.mod_id_lookups := slice_object.mod_id_lookups.scopy()
+		self.bound_vars := target.bound_vars.scopy()
+		self.import_vars := target.import_vars.scopy()
+		self.qq_bound_vars := target.qq_bound_vars.scopy()
+		self.free_vars := target.free_vars.scopy()
+		self.mod_id_lookups := target.mod_id_lookups.scopy()
 		if not lower_bound is null:
 			self.bound_vars.extend(lower_bound.bound_vars)
 			self.import_vars.extend(lower_bound.import_vars)
@@ -781,141 +781,141 @@ class ISlice:
 
 	func extended_src_infos(self, extra_src_infos):
 	
-		slice_object := self.slice_object.extended_src_infos(extra_src_infos)
+		target := self.target.extended_src_infos(extra_src_infos)
 		lower_bound := _extended_obj_src_infos(self.lower_bound, extra_src_infos)
 		upper_bound := _extended_obj_src_infos(self.upper_bound, extra_src_infos)
 		
-		return ISlice.new(slice_object, lower_bound, upper_bound, self.src_infos + extra_src_infos)
+		return ISlice.new(target, lower_bound, upper_bound, self.src_infos + extra_src_infos)
 
 
 
 
 class IEXBI:
 
-	func init(self, object_expr, field_name, src_infos):
+	func init(self, target, field_name, src_infos):
 
-		self.object_expr := object_expr
+		self.target := target
 		self.field_name := field_name
 		self.src_infos := src_infos
 
-		self.bound_vars := object_expr.bound_vars
-		self.import_vars := object_expr.import_vars
-		self.qq_bound_vars := object_expr.qq_bound_vars
-		self.free_vars := object_expr.free_vars
-		self.mod_id_lookups := object_expr.mod_id_lookups
+		self.bound_vars := target.bound_vars
+		self.import_vars := target.import_vars
+		self.qq_bound_vars := target.qq_bound_vars
+		self.free_vars := target.free_vars
+		self.mod_id_lookups := target.mod_id_lookups
 
 
 
 	func extended_src_infos(self, extra_src_infos):
 	
-		object_expr := self.object_expr.extended_src_infos(extra_src_infos)
+		target := self.target.extended_src_infos(extra_src_infos)
 		
-		return IEXBI.new(object_expr, self.field_name, self.src_infos + extra_src_infos)
+		return IEXBI.new(target, self.field_name, self.src_infos + extra_src_infos)
 
 
 
 
 class IReturn:
 
-	// return_expr can be null.
+	// expr can be null.
 
-	func init(self, return_expr, src_infos):
+	func init(self, expr, src_infos):
 	
-		self.return_expr := return_expr
+		self.expr := expr
 		self.src_infos := src_infos
 
-		if self.return_expr is null:
+		if self.expr is null:
 			self.bound_vars := Set{}
 			self.import_vars := Set{}
 			self.qq_bound_vars := Set{}
 			self.free_vars := Set{}
 			self.mod_id_lookups := Dict{}
 		else:
-			self.bound_vars := return_expr.bound_vars
-			self.import_vars := return_expr.import_vars
-			self.qq_bound_vars := return_expr.qq_bound_vars
-			self.free_vars := return_expr.free_vars
-			self.mod_id_lookups := return_expr.mod_id_lookups
+			self.bound_vars := expr.bound_vars
+			self.import_vars := expr.import_vars
+			self.qq_bound_vars := expr.qq_bound_vars
+			self.free_vars := expr.free_vars
+			self.mod_id_lookups := expr.mod_id_lookups
 
 
 
 	func extended_src_infos(self, extra_src_infos):
 	
-		return_expr := _extended_obj_src_infos(self.return_expr, extra_src_infos)
+		expr := _extended_obj_src_infos(self.expr, extra_src_infos)
 		
-		return IReturn.new(return_expr, self.src_infos + extra_src_infos)
+		return IReturn.new(expr, self.src_infos + extra_src_infos)
 
 
 
 
 class IYield:
 
-	func init(self, yield_expr, src_infos):
+	func init(self, expr, src_infos):
 	
-		self.yield_expr := yield_expr
+		self.expr := expr
 		self.src_infos := src_infos
 		
-		self.bound_vars := yield_expr.bound_vars
-		self.import_vars := yield_expr.import_vars
-		self.qq_bound_vars := yield_expr.qq_bound_vars
-		self.free_vars := yield_expr.free_vars
-		self.mod_id_lookups := yield_expr.mod_id_lookups
+		self.bound_vars := expr.bound_vars
+		self.import_vars := expr.import_vars
+		self.qq_bound_vars := expr.qq_bound_vars
+		self.free_vars := expr.free_vars
+		self.mod_id_lookups := expr.mod_id_lookups
 
 
 
 	func extended_src_infos(self, extra_src_infos):
 	
-		yield_expr := self.yield_expr.extended_src_infos(extra_src_infos)
+		expr := self.expr.extended_src_infos(extra_src_infos)
 		
-		return IYield.new(yield_expr, self.src_infos + extra_src_infos)
+		return IYield.new(expr, self.src_infos + extra_src_infos)
 
 
 
 
 class IRaise:
 
-	func init(self, raise_expr, src_infos):
+	func init(self, expr, src_infos):
 	
-		self.raise_expr := raise_expr
+		self.expr := expr
 		self.src_infos := src_infos
 		
-		self.bound_vars := raise_expr.bound_vars
-		self.import_vars := raise_expr.import_vars
-		self.qq_bound_vars := raise_expr.qq_bound_vars
-		self.free_vars := raise_expr.free_vars
-		self.mod_id_lookups := raise_expr.mod_id_lookups
+		self.bound_vars := expr.bound_vars
+		self.import_vars := expr.import_vars
+		self.qq_bound_vars := expr.qq_bound_vars
+		self.free_vars := expr.free_vars
+		self.mod_id_lookups := expr.mod_id_lookups
 
 
 
 	func extended_src_infos(self, extra_src_infos):
 	
-		raise_expr := self.raise_expr.extended_src_infos(extra_src_infos)
+		expr := self.expr.extended_src_infos(extra_src_infos)
 		
-		return IRaise.new(raise_expr, self.src_infos + extra_src_infos)
+		return IRaise.new(expr, self.src_infos + extra_src_infos)
 
 
 
 
 class IAssert:
 
-	func init(self, assert_expr, src_infos):
+	func init(self, expr, src_infos):
 	
-		self.assert_expr := assert_expr
+		self.expr := expr
 		self.src_infos := src_infos
 		
-		self.bound_vars := assert_expr.bound_vars
-		self.import_vars := assert_expr.import_vars
-		self.qq_bound_vars := assert_expr.qq_bound_vars
-		self.free_vars := assert_expr.free_vars
-		self.mod_id_lookups := assert_expr.mod_id_lookups
+		self.bound_vars := expr.bound_vars
+		self.import_vars := expr.import_vars
+		self.qq_bound_vars := expr.qq_bound_vars
+		self.free_vars := expr.free_vars
+		self.mod_id_lookups := expr.mod_id_lookups
 
 
 
 	func extended_src_infos(self, extra_src_infos):
 	
-		assert_expr := self.assert_expr.extended_src_infos(extra_src_infos)
+		expr := self.expr.extended_src_infos(extra_src_infos)
 		
-		return IAssert.new(assert_expr, self.src_infos + extra_src_infos)
+		return IAssert.new(expr, self.src_infos + extra_src_infos)
 
 
 
@@ -1038,8 +1038,8 @@ class IAssignment:
 		self.mod_id_lookups := Dict{}
 		for target := targets.iter():
 			if IVar.instantiated(target):
-				self.bound_vars.add(target.var_name)
-				self.qq_bound_vars.add(target.var_name)
+				self.bound_vars.add(target.name)
+				self.qq_bound_vars.add(target.name)
 			else:
 				self.bound_vars.extend(target.bound_vars)
 				self.import_vars.extend(target.import_vars)
@@ -1232,9 +1232,9 @@ class IQuasi_Quotes:
 
 class IMod_Id_Import:
 
-	func init(self, module_id, src_infos):
+	func init(self, mod_id, src_infos):
 	
-		self.module_id := module_id
+		self.mod_id := mod_id
 		self.src_infos := src_infos
 		
 		self.bound_vars := Set{}
@@ -1247,7 +1247,7 @@ class IMod_Id_Import:
 
 	func extended_src_infos(self, extra_src_infos):
 	
-		return IMod_Id_Import.new(self.module_id, self.src_infos + extra_src_infos)
+		return IMod_Id_Import.new(self.mod_id, self.src_infos + extra_src_infos)
 
 
 
@@ -1297,9 +1297,9 @@ class IParam:
 		self.default := default
 		self.src_infos := src_infos
 		
-		self.bound_vars := Set{var.var_name}
+		self.bound_vars := Set{var.name}
 		self.import_vars := Set{}
-		self.qq_bound_vars := Set{var.var_name}
+		self.qq_bound_vars := Set{var.name}
 		self.mod_id_lookups := Dict{}
 		if not default is null:
 			self.bound_vars.extend(default.bound_vars)
@@ -1367,8 +1367,8 @@ class ICatch:
 		self.mod_id_lookups := expr.mod_id_lookups.scopy()
 		
 		if not var is null:
-			self.bound_vars.add(var.var_name)
-			self.qq_bound_vars.add(var.var_name)
+			self.bound_vars.add(var.name)
+			self.qq_bound_vars.add(var.name)
 		
 		self.bound_vars.extend(body.bound_vars)
 		self.import_vars.extend(body.import_vars)

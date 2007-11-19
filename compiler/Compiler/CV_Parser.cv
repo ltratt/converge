@@ -300,7 +300,7 @@ func parse(src_data):
 
 	compiler := Compiler_Vars::peek_compiler()
 
-	compiler.tokenizer.tokenize(src_data, [[compiler.module_id, 0]], [], [])
+	compiler.tokenizer.tokenize(src_data, [[compiler.mod_id, 0]], [], [])
 	tokens_map := Tokenizer::tokens_map([], [])
 	grammar, rule_names := Grammar::compile(GRAMMAR, "top_level", tokens_map)
 
@@ -312,7 +312,7 @@ func parse_expr_body(src_data):
 
 	compiler := Compiler_Vars::peek_compiler()
 
-	compiler.tokenizer.tokenize(src_data, [[compiler.module_id, 0]], [], [])
+	compiler.tokenizer.tokenize(src_data, [[compiler.mod_id, 0]], [], [])
 	tokens_map := Tokenizer::tokens_map([], [])
 	grammar, rule_names := Grammar::compile(GRAMMAR, "expr_body", tokens_map)
 

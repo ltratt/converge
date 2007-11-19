@@ -200,7 +200,7 @@ Con_Obj *_Con_Builtins_Module_Class_get_slot_func(Con_Obj *thread)
 
 	Con_Builtins_Module_Atom *self_module_atom = CON_GET_ATOM(self, CON_BUILTIN(CON_BUILTIN_MODULE_ATOM_DEF_OBJECT));
 
-	if (CON_C_STRING_EQ("module_id", slot_name)) {
+	if (CON_C_STRING_EQ("mod_id", slot_name)) {
 		return self_module_atom->identifier;
 	}
 	else if (CON_C_STRING_EQ("name", slot_name)) {

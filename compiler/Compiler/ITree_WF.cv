@@ -191,8 +191,8 @@ class ITree_WF:
 
 	func _t_iimport(self, node):
 	
-		if not Builtins::String.instantiated(node.module_path):
-			self._type_error(node, "module_path", node.module_path, "String")
+		if not Builtins::String.instantiated(node.mod_path):
+			self._type_error(node, "mod_path", node.mod_path, "String")
 
 
 
@@ -244,14 +244,14 @@ class ITree_WF:
 
 	func _t_istring(self, node):
 
-		if not Builtins::String.instantiated(node.string):
-			self._type_error(node, "value", node.string, "String")
+		if not Builtins::String.instantiated(node.val):
+			self._type_error(node, "value", node.val, "String")
 
 
 
 	func _t_islot_lookup(self, node):
 	
-		self._check_expr(node, "object_expr", node.object_expr)
+		self._check_expr(node, "target", node.target)
 		
 		if not Builtins::String.instantiated(node.slot_name):
 			self._type_error(node, "slot_name", node.slot_name, "String")
@@ -272,20 +272,20 @@ class ITree_WF:
 
 	func _t_ilist(self, node):
 	
-		if not Builtins::List.conformed_by(node.elements):
-			self._type_error(node, "elements", node.elements, "List")
-		for i := 0.iter_to(node.elements.len()):
-			elem := node.elements[i]
+		if not Builtins::List.conformed_by(node.elems):
+			self._type_error(node, "elems", node.elems, "List")
+		for i := 0.iter_to(node.elems.len()):
+			elem := node.elems[i]
 			self._check_expr(node, Strings::format("elem[%d]", i), elem)
 
 
 
 	func _t_idict(self, node):
 	
-		if not Builtins::List.conformed_by(node.elements):
-			self._type_error(node, "elements", node.elements, "List")
-		for i := 0.iter_to(node.elements.len()):
-			key, val := node.elements[i]
+		if not Builtins::List.conformed_by(node.elems):
+			self._type_error(node, "elems", node.elems, "List")
+		for i := 0.iter_to(node.elems.len()):
+			key, val := node.elems[i]
 			self._check_expr(node, Strings::format("element[%d] key", i), key)
 			self._check_expr(node, Strings::format("element[%d] val", i), val)
 
@@ -293,17 +293,17 @@ class ITree_WF:
 
 	func _t_iset(self, node):
 	
-		if not Builtins::List.conformed_by(node.elements):
-			self._type_error(node, "elements", node.elements, "List")
-		for i := 0.iter_to(node.elements.len()):
-			elem := node.elements[i]
+		if not Builtins::List.conformed_by(node.elems):
+			self._type_error(node, "elems", node.elems, "List")
+		for i := 0.iter_to(node.elems.len()):
+			elem := node.elems[i]
 			self._check_expr(node, Strings::format("elem[%d]", i), elem)
 
 
 
 	func _t_iapplication(self, node):
 	
-		self._check_expr(node, "func_expr", node.func_expr)
+		self._check_expr(node, "target", node.target)
 
 		if not Builtins::List.conformed_by(node.args):
 			self._type_error(node, "args", node.args, "List")
@@ -314,14 +314,14 @@ class ITree_WF:
 
 	func _t_iget(self, node):
 	
-		self._check_expr(node, "get_object", node.get_object)
+		self._check_expr(node, "target", node.target)
 		self._check_expr(node, "index", node.index)
 
 
 
 	func _t_islice(self, node):
 	
-		self._check_expr(node, "slice_object", node.slice_object)
+		self._check_expr(node, "target", node.target)
 		
 		if not node.lower_bound is null:
 			self._check_expr(node, "lower_bound", node.lower_bound)
@@ -333,7 +333,7 @@ class ITree_WF:
 
 	func _t_iexbi(self, node):
 
-		self._check_expr(node, "object_expr", node.object_expr)
+		self._check_expr(node, "target", node.target)
 
 		if not Builtins::String.instantiated(node.field_name):
 			self._type_error(node, "field_name", node.slot_name, "String")
@@ -342,26 +342,26 @@ class ITree_WF:
 
 	func _t_ireturn(self, node):
 	
-		if not node.return_expr is null:
-			self._check_expr(node, "return_expr", node.return_expr)
+		if not node.expr is null:
+			self._check_expr(node, "expr", node.expr)
 
 
 
 	func _t_iyield(self, node):
 	
-		self._check_expr(node, "yield_expr", node.yield_expr)
+		self._check_expr(node, "expr", node.expr)
 
 
 
 	func _t_iraise(self, node):
 	
-		self._check_expr(node, "raise_expr", node.raise_expr)
+		self._check_expr(node, "expr", node.expr)
 
 
 
 	func _t_iassert(self, node):
 	
-		self._check_expr(node, "assert_expr", node.assert_expr)
+		self._check_expr(node, "expr", node.expr)
 
 
 
@@ -457,8 +457,8 @@ class ITree_WF:
 
 	func _t_imod_id_import(self, node):
 	
-		if not Builtins::String.instantiated(node.module_id):
-			self._type_error(node, "module_id", node.module_id, "String")
+		if not Builtins::String.instantiated(node.mod_id):
+			self._type_error(node, "mod_id", node.mod_id, "String")
 	
 
 	

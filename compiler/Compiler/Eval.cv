@@ -34,7 +34,7 @@ class Eval_Compiler:
 		
 		self.bootstrap := 0
 		self.includes := includes
-		self.module_id := Strings::format(Compiler_Vars::UNIQUE_EVAL_NAME_TEMPLATE, Compiler_Vars::fresh_name())
+		self.mod_id := Strings::format(Compiler_Vars::UNIQUE_EVAL_NAME_TEMPLATE, Compiler_Vars::fresh_name())
 		self.internal_target := self.target := Available::TARGETS[Strings::format("%dbit", Properties::word_bits)].new()
 
 
@@ -49,7 +49,7 @@ class Eval_Compiler:
 		
 		compiler_var_name := Compiler_Vars::fresh_name()
 		compiler_var := ITree::IVar.new(compiler_var_name, [])
-		peek_compiler := ITree::IModule_Lookup.new([ITree::IMod_Id_Import.new(Compiler_Vars.module_id, []), ITree::IVar.new("peek_compiler", [])], [])
+		peek_compiler := ITree::IModule_Lookup.new([ITree::IMod_Id_Import.new(Compiler_Vars.mod_id, []), ITree::IVar.new("peek_compiler", [])], [])
 		body.append(ITree::IAssignment.new(ITree::STD_ASSIGN, [compiler_var], ITree::IApplication.new(peek_compiler, [], []), []))
 		
 		vars_val := ITree::ISlot_Lookup.new(compiler_var, "vars", [])
@@ -182,7 +182,7 @@ class _Eval_Bytecode_Gen(Bytecode_Gen::Bytecode_Gen):
 
 		assert _Eval_Compiler.instantiated(self._compiler)
 
-		if not (val := self._compiler.vars.find(mod_lookup.names[0].var_name)):
+		if not (val := self._compiler.vars.find(mod_lookup.names[0].name)):
 			// Since this doesn't even refer to a valid variable, a "variable not found" error will
 			// be raised elsewhere, so we don't bother dealing with it here.
 			return

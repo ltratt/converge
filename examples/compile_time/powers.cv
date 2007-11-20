@@ -25,8 +25,7 @@
 //
 
 
-import Sys
-import Compiler::CEI
+import CEI, Sys
 
 
 

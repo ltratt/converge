@@ -5,7 +5,7 @@ exec_prefix = @exec_prefix@
 libdir = @libdir@
 conlibdir = ${libdir}/converge-@CONVERGE_VERSION@
 
-BASE_OBJECT_FILES = File.cvb Functional.cvb Parse_Options.cvb Maths.cvb Numbers.cvb Sort.cvb Strings.cvb Time.cvb
+BASE_OBJECT_FILES = CEI.cvb File.cvb Functional.cvb Parse_Options.cvb Maths.cvb Numbers.cvb Sort.cvb Strings.cvb Time.cvb
 CPK_OBJECT_FILES = CPK/Tokens.cvb CPK/Token.cvb CPK/Traverser.cvb CPK/Tree.cvb
 CPK_EARLEY_OBJECT_FILES = CPK/Earley/Grammar.cvb CPK/Earley/Parser.cvb
 CPK_PLATFORM_OBJECT_FILES = Platform/Properties.cvb Platform/Env.cvb Platform/Exec.cvb

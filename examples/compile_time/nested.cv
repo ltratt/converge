@@ -30,7 +30,7 @@
 // be fairly clear.
 //
 
-import Compiler::CEI, Strings, Sys
+import CEI, Strings, Sys
 
 
 

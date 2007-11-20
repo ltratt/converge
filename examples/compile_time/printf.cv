@@ -19,8 +19,7 @@
 // IN THE SOFTWARE.
 
 
-import Builtins, Exceptions, Strings, Sys
-import Compiler::CEI
+import Builtins, CEI, Exceptions, Strings, Sys
 
 
 

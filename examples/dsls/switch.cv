@@ -19,8 +19,8 @@
 // IN THE SOFTWARE.
 
 
-import Sys
-import Compiler::CEI, Compiler::CV_Parser, Compiler::IModule_Gen, Compiler::ITree_Format, Compiler::Tokenizer
+import CEI, Sys
+import Compiler::CV_Parser, Compiler::IModule_Gen, Compiler::ITree_Format, Compiler::Tokenizer
 import CPK::Earley::Grammar, CPK::Earley::Parser
 
 

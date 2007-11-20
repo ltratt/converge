@@ -128,6 +128,7 @@ Con_Obj *Con_Builtins_Module_Atom_new_from_bytecode(Con_Obj *thread, u_char *byt
 
 	module_atom->atom_type = CON_BUILTIN(CON_BUILTIN_MODULE_ATOM_DEF_OBJECT);
 	module_atom->state = CON_MODULE_UNINITIALIZED;
+	module_atom->container = CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 
 #	define ID_MODULE_GET_WORD(x) (*(Con_Int*) (bytecode + (x)))
 #	define ID_MODULE_GET_OFFSET(x) ((void *) (bytecode + (ID_MODULE_GET_WORD(x))))

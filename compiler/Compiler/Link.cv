@@ -113,7 +113,7 @@ func link_exec(mods, linker, target):
 	for mod := done_mods.iter():
 		for import_ := mod.get_imports().iter():
 			if not Compiler_Vars::BUILTIN_MODULES.find(import_) & not done_ids.find(import_):
-				linker.error(Strings::format("Module '%s' referenced in '%s' not found in input files.", import_, mod_id))
+				linker.error(Strings::format("Module '%s' referenced in '%s' not found in input files.", import_, mod.get_identifier()))
 
 	linked_bytecode[target.LIBRARY_BYTECODE_NUM_MODULES] := ser_mods_offsets.len()
 

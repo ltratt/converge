@@ -504,7 +504,7 @@ class Compiler:
 				cvb_data := cvb_file.read()
 				cvb_file.close()
 				if cvb_data.prefixed_by(CV_Module::MODULE_INIT_STRING):
-					mod := CV_Module::CV_Module.new(self.target)
+					mod := CV_Module::CV_Module.new(self.internal_target)
 					mod.deserialize_str(cvb_data)
 					return [mod, cvb_mtime]
 		

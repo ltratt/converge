@@ -368,9 +368,7 @@ class QQ_Mode:
 				if param.default is null:
 					default := ITree::IVar.new("null", param.src_infos)
 				else:
-					// When we're processing a parameter, we're converting its name from a string
-					// "x" to a variable lookup "$qq_x".
-					default := ITree::IVar.new(self._qq_bound_var_name(var.name), param.src_infos)
+					default := self._preorder(param.default)
 				params_list.append(self._qq("IParam", [var, default], param.src_infos))
 			else:
 				params_list.append(self._process_insert(param, _pi_params))

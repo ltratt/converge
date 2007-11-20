@@ -1,4 +1,4 @@
-<module name="Compiler::CEI">
+<module name="CEI">
 
 This is the <q>Compiler External Interface</q> module which is the recommended way for the user to interact with the Converge compiler. This module necessarily contains a diverse range of functionality.
 

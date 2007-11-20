@@ -1,7 +1,15 @@
 all: 
 	cd vm && ${MAKE} ${MFLAGS}
+ifeq (${shell ls lib/libconverge.cvl}, )
+	# if lib/libconverge.cvl doesn't exist, we go into bootstrapping mode.
+	cd lib && ${MAKE} ${MFLAGS} minimal
+	cd compiler && ${MAKE} ${MFLAGS}
 	cd lib && ${MAKE} ${MFLAGS}
 	cd compiler && ${MAKE} ${MFLAGS}
+else
+	cd lib && ${MAKE} ${MFLAGS}
+	cd compiler && ${MAKE} ${MFLAGS}
+endif
 	cd examples && ${MAKE} ${MFLAGS}
 	cd manuals && ${MAKE} ${MFLAGS}
 	cd tests && ${MAKE} ${MFLAGS}

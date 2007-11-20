@@ -23,6 +23,7 @@ import Builtins, Exceptions, Strings, Thread
 import CPK::Earley::Grammar
 import Compiler::Compiler_Vars, Compiler::CV_Parser, Compiler::Eval, Compiler::ITree, Compiler::ITree_Format, Compiler::ITree_Rename, Compiler::ITree_WF, Compiler::Lift, Compiler::Tokenizer
 
+import File
 
 
 

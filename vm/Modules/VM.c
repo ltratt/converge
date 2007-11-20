@@ -45,12 +45,13 @@ Con_Obj *Con_Module_VM_import(Con_Obj *, Con_Obj *);
 Con_Obj *_Con_Module_VM_add_modules_func(Con_Obj *);
 Con_Obj *_Con_Module_VM_find_module_func(Con_Obj *);
 Con_Obj *_Con_Module_VM_import_module_func(Con_Obj *);
+Con_Obj *_Con_Module_VM_set_bootstrap_compiler_paths_func(Con_Obj *);
 
 
 
 Con_Obj *Con_Module_VM_init(Con_Obj *thread, Con_Obj *identifier)
 {
-	const char* defn_names[] = {"add_modules", "find_module", "import_module", "vm", NULL};
+	const char* defn_names[] = {"add_modules", "find_module", "import_module", "set_bootstrap_compiler_paths", "vm", NULL};
 
 	return Con_Builtins_Module_Atom_new_c(thread, identifier, CON_NEW_STRING("VM"), defn_names, CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
 }
@@ -62,6 +63,7 @@ Con_Obj *Con_Module_VM_import(Con_Obj *thread, Con_Obj *vm_mod)
 	CON_SET_MOD_DEFN(vm_mod, "add_modules", CON_NEW_UNBOUND_C_FUNC(_Con_Module_VM_add_modules_func, "add_modules", vm_mod));
 	CON_SET_MOD_DEFN(vm_mod, "find_module", CON_NEW_UNBOUND_C_FUNC(_Con_Module_VM_find_module_func, "find_module", vm_mod));
 	CON_SET_MOD_DEFN(vm_mod, "import_module", CON_NEW_UNBOUND_C_FUNC(_Con_Module_VM_import_module_func, "import_module", vm_mod));
+	CON_SET_MOD_DEFN(vm_mod, "set_bootstrap_compiler_paths", CON_NEW_UNBOUND_C_FUNC(_Con_Module_VM_set_bootstrap_compiler_paths_func, "set_bootstrap_compiler_paths", vm_mod));
 	
 	CON_SET_MOD_DEFN(vm_mod, "vm", Con_Builtins_Thread_Atom_get_vm(thread));
 	
@@ -128,4 +130,21 @@ Con_Obj *_Con_Module_VM_import_module_func(Con_Obj *thread)
 	CON_UNPACK_ARGS("M", &mod);
 	
 	return Con_Modules_import(thread, mod);
+}
+
+
+
+//
+// 'set_bootstrap_compiler_paths(current_path, old_path)' is an internal function to tell the VM that
+// the compiler is operating in bootstrapping mode, and needs Con_Modules_find to do the same.
+//
+
+Con_Obj *_Con_Module_VM_set_bootstrap_compiler_paths_func(Con_Obj *thread)
+{
+	Con_Obj *current_path, *old_path;
+	CON_UNPACK_ARGS("SS", &current_path, &old_path);
+	
+	Con_Builtins_VM_Atom_set_bootstrap_compiler_paths(thread, current_path, old_path);
+	
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }

@@ -1,29 +1,27 @@
-all: libconverge.cvl
-
 prefix = @prefix@
 exec_prefix = @exec_prefix@
 libdir = @libdir@
 conlibdir = ${libdir}/converge-@CONVERGE_VERSION@
 
-BASE_OBJECT_FILES = CEI.cvb File.cvb Functional.cvb Parse_Options.cvb Maths.cvb Numbers.cvb Sort.cvb Strings.cvb Time.cvb
-CPK_OBJECT_FILES = CPK/Tokens.cvb CPK/Token.cvb CPK/Traverser.cvb CPK/Tree.cvb
-CPK_EARLEY_OBJECT_FILES = CPK/Earley/Grammar.cvb CPK/Earley/Parser.cvb
-CPK_PLATFORM_OBJECT_FILES = Platform/Properties.cvb Platform/Env.cvb Platform/Exec.cvb
-CPK_XML_OBJECT_FILES = XML/Nodes.cvb XML/XDM.cvb
+MINIMAL_OBJS = CPK/Earley/Grammar.cvb CPK/Earley/Parser.cvb CPK/Token.cvb CPK/Tokens.cvb \
+	CPK/Tree.cvb File.cvb Functional.cvb Maths.cvb Numbers.cvb Parse_Options.cvb \
+	Platform/Properties.cvb Strings.cvb Time.cvb
 
-OBJECT_FILES = ${BASE_OBJECT_FILES} ${CPK_OBJECT_FILES} ${CPK_EARLEY_OBJECT_FILES} ${CPK_PLATFORM_OBJECT_FILES} ${CPK_XML_OBJECT_FILES}
+ALL_OBJS = ${MINIMAL_OBJS} \
+	CEI.cvb Sort.cvb Platform/Env.cvb Platform/Exec.cvb XML/Nodes.cvb XML/XDM.cvb
 
-install:
+all: libconverge.cvl
+
+minimal: ${MINIMAL_OBJS}
+	${CONVERGE_VM} ${CONVERGEL} -l -o libconverge.cvl ${MINIMAL_OBJS}
+
+install: all
 	install -d ${conlibdir}
 	install -d ${conlibdir}/CPK
 	install -d ${conlibdir}/CPK/Earley
 	install -d ${conlibdir}/Platform
 	install -d ${conlibdir}/XML
-	install -c -m 444 ${BASE_OBJECT_FILES} ${BASE_OBJECT_FILES:.cvb=.cv} ${conlibdir}
-	install -c -m 444 ${CPK_OBJECT_FILES} ${CPK_OBJECT_FILES:.cvb=.cv} ${conlibdir}/CPK
-	install -c -m 444 ${CPK_EARLEY_OBJECT_FILES} ${CPK_EARLEY_OBJECT_FILES:.cvb=.cv} ${conlibdir}/CPK/Earley
-	install -c -m 444 ${CPK_PLATFORM_OBJECT_FILES} ${CPK_PLATFORM_OBJECT_FILES:.cvb=.cv} ${conlibdir}/Platform
-	install -c -m 444 ${CPK_XML_OBJECT_FILES} ${CPK_XML_OBJECT_FILES:.cvb=.cv} ${conlibdir}/XML
+	echo ${ALL_OBJS:.cvb=.cv} | xargs -n 1 -I{} install -c -m 444 {} ${conlibdir}/{}
 	install -c -m 444 libconverge.cvl ${conlibdir}
 
 include @abs_top_srcdir@/Makefile.inc
@@ -31,21 +29,21 @@ include @abs_top_srcdir@/Makefile.inc
 CONVERGEC_FLAGS += --bootstrap
 
 ifdef TARGET
-CROSS_OBJECTS = ${OBJECT_FILES:.cvb=.${TARGET}.cvb}
+CROSS_OBJS = ${ALL_OBJS:.cvb=.${TARGET}.cvb}
 
-cross: ${CROSS_OBJECTS}
-	${CONVERGE_VM} ${CONVERGEL} -l -T ${TARGET} -o libconverge.${TARGET}.cvl ${CROSS_OBJECTS}
+cross: ${CROSS_OBJS}
+	${CONVERGE_VM} ${CONVERGEL} -l -T ${TARGET} -o libconverge.${TARGET}.cvl ${CROSS_OBJS}
 
 cross-clean:
-	rm -f ${CROSS_OBJECTS} libconverge.${TARGET}.cvl
+	rm -f ${CROSS_OBJS} libconverge.${TARGET}.cvl
 endif
 
 
-libconverge.cvl: ${OBJECT_FILES}
-	${CONVERGE_VM} ${CONVERGEL} -l -o libconverge.cvl ${OBJECT_FILES}
+libconverge.cvl: ${ALL_OBJS}
+	${CONVERGE_VM} ${CONVERGEL} -l -o libconverge.cvl ${ALL_OBJS}
 
 clean:
-	rm -f ${OBJECT_FILES} libconverge.cvl
+	rm -f ${ALL_OBJS} libconverge.cvl
 
 distclean: clean
 	rm -f Makefile .depend

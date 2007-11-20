@@ -122,6 +122,8 @@ class Compiler:
 			if not File::exists(imodule_cv_path) | not imodule_cv_path[ : self.top_level_path.len()] == self.top_level_path:
 				// Sanity checks failed.
 				raise "XXX"
+			
+			VM::set_bootstrap_compiler_paths(self.top_level_path, self.original_lc_top_level_path)
 
 		if self.mk_mode == 1:
 			self._make(extra[0])

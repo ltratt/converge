@@ -1,4 +1,4 @@
-// Copyright (c) 2006 Laurence Tratt
+// Copyright (c) 2006-2007 Laurence Tratt <laurie@tratt.net>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to
@@ -19,7 +19,7 @@
 // IN THE SOFTWARE.
 
 
-import File, Functional, Parse_Options, PCRE, Sort, Strings, Sys, XML::Nodes, XML::XDM
+import Builtins, File, Functional, Parse_Options, PCRE, Sort, Strings, Sys, XML::Nodes, XML::XDM, XML::XHTML
 
 
 
@@ -57,7 +57,7 @@ class CVD_To_HTML:
 			file.close()
 
 			doc := XDM::parse(xml)
-			modules.append([html_path, doc.get_root_elem().get_attr("name").value])
+			modules.append([html_path, doc.get_root_elem().get_attr("name").val])
 
 			output := self._preorder_elem(doc.get_root_elem())
 
@@ -115,7 +115,7 @@ class CVD_To_HTML:
 		i := 0
 		assert(not node.find("::"))
 
-		name := node.get_attr("name").value
+		name := node.get_attr("name").val
 		ref := []
 		i := 0
 		while 1:
@@ -139,7 +139,7 @@ class CVD_To_HTML:
 	func _process_ref_name(self, node):
 
 		i := 0
-		name := node.get_attr("name").value
+		name := node.get_attr("name").val
 		mod_path := Strings::split(name, "::")
 		if mod_path.len() == 1:
 			mod_path := []
@@ -172,10 +172,10 @@ class CVD_To_HTML:
 
 		s := []
 		for child := children.iter():
-			ndif Nodes::Element.instantiated(child):
+			ndif Nodes::Elem.instantiated(child):
 				s.append(self._preorder_elem(child))
-			elif Nodes::Text.instantiated(child):
-				s.append(child.to_xml())
+			elif Builtins::String.instantiated(child):
+				s.append(XHTML::escape_str(child))
 
 		return Strings::join(s, "")
 
@@ -194,14 +194,14 @@ class CVD_To_HTML:
 				name := node.name
 
 			attrs_text := []
-			for attr := node.attrs_iter():
+			for attr := node.iter_attrs():
 				if not attr.namespace == "":
 					raise "XXX"
 
-				if attr.value == "":
+				if attr.val == "":
 					raise "XXX"
 				else:
-					attrs_text.append(Strings::format("""%s="%s"""", attr.name, attr.value))
+					attrs_text.append(Strings::format("""%s="%s"""", attr.name, attr.val))
 
 			if attrs_text.len() == 0:
 				attrs_text := ""
@@ -220,8 +220,8 @@ class CVD_To_HTML:
 		body_text := []
 		i := 0
 		for child := node.iter():
-			if Nodes::Text.instantiated(child):
-				body_text.append(child.str)
+			if Builtins::String.instantiated(child):
+				body_text.append(XHTML::escape_str(child))
 			else:
 				body_text.append(self._preorder_elem(child))
 
@@ -237,15 +237,15 @@ class CVD_To_HTML:
 %s
 
 <hr>
-<p align="right">cvd_to_html &copy;2006 <A HRef = "http://tratt.net/laurie/">Laurence Tratt</A></p>
+<p align="right">cvd_to_html &copy;2006-2007 <A HRef = "http://tratt.net/laurie/">Laurence Tratt</A></p>
 </body>
-</html>""", node.get_attr("name").value, node.get_attr("name").value, body_text)
+</html>""", node.get_attr("name").val, node.get_attr("name").val, body_text)
 
 
 
 	func _e_assignment(self, node):
 
-		return Strings::format("""<div style="padding-left: 2em"><p style="text-indent: -1em" /><a name="%s"><code>%s</code></a>\n%s</div>""", node.get_attr("name").value, node.get_attr("name").value, self._preorder_children(node))
+		return Strings::format("""<div style="padding-left: 2em"><p style="text-indent: -1em" /><a name="%s"><code>%s</code></a>\n%s</div>""", node.get_attr("name").val, node.get_attr("name").val, self._preorder_children(node))
 
 
 
@@ -265,13 +265,13 @@ class CVD_To_HTML:
 			child := node[i]
 
 			// Skip blank text assuming that it's simply padding before an <argument> element.
-			if Nodes::Text.instantiated(child) & child.str.stripped() == "":
+			if Builtins::String.instantiated(child) & child.stripped() == "":
 				i += 1
 				continue
 
-			if not (Nodes::Element.instantiated(child) & child.name == "argument"):
+			if not (Nodes::Elem.instantiated(child) & child.name == "argument"):
 				break
-			arg_name := child.get_attr("name").value
+			arg_name := child.get_attr("name").val
 			arg_default := self._preorder_children(child)
 			if arg_default == "":
 				args_text.append(arg_name)
@@ -279,8 +279,8 @@ class CVD_To_HTML:
 				args_text.append(Strings::format("%s := %s", arg_name, arg_default))
 			i += 1
 
-		if Nodes::Element.instantiated(child) & child.name == "vararg":
-			args_text.append(Strings::format("*%s", child.get_attr("name").value))
+		if Nodes::Elem.instantiated(child) & child.name == "vararg":
+			args_text.append(Strings::format("*%s", child.get_attr("name").val))
 			i += 1
 
 		args_text := Strings::join(args_text, ", ")

@@ -1,0 +1,578 @@
+<module name="XML::XHTML">
+
+This module is intended as a simple way to build up XHTML documents. It does this by providing a simplified front-end for the creation of <ref name="XDM::Nodes">XDM nodes</ref>. Each XHTML element has a helper function which returns an <ref name="XDM::Nodes::Elem">XML element</ref> of the appropriate type. Optionally it can be given a list of children (strings or XML elements), and a dictionary of attributes (mapping strings to strings). A simple example is as follows:
+
+<pre style="padding-left: 20px">
+h1 := XHTML::h1(["A title"], Dict{"align" : "right"})
+</pre>
+
+
+<h3>Helper functions</h3>
+
+<function name="escape_str">
+<argument name="s" />
+Escapes illegal characters in <code>s</code>, replacing them with the appropriate XHTML entities. Note that since XHTML defines many more entities by default than base XML, this function may escape strings in a different way than <ref name="XML::XDM::escape_str">XDM::escape_str</ref>.
+</function>
+
+
+<h3>XHTML elements</h3>
+
+<function name="a">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates an <code>a</code> XHTML element.
+</function>
+
+<function name="abbr">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates an <code>abbr</code> XHTML element.
+</function>
+
+<function name="access">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates an <code>access</code> XHTML element.
+</function>
+
+<function name="action">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates an <code>action</code> XHTML element.
+</function>
+
+<function name="address">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates an <code>address</code> XHTML element.
+</function>
+
+<function name="blockcode">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>blockcode</code> XHTML element.
+</function>
+
+<function name="blockquote">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>blockquote</code> XHTML element.
+</function>
+
+<function name="body">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>body</code> XHTML element.
+</function>
+
+<function name="br">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>br</code> XHTML element.
+</function>
+
+<function name="caption">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>caption</code> XHTML element.
+</function>
+
+<function name="cite">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>cite</code> XHTML element.
+</function>
+
+<function name="code">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>code</code> XHTML element.
+</function>
+
+<function name="col">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>col</code> XHTML element.
+</function>
+
+<function name="colgroup">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>colgroup</code> XHTML element.
+</function>
+
+<function name="dd">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>dd</code> XHTML element.
+</function>
+
+<function name="delete">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>delete</code> XHTML element.
+</function>
+
+<function name="dfn">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>dfn</code> XHTML element.
+</function>
+
+<function name="di">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>di</code> XHTML element.
+</function>
+
+<function name="dispatch">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>dispatch</code> XHTML element.
+</function>
+
+<function name="div">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>div</code> XHTML element.
+</function>
+
+<function name="dl">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>dl</code> XHTML element.
+</function>
+
+<function name="dt">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>dt</code> XHTML element.
+</function>
+
+<function name="em">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates an <code>em</code> XHTML element.
+</function>
+
+<function name="group">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>group</code> XHTML element.
+</function>
+
+<function name="h1">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>h1</code> XHTML element.
+</function>
+
+<function name="h2">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>h2</code> XHTML element.
+</function>
+
+<function name="h3">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>h3</code> XHTML element.
+</function>
+
+<function name="h4">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>h4</code> XHTML element.
+</function>
+
+<function name="h5">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>h5</code> XHTML element.
+</function>
+
+<function name="h6">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>h6</code> XHTML element.
+</function>
+
+<function name="handler">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>handler</code> XHTML element.
+</function>
+
+<function name="head">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>head</code> XHTML element.
+</function>
+
+<function name="heading">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>heading</code> XHTML element.
+</function>
+
+<function name="html">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>html</code> XHTML element.
+</function>
+
+<function name="img">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates an <code>img</code> XHTML element.
+</function>
+
+<function name="input">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates an <code>input</code> XHTML element.
+</function>
+
+<function name="insert">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates an <code>insert</code> XHTML element.
+</function>
+
+<function name="kbd">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>kbd</code> XHTML element.
+</function>
+
+<function name="l">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>l</code> XHTML element.
+</function>
+
+<function name="label">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>label</code> XHTML element.
+</function>
+
+<function name="li">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>li</code> XHTML element.
+</function>
+
+<function name="link">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>link</code> XHTML element.
+</function>
+
+<function name="load">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>load</code> XHTML element.
+</function>
+
+<function name="message">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>message</code> XHTML element.
+</function>
+
+<function name="meta">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>meta</code> XHTML element.
+</function>
+
+<function name="model">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>model</code> XHTML element.
+</function>
+
+<function name="nl">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>nl</code> XHTML element.
+</function>
+
+<function name="object">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>object</code> XHTML element.
+</function>
+
+<function name="ol">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates an <code>ol</code> XHTML element.
+</function>
+
+<function name="output">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates an <code>output</code> XHTML element.
+</function>
+
+<function name="p">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>p</code> XHTML element.
+</function>
+
+<function name="param">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>param</code> XHTML element.
+</function>
+
+<function name="pre">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>pre</code> XHTML element.
+</function>
+
+<function name="quote">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>quote</code> XHTML element.
+</function>
+
+<function name="range">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>range</code> XHTML element.
+</function>
+
+<function name="rebuild">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>rebuild</code> XHTML element.
+</function>
+
+<function name="recalculate">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>recalculate</code> XHTML element.
+</function>
+
+<function name="refresh">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>refresh</code> XHTML element.
+</function>
+
+<function name="repeat">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>repeat</code> XHTML element.
+</function>
+
+<function name="reset">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>reset</code> XHTML element.
+</function>
+
+<function name="revalidate">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>revalidate</code> XHTML element.
+</function>
+
+<function name="samp">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>samp</code> XHTML element.
+</function>
+
+<function name="secret">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>secret</code> XHTML element.
+</function>
+
+<function name="section">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>section</code> XHTML element.
+</function>
+
+<function name="select1">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>select1</code> XHTML element.
+</function>
+
+<function name="select">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>select</code> XHTML element.
+</function>
+
+<function name="send">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>send</code> XHTML element.
+</function>
+
+<function name="separator">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>separator</code> XHTML element.
+</function>
+
+<function name="setfocus">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>setfocus</code> XHTML element.
+</function>
+
+<function name="setindex">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>setindex</code> XHTML element.
+</function>
+
+<function name="setvalue">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>setvalue</code> XHTML element.
+</function>
+
+<function name="span">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>span</code> XHTML element.
+</function>
+
+<function name="standby">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>standby</code> XHTML element.
+</function>
+
+<function name="strong">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>strong</code> XHTML element.
+</function>
+
+<function name="style">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>style</code> XHTML element.
+</function>
+
+<function name="sub">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>sub</code> XHTML element.
+</function>
+
+<function name="submit">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>submit</code> XHTML element.
+</function>
+
+<function name="summary">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>summary</code> XHTML element.
+</function>
+
+<function name="sup">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>sup</code> XHTML element.
+</function>
+
+<function name="switch">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>switch</code> XHTML element.
+</function>
+
+<function name="table">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>table</code> XHTML element.
+</function>
+
+<function name="tbody">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>tbody</code> XHTML element.
+</function>
+
+<function name="td">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>td</code> XHTML element.
+</function>
+
+<function name="textarea">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>textarea</code> XHTML element.
+</function>
+
+<function name="tfoot">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>tfoot</code> XHTML element.
+</function>
+
+<function name="th">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>th</code> XHTML element.
+</function>
+
+<function name="thead">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>thead</code> XHTML element.
+</function>
+
+<function name="title">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>title</code> XHTML element.
+</function>
+
+<function name="tr">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>tr</code> XHTML element.
+</function>
+
+<function name="trigger">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>trigger</code> XHTML element.
+</function>
+
+<function name="ul">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates an <code>ul</code> XHTML element.
+</function>
+
+<function name="upload">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates an <code>upload</code> XHTML element.
+</function>
+
+<function name="var">
+<argument name="children">[]</argument>
+<argument name="attrs">Dict{}</argument>
+Creates a <code>var</code> XHTML element.
+</function>
+
+</module>

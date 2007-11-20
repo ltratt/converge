@@ -2,7 +2,13 @@
 
 <function name="parse">
 <argument name="s" type="String" />
-Parses the XML contained in the string <code>s</code> and returns an <ref name="XML::Nodes::Document">XML Document</ref> object.
+Parses the XML contained in the string <code>s</code> and returns a <ref name="XML::Nodes::Doc">Nodes::Doc</ref> object.
+</function>
+
+
+<function name="escape_str">
+<argument name="s" />
+Escapes illegal characters in <code>s</code>, replacing them with the appropriate XML entities.
 </function>
 
 </module>

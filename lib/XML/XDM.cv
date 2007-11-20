@@ -7,3 +7,19 @@ import Nodes
 func parse(xml):
 
 	return libXML2::parse(xml, Nodes)
+
+
+
+//
+// Sanitize a string, replacing illegal characters with XML entities.
+//
+
+func escape_str(s):
+
+	s := s.replaced("&", "&amp;")
+	s := s.replaced("<", "&lt;")
+	s := s.replaced(">", "&gt;")
+	s := s.replaced("'", "&apos;")
+	s := s.replaced("\"", "&quot;")
+
+	return s

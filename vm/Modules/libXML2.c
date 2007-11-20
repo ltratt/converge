@@ -160,7 +160,7 @@ Con_Obj *_Con_Module_libXML2_parse_func(Con_Obj *thread)
 	if (Con_Numbers_Number_to_Con_Int(thread, CON_GET_SLOT_APPLY(state.elements_stack, "len")) != 1)
 		CON_XXX;
 	
-	return CON_GET_SLOT_APPLY(CON_GET_MOD_DEFN(nodes_module, "Document"), "new", document_elems);
+	return CON_GET_SLOT_APPLY(CON_GET_MOD_DEFN(nodes_module, "Doc"), "new", document_elems);
 }
 
 
@@ -172,9 +172,8 @@ void _Con_Module_libXML2_parse_func_characters(void *user_data, const xmlChar *c
 	Con_Obj *current_elem = CON_GET_SLOT_APPLY(state->elements_stack, "get", CON_NEW_INT(-1));
 	
 	Con_Obj *str = Con_Builtins_String_Atom_new_copy(thread, ch, len, CON_STR_UTF_8);
-	Con_Obj *text_node = CON_APPLY(CON_GET_SLOT(CON_GET_MOD_DEFN(state->nodes_module, "Text"), "new"), str);
 	
-	CON_GET_SLOT_APPLY(current_elem, "append", text_node);
+	CON_GET_SLOT_APPLY(current_elem, "append", str);
 }
 
 
@@ -232,13 +231,13 @@ void _Con_Module_libXML2_parse_start_element(void *user_data, const xmlChar *loc
 			attr_namespace = attr_prefix = CON_NEW_STRING("");
 		}
 		
-		Con_Obj *attr = CON_APPLY(CON_GET_SLOT(CON_GET_MOD_DEFN(state->nodes_module, "Attribute"), "new"), attr_name, attr_val, attr_prefix, attr_namespace);
+		Con_Obj *attr = CON_APPLY(CON_GET_SLOT(CON_GET_MOD_DEFN(state->nodes_module, "Attr"), "new"), attr_name, attr_val, attr_prefix, attr_namespace);
 		CON_GET_SLOT_APPLY(attributes_obj, "add", attr);
 		
 		current_attr += 5;
 	}
 	
-	Con_Obj *element = CON_APPLY(CON_GET_SLOT(CON_GET_MOD_DEFN(state->nodes_module, "Element"), "new"), name_obj, attributes_obj, prefix_obj, namespace_obj);
+	Con_Obj *element = CON_APPLY(CON_GET_SLOT(CON_GET_MOD_DEFN(state->nodes_module, "Elem"), "new"), name_obj, attributes_obj, prefix_obj, namespace_obj);
 	
 	CON_GET_SLOT_APPLY(current_elem, "append", element);
 	

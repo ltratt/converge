@@ -2,25 +2,15 @@
 
 The XML tree defined in this file is loosely inspired by the <a href="http://www.xom.nu/">XOM API</a>.
 
-<class name="Document" supers="List">
+<class name="Doc" supers="List">
 </class>
 
 
-
-
-<class name="Attribute">
+<class name="Attr">
 </class>
 
 
-
-
-<class name="Element" supers="List">
-</class>
-
-
-
-
-<class name="Text" supers="List">
+<class name="Elem" supers="List">
 </class>
 
 </module>

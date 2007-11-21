@@ -11,6 +11,7 @@ ALL_OBJS = ${MINIMAL_OBJS} \
 	CEI.cvb CPK/Traverser.cvb Platform/Env.cvb Platform/Exec.cvb Sort.cvb \
 	XML/Nodes.cvb XML/XDM.cvb XML/XHTML.cvb
 
+
 all: libconverge.cvl
 
 minimal: ${MINIMAL_OBJS}
@@ -38,7 +39,6 @@ cross: ${CROSS_OBJS}
 cross-clean:
 	rm -f ${CROSS_OBJS} libconverge.${TARGET}.cvl
 endif
-
 
 libconverge.cvl: ${ALL_OBJS}
 	${CONVERGE_VM} ${CONVERGEL} -l -o libconverge.cvl ${ALL_OBJS}

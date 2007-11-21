@@ -14,7 +14,7 @@ bindir = @bindir@
 	${AS} -o $@ $<
 
 
-OBJECT_FILES = 	@CON_THREAD_ATOM_OBJ@ @CON_THREAD_CLASS_OBJ@ @CON_THREAD_MODULE_OBJ@ \
+OBJ_FILES = @CON_THREAD_ATOM_OBJ@ @CON_THREAD_CLASS_OBJ@ @CON_THREAD_MODULE_OBJ@ \
 	Bootstrap.o Target.o Builtins/Atom_Def_Atom.o Builtins/Class/Atom.o \
 	Builtins/Class/Class.o Builtins/Closure/Atom.o Builtins/Closure/Class.o \
 	Builtins/Con_Stack/Atom.o Builtins/Con_Stack/Class.o Builtins/Dict/Atom.o \
@@ -38,22 +38,16 @@ install:
 	install -d ${bindir}
 	install -c -m 555 converge ${bindir}
 
-sinclude .depend
-
-depend:
-	rm -f .depend
-	echo ${OBJECT_FILES} | sed "y/ /\n/" | sed "s/\.o$$/.c/" | xargs mkdep -I. -I/usr/local/include -a ${CFLAGS}
-
-libconverge.a: ${OBJECT_FILES}
+libconverge.a: ${OBJ_FILES}
 	rm -f libconverge.a
-	ar cru libconverge.a ${OBJECT_FILES}
+	ar cru libconverge.a ${OBJ_FILES}
 	ranlib libconverge.a
 
 converge: libconverge.a
 	gcc -o converge main.o libconverge.a ${LIBS}
 
 clean:
-	rm -rf *.core libconverge.a converge ${OBJECT_FILES}
+	rm -rf *.core libconverge.a converge ${OBJ_FILES}
 
 distclean: clean
 	rm -f .depend Makefile Config.h Config.h.in Version.h

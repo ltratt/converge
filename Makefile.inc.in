@@ -36,7 +36,4 @@ ifdef TARGET
 	${CONVERGE_VM} ${CONVERGEC} ${CONVERGEC_FLAGS} -T ${TARGET} -o $@ $<
 endif
 
-depend::
-	${CONVERGE_VM} ${CONVERGED} -o .depend ${OBJECT_FILES}
-
 sinclude "${.CURDIR}/.depend"

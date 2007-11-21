@@ -1,14 +1,16 @@
+OBJ_FILES = 1.cvb
+
+
 all: 1
 
-OBJECT_FILES = 1.cvb
-
-include @abs_top_srcdir@/Makefile.inc
-
-1: ${OBJECT_FILES} ${CONVERGE_LIB}
-	${CONVERGE_VM} ${CONVERGEL} -o 1 1.cvb ${OBJECT_FILES}
+1: ${OBJ_FILES} ${CONVERGE_LIB}
+	${CONVERGE_VM} ${CONVERGEL} -o 1 1.cvb ${OBJ_FILES}
 
 clean:
-	rm -f convergep ${OBJECT_FILES}
+	rm -f convergep ${OBJ_FILES}
 
 distclean: clean
 	rm -f Makefile
+
+
+include @abs_top_srcdir@/Makefile.inc

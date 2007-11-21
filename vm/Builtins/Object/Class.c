@@ -193,7 +193,7 @@ Con_Obj *_Con_Builtins_Object_Class_iter_slots_func(Con_Obj *thread)
 			if (slot_name_size > slot_name_buffer_size) {
 				CON_MUTEX_UNLOCK(&self->mutex);
 				slot_name_buffer_size = slot_name_size;
-				slot_name = Con_Memory_malloc(thread, slot_name_buffer_size, CON_MEMORY_CHUNK_OPAQUE);
+				slot_name_buffer = Con_Memory_malloc(thread, slot_name_buffer_size, CON_MEMORY_CHUNK_OPAQUE);
 				j = old_j;
 				CON_MUTEX_LOCK(&self->mutex);
 				continue;
@@ -202,7 +202,7 @@ Con_Obj *_Con_Builtins_Object_Class_iter_slots_func(Con_Obj *thread)
 			memmove(slot_name_buffer, slot_name, slot_name_size);
 			
 			CON_MUTEX_UNLOCK(&self->mutex);
-			Con_Obj *name = Con_Builtins_String_Atom_new_copy(thread, slot_name, slot_name_size, CON_STR_UTF_8);
+			Con_Obj *name = Con_Builtins_String_Atom_new_copy(thread, slot_name_buffer, slot_name_size, CON_STR_UTF_8);
 			
 			CON_YIELD(Con_Builtins_List_Atom_new_va(thread, name, val, NULL));
 		}

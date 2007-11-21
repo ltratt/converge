@@ -463,20 +463,20 @@ class Tokenizer:
 
 	func _skip_newlines(self, i):
 	
-		skipped_any := fail
+		skipped_any := 0
 		while i < self._str.len():
 			j := i
 			if m := RE_INNER_LINE_WHITESPACE.match(self._str, j):
 				j += m[0].len()
 			if j < self._str.len() & not NEWLINES.find(self._str[j]):
-				if not skipped_any:
+				if skipped_any == 0:
 					return fail
 				return i
 			skipped_any := 1
 			i := j + 1
 			self.newlines.append(self._src_offset + i)
 		
-		if not skipped_any:
+		if skipped_any == 0:
 			return fail
 		
 		return i

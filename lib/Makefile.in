@@ -8,7 +8,8 @@ MINIMAL_OBJS = CPK/Earley/Grammar.cvb CPK/Earley/Parser.cvb CPK/Token.cvb CPK/To
 	Platform/Properties.cvb Strings.cvb Time.cvb
 
 ALL_OBJS = ${MINIMAL_OBJS} \
-	CEI.cvb Sort.cvb Platform/Env.cvb Platform/Exec.cvb XML/Nodes.cvb XML/XDM.cvb XML/XHTML.cvb
+	CEI.cvb CPK/Traverser.cvb Platform/Env.cvb Platform/Exec.cvb Sort.cvb \
+	XML/Nodes.cvb XML/XDM.cvb XML/XHTML.cvb
 
 all: libconverge.cvl
 

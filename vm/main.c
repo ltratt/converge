@@ -476,12 +476,8 @@ make:
 		int rtn = read(filedes[0], *bytecode + *bytecode_size, i);
 		if (rtn == 0)
 			break;
-		else if (rtn == -1) {
+		else if (rtn == -1)
 			err(1, ": error reading");
-			extern int errno;
-			printf("%d\n", errno);
-			CON_XXX;
-		}
 		else {
 			*bytecode_size += rtn;
 			i += rtn;

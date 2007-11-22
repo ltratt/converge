@@ -1,3 +1,10 @@
+include @abs_top_srcdir@/Makefile.inc
+
+
+%.cvb: %.cv
+	${CONVERGE_VM} ${CONVERGEC} -o $@ $<
+
+
 all: nested powers printf
 
 nested: nested.cvb
@@ -13,7 +20,4 @@ clean:
 	rm -f nested powers printf *.cvb
 
 distclean: clean
-	rm -f Makefile .depend
-
-
-include @abs_top_srcdir@/Makefile.inc
+	rm -f Makefile

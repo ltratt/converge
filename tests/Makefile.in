@@ -1,3 +1,6 @@
+include @abs_top_srcdir@/Makefile.inc
+
+
 all: 
 	cd threads && ${MAKE} ${MFLAGS}
 
@@ -7,6 +10,3 @@ clean:
 distclean:
 	cd threads && ${MAKE} ${MFLAGS} distclean
 	rm -f Makefile
-
-
-include @abs_top_srcdir@/Makefile.inc

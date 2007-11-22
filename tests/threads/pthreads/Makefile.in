@@ -1,4 +1,10 @@
+include @abs_top_srcdir@/Makefile.inc
+
 OBJ_FILES = 1.cvb
+
+
+%.cvb: %.cv
+	${CONVERGE_VM} ${CONVERGEC} -o $@ $<
 
 
 all: 1
@@ -11,6 +17,3 @@ clean:
 
 distclean: clean
 	rm -f Makefile
-
-
-include @abs_top_srcdir@/Makefile.inc

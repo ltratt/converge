@@ -14,7 +14,4 @@ distclean: clean
 	cd compile_time && ${MAKE} ${MFLAGS} distclean
 	cd dsls && ${MAKE} ${MFLAGS} distclean
 	cd metaclasses && ${MAKE} ${MFLAGS} distclean
-	rm -f Makefile .depend
-
-
-include @abs_top_srcdir@/Makefile.inc
+	rm -f Makefile

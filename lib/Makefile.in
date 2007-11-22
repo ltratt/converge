@@ -1,3 +1,5 @@
+include @abs_top_srcdir@/Makefile.inc
+
 prefix = @prefix@
 exec_prefix = @exec_prefix@
 libdir = @libdir@
@@ -10,6 +12,14 @@ MINIMAL_OBJS = CPK/Earley/Grammar.cvb CPK/Earley/Parser.cvb CPK/Token.cvb CPK/To
 ALL_OBJS = ${MINIMAL_OBJS} \
 	CEI.cvb CPK/Traverser.cvb Platform/Env.cvb Platform/Exec.cvb Sort.cvb \
 	XML/Nodes.cvb XML/XDM.cvb XML/XHTML.cvb
+
+
+%.cvb: %.cv
+ifdef BOOTSTRAP
+	${CONVERGE_VM} ${CONVERGEC} --bootstrap -o $@ $<
+else
+	${CONVERGE_VM} ${CONVERGEC} -o $@ $<
+endif
 
 
 all: libconverge.cvl
@@ -26,12 +36,12 @@ install: all
 	echo ${ALL_OBJS:.cvb=.cv} | xargs -n 1 -I{} install -c -m 444 {} ${conlibdir}/{}
 	install -c -m 444 libconverge.cvl ${conlibdir}
 
-include @abs_top_srcdir@/Makefile.inc
-
-CONVERGEC_FLAGS += --bootstrap
 
 ifdef TARGET
 CROSS_OBJS = ${ALL_OBJS:.cvb=.${TARGET}.cvb}
+
+%.${TARGET}.cvb: %.cv
+	${CONVERGE_VM} ${CONVERGEC} -T ${TARGET} -o $@ $<
 
 cross: ${CROSS_OBJS}
 	${CONVERGE_VM} ${CONVERGEL} -l -T ${TARGET} -o libconverge.${TARGET}.cvl ${CROSS_OBJS}
@@ -40,6 +50,7 @@ cross-clean:
 	rm -f ${CROSS_OBJS} libconverge.${TARGET}.cvl
 endif
 
+
 libconverge.cvl: ${ALL_OBJS}
 	${CONVERGE_VM} ${CONVERGEL} -l -o libconverge.cvl ${ALL_OBJS}
 
@@ -47,4 +58,4 @@ clean:
 	rm -f ${ALL_OBJS} libconverge.cvl
 
 distclean: clean
-	rm -f Makefile .depend
+	rm -f Makefile

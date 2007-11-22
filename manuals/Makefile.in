@@ -1,9 +1,15 @@
+include @abs_top_srcdir@/Makefile.inc
+
 prefix = @prefix@
 exec_prefix = @exec_prefix@
 bindir = @bindir@
 datarootdir = @datarootdir@
 datadir = @datadir@
 condocsdir = ${datadir}/doc/converge-@CONVERGE_VERSION@
+
+
+%.cvb: %.cv
+	${CONVERGE_VM} ${CONVERGEC} -o $@ $<
 
 
 all: cvd_to_html
@@ -23,6 +29,3 @@ clean:
 
 distclean: clean
 	rm -f Makefile
-
-
-include @abs_top_srcdir@/Makefile.inc

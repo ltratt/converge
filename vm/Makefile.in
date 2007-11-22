@@ -50,4 +50,4 @@ clean:
 	rm -rf *.core libconverge.a converge ${OBJ_FILES}
 
 distclean: clean
-	rm -f .depend Makefile Config.h Config.h.in Version.h
+	rm -f Makefile Config.h Config.h.in Version.h

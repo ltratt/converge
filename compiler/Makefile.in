@@ -1,3 +1,5 @@
+include @abs_top_srcdir@/Makefile.inc
+
 prefix = @prefix@
 exec_prefix = @exec_prefix@
 bindir = @bindir@
@@ -17,6 +19,14 @@ TARGET_OBJ_FILES = Compiler/Targets/Sixty_Four_Bit.cvb Compiler/Targets/Availabl
 OBJ_FILES = ${BASE_OBJ_FILES} ${TARGET_OBJ_FILES}
 
 
+%.cvb: %.cv
+ifdef BOOTSTRAP
+	${CONVERGE_VM} ${CONVERGEC} --bootstrap -o $@ $<
+else
+	${CONVERGE_VM} ${CONVERGEC} -o $@ $<
+endif
+
+
 all: libcompiler.cvl convergec convergei convergel convergep
 
 install: all
@@ -32,12 +42,11 @@ install: all
 	install -c -m 444 libcompiler.cvl ${conlibdir}/Compiler
 
 
-include @abs_top_srcdir@/Makefile.inc
-
-CONVERGEC_FLAGS += --bootstrap
-
 ifdef TARGET
 CROSS_OBJS = ${OBJ_FILES:.cvb=.${TARGET}.cvb}
+
+%.${TARGET}.cvb: %.cv
+	${CONVERGE_VM} ${CONVERGEC} -T ${TARGET} -o $@ $<
 
 cross: ${CROSS_OBJS} ${CONVERGE_LIB_DIR}/libconverge.${TARGET}.cvl
 	${CONVERGE_VM} ${CONVERGEL} -T ${TARGET} -o convergec.${TARGET} convergec.${TARGET}.cvb ${CROSS_OBJS} ${CONVERGE_LIB_DIR}/libconverge.${TARGET}.cvl
@@ -46,6 +55,7 @@ cross: ${CROSS_OBJS} ${CONVERGE_LIB_DIR}/libconverge.${TARGET}.cvl
 cross-clean:
 	rm -f ${CROSS_OBJS} convergec.${TARGET} convergel.${TARGET}
 endif
+
 
 libcompiler.cvl: ${OBJ_FILES}
 	${CONVERGE_VM} ${CONVERGEL} -l -o libcompiler.cvl ${OBJ_FILES}

@@ -1,3 +1,10 @@
+include @abs_top_srcdir@/Makefile.inc
+
+
+%.cvb: %.cv
+	${CONVERGE_VM} ${CONVERGEC} -o $@ $<
+
+
 all: singleton
 
 
@@ -8,7 +15,4 @@ clean:
 	rm -f singleton singleton.cvb
 	
 distclean: clean
-	rm -f Makefile .depend
-
-
-include @abs_top_srcdir@/Makefile.inc
+	rm -f Makefile

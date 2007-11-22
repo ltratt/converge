@@ -1,3 +1,6 @@
+include @abs_top_srcdir@/Makefile.inc
+
+
 all: 
 	cd @CON_THREAD_TEST_DIR@ && ${MAKE} ${MFLAGS}
 
@@ -9,6 +12,3 @@ distclean:
 	cd pthreads && ${MAKE} ${MFLAGS} distclean
 	cd single_thread && ${MAKE} ${MFLAGS} distclean
 	rm -f Makefile
-
-
-include @abs_top_srcdir@/Makefile.inc

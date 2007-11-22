@@ -607,6 +607,12 @@ class QQ_Mode:
 
 
 
+	func _t_ifail(self, node):
+
+		return self._qq("IFail", [], node.src_infos)
+
+
+
 	func _t_iassert(self, node):
 
 		return self._qq("IAssert", [self._preorder(node.expr)], node.src_infos)

@@ -29,7 +29,7 @@ class Traverser:
 	func _preorder(self, node):
 
 		if not Builtins::List.conformed_by(node):
-			return fail
+			fail
 			
 		name := "_t_" + node[0]
 		if self.find_slot(name):

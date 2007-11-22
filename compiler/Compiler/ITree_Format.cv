@@ -337,6 +337,7 @@ class ITree_Format:
 			return Strings::format("%s[%s : %s]", self._preorder(node.target), self._preorder(node.lower_bound), self._preorder(node.upper_bound))
 
 
+
 	func _t_ireturn(self, node):
 	
 		if node.expr is null:
@@ -355,6 +356,12 @@ class ITree_Format:
 	func _t_iraise(self, node):
 
 		return Strings::format("raise %s", self._preorder(node.expr))
+
+
+
+	func _t_ifail(self, node):
+
+		return "fail"
 
 
 

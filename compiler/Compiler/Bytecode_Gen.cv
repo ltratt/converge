@@ -440,8 +440,6 @@ class Bytecode_Gen:
 		
 		self._add_assign_to_var("self_module", node.src_infos)
 
-		self._instructions.append(self._target.Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_FAIL_OBJ))
-		self._add_assign_to_var("fail", node.src_infos)
 		self._instructions.append(self._target.Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_NULL_OBJ))
 		self._add_assign_to_var("null", node.src_infos)
 
@@ -883,7 +881,7 @@ class Bytecode_Gen:
 				// The module ID we want to lookup in is the same as the module we're currently
 				// building, so we try and turn the module lookup into a simple variable lookup.
 				var := node.names[1]
-				if var_num := self.closures[0][Compiler_Vars::CLOSURE_VARS].find(var.name, var.src_infos):
+				if var_num := self.closures[0][Compiler_Vars::CLOSURE_VARS].find(var.name):
 					self._instructions.append(self._target.Instr_Lookup_Var.new(var.src_infos, self.closures.len() - 1, var_num))
 					i := 2
 				else:
@@ -1017,6 +1015,13 @@ class Bytecode_Gen:
 	
 		self.preorder(node.expr)
 		self._instructions.append(self._target.Instr_Yield.new(node.src_infos))
+
+
+
+	func _t_ifail(self, node):
+	
+		self._instructions.append(self._target.Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_FAIL_OBJ))
+		self._instructions.append(self._target.Instr_Return.new(node.src_infos))
 
 
 

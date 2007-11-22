@@ -236,14 +236,14 @@ Con_Obj *_Con_Builtins_Dict_Class_del_func(Con_Obj *thread)
 
 
 //
-// 'find(key, default := fail)' returns the value of 'key'. If 'key' is not found, 'default' is
-// returned. This function only returns a single value.
+// 'find(key)' returns the value of 'key'. If 'key' is not found it fails. This function only
+// returns a single value.
 //
 
 Con_Obj *_Con_Builtins_Dict_Class_find_func(Con_Obj *thread)
 {
-	Con_Obj *default_val, *key, *self;
-	CON_UNPACK_ARGS("DO;o", &self, &key, &default_val);
+	Con_Obj *key, *self;
+	CON_UNPACK_ARGS("DO", &self, &key);
 	
 	Con_Builtins_Dict_Atom *dict_atom = CON_GET_ATOM(self, CON_BUILTIN(CON_BUILTIN_DICT_ATOM_DEF_OBJECT));
 
@@ -254,10 +254,7 @@ Con_Obj *_Con_Builtins_Dict_Class_find_func(Con_Obj *thread)
 	if (dict_atom->entries[i].key != NULL)
 		val = dict_atom->entries[i].val;
 	else {
-		if (default_val != NULL)
-			val = default_val;
-		else
-			val = CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
+		val = CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
 	}
 	CON_MUTEX_UNLOCK(&self->mutex);
 	
@@ -302,15 +299,14 @@ Con_Obj *_Con_Builtins_Dict_Class_extend_func(Con_Obj *thread)
 
 
 //
-// 'get(key, default := null)' returns the value of 'key'. If 'key' is not found, and 'default' is
-// non-null, 'default' is returned; otherwise an exception is raised.
+// 'get(key)' returns the value of 'key'. If 'key' is not found an exception is raised.
 //
 
 Con_Obj *_Con_Builtins_Dict_Class_get_func(Con_Obj *thread)
 {
-	Con_Obj *default_val, *key, *self;
-	CON_UNPACK_ARGS("DO;o", &self, &key, &default_val);
-	
+	Con_Obj *key, *self;
+	CON_UNPACK_ARGS("DO", &self, &key);
+
 	Con_Builtins_Dict_Atom *dict_atom = CON_GET_ATOM(self, CON_BUILTIN(CON_BUILTIN_DICT_ATOM_DEF_OBJECT));
 
 	Con_Hash hash = Con_Hash_get(thread, key);
@@ -319,12 +315,8 @@ Con_Obj *_Con_Builtins_Dict_Class_get_func(Con_Obj *thread)
 	Con_Obj *val = NULL;
 	if (dict_atom->entries[i].key != NULL)
 		val = dict_atom->entries[i].val;
-	else {
-		if ((default_val != NULL) && (default_val != CON_BUILTIN(CON_BUILTIN_NULL_OBJ)))
-			val = default_val;
-		else
-			CON_RAISE_EXCEPTION("Key_Exception", key);
-	}
+	else
+		CON_RAISE_EXCEPTION("Key_Exception", key);
 	CON_MUTEX_UNLOCK(&self->mutex);
 	
 	return val;

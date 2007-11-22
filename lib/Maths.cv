@@ -71,4 +71,4 @@ func powerset(s):
 			else:
 				array[i] := 0
 		exhausted:
-			return fail
+			fail

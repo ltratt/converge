@@ -412,6 +412,12 @@ class _Renamer:
 
 
 
+	func _t_ifail(self, node):
+
+		return node
+
+
+
 	func _t_iraise(self, node):
 
 		expr := self._preorder(node.expr)

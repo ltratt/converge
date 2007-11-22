@@ -254,6 +254,7 @@ Returns an IEXBI which looks up the field specified by the string <code>field_na
 
 <function name="ireturn">
 <argument name="expr" />
+<argument name="src_infos" />
 Returns an IReturn which returns the value of the IExpr <code>expr</code>, which may be <code>null</code> if the default return value is to be returned.
 </function>
 
@@ -262,6 +263,12 @@ Returns an IReturn which returns the value of the IExpr <code>expr</code>, which
 <argument name="expr" />
 <argument name="src_infos" />
 Returns an IYield which returns the value of the IExpr <code>expr</code>.
+</function>
+
+
+<function name="ifail">
+<argument name="src_infos" />
+Returns an IFail which both returns the current function and transmits failure to the functions caller.
 </function>
 
 

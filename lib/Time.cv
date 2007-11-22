@@ -47,7 +47,7 @@ class Instant:
 		if self.sec == o.sec & self.nsec == o.nsec:
 			return 1
 		
-		return fail
+		fail
 
 
 
@@ -56,7 +56,7 @@ class Instant:
 		if self.sec != o.sec | self.nsec != o.nsec:
 			return 1
 		
-		return fail
+		fail
 
 
 
@@ -67,7 +67,7 @@ class Instant:
 		elif self.sec == o.sec & self.nsec < o.nsec:
 			return 1
 		
-		return fail
+		fail
 
 
 
@@ -78,7 +78,7 @@ class Instant:
 		elif self.sec == o.sec & self.nsec > o.nsec:
 			return 1
 		
-		return fail
+		fail
 
 
 

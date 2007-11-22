@@ -872,6 +872,27 @@ class IYield:
 
 
 
+class IFail:
+
+	func init(self, src_infos):
+	
+		self.src_infos := src_infos
+		
+		self.bound_vars := Set{}
+		self.import_vars := Set{}
+		self.qq_bound_vars := Set{}
+		self.free_vars := Set{}
+		self.mod_id_lookups := Dict{}
+
+
+
+	func extended_src_infos(self, extra_src_infos):
+	
+		return IFail.new(self.src_infos + extra_src_infos)
+
+
+
+
 class IRaise:
 
 	func init(self, expr, src_infos):

@@ -88,7 +88,7 @@ Con_Obj *Con_Modules_find(Con_Obj *thread, Con_Obj *mod_id)
 
 	Con_Obj *modules = CON_GET_SLOT(Con_Builtins_Thread_Atom_get_vm(thread), "modules");
 
-	Con_Obj *mod = CON_GET_SLOT_APPLY_NO_FAIL(modules, "get", mod_id, CON_BUILTIN(CON_BUILTIN_FAIL_OBJ));
+	Con_Obj *mod = CON_GET_SLOT_APPLY_NO_FAIL(modules, "find", mod_id);
 	if (mod == NULL) {
 		int i;
 		for (i = 0; Con_Builtin_Modules[i].mod_name != NULL; i += 1) {

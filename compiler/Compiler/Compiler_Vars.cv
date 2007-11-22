@@ -41,7 +41,7 @@ CLOSURE_IMPORTS := 2
 
 // The default variables in scope in every Converge module.
 
-DEFAULT_VARS := Set{"self_module", "null", "fail"}
+DEFAULT_VARS := Set{"self_module", "null"}
 
 
 
@@ -114,7 +114,7 @@ func cvb_cache_path(path):
 	if ext == CV_EXTENSION:
 		return File::join_ext(name, CVB_EXTENSION)
 	
-	return fail
+	fail
 
 
 

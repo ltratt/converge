@@ -29,7 +29,7 @@ import Compiler_Vars
 
 // Default set of keywords. Order is insignificant.
 
-KEYWORDS := ["if", "ndif", "then", "elif", "else", "when", "class", "proto", "func", "while", "yield", "break", "where", "return", "nonlocal", "for", "pass", "import", "try", "catch", "into", "is", "in", "not", "continue", "raise", "exbi", "every", "exhausted", "broken", "as", "assert", "bound_func", "unbound_func", "rename", "metaclass"]
+KEYWORDS := ["if", "ndif", "then", "elif", "else", "when", "class", "proto", "func", "while", "yield", "break", "where", "return", "nonlocal", "for", "pass", "import", "try", "catch", "into", "is", "in", "not", "continue", "raise", "exbi", "every", "exhausted", "broken", "as", "assert", "bound_func", "unbound_func", "rename", "metaclass", "fail"]
 
 // Default set of symbols. Order may be significant (e.g. "::" should come before ":").
 
@@ -470,14 +470,14 @@ class Tokenizer:
 				j += m[0].len()
 			if j < self._str.len() & not NEWLINES.find(self._str[j]):
 				if skipped_any == 0:
-					return fail
+					fail
 				return i
 			skipped_any := 1
 			i := j + 1
 			self.newlines.append(self._src_offset + i)
 		
 		if skipped_any == 0:
-			return fail
+			fail
 		
 		return i
 

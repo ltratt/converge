@@ -93,7 +93,7 @@ class Elem(Builtins::List):
 	func find_attr(self, name, namespace := ""):
 	
 		if not (namespace := self._attr_namespaces.find(namespace)):
-			return fail
+			fail
 		else:
 			return namespace.find(name)
 
@@ -111,7 +111,7 @@ class Elem(Builtins::List):
 			for name, attr := attrs.iter():
 				yield attr
 			
-		return fail
+		fail
 
 
 
@@ -121,7 +121,7 @@ class Elem(Builtins::List):
 			if Elem.instantiated(node):
 				yield node
 
-		return fail
+		fail
 	
 	
 	
@@ -143,4 +143,4 @@ class Elem(Builtins::List):
 			if Elem.instantiated(node) & node.name.to_lower_case() == lc_name & node.namespace == namespace:
 				yield node
 
-		return fail
+		fail

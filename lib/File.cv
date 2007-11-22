@@ -133,13 +133,13 @@ canon_path := POSIX_File::canon_path
 func is_entry_in_dir(dir_path, path):
 
 	if not path.prefixed_by(dir_path):
-		return fail
+		fail
 	
 	i := dir_path.len()
 	while i < path.len() & path[i] == DIRECTORY_SEPARATOR:
 		i += 1
 	if path[i : ].find(DIRECTORY_SEPARATOR):
-		return fail
+		fail
 	
 	return 1
 

@@ -419,14 +419,14 @@ Con_Obj *_Con_Builtins_Set_Class_extend_func(Con_Obj *thread)
 
 
 //
-// 'find(o, default := fail)' returns the object in the set which is == 'key'. If no such object is
-// found, 'default' is returned. This function only returns a single value.
+// 'find(o)' returns the object in the set which is == 'key'. This function only returns a single
+// value.
 //
 
 Con_Obj *_Con_Builtins_Set_Class_find_func(Con_Obj *thread)
 {
-	Con_Obj *default_val, *o, *self;
-	CON_UNPACK_ARGS("WO;o", &self, &o, &default_val);
+	Con_Obj *o, *self;
+	CON_UNPACK_ARGS("WO", &self, &o);
 	
 	Con_Builtins_Set_Atom *set_atom = CON_GET_ATOM(self, CON_BUILTIN(CON_BUILTIN_SET_ATOM_DEF_OBJECT));
 
@@ -437,10 +437,7 @@ Con_Obj *_Con_Builtins_Set_Class_find_func(Con_Obj *thread)
 	if (set_atom->entries[i].obj != NULL)
 		rtn = set_atom->entries[i].obj;
 	else {
-		if (default_val != NULL)
-			rtn = default_val;
-		else
-			rtn = CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
+		rtn = CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
 	}
 	CON_MUTEX_UNLOCK(&self->mutex);
 	

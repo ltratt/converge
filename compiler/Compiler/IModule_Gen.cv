@@ -678,6 +678,7 @@ class IModule_Gen:
 		//      ::= exbi
 		//      ::= return
 		//      ::= yield
+		//      ::= fail
 		//      ::= raise
 		//      ::= assert
 		//      ::= break
@@ -1050,6 +1051,14 @@ class IModule_Gen:
 		// yield ::= "YIELD" expr
 		
 		return ITree::IYield.new(self._preorder(node[2], extra_src_infos), extra_src_infos + node[1].src_infos)
+
+
+
+	func _t_fail(self, node, extra_src_infos):
+	
+		// fail ::= "FAIL"
+		
+		return ITree::IFail.new(extra_src_infos + node[1].src_infos)
 
 
 

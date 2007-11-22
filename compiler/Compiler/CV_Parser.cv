@@ -128,6 +128,7 @@ expr ::= class_defn
      ::= exbi
      ::= return			 %precedence 5
      ::= yield			 %precedence 5
+     ::= fail            %precedence 5
      ::= raise           %precedence 5
      ::= assert          %precedence 5
      ::= break
@@ -212,6 +213,8 @@ return ::= "RETURN" expr
        ::= "RETURN"
 
 yield ::= "YIELD" expr
+
+fail ::= "FAIL"
 
 raise ::= "RAISE" expr
 

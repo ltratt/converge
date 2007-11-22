@@ -23,7 +23,6 @@
 
 #include <errno.h>
 #include <err.h>
-#include <pthread.h>
 #include <string.h>
 
 #include "Arch.h"

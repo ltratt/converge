@@ -65,7 +65,7 @@ Con_Obj *_Con_Module_Exception_backtrace_func(Con_Obj *);
 
 Con_Obj *Con_Module_Exceptions_init(Con_Obj *thread, Con_Obj *identifier)
 {
-	const char* defn_names[] = {"Exception", "Internal_Exception", "User_Exception", "System_Exit_Exception", "VM_Exception", "Apply_Exception", "Bounds_Exception", "Field_Exception", "Import_Exception", "Indices_Exception", "Key_Exception", "Mod_Defn_Exception", "NDIf_Exception", "Number_Exception", "Parameters_Exception", "Slot_Exception", "Type_Exception", "Unpack_Exception", "Unassigned_Var_Exception", "IO_Exception", "File_Exception", "backtrace", NULL};
+	const char* defn_names[] = {"Exception", "Internal_Exception", "User_Exception", "System_Exit_Exception", "VM_Exception", "Apply_Exception", "Bounds_Exception", "Field_Exception", "Import_Exception", "Indices_Exception", "Key_Exception", "Mod_Defn_Exception", "NDIf_Exception", "Number_Exception", "Parameters_Exception", "Signal_Exception", "Slot_Exception", "Type_Exception", "Unpack_Exception", "Unassigned_Var_Exception", "IO_Exception", "File_Exception", "backtrace", NULL};
 
 	return Con_Builtins_Module_Atom_new_c(thread, identifier, CON_NEW_STRING("Exceptions"), defn_names, CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
 }
@@ -161,6 +161,11 @@ Con_Obj *Con_Module_Exceptions_import(Con_Obj *thread, Con_Obj *exceptions_mod)
 
 	Con_Obj *parameters_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("Parameters_Exception"), Con_Builtins_List_Atom_new_va(thread, user_exception, NULL), exceptions_mod);
 	CON_SET_MOD_DEFN(exceptions_mod, "Parameters_Exception", parameters_exception);
+
+	// class Signal_Exception
+	
+	Con_Obj *signal_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("Signal_Exception"), Con_Builtins_List_Atom_new_va(thread, user_exception, NULL), exceptions_mod);
+	CON_SET_MOD_DEFN(exceptions_mod, "Signal_Exception", signal_exception);
 
 	// class Slot_Exception
 

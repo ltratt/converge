@@ -26,7 +26,11 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 
+#ifdef CON_HAVE_NATIVE_ERR
 #include <err.h>
+#else
+#include "Platform/err.h"
+#endif
 #include <libgen.h>
 #include <setjmp.h>
 #include <stdio.h>

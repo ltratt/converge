@@ -28,7 +28,8 @@ OBJ_FILES = @CON_THREAD_ATOM_OBJ@ @CON_THREAD_CLASS_OBJ@ @CON_THREAD_MODULE_OBJ@
 	Builtins/Unique_Atom_Def.o Builtins/VM/Atom.o Builtins/VM/Class.o Bytecode.o \
 	Builtins/Number/Class.o Builtins/Float/Atom.o Builtins/Float/Class.o \
 	Hash.o Memory.o Misc.o Numbers.o Object.o Platform/Arch/@CON_ARCH@/Arch.o @CON_MEMMOVE@ \
-	Slots.o main.o Modules/Thread.o Modules.o Std_Modules.o @FGETLN@\
+	Slots.o main.o Modules/Thread.o Modules.o Std_Modules.o \
+	@PLATFORM_FGETLN@ @PLATFORM_ERR@ \
 	@MODULES@
 	
 

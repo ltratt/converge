@@ -359,7 +359,7 @@ AC_CHECK_FUNC(mergesort, [AC_DEFINE(CON_HAVE_MERGESORT)])
 
 AH_TEMPLATE(CON_HAVE_NATIVE_FGETLN,
   [Define if your OS natively defines the fgetln function])
-AC_CHECK_FUNC(fgetln, [AC_DEFINE(CON_HAVE_NATIVE_FGETLN)], [AC_SUBST(FGETLN, Platform/fgetln.o)])
+AC_CHECK_FUNC(fgetln, [AC_DEFINE(CON_HAVE_NATIVE_FGETLN)], [AC_SUBST(PLATFORM_FGETLN, Platform/fgetln.o)])
 
 
 # getdirentries
@@ -454,6 +454,16 @@ int main()
 	sigsetjmp(return_env, 0);
 }], [AC_MSG_RESULT(-D_POSIX_C_SOURCE)
 	extra_cflags="$extra_cflags -D_POSIX_C_SOURCE"], [AC_MSG_ERROR(unable to find sigsetjmp)])])
+
+
+# err
+
+AH_TEMPLATE(CON_HAVE_NATIVE_ERR,
+  [Define if your OS natively defines the err function])
+AC_CHECK_FUNC(err, [AC_DEFINE(CON_HAVE_NATIVE_ERR)], [AC_SUBST(PLATFORM_ERR, Platform/err.o)])
+
+
+# u_char
 
 AC_MSG_CHECKING([for u_char etc])
 

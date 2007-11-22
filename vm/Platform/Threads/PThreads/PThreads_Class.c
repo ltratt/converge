@@ -22,7 +22,11 @@
 #include "Config.h"
 
 #include <errno.h>
+#ifdef CON_HAVE_NATIVE_ERR
 #include <err.h>
+#else
+#include "Platform/err.h"
+#endif
 #include <pthread.h>
 #include <string.h>
 #include <stdarg.h>

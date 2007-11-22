@@ -22,7 +22,6 @@
 #include "Config.h"
 
 #include <string.h>
-#include <dlfcn.h>
 
 #include "Arch.h"
 #include "Bytecode.h"

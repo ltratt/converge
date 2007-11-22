@@ -21,7 +21,6 @@
 
 #include "Config.h"
 
-#include <dlfcn.h>
 #include <string.h>
 
 #include "Arch.h"

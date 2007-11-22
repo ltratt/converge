@@ -162,10 +162,12 @@ Con_Obj *_Con_Builtins_Module_Class_iter_defns_func(Con_Obj *thread)
 		}
 
 		memmove(slot_name_buffer, slot_name, slot_name_size);
+		
+		Con_Obj *defn_val = Con_Builtins_Module_Atom_get_defn(thread, self, slot_name_buffer, slot_name_size);
 
 		CON_MUTEX_UNLOCK(&self->mutex);
 		Con_Obj *name = Con_Builtins_String_Atom_new_copy(thread, slot_name_buffer, slot_name_size, CON_STR_UTF_8);
-		CON_YIELD(Con_Builtins_List_Atom_new_va(thread, name, val, NULL));
+		CON_YIELD(Con_Builtins_List_Atom_new_va(thread, name, defn_val, NULL));
 	}
 
 	return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);

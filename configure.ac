@@ -297,7 +297,7 @@ for mod_name in $sorted_mod_names; do
 		modules_list="$modules_list, "
 	fi
 	externs=`printf "%s\\n%s\\n%s" "$externs" "extern _Con_Modules_get_init_t Con_Module_${mod_name}_init;" "extern _Con_Modules_get_import_t Con_Module_${mod_name}_import;"`
-	modules_list="$modules_list{ \"$mod_name\", Con_Module_${mod_name}_init, Con_Module_${mod_name}_import }"
+	modules_list="$modules_list{ (u_char *) \"$mod_name\", Con_Module_${mod_name}_init, Con_Module_${mod_name}_import }"
 	cap_mod_name=`echo $mod_name | sed "y/abcdefghijklmnopqrstuvwxyz/ABCDEFGHIJKLMNOPQRSTUVWXYZ/"`
 	mod_ids=`printf "%s\\n#define CON_MOD_ID_%s %s\\n" "$mod_ids" "$cap_mod_name" "$mod_name"`
 	i=$(($i + 1))

@@ -343,7 +343,7 @@ Con_Obj *_Con_Module_POSIX_File_File_Class_readln_func(Con_Obj *thread)
 				CON_XXX;
 		}
 		
-		CON_YIELD(Con_Builtins_String_Atom_new_copy(thread, line, len, CON_STR_UTF_8));
+		CON_YIELD(Con_Builtins_String_Atom_new_copy(thread, (u_char *) line, len, CON_STR_UTF_8));
 	}
 
 	return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
@@ -560,7 +560,7 @@ Con_Obj *_Con_Module_POSIX_File_iter_dir_entries_func(Con_Obj *thread)
 			continue;
 #		endif
 
-		CON_YIELD(Con_Builtins_String_Atom_new_copy(thread, de->d_name, strlen(de->d_name), CON_STR_UTF_8));
+		CON_YIELD(Con_Builtins_String_Atom_new_copy(thread, (u_char *) de->d_name, strlen(de->d_name), CON_STR_UTF_8));
 	}
 
 	closedir(dir);

@@ -92,7 +92,7 @@ Con_Obj *Con_Modules_find(Con_Obj *thread, Con_Obj *mod_id)
 	if (mod == NULL) {
 		int i;
 		for (i = 0; Con_Builtin_Modules[i].mod_name != NULL; i += 1) {
-			if (Con_Builtins_String_Atom_c_string_eq(thread, Con_Builtin_Modules[i].mod_name, strlen(Con_Builtin_Modules[i].mod_name), mod_id)) {
+			if (Con_Builtins_String_Atom_c_string_eq(thread, Con_Builtin_Modules[i].mod_name, strlen((char *) Con_Builtin_Modules[i].mod_name), mod_id)) {
 				mod = Con_Builtin_Modules[i].init_func(thread, mod_id);
 				break;
 			}
@@ -144,7 +144,7 @@ Con_Obj *Con_Modules_import(Con_Obj *thread, Con_Obj *module)
 		
 		if (module_atom->module_bytecode == NULL) {
 			for (int i = 0; Con_Builtin_Modules[i].mod_name != NULL; i += 1) {
-				if (Con_Builtins_String_Atom_c_string_eq(thread, Con_Builtin_Modules[i].mod_name, strlen(Con_Builtin_Modules[i].mod_name), module_atom->identifier)) {
+				if (Con_Builtins_String_Atom_c_string_eq(thread, Con_Builtin_Modules[i].mod_name, strlen((char *) Con_Builtin_Modules[i].mod_name), module_atom->identifier)) {
 					Con_Builtin_Modules[i].import_func(thread, module);
 					break;
 				}

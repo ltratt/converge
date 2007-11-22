@@ -142,7 +142,7 @@
 		Con_Builtins_VM_Atom_ensure_no_current_exception(thread); \
 		Con_Builtins_VM_Atom_raise(thread, \
 			Con_Builtins_VM_Atom_get_slot_apply(thread, Con_Builtins_Module_Atom_get_defn(thread, CON_BUILTIN(CON_BUILTIN_EXCEPTIONS_MODULE), (u_char *) name, sizeof(name) - 1), \
-			"new", sizeof("new") - 1, false, ## __VA_ARGS__, NULL)); \
+			(u_char *) "new", sizeof("new") - 1, false, ## __VA_ARGS__, NULL)); \
 		abort(); \
 	}
 

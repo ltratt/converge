@@ -104,7 +104,7 @@ Con_Obj *Con_Builtins_Module_Atom_new_c(Con_Obj *thread, Con_Obj *identifier, Co
 	
 	Con_Slots_init(thread, &module_atom->top_level_vars);
 	for (int i = 0; defn_names[i] != NULL; i += 1) {
-		Con_Slots_set_slot(thread, &new_module->mutex, &module_atom->top_level_vars, defn_names[i], strlen(defn_names[i]), NULL);
+		Con_Slots_set_slot(thread, &new_module->mutex, &module_atom->top_level_vars, (u_char *) defn_names[i], strlen(defn_names[i]), NULL);
 	}
 
 	Con_Builtins_Slots_Atom_Def_init_atom(thread, slots_atom);

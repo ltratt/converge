@@ -81,11 +81,11 @@ Con_Obj *_Con_Module_C_Platform_Env_find_var(Con_Obj *thread)
 	Con_Obj *name;
 	CON_UNPACK_ARGS("S", &name);
 
-	u_char *val = getenv(Con_Builtins_String_Atom_to_c_string(thread, name));
+	char *val = getenv(Con_Builtins_String_Atom_to_c_string(thread, name));
 	if (val == NULL)
 		return NULL;
 
-	return Con_Builtins_String_Atom_new_copy(thread, val, strlen(val), CON_STR_UTF_8);
+	return Con_Builtins_String_Atom_new_copy(thread, (u_char *) val, strlen(val), CON_STR_UTF_8);
 }
 
 
@@ -100,11 +100,11 @@ Con_Obj *_Con_Module_C_Platform_Env_get_var(Con_Obj *thread)
 	Con_Obj *name;
 	CON_UNPACK_ARGS("S", &name);
 
-	u_char *val = getenv(Con_Builtins_String_Atom_to_c_string(thread, name));
+	char *val = getenv(Con_Builtins_String_Atom_to_c_string(thread, name));
 	if (val == NULL)
 		CON_XXX;
 
-	return Con_Builtins_String_Atom_new_copy(thread, val, strlen(val), CON_STR_UTF_8);
+	return Con_Builtins_String_Atom_new_copy(thread, (u_char *) val, strlen(val), CON_STR_UTF_8);
 }
 
 

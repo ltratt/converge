@@ -1321,7 +1321,7 @@ void Con_Builtins_Con_Stack_Atom_unpack_args(Con_Obj *thread, Con_Obj *con_stack
 		stackp += sizeof(Con_Obj *) + sizeof(Con_Builtins_Con_Stack_Class_Type);
 		
 		if (*args == '.') {
-			va_arg(ap, Con_Obj **);
+			(void) va_arg(ap, Con_Obj **);
 			args_processed += 1;
 			args += 1;
 			continue;
@@ -1334,7 +1334,7 @@ void Con_Builtins_Con_Stack_Atom_unpack_args(Con_Obj *thread, Con_Obj *con_stack
 					CON_XXX;
 			}
 			else
-				va_arg(ap, Con_Obj *);
+				(void) va_arg(ap, Con_Obj *);
 			*va_arg(ap, Con_Obj **) = obj;
 			args_processed += 1;
 			args += 1;

@@ -348,7 +348,7 @@ class Bytecode_Gen:
 	func _add_mod_defn_lookup(self, defn_path, src_infos):
 	
 		if not import_id, import_extras := self._compiler.find_import_location(defn_path):
-			self._compiler.error(Strings::format("Can't find module / package '%s'", Strings::join(defn_path, "::")), src_infos)
+			self._compiler.error(Strings::format("Can't find module / package '%s'.", Strings::join(defn_path, "::")), src_infos)
 
 		if import_num := self._imports.find(import_id):
 			self._instructions.append(self._target.Instr_Import.new(src_infos, import_num))
@@ -366,7 +366,7 @@ class Bytecode_Gen:
 		import_name_list := Strings::split(mod_path, "::")
 	
 		if not import_id, import_extras := self._compiler.find_import_location(import_name_list):
-			self._compiler.error(Strings::format("Can't find module / package '%s'", mod_path), src_infos)
+			self._compiler.error(Strings::format("Can't find module / package '%s'.", mod_path), src_infos)
 		
 		return [import_id, import_extras]
 
@@ -1060,7 +1060,7 @@ class Bytecode_Gen:
 		i := self._nesting.len() - 1
 		while not [NEST_FOR, NEST_WHILE].find(self._nesting[i][0]):
 			if [NEST_CLASS, NEST_FUNC].find(self._nesting[i][0]):
-				self._compiler.error("Trying to break whilst not in a 'while' or 'for' loop", node.src_infos)
+				self._compiler.error("Trying to break whilst not in a 'while' or 'for' loop.", node.src_infos)
 			self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
 			i -= 1
 		
@@ -1078,7 +1078,7 @@ class Bytecode_Gen:
 		i := self._nesting.len() - 1
 		while not [NEST_FOR, NEST_WHILE].find(self._nesting[i][0]):
 			if [NEST_CLASS, NEST_FUNC].find(self._nesting[i][0]):
-				self._compiler.error("Trying to continue whilst not in a 'while' or 'for' loop", node.src_infos)
+				self._compiler.error("Trying to continue whilst not in a 'while' or 'for' loop.", node.src_infos)
 			self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
 			i -= 1
 		

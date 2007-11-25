@@ -24,7 +24,9 @@
 #include <sys/param.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/wait.h>
+#ifdef CON_PLATFORM_POSIX
+#	include <sys/wait.h>
+#endif
 
 #ifdef CON_HAVE_NATIVE_ERR
 #include <err.h>

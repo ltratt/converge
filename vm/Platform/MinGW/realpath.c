@@ -1,4 +1,4 @@
-// Copyright (c) 2003-2006 King's College London, created by Laurence Tratt
+// Copyright (c) 2007 Laurence Tratt <laurie@tratt.net>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to
@@ -19,37 +19,17 @@
 // IN THE SOFTWARE.
 
 
-#ifndef _CON_PLATFORM_THREADS_PTHREADS_PTHREADS_ATOM_H
-#define _CON_PLATFORM_THREADS_PTHREADS_PTHREADS_ATOM_H
+#include <limits.h>
+#include <windows.h>
 
-#include <setjmp.h>
-
-#include "Core.h"
-
-#include "Builtins/Unique_Atom_Def.h"
+#include "realpath.h"
 
 
-typedef enum {CON_BUILTINS_THREAD_CLASS_INITIALIZED, CON_BUILTINS_THREAD_CLASS_RUNNING, CON_BUILTINS_THREAD_CLASS_RUNNING_BLOCKED, CON_BUILTINS_THREAD_CLASS_AWAITING_GC, CON_BUILTINS_THREAD_CLASS_FINISHED} Con_Builtins_Thread_Class_State;
-
-typedef struct {
-	CON_BUILTINS_UNIQUE_ATOM_HEAD
-	Con_Obj **threads;
-	Con_Int num_threads_allocated, num_threads;
-} Con_Builtins_Thread_Class_Unique_Atom;
-
-typedef struct {
-	CON_ATOM_HEAD
-	Con_Builtins_Thread_Class_State state;
-	u_char *c_stack_start, *c_stack_end;
-	Con_Obj *start_func;
-	Con_Obj *vm;
-	Con_Obj *con_stack;
-	Con_Obj *current_exception;
-	pthread_t thread_id;
-	JMP_BUF last_env;
-} Con_Builtins_Thread_Atom;
-
-void Con_Builtins_Thread_Atom_add_thread(Con_Obj *, Con_Obj *);
-void Con_Builtins_Thread_Atom_remove_thread(Con_Obj *, Con_Obj *);
-
-#endif
+char *realpath(const char *pathname, char *resolved)
+{
+	DWORD len = GetFullPathName (pathname, MAX_PATH, resolved, NULL);
+	if (len == 0 || len > MAX_PATH - 1) /* failure */
+		return NULL;
+	else
+		return resolved;
+}

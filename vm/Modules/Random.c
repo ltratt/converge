@@ -76,13 +76,19 @@ Con_Obj *Con_Module_Random_import(Con_Obj *thread, Con_Obj *random_mod)
 	CON_SET_MOD_DEFN(random_mod, "random", CON_NEW_UNBOUND_C_FUNC(_Con_Module_Random_random_func, "random", random_mod));
 	CON_SET_MOD_DEFN(random_mod, "shuffle", CON_NEW_UNBOUND_C_FUNC(_Con_Module_Random_shuffle_func, "shuffle", random_mod));
 
-#	ifdef CON_HAVE_SRANDOMDEV
-	srandomdev();
-#	else
-    struct timeval tv;
 
-    gettimeofday(&tv, NULL);
-    srandom(tv.tv_sec ^ tv.tv_usec);
+#	if defined(CON_HAVE_RANDOM) && defined(CON_HAVE_SRANDOMDEV)
+	srandomdev();
+#	elif defined(CON_HAVE_RANDOM)
+	struct timeval tv;
+
+	gettimeofday(&tv, NULL);
+	srandom(tv.tv_sec ^ tv.tv_usec);
+#	else
+	struct timeval tv;
+
+	gettimeofday(&tv, NULL);
+	srand(tv.tv_sec ^ tv.tv_usec);
 #	endif
 
 	return random_mod;
@@ -111,7 +117,11 @@ Con_Obj *_Con_Module_Random_pluck_func(Con_Obj *thread)
 	if (num_elems == 0)
 		CON_RAISE_EXCEPTION("Bounds_Exception", CON_NEW_INT(0), CON_NEW_INT(0));
 
+#	ifdef CON_HAVE_RANDOM
 	Con_Int i = random() % num_elems;
+#	else
+	Con_Int i = rand() % num_elems;
+#	endif
 
 	return CON_GET_SLOT_APPLY(collection, "get", CON_NEW_INT(i));
 }
@@ -126,7 +136,11 @@ Con_Obj *_Con_Module_Random_random_func(Con_Obj *thread)
 {
 	CON_UNPACK_ARGS("");
 
+#	ifdef CON_HAVE_RANDOM
 	return CON_NEW_INT(random());
+#	else
+	return CON_NEW_INT(rand());
+#	endif
 }
 
 
@@ -145,7 +159,12 @@ Con_Obj *_Con_Module_Random_shuffle_func(Con_Obj *thread)
 
 	Con_Int num_elems = Con_Numbers_Number_to_Con_Int(thread, CON_GET_SLOT_APPLY(collection, "len"));
 	for (Con_Int i = num_elems - 1; i > 0; i -= 1) {
+#		ifdef CON_HAVE_RANDOM
 		Con_Int j = random() % (i + 1);
+#		else
+		Con_Int j = rand() % (i + 1);
+#		endif
+
 		Con_Obj *ith = CON_GET_SLOT_APPLY(collection, "get", CON_NEW_INT(i));
 		Con_Obj *jth = CON_GET_SLOT_APPLY(collection, "get", CON_NEW_INT(j));
 		CON_GET_SLOT_APPLY(collection, "set", CON_NEW_INT(i), jth);

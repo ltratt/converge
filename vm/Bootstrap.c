@@ -310,7 +310,7 @@ Con_Obj *Con_Bootstrap_do(u_char *c_stack_start, int argc, char **argv, char *vm
 	// As such, none of the File modules are "core", but we need to import them so stderr etc. can
 	// be created properly.
 
-#	ifdef CON_PLATFORM_POSIX
+#	if defined(CON_PLATFORM_POSIX) || defined(CON_PLATFORM_MINGW)
 	vm_atom->builtins[CON_BUILTIN_C_FILE_MODULE] = Con_Modules_import(thread, Con_Modules_get(thread, CON_NEW_STRING("POSIX_File")));
 #	else
 	XXX;

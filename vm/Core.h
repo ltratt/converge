@@ -31,6 +31,16 @@
 
 
 
+#ifndef CON_HAVE_U_TYPES
+
+typedef	unsigned char	u_char;
+typedef	unsigned short	u_short;
+typedef	unsigned int	u_int;
+typedef	unsigned long	u_long;
+
+#endif
+
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 // Builtins
 //

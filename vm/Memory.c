@@ -550,9 +550,13 @@ void Con_Memory_gc_force(Con_Obj *thread)
 	
 	// First of all, use setjmp to conservatively scan processor registers etc.
 
-	sigjmp_buf buf;
+	JMP_BUF buf;
+#	ifdef CON_HAVE_SIGSETJMP
 	sigsetjmp(buf, 0);
-	Con_Memory_gc_scan_conservative(thread, buf, sizeof(sigjmp_buf));
+#	else
+	setjmp(buf);
+#	endif
+	Con_Memory_gc_scan_conservative(thread, buf, sizeof(JMP_BUF));
 
 	Con_Memory_gc_push(thread, thread);
 	while (1) {	

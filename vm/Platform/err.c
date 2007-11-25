@@ -27,20 +27,19 @@
  * SUCH DAMAGE.
  */
 
-#include <sys/cdefs.h>
-#ifdef CON_HAVE_NATIVE_ERR
-#include <err.h>
-#else
-#include "Platform/err.h"
-#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
 
+#include "err.h"
+
 extern char *__progname;		/* Program name, from crt0. */
 
-void err(int eval, const char *fmt, va_list ap)
+void err(int eval, const char *fmt, ...)
 {
+	va_list ap;
+	va_start(ap, fmt);
+
 	(void)fprintf(stderr, "%s: ", __progname);
 	if (fmt != NULL)
 		(void)vfprintf(stderr, fmt, ap);

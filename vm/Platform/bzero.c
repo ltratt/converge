@@ -1,6 +1,8 @@
-/*-
- * Copyright (c) 1993
- *	The Regents of the University of California.  All rights reserved.
+/*	$OpenBSD: bzero.c,v 1.7 2005/08/08 08:05:37 espie Exp $	*/
+
+/*
+ * Copyright (c) 1987 Regents of the University of California.
+ * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -25,15 +27,22 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
- *
- *	@(#)err.h	8.1 (Berkeley) 6/2/93
  */
 
-#ifndef _CON_PLATFORM_ERR_H
-#define	_CON_PLATFORM_ERR_H
-
-#include <sys/types.h>
-
-void err(int, const char *, ...);
-
+#if !defined(_KERNEL) && !defined(_STANDALONE)
+#include <string.h>
+#else
+#include <lib/libkern/libkern.h>
 #endif
+
+/*
+ * bzero -- vax movc5 instruction
+ */
+void
+bzero(void *b, size_t length)
+{
+	char *p;
+
+	for (p = b; length--;)
+		*p++ = '\0';
+}

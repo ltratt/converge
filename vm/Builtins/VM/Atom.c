@@ -75,7 +75,7 @@ void *alloca (size_t);
 void _Con_Builtins_VM_Atom_gc_scan_func(Con_Obj *, Con_Obj *, Con_Atom *);
 
 Con_Obj *_Con_Builtins_VM_Atom_apply(Con_Obj *, Con_Obj *, Con_Int, Con_Obj *, bool);
-void _Con_Builtins_VM_Atom_apply_pump_restore_c_stack(Con_Obj *, u_char *, u_char *, size_t, sigjmp_buf, int);
+void _Con_Builtins_VM_Atom_apply_pump_restore_c_stack(Con_Obj *, u_char *, u_char *, size_t, JMP_BUF, int);
 
 Con_Obj *_Con_Builtins_VM_Atom_execute(Con_Obj *);
 
@@ -515,7 +515,7 @@ void Con_Builtins_VM_Atom_pre_get_slot_apply_pump(Con_Obj *thread, Con_Obj *obj,
 // this function.
 //
 
-void _Con_Builtins_VM_Atom_apply_pump_restore_c_stack(Con_Obj *thread, u_char *c_stack_bottom, u_char *suspended_c_stack, size_t suspended_c_stack_size, sigjmp_buf suspended_env, int twice_more)
+void _Con_Builtins_VM_Atom_apply_pump_restore_c_stack(Con_Obj *thread, u_char *c_stack_bottom, u_char *suspended_c_stack, size_t suspended_c_stack_size, JMP_BUF suspended_env, int twice_more)
 {
 	// This function is partly inspired by Dan Piponi's suggestion:
 	//
@@ -535,7 +535,7 @@ void _Con_Builtins_VM_Atom_apply_pump_restore_c_stack(Con_Obj *thread, u_char *c
 
 	u_char *c_stackp;
 	CON_ARCH_GET_STACKP(c_stackp);
-#ifdef CON_C_STACK_GROWS_DOWN
+#	ifdef CON_C_STACK_GROWS_DOWN
 	if (c_stackp > c_stack_bottom) {
 #		ifdef HAVE_ALLOCA
 		// Use alloca in order to ensure that there's enough space on the stack to restore the
@@ -546,9 +546,9 @@ void _Con_Builtins_VM_Atom_apply_pump_restore_c_stack(Con_Obj *thread, u_char *c
 		
 		_Con_Builtins_VM_Atom_apply_pump_restore_c_stack(thread, c_stack_bottom, suspended_c_stack, suspended_c_stack_size, suspended_env, 2);
 	}
-#else
+#	else
 	XXX
-#endif
+#	endif
 	
 	// At this point, we know there is definitely enough space to restore the C stack; however if
 	// were to restore the C stack blindly at this point there's a good chance we'd kill the stack
@@ -560,7 +560,7 @@ void _Con_Builtins_VM_Atom_apply_pump_restore_c_stack(Con_Obj *thread, u_char *c
 	
 	memmove(c_stack_bottom, suspended_c_stack, suspended_c_stack_size);
 
-#ifdef __CYGWIN__
+#	if defined(__CYGWIN__)
 	// XXX
 	//
 	// For reasons that are far from clear to me, the following line:
@@ -569,17 +569,19 @@ void _Con_Builtins_VM_Atom_apply_pump_restore_c_stack(Con_Obj *thread, u_char *c
 	//
 	// causes a compiler warning (with GCC 3.4.4), and repeatedly causes the Cygwin's that I have
 	// available to crash. Whether this is a code generation booboo, or whether siglongjmp doesn't
-	// like the sigjmp_buf to come from the argument stack, I have no idea.
+	// like the JMP_BUF to come from the argument stack, I have no idea.
 	//
-	// Whatever the reason, copying the sigjmp_buf into temporary memory shuts up the compiler
+	// Whatever the reason, copying the JMP_BUF into temporary memory shuts up the compiler
 	// and causes everything to stop crashing and start working.
 	
-	sigjmp_buf suspended_env_copy;
-	memmove(suspended_env_copy, suspended_env, sizeof(sigjmp_buf));
+	JMP_BUF suspended_env_copy;
+	memmove(suspended_env_copy, suspended_env, sizeof(JMP_BUF));
 	siglongjmp(suspended_env_copy, 1);
-#else
+#	elif defined(CON_HAVE_SIGSETJMP)
 	siglongjmp(suspended_env, 1);
-#endif
+#	else
+	longjmp(suspended_env, 1);
+#	endif
 }
 
 
@@ -612,8 +614,12 @@ Con_Obj *Con_Builtins_VM_Atom_apply_pump(Con_Obj *thread, bool remove_finished_g
 	// stack has a generator frame we're in situation #2, otherwise we're in situation #1.
 
 	Con_Obj *return_obj;
-	sigjmp_buf return_env;
+	JMP_BUF return_env;
+#	ifdef CON_HAVE_SIGSETJMP
 	if (sigsetjmp(return_env, 0) == 0) {
+#	else
+	if (setjmp(return_env) == 0) {
+#	endif
 		if (!Con_Builtins_Con_Stack_Atom_continuation_has_generator_frame(thread, con_stack)) {
 			// This is the first pump, so setup a continuation frame.
 			u_char *c_stack_start;
@@ -660,7 +666,7 @@ Con_Obj *Con_Builtins_VM_Atom_apply_pump(Con_Obj *thread, bool remove_finished_g
 			
 			u_char *old_c_stack_start, *suspended_c_stack;
 			Con_Int suspended_c_stack_size;
-			sigjmp_buf suspended_env;
+			JMP_BUF suspended_env;
 			Con_Builtins_Con_Stack_Atom_prepare_generator_frame_reexecution(thread, con_stack, &old_c_stack_start, &suspended_c_stack, &suspended_c_stack_size, &suspended_env);
 			CON_MUTEX_UNLOCK(&con_stack->mutex);
 
@@ -715,7 +721,7 @@ void Con_Builtins_VM_Atom_yield(Con_Obj *thread, Con_Obj *obj)
 	u_char *c_stack_start;
 	u_char *suspended_c_stack;
 	Con_Int suspended_c_stack_size;
-	sigjmp_buf return_env;
+	JMP_BUF return_env;
 	CON_MUTEX_LOCK(&con_stack->mutex);
 	Con_Builtins_Con_Stack_Atom_prepare_to_return_from_generator(thread, con_stack, &c_stack_start, &suspended_c_stack, &suspended_c_stack_size, &return_env);
 	
@@ -746,13 +752,21 @@ void Con_Builtins_VM_Atom_yield(Con_Obj *thread, Con_Obj *obj)
 		assert(calculated_suspended_c_stack_size == suspended_c_stack_size);
 	}
 
-	sigjmp_buf suspended_env;
+	JMP_BUF suspended_env;
+#	ifdef CON_HAVE_SIGSETJMP
 	if (sigsetjmp(suspended_env, 0) == 0) {
+#	else
+	if (setjmp(suspended_env) == 0) {
+#	endif
 		// Suspend the C stack.
 		memmove(suspended_c_stack, c_stack_bottom, suspended_c_stack_size);
 		Con_Builtins_Con_Stack_Atom_update_generator_frame(thread, con_stack, suspended_c_stack, suspended_c_stack_size, suspended_env);
 		CON_MUTEX_UNLOCK(&con_stack->mutex);
+#		ifdef CON_HAVE_SIGSETJMP
 		siglongjmp(return_env, 1);
+#		else
+		longjmp(return_env, 1);
+#		endif
 	}
 }
 
@@ -850,7 +864,7 @@ void Con_Builtins_VM_Atom_raise(Con_Obj *thread, Con_Obj *exception)
 		// We now need to check to see whether the current continuation defines an exception frame.
 		
 		bool has_exception_frame;
-		sigjmp_buf exception_env;
+		JMP_BUF exception_env;
 		Con_PC except_pc;
 		Con_Builtins_Con_Stack_Atom_read_exception_frame(thread, con_stack, &has_exception_frame, &exception_env, &except_pc);
 		
@@ -1359,8 +1373,12 @@ Con_Obj *_Con_Builtins_VM_Atom_execute(Con_Obj *thread)
 						new_pc.pc.bytecode_offset -= CON_INSTR_DECODE_ADD_EXCEPTION_FRAME_OFFSET(instruction);
 					else
 						new_pc.pc.bytecode_offset += CON_INSTR_DECODE_ADD_EXCEPTION_FRAME_OFFSET(instruction);
-					sigjmp_buf except_env;
+					JMP_BUF except_env;
+#					ifdef CON_HAVE_SIGSETJMP
+					if (sigsetjmp(except_env, 0) == 0) {
+#					else
 					if (setjmp(except_env) == 0) {
+#					endif
 						Con_Builtins_Con_Stack_Atom_add_exception_frame(thread, con_stack, except_env, new_pc);
 						pc.pc.bytecode_offset += sizeof(Con_Int);
 						Con_Builtins_Con_Stack_Atom_update_continuation_frame_pc(thread, con_stack, pc);

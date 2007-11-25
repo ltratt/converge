@@ -73,7 +73,7 @@
 //
 
 #define CON_TRY { \
-	sigjmp_buf _con_except_env; \
+	JMP_BUF _con_except_env; \
 	if (setjmp(_con_except_env) == 0) { \
 		{ \
 			Con_Obj *con_stack = Con_Builtins_Thread_Atom_get_con_stack(thread); \

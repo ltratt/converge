@@ -1,0 +1,13 @@
+MinGW is how Converge produces native Windows binaries. You will almost
+certainly need to install extra MinGW packages to get everthying up and
+running.
+
+The easiest way to compile things is to run "sh.exe" in MinGW/bin. You will
+first need to manually compile MinGW versions of PCRE and libXML2. I put
+these into C:\pcre and C:\libXML2 respectively.
+
+You may find that you need to alter your path for the configure script to
+execute correctly. The following works for me:
+
+  "C:/MinGW/bin/sh.exe"-2.04$ export PATH=/c/MinGW/bin/:/c/pcre/bin/:/c/libxml2/bin/:$PATH
+  

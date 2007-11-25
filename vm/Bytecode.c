@@ -87,7 +87,7 @@ Con_Obj *Con_Bytecode_add_executable(Con_Obj *thread, u_char *bytecode)
 // Returns false if any of the constituent modules in bytecode is newer than 'mtime'.
 //
 
-bool Con_Bytecode_upto_date(Con_Obj *thread, u_char *bytecode, struct timespec *mtime)
+bool Con_Bytecode_upto_date(Con_Obj *thread, u_char *bytecode, STAT_ST_MTIMESPEC_TYPE *mtime)
 {
 	int num_modules = ID_BYTECODE_GET_WORD(CON_BYTECODE_NUMBER_OF_MODULES);
 	
@@ -111,11 +111,18 @@ bool Con_Bytecode_upto_date(Con_Obj *thread, u_char *bytecode, struct timespec *
 				continue;
 		}
 		
+#		if defined(STAT_ST_MTIMESPEC_TYPE_STRUCT_TIMESPEC)
 		if (cv_sb.STAT_ST_MTIMESPEC.tv_sec > mtime->tv_sec)
 			return false;
 		else if (cv_sb.STAT_ST_MTIMESPEC.tv_sec == mtime->tv_sec &&
 			cv_sb.STAT_ST_MTIMESPEC.tv_nsec >= mtime->tv_nsec)
 			return false;
+#		elif defined(STAT_ST_MTIMESPEC_TYPE_TIME_T)
+		if (cv_sb.STAT_ST_MTIMESPEC > mtime)
+			return false;
+#		else
+		Unknown type
+#		endif
 	}
 	
 	return true;

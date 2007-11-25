@@ -90,13 +90,18 @@ extra_libs="-L/usr/local/lib"
 #
 
 AC_MSG_CHECKING(platform)
-operating_system=`uname -s`
 posix=0
+mingw=0
+operating_system=`uname -s`
 case $operating_system in
 	OpenBSD | FreeBSD | NetBSD | Linux | Darwin | CYGWIN_NT*)
 		AC_MSG_RESULT(POSiX);
 		posix=1;
 		AC_DEFINE(CON_PLATFORM_POSIX, [], [Define if you are running on a POSiX platform. Note that you can can only define one CON_PLATFORM_* variable.]);;
+	MINGW* )
+		AC_MSG_RESULT(MinGW);
+		mingw=1;
+		AC_DEFINE(CON_PLATFORM_MINGW, [], [Define if you are running on the MinGW platform. Note that you can can only define one CON_PLATFORM_* variable.]);;
 	*) AC_MSG_ERROR([Unknown platform "$operating_system"]);;
 esac
 
@@ -200,7 +205,7 @@ AC_CHECK_SIZEOF(CON_INT)
 case $ac_cv_sizeof_CON_INT in
 	4 ) AC_C_BIGENDIAN([bootstrap_dir="bootstrap/32bit_big_endian"], [bootstrap_dir="bootstrap/32bit_little_endian"]);;
 	8 ) AC_C_BIGENDIAN([bootstrap_dir="bootstrap/64bit_big_endian"], [bootstrap_dir="bootstrap/64bit_little_endian"]);;
-	* ) AC_MSG_ERROR([Unknown word size "$ac_cv_sizeof_CON_INT"]);;
+	* ) AC_MSG_ERROR([Unknown word size2 $ac_cv_sizeof_CON_INT]);;
 esac
 
 AH_TEMPLATE(CON_FLOAT, [The appropriate type for a double word float on your machine.])
@@ -210,8 +215,8 @@ AC_CHECK_SIZEOF(CON_FLOAT)
 
 AC_MSG_CHECKING([for architecture specific memmove])
 # XXX Since Darwin's as doesn't seem to like the included memmove.o, we simply avoid compiling it.
-# If anyone knows how to fix it (or whether this is worth fixing, please shout).
-if [[ -f vm/Platform/Arch/$CON_ARCH/memmove.S -a $operating_system != "Darwin" ]]; then
+# If anyone knows how to fix it (or whether this is worth fixing), please shout.
+if [[ -f vm/Platform/Arch/$CON_ARCH/memmove.S -a $OSTYPE != "Darwin" ]]; then
 	AC_MSG_RESULT(Platform/Arch/$CON_ARCH/memmove.S)
 	AC_SUBST(CON_MEMMOVE, "Platform/Arch/$CON_ARCH/memmove.o")
 else
@@ -273,7 +278,7 @@ extra_libs="$extra_libs `$xml2_config --libs`"
 
 AC_MSG_CHECKING([which modules to compile])
 mod_paths=`ls vm/Modules/*.c | sed "s/c$/o/"`
-if [[ $posix -eq 1 ]]; then
+if [[ $posix -eq 1 -o $mingw -eq 1 ]]; then
 	mod_paths="$mod_paths vm/Platform/POSIX/Modules/POSIX_File.o"
 fi
 mod_names=""
@@ -281,7 +286,7 @@ for path in $mod_paths; do
 	mod_names="$mod_names `echo $path | sed "s/.*\///" | sed "s/\.o//"`"
 done
 sorted_mod_names=""
-for mod_name in `echo $mod_names | sed "y/ /\n/" | sort -f | sed "y/\n/ /"`; do
+for mod_name in `echo $mod_names | tr " " "\\n" | sort -f | tr "\\n" " "`; do
 	sorted_mod_names="$sorted_mod_names $mod_name"
 done
 sorted_mod_names=`echo $sorted_mod_names | sed "s/^ //"`
@@ -401,24 +406,75 @@ AC_CHECK_MEMBER(struct dirent.d_reclen,
 	[#include "dirent.h"])
 
 
-# see what stat calls st_mtimespec
+# Find what stat calls st_mtimespec
 
 AH_TEMPLATE(STAT_ST_MTIMESPEC,
   [Define to whatever your stat struct calls st_mtimespec (e.g. st_mtim under Linux and Cygwin).])
 
 AC_CHECK_MEMBER(struct stat.st_mtimespec,
-	[AC_DEFINE(STAT_ST_MTIMESPEC, st_mtimespec)],
+	[AC_DEFINE(STAT_ST_MTIMESPEC, st_mtimespec)
+	st_mtimespec="st_mtimespec"],
 	[AC_CHECK_MEMBER(struct stat.st_mtim,
-		[AC_DEFINE(STAT_ST_MTIMESPEC, st_mtim)],
-		,
+		[AC_DEFINE(STAT_ST_MTIMESPEC, st_mtim)
+		st_mtimespec="st_mtim"],
+		[AC_CHECK_MEMBER(struct stat.st_mtime,
+			[AC_DEFINE(STAT_ST_MTIMESPEC, st_mtime)
+			st_mtimespec="st_mtime"],
+			,
+			[#include <sys/stat.h>])
+		],
 		[#include <sys/stat.h>])
 	],
 	[#include <sys/stat.h>])
 
 
+# Find the type of st_mtimespec
+
+AC_MSG_CHECKING([type of stat.$st_mtimespec])
+
+AH_TEMPLATE(STAT_ST_MTIMESPEC_TYPE,
+  [Define to the type of st_mtimespec.])
+
+AC_TRY_RUN([
+#include <sys/stat.h>
+
+int main()
+{
+	struct stat cv_sb;
+	struct timespec mt = cv_sb.STAT_ST_MTIMESPEC;
+	
+	return 0;
+}],
+	[AC_MSG_RESULT(struct timespec)
+	AC_DEFINE(STAT_ST_MTIMESPEC_TYPE, struct timespec)
+	AC_DEFINE(STAT_ST_MTIMESPEC_TYPE_STRUCT_TIMESPEC, [], [Define if you stat.STAT_ST_MTIMESPEC is of type struct timespec.])],
+	[AC_TRY_RUN([
+#include <sys/stat.h>
+
+int main()
+{
+	struct stat cv_sb;
+	time_t mt = cv_sb.STAT_ST_MTIMESPEC;
+	
+	return 0;
+}],
+		[AC_MSG_RESULT(time_t)
+		AC_DEFINE(STAT_ST_MTIMESPEC_TYPE, time_t)
+		AC_DEFINE(STAT_ST_MTIMESPEC_TYPE_TIME_T, [], [Define if you stat.STAT_ST_MTIMESPEC is of type time_t.])],
+		[AC_MSG_ERROR(unable to determine type)])])
+
+
 # glibc is brain dead with respect to strerror_r.
 
 AC_FUNC_STRERROR_R
+
+
+# random
+
+AH_TEMPLATE(CON_HAVE_RANDOM,
+  [Define if your platform has the random function family.])
+
+AC_CHECK_FUNC(random, [AC_DEFINE(CON_HAVE_RANDOM)])
 
 
 # srandomdev
@@ -431,35 +487,52 @@ AC_CHECK_FUNC(srandomdev, [AC_DEFINE(CON_HAVE_SRANDOMDEV)])
 
 # sigsetjmp
 
-AC_MSG_CHECKING([for sigsetjmp])
+AH_TEMPLATE(JMP_BUF,
+  [Define to whatever your platform calls jmp_buf (e.g. this will be sigjmp_buf for POSiX platforms).])
 
-AH_TEMPLATE(_POSIX_C_SOURCE,
-  [Define if your platform needs _POSIX_C_SOURCE for sigsetjmp to be defined.])
+AH_TEMPLATE(CON_HAVE_SIGSETJMP,
+  [Define if your platform has sigsetjmp).])
 
-CFLAGS="-std=c99 $extra_cflags"
-AC_TRY_RUN([
+if [[ $mingw -eq 1 ]]; then
+	AC_DEFINE(JMP_BUF, jmp_buf)
+elif [[ $posix -eq 1 ]]; then
+	AC_DEFINE(JMP_BUF, sigjmp_buf)
+	AC_DEFINE(CON_HAVE_SIGSETJMP)
+	
+	AC_MSG_CHECKING([for sigsetjmp])
+	
+	AH_TEMPLATE(_POSIX_C_SOURCE,
+	  [Define  your platform needs _POSIX_C_SOURCE for sigsetjmp to be defined.])
+
+	CFLAGS="-std=c99 $extra_cflags"
+	AC_TRY_RUN([
 #include <setjmp.h>
 
 int main()
 {
-	sigjmp_buf return_env;
+	JMP_BUF return_env;
 	sigsetjmp(return_env, 0);
+	
+	return 0;
 }], [AC_MSG_RESULT(yes)], [CFLAGS="-std=c99 $extra_cflags -D_POSIX_C_SOURCE"
 	AC_TRY_RUN([
 #include <setjmp.h>
 
 int main()
 {
-	sigjmp_buf return_env;
+	JMP_BUF return_env;
 	sigsetjmp(return_env, 0);
+	
+	return 0;
 }], [AC_MSG_RESULT(-D_POSIX_C_SOURCE)
 	extra_cflags="$extra_cflags -D_POSIX_C_SOURCE"], [AC_MSG_ERROR(unable to find sigsetjmp)])])
+fi
 
 
 # err
 
 AH_TEMPLATE(CON_HAVE_NATIVE_ERR,
-  [Define if your OS natively defines the err function])
+  [Define if your OS natively defines the err function.])
 AC_CHECK_FUNC(err, [AC_DEFINE(CON_HAVE_NATIVE_ERR)], [AC_SUBST(PLATFORM_ERR, Platform/err.o)])
 
 
@@ -467,6 +540,9 @@ AC_CHECK_FUNC(err, [AC_DEFINE(CON_HAVE_NATIVE_ERR)], [AC_SUBST(PLATFORM_ERR, Pla
 
 AC_MSG_CHECKING([for u_char etc])
 
+AH_TEMPLATE(CON_HAVE_U_TYPES,
+  [Define if your OS natively defines u_char and friends.])
+
 CFLAGS="-std=c99 $extra_cflags"
 AC_TRY_RUN([
 #include <sys/types.h>
@@ -474,15 +550,32 @@ AC_TRY_RUN([
 int main()
 {
 	u_char *x;
-}], [AC_MSG_RESULT(yes)], [CFLAGS="-std=c99 $extra_cflags -D_BSD_SOURCE"
+	
+	return 0;
+}], [AC_MSG_RESULT(yes)
+     AC_DEFINE(CON_HAVE_U_TYPES)], [CFLAGS="-std=c99 $extra_cflags -D_BSD_SOURCE"
 	AC_TRY_RUN([
 #include <sys/types.h>
 
 int main()
 {
 	u_char *x;
+	
+	return 0;
 }], [AC_MSG_RESULT(-D_BSD_SOURCE)
-	extra_cflags="$extra_cflags -D_BSD_SOURCE"], [AC_MSG_ERROR(unable to define u_char)])])
+     AC_DEFINE(CON_HAVE_U_TYPES)
+     extra_cflags="$extra_cflags -D_BSD_SOURCE"],
+    [AC_MSG_RESULT(no)])])
+
+
+# realpath
+
+AC_CHECK_FUNC(realpath, [], [AC_SUBST(PLATFORM_REALPATH, Platform/MinGW/realpath.o)])
+
+
+# bzero
+
+AC_CHECK_FUNC(bzero, [], [AC_SUBST(PLATFORM_BZERO, Platform/bzero.o)])
 
 
 ####################################################################################################

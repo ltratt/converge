@@ -64,7 +64,7 @@ Con_Obj *Con_Builtins_VM_Atom_apply_with_closure(Con_Obj *, Con_Obj *, Con_Obj *
 Con_Obj *Con_Builtins_VM_Atom_get_slot_apply(Con_Obj *, Con_Obj *, const u_char *, Con_Int, bool, ...);
 void Con_Builtins_VM_Atom_pre_apply_pump(Con_Obj *, Con_Obj *, Con_Int, Con_Obj *, Con_PC);
 void Con_Builtins_VM_Atom_pre_get_slot_apply_pump(Con_Obj *, Con_Obj *, const u_char *, Con_Int, ...);
-void _Con_Builtins_VM_Atom_apply_pump_restore_c_stack(Con_Obj *, u_char *, u_char *, size_t, sigjmp_buf, int);
+void _Con_Builtins_VM_Atom_apply_pump_restore_c_stack(Con_Obj *, u_char *, u_char *, size_t, JMP_BUF, int);
 Con_Obj *Con_Builtins_VM_Atom_apply_pump(Con_Obj *, bool);
 void Con_Builtins_VM_Atom_yield(Con_Obj *, Con_Obj *);
 

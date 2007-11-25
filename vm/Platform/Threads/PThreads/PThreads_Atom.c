@@ -619,7 +619,7 @@ void _Con_Builtins_Thread_Atom_gc_scan_func(Con_Obj *thread, Con_Obj *obj, Con_A
 		Con_Memory_gc_scan_conservative(thread, c_stack_bottom, thread_atom->c_stack_start - c_stack_bottom);
 	}
 	else {
-		Con_Memory_gc_scan_conservative(thread, thread_atom->last_env, sizeof(sigjmp_buf));
+		Con_Memory_gc_scan_conservative(thread, thread_atom->last_env, sizeof(JMP_BUF));
 		Con_Memory_gc_scan_conservative(thread, thread_atom->c_stack_end, thread_atom->c_stack_start - thread_atom->c_stack_end);
 	}
 #else

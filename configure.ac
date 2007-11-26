@@ -109,6 +109,20 @@ case $operating_system in
 	Linux ) AC_DEFINE(READ_VM_PATH_FROM_PROC_SELF_EXE_SYMLINK, [], [Define if your operating system allows the location of the VM executable to be determined by reading the symlink /proc/self/exe.])
 esac
 
+AC_MSG_CHECKING(directory and file name extension separators)
+AH_TEMPLATE(CON_DIRECTORY_SEPARATOR, [Define to your platforms directory separator char(s).])
+AH_TEMPLATE(CON_EXTENSION_SEPARATOR, [Define to your platforms filename extension separator.])
+if [[ $posix -eq 1 ]]; then
+	AC_MSG_RESULT(/ .);
+	AC_DEFINE(CON_DIRECTORY_SEPARATOR, "/")
+	AC_DEFINE(CON_EXTENSION_SEPARATOR, ".")
+elif [[ $mingw -eq 1 ]]; then
+	AC_MSG_RESULT(\\ .);
+	AC_DEFINE(CON_DIRECTORY_SEPARATOR, "\\")
+	AC_DEFINE(CON_EXTENSION_SEPARATOR, ".")
+else
+	AC_MSG_ERROR([Unable to determine directory / file name extension separator char(s).])
+fi
 
 
 ####################################################################################################
@@ -216,7 +230,7 @@ AC_CHECK_SIZEOF(CON_FLOAT)
 AC_MSG_CHECKING([for architecture specific memmove])
 # XXX Since Darwin's as doesn't seem to like the included memmove.o, we simply avoid compiling it.
 # If anyone knows how to fix it (or whether this is worth fixing), please shout.
-if [[ -f vm/Platform/Arch/$CON_ARCH/memmove.S -a $OSTYPE != "Darwin" ]]; then
+if [[ -f vm/Platform/Arch/$CON_ARCH/memmove.S -a $operating_system != "Darwin" ]]; then
 	AC_MSG_RESULT(Platform/Arch/$CON_ARCH/memmove.S)
 	AC_SUBST(CON_MEMMOVE, "Platform/Arch/$CON_ARCH/memmove.o")
 else
@@ -469,6 +483,14 @@ int main()
 AC_FUNC_STRERROR_R
 
 
+# strerror (MinGW doesn't define strerror, hence the need to check for this too)
+
+AH_TEMPLATE(CON_HAVE_STRERROR,
+  [Define if your platform has the strerror function.])
+
+AC_CHECK_FUNC(strerror, [AC_DEFINE(CON_HAVE_STRERROR)])
+
+
 # random
 
 AH_TEMPLATE(CON_HAVE_RANDOM,
@@ -576,6 +598,33 @@ AC_CHECK_FUNC(realpath, [], [AC_SUBST(PLATFORM_REALPATH, Platform/MinGW/realpath
 # bzero
 
 AC_CHECK_FUNC(bzero, [], [AC_SUBST(PLATFORM_BZERO, Platform/bzero.o)])
+
+
+# setenv
+
+AH_TEMPLATE(CON_HAVE_SETENV,
+  [Define if your platform has the setenv function.])
+AC_CHECK_FUNC(setenv, [AC_DEFINE(CON_HAVE_SETENV)])
+
+
+# __progname
+
+AC_MSG_CHECKING([whether __progname is defined])
+
+AH_TEMPLATE(CON_DEFINE___PROGNAME,
+  [Define if your platform defines __progname.])
+
+AC_TRY_RUN([
+extern char *__progname;
+
+int main()
+{
+	char *p = __progname;
+	
+	return 0;
+}], [AC_MSG_RESULT(yes)
+	AC_DEFINE(CON_DEFINE___PROGNAME)],
+	[AC_MSG_RESULT(no)])
 
 
 ####################################################################################################

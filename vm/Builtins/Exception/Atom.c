@@ -83,14 +83,20 @@ Con_Obj *Con_Builtins_Exception_Atom_strerror(Con_Obj *thread, int errnum)
 #		define NL_TEXTMAX 512
 #	endif
 
-#	if STRERROR_R_CHAR_P
+#	if defined(HAVE_STRERROR_R) && defined(STRERROR_R_CHAR_P)
 	char strerrbuf_tmp[NL_TEXTMAX];
 	char *strerrbuf;
 	strerrbuf = strerror_r(errnum, strerrbuf_tmp, NL_TEXTMAX);
-#	else
+#	elif defined(HAVE_STRERROR_R)
 	char strerrbuf[NL_TEXTMAX];
 	if (strerror_r(errnum, strerrbuf, NL_TEXTMAX) != 0)
 		CON_XXX;
+#	elif defined(CON_HAVE_STRERROR)
+	char *strerrbuf = strerror(errnum);
+	if (strerrbuf == NULL)
+		CON_XXX;
+#	else
+	No strerror_r or strerror
 #	endif
 	
 	return Con_Builtins_String_Atom_new_copy(thread, (u_char *) strerrbuf, strlen(strerrbuf), CON_STR_UTF_8);

@@ -118,8 +118,21 @@ Con_Obj *_Con_Module_C_Platform_Env_set_var(Con_Obj *thread)
 	Con_Obj *name, *val;
 	CON_UNPACK_ARGS("SS", &name, &val);
 	
+#	ifdef CON_HAVE_SETENV
 	if (setenv(Con_Builtins_String_Atom_to_c_string(thread, name), Con_Builtins_String_Atom_to_c_string(thread, val), 1) == -1)
 		CON_XXX;
+#	else
+	Con_Builtins_String_Atom *name_str_atom = CON_GET_ATOM(name, CON_BUILTIN(CON_BUILTIN_STRING_ATOM_DEF_OBJECT));
+	Con_Builtins_String_Atom *val_str_atom = CON_GET_ATOM(val, CON_BUILTIN(CON_BUILTIN_STRING_ATOM_DEF_OBJECT));
+	Con_Int buf_len = name_str_atom->size + val_str_atom->size + 1;
+	char *buf = Con_Memory_malloc(thread, buf_len, CON_MEMORY_CHUNK_OPAQUE);
+	memmove(buf, name_str_atom->str, name_str_atom->size);
+	memmove(buf + name_str_atom->size, "=", 1);
+	memmove(buf + name_str_atom->size + 1, val_str_atom->str, val_str_atom->size);
+	buf[name_str_atom->size + 1 + val_str_atom->size] = 0;
+	if (putenv(buf) != 0)
+		CON_XXX;
+#	endif
 	
 	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }

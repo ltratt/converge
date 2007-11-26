@@ -64,7 +64,11 @@
 #define BYTES_TO_FIND_EXEC 1024
 
 
+#ifdef CON_DEFINE___PROGNAME
 extern char* __progname;
+#else
+char *__progname;
+#endif
 
 int main_do(int, char **, u_char *);
 void usage(void);
@@ -92,6 +96,10 @@ int main(int argc, char** argv)
 int main_do(int argc, char** argv, u_char *root_stack_start)
 {
 	assert(argc > 0);
+	
+#	ifndef CON_DEFINE___PROGNAME
+	__progname = argv[0];
+#	endif
 
 	char *argv0 = argv[0];
 
@@ -384,6 +392,9 @@ ssize_t find_bytecode_start(u_char *bytecode, size_t bytecode_size)
 
 void make_mode(char *prog_path, u_char **bytecode, size_t *bytecode_size, char *vm_path, int verbosity)
 {
+#	ifdef CON_PLATFORM_MINGW
+	CON_XXX;
+#	else
 	// First of all we try and work out if we can construct a cached path name.
 
 	char cache_path[PATH_MAX];
@@ -548,4 +559,5 @@ make:
 		fwrite(*bytecode, 1, *bytecode_size, cache_file);
 		fclose(cache_file);
 	}
+#	endif
 }

@@ -181,7 +181,7 @@ Con_Int _Con_Builtins_String_Atom_find_cached_pos(Con_Obj *thread, Con_Builtins_
 			return i;
 		
 		Con_Builtins_String_Atom *string_atom = CON_GET_ATOM(unique_atom->cache[i].str, CON_BUILTIN(CON_BUILTIN_STRING_ATOM_DEF_OBJECT));
-		if (string_atom->hash == hash && string_atom->size == size && string_atom->encoding == enc && bcmp(str, string_atom->str, size) == 0)
+		if (string_atom->hash == hash && string_atom->size == size && string_atom->encoding == enc && memcmp(str, string_atom->str, size) == 0)
 			return i;
 		
 		i = (i + 1) % unique_atom->num_cache_entries_allocated;

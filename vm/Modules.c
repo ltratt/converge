@@ -69,17 +69,17 @@ Con_Obj *Con_Modules_find(Con_Obj *thread, Con_Obj *mod_id)
 		// join_names function, but we can't do that, because we'd loop forever in this function. So
 		// we have to hack our own, very crude, version of the same thing to calculate a new ID.
 		Con_Obj *new_mod_id;
-		if (CON_GET_SLOT_APPLY_NO_FAIL(old_path, "suffixed_by", CON_NEW_STRING("/")))
+		if (CON_GET_SLOT_APPLY_NO_FAIL(old_path, "suffixed_by", CON_NEW_STRING(CON_DIRECTORY_SEPARATOR)))
 			new_mod_id = CON_GET_SLOT_APPLY(old_path, "get_slice", CON_NEW_INT(0), CON_NEW_INT(-1));
 		else
 			new_mod_id = old_path;
 
 		Con_Obj *current_path_len = CON_GET_SLOT_APPLY(current_path, "len");
 		Con_Obj *slice = CON_GET_SLOT_APPLY(mod_id, "get_slice", current_path_len);
-		if (CON_GET_SLOT_APPLY_NO_FAIL(old_path, "prefixed_by", CON_NEW_STRING("/")))
+		if (CON_GET_SLOT_APPLY_NO_FAIL(old_path, "prefixed_by", CON_NEW_STRING(CON_DIRECTORY_SEPARATOR)))
 			slice = CON_GET_SLOT_APPLY(slice, "get_slice", CON_NEW_INT(1));
 
-		new_mod_id = CON_ADD(new_mod_id, CON_NEW_STRING("/"));
+		new_mod_id = CON_ADD(new_mod_id, CON_NEW_STRING(CON_DIRECTORY_SEPARATOR));
 		new_mod_id = CON_ADD(new_mod_id, slice);
 		
 		mod_id = new_mod_id;

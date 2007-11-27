@@ -529,7 +529,7 @@ make:
 		FILE *cache_file;
 
 		if (stat(cache_path, &st) != -1) {
-			// A file with the cached name already exists, we we want to ensure that it's a Converge
+			// As a file with the cached name already exists, we want to ensure that it's a Converge
 			// executeable to be reasonably sure that we're not overwriting a normal user file.
 
 			FILE *cache_file = fopen(cache_path, "rb");

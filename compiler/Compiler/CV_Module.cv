@@ -60,7 +60,7 @@ class CV_Module:
 	
 		self._name := self._decode_string(module, module[self._target.MODULE_BYTECODE_NAME], module[self._target.MODULE_BYTECODE_NAME_SIZE])
 
-		self._identifier := self._decode_string(module, module[self._target.MODULE_BYTECODE_ID], module[self._target.MODULE_BYTECODE_ID_SIZE])
+		self._mod_id := self._decode_string(module, module[self._target.MODULE_BYTECODE_ID], module[self._target.MODULE_BYTECODE_ID_SIZE])
 		
 		self._instructions_bytecode := module[module[self._target.MODULE_BYTECODE_INSTRUCTIONS] / self._target.WORDSIZE : (module[self._target.MODULE_BYTECODE_INSTRUCTIONS] + module[self._target.MODULE_BYTECODE_INSTRUCTIONS_SIZE]) / self._target.WORDSIZE]
 
@@ -97,15 +97,15 @@ class CV_Module:
 
 
 
-	func get_identifier(self):
+	func get_mod_id(self):
 	
-		return self._identifier
+		return self._mod_id
 
 
 
-	func set_identifier(self, identifier):
+	func set_mod_id(self, identifier):
 	
-		self._identifier := identifier
+		self._mod_id := identifier
 
 
 
@@ -326,8 +326,8 @@ class CV_Module:
 		// Identifier
 		
 		module[self._target.MODULE_BYTECODE_ID] := module.len_bytes()
-		module.extend(self._target.b_aligned_string(self._identifier))
-		module[self._target.MODULE_BYTECODE_ID_SIZE] := self._identifier.len()
+		module.extend(self._target.b_aligned_string(self._mod_id))
+		module[self._target.MODULE_BYTECODE_ID_SIZE] := self._mod_id.len()
 
 		// Instructions bytecode
 		

@@ -75,7 +75,7 @@ class Linker:
 
 		self.cv_mods_map := Dict{}
 		for cv_mod := cv_mods.iter():
-			self.cv_mods_map[cv_mod.get_identifier()] := cv_mod
+			self.cv_mods_map[cv_mod.get_mod_id()] := cv_mod
 
 		ser_cv_exec := Link::link_exec(cv_mods, self, target)
 
@@ -206,7 +206,7 @@ class Linker:
 		new_src_infos := []
 		for mod_num, offset := src_infos.iter():
 			if mod_num == -1:
-				new_src_infos.append([mod.get_identifier(), offset])
+				new_src_infos.append([mod.get_mod_id(), offset])
 			else:
 				new_src_infos.append([mod.get_imports()[mod_num], offset])
 

@@ -207,7 +207,7 @@ class Bytecode_Gen:
 		
 		module := CV_Module::CV_Module.new(self._target)
 		module.set_name(imodule.module_name)
-		module.set_identifier(self._mod_id)
+		module.set_mod_id(self._mod_id)
 		module.set_top_level_vars_map(self.closures[0][Compiler_Vars::CLOSURE_VARS])
 		module.set_instructions_bytecode(instructions_bytecode)
 		module.set_imports(module_imports)

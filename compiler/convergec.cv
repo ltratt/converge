@@ -325,8 +325,8 @@ class Compiler:
 			lib_file.close()
 			for cv_mod := lib.deserialize(lib_data).iter():
 				lib_mods.append(cv_mod)
-				lib_mod_ids.add(cv_mod.get_identifier())
-				self.mk_done_cv_mods[cv_mod.get_identifier()] := cv_mod
+				lib_mod_ids.add(cv_mod.get_mod_id())
+				self.mk_done_cv_mods[cv_mod.get_mod_id()] := cv_mod
 
 		// The main loop. Basically we keep on going around this, reading in cached files or
 		// compiling new files; and updating any modules who are older than their import
@@ -350,7 +350,7 @@ class Compiler:
 					// We haven't previously encountered this module, so try seeing if we can read in
 					// a cached version.
 					if cv_mod, mtime := self._read_cache_cvb(mod_id):
-						mod_id := cv_mod.get_identifier()
+						mod_id := cv_mod.get_mod_id()
 						self.mk_done_cv_mods[mod_id] := cv_mod
 						self.mk_mtime_map[mod_id] := mtime
 					else:
@@ -359,7 +359,7 @@ class Compiler:
 				if not cv_mod is null:
 					// We check to see whether this module is "stale" i.e. is older than any of its
 					// import dependencies.
-					assert(mod_id == cv_mod.get_identifier())
+					assert(mod_id == cv_mod.get_mod_id())
 					mtime := self.mk_mtime_map[mod_id]
 					for imp_mod_id := cv_mod.get_imports().iter():
 						if Compiler_Vars::BUILTIN_MODULES.find(imp_mod_id):
@@ -410,7 +410,7 @@ class Compiler:
 
 			if self.verbosity > 0:
 				self.info("Linking.")
-			self.mod_id := link_mods[0].get_identifier()
+			self.mod_id := link_mods[0].get_mod_id()
 			ser_cv_exec := Linker.new().link(link_mods, self.target)
 
 			output_file := File::File.new(self.output_path, "w")
@@ -582,7 +582,7 @@ class Linker:
 			Sys::stderr.writeln(Strings::format("%s:", pre_msg))
 			for src_info := src_infos.iter():
 				for cv_mod := self.mods.iter():
-					if cv_mod.get_identifier() == src_info[0]:
+					if cv_mod.get_mod_id() == src_info[0]:
 						break
 				exhausted:
 					raise "XXX"

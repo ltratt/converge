@@ -59,7 +59,7 @@ class Mk_Packages:
 					defns[defn_name] := sub_pkg_id
 
 			for mod := mods.iter():
-				mod_id := mod.get_identifier()
+				mod_id := mod.get_mod_id()
 				if File::is_entry_in_dir(pkg_id, mod_id):
 					defn_name := File::split_ext(File::split_leaf(mod_id)[1])[0]
 					defns[defn_name] := mod_id

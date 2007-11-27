@@ -29,7 +29,7 @@ func link_exec(mods, linker, target):
 
 	mods_map := Dict{}
 	for mod := mods.iter():
-		mods_map[mod.get_identifier()] := mod
+		mods_map[mod.get_mod_id()] := mod
 
 	linked_bytecode := Array::Array.new(target.ARRAY_TYPE)
 	linked_bytecode.extend_from_string(CV_Exec::EXEC_INIT_STRING)
@@ -44,7 +44,7 @@ func link_exec(mods, linker, target):
 	// any packages required. Then we check to see if we're missing any files that would need
 	// to be imported.
 
-	todo := [mods[0].get_identifier()] // List of module IDs
+	todo := [mods[0].get_mod_id()] // List of module IDs
 	done_ids := Set{} // Set of module IDs
 	done_mods := [] // List of CV_Module instances.
 	ser_mods_offsets := []
@@ -106,14 +106,14 @@ func link_exec(mods, linker, target):
 	pkgs := Mk_Packages::mk_packages(done_mods, target)
 	for pkg := pkgs.iter():
 		done_mods.append(pkg)
-		done_ids.add(pkg.get_identifier())
+		done_ids.add(pkg.get_mod_id())
 		ser_mods_offsets.append(ser_mods.len_bytes())
 		ser_mods.extend_from_string(pkg.serialize())
 
 	for mod := done_mods.iter():
 		for import_ := mod.get_imports().iter():
 			if not Compiler_Vars::BUILTIN_MODULES.find(import_) & not done_ids.find(import_):
-				linker.error(Strings::format("Module '%s' referenced in '%s' not found in input files.", import_, mod.get_identifier()))
+				linker.error(Strings::format("Module '%s' referenced in '%s' not found in input files.", import_, mod.get_mod_id()))
 
 	linked_bytecode[target.LIBRARY_BYTECODE_NUM_MODULES] := ser_mods_offsets.len()
 
@@ -140,7 +140,7 @@ func _tn_src_infos(src_infos, mod):
 	new_src_infos := []
 	for mod_num, offset := src_infos.iter():
 		if mod_num == -1:
-			new_src_infos.append([mod.get_identifier(), offset])
+			new_src_infos.append([mod.get_mod_id(), offset])
 		else:
 			new_src_infos.append([mod.get_imports()[mod_num], offset])
 

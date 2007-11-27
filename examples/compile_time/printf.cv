@@ -153,7 +153,7 @@ func printf(format):
 	// what's happening above to life.
 	
 	Sys::println(Strings::format("For the input:\n  %s\nformat generated the following function:\n", format))
-	Sys::println(CEI::itree_format(func_) + "\n")
+	Sys::println(CEI::itree_pp(func_) + "\n")
 	
 	return func_
 

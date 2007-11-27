@@ -21,7 +21,7 @@
 
 import Builtins, Exceptions, Strings, Thread
 import CPK::Earley::Grammar
-import Compiler::Compiler_Vars, Compiler::CV_Parser, Compiler::Eval, Compiler::ITree, Compiler::ITree_Format, Compiler::ITree_Rename, Compiler::ITree_WF, Compiler::Lift, Compiler::Tokenizer
+import Compiler::Compiler_Vars, Compiler::CV_Parser, Compiler::Eval, Compiler::ITree, Compiler::ITree_PP, Compiler::ITree_Rename, Compiler::ITree_WF, Compiler::Lift, Compiler::Tokenizer
 
 
 
@@ -56,9 +56,9 @@ func fresh_name(name := null):
 
 
 
-func itree_format(itree):
+func itree_pp(itree):
 
-	return ITree_Format::format(itree)
+	return ITree_PP::pp(itree)
 
 
 

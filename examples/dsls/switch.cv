@@ -20,7 +20,7 @@
 
 
 import CEI, Sys
-import Compiler::CV_Parser, Compiler::IModule_Gen, Compiler::ITree_Format, Compiler::Tokenizer
+import Compiler::CV_Parser, Compiler::IModule_Gen, Compiler::ITree_PP, Compiler::Tokenizer
 import CPK::Earley::Grammar, CPK::Earley::Parser
 
 
@@ -95,7 +95,7 @@ func switch(dsl_block, src_infos):
 	
 	x := Switch_Translator.new().gen(parse_tree)
 	
-	Sys::println(ITree_Format::format(x))
+	Sys::println(ITree_PP::pp(x))
 	
 	return x
 

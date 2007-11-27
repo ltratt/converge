@@ -33,9 +33,9 @@ _NEST_FUNC := 1
 
 
 
-class ITree_Format:
+class ITree_PP:
 
-	func format(self, itree):
+	func pp(self, itree):
 	
 		self._indent_level := 0
 
@@ -488,6 +488,6 @@ class ITree_Format:
 
 
 
-func format(itree):
+func pp(itree):
 
-	return ITree_Format.new().format(itree)
+	return ITree_PP.new().pp(itree)

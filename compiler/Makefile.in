@@ -9,7 +9,7 @@ conlibdir = ${libdir}/converge-@CONVERGE_VERSION@
 BASE_OBJ_FILES = Compiler/CV_Parser.cvb Compiler/Tokenizer.cvb \
 	Compiler/IModule_Gen.cvb Compiler/ITree.cvb Compiler/Bytecode_Gen.cvb \
 	Compiler/Targets/Thirty_Two_Bit.cvb Compiler/Compiler_Vars.cvb Compiler/CV_Module.cvb \
-	Compiler/QQ_Mode.cvb Compiler/ITree_Format.cvb Compiler/ITree_WF.cvb \
+	Compiler/QQ_Mode.cvb Compiler/ITree_PP.cvb Compiler/ITree_WF.cvb \
 	Compiler/CV_Library.cvb Compiler/CV_Exec.cvb Compiler/Eval.cvb \
 	Compiler/Mk_Packages.cvb Compiler/Lift.cvb Compiler/Link.cvb Compiler/ITree_Rename.cvb \
 	convergec.cvb convergel.cvb convergei.cvb convergep.cvb

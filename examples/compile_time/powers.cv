@@ -47,7 +47,7 @@ func mk_power(n):
 	|]
 	
 	Sys::println("mk_power(", n, ") generated:\n")
-	Sys::println(CEI::itree_format(it))
+	Sys::println(CEI::itree_pp(it))
 	
 	return it
 

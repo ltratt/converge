@@ -327,6 +327,11 @@ cd lib
 for lib_path in `find . | grep cv$ | sed "s/^\\.\\///"`; do
 	mod_name=`echo $lib_path | sed "s/\\//_/g" | sed "s/\\.cv$//" | sed "y/abcdefghijklmnopqrstuvwxyz/ABCDEFGHIJKLMNOPQRSTUVWXYZ/"`
 	mod_id=`readlink -f $lib_path`
+	if [[ $mingw -eq 1 ]]; then
+		# Clean up MinGW's mutant filenames
+		mod_id=`echo "$mod_id" | sed 's/^\/\([a-zA-Z]\)\//\1:\\\/; s/^\/\([[a-zA-Z]]\)/\1:/'`
+#		mod_id=`echo $mod_id | sed 's/^\\/\([a-zA-Z]\)\\//\1:\\\/; ' | sed "s/\\//\\\/g"`
+	fi
 	mod_ids=`printf "%s\\n#define CON_MOD_ID_%s \"%s\"\\n" "$mod_ids" "$mod_name" "$mod_id"`
 done
 cd ..

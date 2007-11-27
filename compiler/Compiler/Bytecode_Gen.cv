@@ -233,10 +233,11 @@ class Bytecode_Gen:
 			if mod_id == self._mod_id:
 				import_num := -1
 			else:
-				if self._compiler.bootstrap == 1 & mod_id.prefixed_by(self._compiler.original_lc_top_level_path):
+				if self._compiler.bootstrap == 1:
 					// In bootstrapping mode we have to make sure that anything we output is
 					// entirely in terms of new module ids.
-					mod_id := File::join_names(self._compiler.top_level_path, mod_id[self._compiler.original_lc_top_level_path.len() : ])
+					mod_id := self._compiler.mod_id_to_new(mod_id)
+
 				if not (import_num := self._imports.find(mod_id)):
 					import_num := self._imports.len()
 					self._imports[mod_id] := import_num
@@ -374,10 +375,10 @@ class Bytecode_Gen:
 
 	func _get_original_name_mod_id(self, orig_name):
 
-		if self._compiler.bootstrap == 1 & orig_name.mod_id.prefixed_by(self._compiler.original_lc_top_level_path):
+		if self._compiler.bootstrap == 1:
 			// In bootstrapping mode we have to make sure that anything we output is entirely in
 			// terms of new module ids.
-			return File::join_names(self._compiler.top_level_path, orig_name.mod_id[self._compiler.original_lc_top_level_path.len() : ])
+			return self._compiler.mod_id_to_new(orig_name.mod_id)
 		else:
 			return orig_name.mod_id
 

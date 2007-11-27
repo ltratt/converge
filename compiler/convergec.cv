@@ -241,6 +241,32 @@ class Compiler:
 
 
 
+	func mod_id_to_new(self, mod_id):
+	
+		assert(self.bootstrap == 1)
+		
+		if not mod_id.prefixed_by(self.original_lc_top_level_path):
+			return mod_id
+		
+		new_mod_id := File::join_names(self.top_level_path, mod_id[self.original_lc_top_level_path.len() : ])
+		
+		return new_mod_id
+
+
+
+	func mod_id_to_old(self, mod_id):
+	
+		assert(self.bootstrap == 1)
+		
+		if not mod_id.prefixed_by(self.top_level_path):
+			return mod_id
+		
+		old_mod_id := File::join_names(self.original_lc_top_level_path, mod_id[self.top_level_path.len() : ])
+		
+		return old_mod_id
+
+
+
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Internal functions
 	//

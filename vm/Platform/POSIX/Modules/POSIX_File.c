@@ -207,13 +207,19 @@ Con_Obj *_Con_Module_POSIX_File_File_new_func(Con_Obj *thread)
 	}
 	if (atom == NULL)
 		CON_RAISE_EXCEPTION("Type_Exception", CON_NEW_STRING("[String, Int]"), path_obj, CON_NEW_STRING("path"));
-	
+
+#	ifdef CON_PLATFORM_MINGW
+	char *mode = Con_Builtins_String_Atom_to_c_string(thread, CON_ADD(mode_obj, CON_NEW_STRING("b")));
+#	else	
+	char *mode = Con_Builtins_String_Atom_to_c_string(thread, mode_obj);
+#	endif
+
 	if (atom->atom_type == CON_BUILTIN(CON_BUILTIN_INT_ATOM_DEF_OBJECT)) {
-		if ((file_atom->file = fdopen(Con_Numbers_Number_to_c_Int(thread, path_obj), Con_Builtins_String_Atom_to_c_string(thread, mode_obj))) == NULL)
+		if ((file_atom->file = fdopen(Con_Numbers_Number_to_c_Int(thread, path_obj), mode)) == NULL)
 			CON_XXX;
 	}
 	else {
-		if ((file_atom->file = fopen(Con_Builtins_String_Atom_to_c_string(thread, path_obj), Con_Builtins_String_Atom_to_c_string(thread, mode_obj))) == NULL) {
+		if ((file_atom->file = fopen(Con_Builtins_String_Atom_to_c_string(thread, path_obj), mode)) == NULL) {
 			_Con_Module_POSIX_File_error(thread, path_obj, errno);
 		}
 	}

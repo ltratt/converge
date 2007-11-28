@@ -4,8 +4,8 @@ ifeq (${wildcard lib/libconverge.cvl}, )
 	@echo "===> lib/libconverge.cvl does not exist: entering bootstrapping mode"
 	cd lib && ${MAKE} ${MFLAGS} minimal BOOTSTRAP=yes
 	cd compiler && ${MAKE} ${MFLAGS} BOOTSTRAP=yes
-	cd lib && ${MAKE} ${MFLAGS} BOOTSTRAP=yes
-	cd compiler && ${MAKE} ${MFLAGS} BOOTSTRAP=yes
+	cd lib && ${MAKE} ${MFLAGS}
+	cd compiler && ${MAKE} ${MFLAGS}
 else
 	cd lib && ${MAKE} ${MFLAGS}
 	cd compiler && ${MAKE} ${MFLAGS}

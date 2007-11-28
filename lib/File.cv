@@ -23,8 +23,8 @@ import POSIX_File, Strings, Sys, Time
 
 
 
-DIRECTORY_SEPARATOR := POSIX_File::DIRECTORY_SEPARATOR
-EXTENSION_SEPARATOR := POSIX_File::EXTENSION_SEPARATOR
+DIR_SEP := POSIX_File::DIR_SEP
+EXT_SEP := POSIX_File::EXT_SEP
 
 
 
@@ -70,7 +70,7 @@ mtime := POSIX_File::mtime
 
 func split_leaf(path):
 
-	if i := path.rfind_index(DIRECTORY_SEPARATOR):
+	if i := path.rfind_index(DIR_SEP):
 		return [path[ : i], path[i + 1 : ]]
 	else:
 		return ["", path]
@@ -79,7 +79,7 @@ func split_leaf(path):
 
 func split_ext(path):
 
-	if i := path.rfind_index(EXTENSION_SEPARATOR):
+	if i := path.rfind_index(EXT_SEP):
 		return [path[ : i], path[i + 1 : ]]
 	else:
 		return [path, ""]
@@ -88,7 +88,7 @@ func split_ext(path):
 
 func split_names(path):
 
-	return Strings::split(path, DIRECTORY_SEPARATOR)
+	return Strings::split(path, DIR_SEP)
 
 
 
@@ -103,21 +103,21 @@ func join_names(*names):
 		// condition is important since we need to allow names such as /home/blah where the initial
 		// directory separator is significant.
 		if i == 1:
-			while name.prefixed_by(DIRECTORY_SEPARATOR):
-				name := name[DIRECTORY_SEPARATOR.len() : ]
+			while name.prefixed_by(DIR_SEP):
+				name := name[DIR_SEP.len() : ]
 		else:
 			i := 1
-		while name.suffixed_by(DIRECTORY_SEPARATOR):
-			name := name[ : name.len() - DIRECTORY_SEPARATOR.len()]
+		while name.suffixed_by(DIR_SEP):
+			name := name[ : name.len() - DIR_SEP.len()]
 		flattened.append(name)
 
-	return Strings::join(flattened, DIRECTORY_SEPARATOR)
+	return Strings::join(flattened, DIR_SEP)
 
 
 
 func join_ext(path, ext):
 
-	return path + EXTENSION_SEPARATOR + ext
+	return path + EXT_SEP + ext
 
 
 
@@ -136,9 +136,9 @@ func is_entry_in_dir(dir_path, path):
 		fail
 	
 	i := dir_path.len()
-	while i < path.len() & path[i] == DIRECTORY_SEPARATOR:
+	while i < path.len() & path[i] == DIR_SEP:
 		i += 1
-	if path[i : ].find(DIRECTORY_SEPARATOR):
+	if path[i : ].find(DIR_SEP):
 		fail
 	
 	return 1

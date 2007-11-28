@@ -59,30 +59,12 @@ Con_Obj *Con_Modules_find(Con_Obj *thread, Con_Obj *mod_id)
 	// If the compiler is in bootstrap mode, then the VM also has to manipulate module IDs in some
 	// situations (e.g. when Con_Modules_find is called with a static module ID from Std_Modules.h).
 
-	Con_Obj *current_path, *old_path;
-	Con_Builtins_VM_Atom_get_bootstrap_compiler_paths(thread, &current_path, &old_path);
-	if (current_path != NULL && CON_GET_SLOT_APPLY_NO_FAIL(mod_id, "prefixed_by", current_path) != NULL) {
+	Con_Obj *bootstrap_compiler = Con_Builtins_VM_Atom_get_bootstrap_compiler(thread);
+	if (bootstrap_compiler != NULL) {
 		// OK, we're in bootstrapping mode and we've got a "new" module ID that we need to convert
 		// to an "old" module ID.
-		//
-		// We're in a bit of a bind here. We'd really like to import the File.cv module and call it's
-		// join_names function, but we can't do that, because we'd loop forever in this function. So
-		// we have to hack our own, very crude, version of the same thing to calculate a new ID.
-		Con_Obj *new_mod_id;
-		if (CON_GET_SLOT_APPLY_NO_FAIL(old_path, "suffixed_by", CON_NEW_STRING(CON_DIRECTORY_SEPARATOR)))
-			new_mod_id = CON_GET_SLOT_APPLY(old_path, "get_slice", CON_NEW_INT(0), CON_NEW_INT(-1));
-		else
-			new_mod_id = old_path;
-
-		Con_Obj *current_path_len = CON_GET_SLOT_APPLY(current_path, "len");
-		Con_Obj *slice = CON_GET_SLOT_APPLY(mod_id, "get_slice", current_path_len);
-		if (CON_GET_SLOT_APPLY_NO_FAIL(old_path, "prefixed_by", CON_NEW_STRING(CON_DIRECTORY_SEPARATOR)))
-			slice = CON_GET_SLOT_APPLY(slice, "get_slice", CON_NEW_INT(1));
-
-		new_mod_id = CON_ADD(new_mod_id, CON_NEW_STRING(CON_DIRECTORY_SEPARATOR));
-		new_mod_id = CON_ADD(new_mod_id, slice);
 		
-		mod_id = new_mod_id;
+		mod_id = CON_GET_SLOT_APPLY(bootstrap_compiler, "mod_id_to_old", mod_id);
 	}
 
 	Con_Obj *modules = CON_GET_SLOT(Con_Builtins_Thread_Atom_get_vm(thread), "modules");

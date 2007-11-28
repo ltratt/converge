@@ -111,19 +111,35 @@ class Compiler:
 				if not Compiler_Vars::BUILTIN_MODULES.find(mod_id):
 					existing_mod_ids.append(mod_id)
 			
-			self.original_lc_top_level_path := Strings::lcp(existing_mod_ids)
-			if self.original_lc_top_level_path.len() == 0:
+			self._orig_bs_path := Strings::lcp(existing_mod_ids)
+			if self._orig_bs_path.len() == 0:
 				// Sanity check failed.
 				raise "XXX"
 		
-			self.top_level_path := File::canon_path(File::join_names(File::split_leaf(Sys::program_path)[0], ".."))
+			self._bs_path := File::canon_path(File::join_names(File::split_leaf(Sys::program_path)[0], ".."))
 			
-			imodule_cv_path := File::canon_path(File::join_names(self.top_level_path, "compiler", "Compiler", "IModule_Gen.cv"))
-			if not File::exists(imodule_cv_path) | not imodule_cv_path[ : self.top_level_path.len()] == self.top_level_path:
+			imodule_cv_path := File::canon_path(File::join_names(self._bs_path, "compiler", "Compiler", "IModule_Gen.cv"))
+			if not File::exists(imodule_cv_path) | not imodule_cv_path[ : self._bs_path.len()] == self._bs_path:
 				// Sanity checks failed.
 				raise "XXX"
 			
-			VM::set_bootstrap_compiler_paths(self.top_level_path, self.original_lc_top_level_path)
+			// XXX This next bit is decidedly dodgy, but there's no obviously better way of doing it
+			// that doesn't involve CTMP. Basically we try and work out if the original mod_ids are
+			// separated by / or \. This should work OK on the platforms we currently support, but
+			// has obvious problems on platforms that use a different directory separator.
+			
+			if not backslash := self._orig_bs_path.rfind_index("\\"):
+				backslash := -1
+
+			if not fwdslash := self._orig_bs_path.rfind_index("/"):
+				fwdslash := -1
+			
+			if backslash > fwdslash:
+				self._orig_bs_dir_sep := "\\"
+			else:
+				self._orig_bs_dir_sep := "/"
+			
+			VM::set_bootstrap_compiler(self)
 
 		if self.mk_mode == 1:
 			self._make(extra[0])
@@ -245,10 +261,11 @@ class Compiler:
 	
 		assert(self.bootstrap == 1)
 		
-		if not mod_id.prefixed_by(self.original_lc_top_level_path):
+		if not mod_id.prefixed_by(self._orig_bs_path):
 			return mod_id
 		
-		new_mod_id := File::join_names(self.top_level_path, mod_id[self.original_lc_top_level_path.len() : ])
+		new_mod_id := File::join_names(self._bs_path, mod_id[self._orig_bs_path.len() : ])
+		new_mod_id := new_mod_id.replaced(self._orig_bs_dir_sep, File::DIR_SEP)
 		
 		return new_mod_id
 
@@ -258,10 +275,11 @@ class Compiler:
 	
 		assert(self.bootstrap == 1)
 		
-		if not mod_id.prefixed_by(self.top_level_path):
+		if not mod_id.prefixed_by(self._bs_path):
 			return mod_id
 		
-		old_mod_id := File::join_names(self.original_lc_top_level_path, mod_id[self.top_level_path.len() : ])
+		old_mod_id := File::join_names(self._orig_bs_path, mod_id[self._bs_path.len() : ])
+		old_mod_id := old_mod_id.replaced(File::DIR_SEP, self._orig_bs_dir_sep)
 		
 		return old_mod_id
 

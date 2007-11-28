@@ -123,7 +123,7 @@ Con_Obj *Con_Builtins_VM_Atom_new(Con_Obj *thread, Con_Memory_Store *mem_store, 
 	vm_atom->vm_path = vm_path;
 	vm_atom->prog_path = prog_path;
 	vm_atom->current_exception = NULL;
-	vm_atom->bootstrap_compiler_current_path = vm_atom->bootstrap_compiler_old_path = NULL;
+	vm_atom->bootstrap_compiler = NULL;
 	
 	Con_Builtins_Slots_Atom_Def_init_atom(thread, slots_atom);
 	
@@ -231,22 +231,20 @@ Con_Obj *Con_Builtins_VM_Atom_get_functions_module(Con_Obj *thread)
 
 
 
-void Con_Builtins_VM_Atom_get_bootstrap_compiler_paths(Con_Obj *thread, Con_Obj **bootstrap_compiler_current_path, Con_Obj **bootstrap_compiler_old_path)
+Con_Obj *Con_Builtins_VM_Atom_get_bootstrap_compiler(Con_Obj *thread)
 {
 	Con_Builtins_VM_Atom *vm_atom = (Con_Builtins_VM_Atom *) ((Con_Builtins_Thread_Atom *) thread->first_atom)->vm->first_atom;
 
-	*bootstrap_compiler_current_path = vm_atom->bootstrap_compiler_current_path;
-	*bootstrap_compiler_old_path = vm_atom->bootstrap_compiler_old_path;
+	return vm_atom->bootstrap_compiler;
 }
 
 
 
-void Con_Builtins_VM_Atom_set_bootstrap_compiler_paths(Con_Obj *thread, Con_Obj *bootstrap_compiler_current_path, Con_Obj *bootstrap_compiler_old_path)
+void Con_Builtins_VM_Atom_set_bootstrap_compiler(Con_Obj *thread, Con_Obj *bootstrap_compiler)
 {
 	Con_Builtins_VM_Atom *vm_atom = (Con_Builtins_VM_Atom *) ((Con_Builtins_Thread_Atom *) thread->first_atom)->vm->first_atom;
 
-	vm_atom->bootstrap_compiler_current_path = bootstrap_compiler_current_path;
-	vm_atom->bootstrap_compiler_old_path = bootstrap_compiler_old_path;
+	vm_atom->bootstrap_compiler = bootstrap_compiler;
 }
 
 

@@ -42,7 +42,7 @@ typedef struct {
 	char *vm_path, *prog_path;
 	Con_Obj *current_exception;
 	Con_Obj *builtins[CON_NUMBER_OF_BUILTINS];
-	Con_Obj *bootstrap_compiler_current_path, *bootstrap_compiler_old_path;
+	Con_Obj *bootstrap_compiler;
 } Con_Builtins_VM_Atom;
 
 
@@ -56,8 +56,8 @@ void Con_Builtins_VM_Atom_read_prog_args(Con_Obj *, int *, char ***);
 void Con_Builtins_VM_Atom_get_paths(Con_Obj *, char **, char **);
 Con_Obj *Con_Builtins_VM_Atom_get_builtin(Con_Obj*, Con_Int);
 Con_Obj *Con_Builtins_VM_Atom_get_functions_module(Con_Obj *);
-void Con_Builtins_VM_Atom_get_bootstrap_compiler_paths(Con_Obj *, Con_Obj **, Con_Obj **);
-void Con_Builtins_VM_Atom_set_bootstrap_compiler_paths(Con_Obj *, Con_Obj *, Con_Obj *);
+Con_Obj *Con_Builtins_VM_Atom_get_bootstrap_compiler(Con_Obj *);
+void Con_Builtins_VM_Atom_set_bootstrap_compiler(Con_Obj *, Con_Obj *);
 
 Con_Obj *Con_Builtins_VM_Atom_apply(Con_Obj *, Con_Obj *, bool, ...);
 Con_Obj *Con_Builtins_VM_Atom_apply_with_closure(Con_Obj *, Con_Obj *, Con_Obj *, bool, ...);

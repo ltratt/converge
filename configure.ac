@@ -110,16 +110,20 @@ case $operating_system in
 esac
 
 AC_MSG_CHECKING(directory and file name extension separators)
-AH_TEMPLATE(CON_DIRECTORY_SEPARATOR, [Define to your platforms directory separator char(s).])
-AH_TEMPLATE(CON_EXTENSION_SEPARATOR, [Define to your platforms filename extension separator.])
+AH_TEMPLATE(CON_DIR_SEP, [Define to your platforms directory separator char(s).])
+AH_TEMPLATE(CON_EXT_SEP, [Define to your platforms filename extension separator.])
 if [[ $posix -eq 1 ]]; then
 	AC_MSG_RESULT(/ .);
-	AC_DEFINE(CON_DIRECTORY_SEPARATOR, "/")
-	AC_DEFINE(CON_EXTENSION_SEPARATOR, ".")
+	AC_DEFINE(CON_DIR_SEP, "/")
+	AC_DEFINE(CON_EXT_SEP, ".")
+	AC_SUBST(CON_DIR_SEP, "/")
+	AC_SUBST(CON_EXT_SEP, ".")
 elif [[ $mingw -eq 1 ]]; then
 	AC_MSG_RESULT(\\ .);
-	AC_DEFINE(CON_DIRECTORY_SEPARATOR, "\\")
-	AC_DEFINE(CON_EXTENSION_SEPARATOR, ".")
+	AC_DEFINE(CON_DIR_SEP, "\\")
+	AC_DEFINE(CON_EXT_SEP, ".")
+	AC_SUBST(CON_DIR_SEP, "\\\\")
+	AC_SUBST(CON_EXT_SEP, ".")
 else
 	AC_MSG_ERROR([Unable to determine directory / file name extension separator char(s).])
 fi

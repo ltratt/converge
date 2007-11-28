@@ -27,6 +27,10 @@
 #ifdef CON_PLATFORM_POSIX
 #	include <sys/wait.h>
 #endif
+#ifdef CON_PLATFORM_MINGW
+#	include "Platform/MinGW/realpath.h"
+#	include <windows.h>
+#endif
 
 #ifdef CON_HAVE_NATIVE_ERR
 #include <err.h>
@@ -141,7 +145,7 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 	struct stat tmp_stat;
 	char *vm_path = NULL;
 
-#ifdef READ_VM_PATH_FROM_PROC_SELF_EXE_SYMLINK
+#	ifdef READ_VM_PATH_FROM_PROC_SELF_EXE_SYMLINK
 	// On Linux we first try reading the symlink /proc/self/exe. Since this seems an inherently
 	// dodgy proposition, we don't rely on this definitely succeeding, and fall back on our
 	// other mechanism if it doesn't work.
@@ -149,11 +153,21 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 	vm_path = malloc(PATH_MAX);
 	if (readlink("/proc/self/exe", vm_path, PATH_MAX) == -1 || stat(vm_path, &tmp_stat) == -1)
 		vm_path = NULL;
-#endif
+#	endif
+
+#	ifdef CON_PLATFORM_MINGW
+	// On Windows, GetModuleFileName appears to always return a canonicalised path of the
+	// executable path, which is doubly nice because its possible to execute "x.exe" as simply
+	// just "x", and that would make working this out painful in the extreme.
+	vm_path = malloc(PATH_MAX);
+	if (GetModuleFileName(NULL, vm_path, PATH_MAX) == PATH_MAX || stat(vm_path, &tmp_stat) == -1)
+		vm_path = NULL;
+#	endif
 
 	if (vm_path == NULL) {
 		vm_path = malloc(PATH_MAX);
 		if (realpath(argv0, vm_path) == NULL || stat(vm_path, &tmp_stat) != 0) {
+#		ifdef CON_PLATFORM_POSIX
 			// Since realpath failed, we fall back on searching through $PATH and try and find
 			// the executable on it.
 			char *path;
@@ -187,6 +201,11 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 				}
 				free(cnd);
 			}
+#		else
+			// On non-POSIX platforms, we have no real idea what to do if realpath didn't give us
+			// a good answer.
+			vm_path = NULL;
+#		endif
 		}
 	}
 
@@ -329,17 +348,20 @@ char *find_con_exec(const char *name, const char *vm_path)
 {
 	char *prog_path = NULL;
 	if (vm_path != NULL) {
-		const char* cnds[] = {"", "../compiler/", NULL};
+		const char* cnds[] = {"", ".." CON_DIR_SEP "compiler" CON_DIR_SEP, NULL};
 		char *cnd = malloc(PATH_MAX);
 		char *canon_cnd = malloc(PATH_MAX);
 		int i;
 		for (i = 0; cnds[i] != NULL; i += 1) {
 			strcpy(cnd, vm_path);
 			int j;
-			for (j = strlen(cnd); j >= 0 && cnd[j] != '/'; j -= 1) {}
-			if (cnd[j] == '/') {
-				strcpy(cnd + j + 1, cnds[i]);
-				j += strlen(cnds[i]) + 1;
+			for (j = strlen(cnd) - 1; j >= 0
+			  && strlen(cnd) - j >= strlen(CON_DIR_SEP)
+			  && memcmp(cnd + j, CON_DIR_SEP, strlen(CON_DIR_SEP)) != 0
+			  ; j -= 1) {}
+			if (memcmp(cnd + j, CON_DIR_SEP, strlen(CON_DIR_SEP)) == 0) {
+				strcpy(cnd + j + strlen(CON_DIR_SEP), cnds[i]);
+				j += strlen(cnds[i]) + strlen(CON_DIR_SEP);
 			}
 			else {
 				strcpy(cnd + j, cnds[i]);

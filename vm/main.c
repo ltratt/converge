@@ -147,7 +147,7 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 	// other mechanism if it doesn't work.
 
 	vm_path = malloc(PATH_MAX);
-	if (readlink("/proc/self/exe", vm_path, PATH_MAX) == -1 || stat(vm_path, &tmp_stat) == 0)
+	if (readlink("/proc/self/exe", vm_path, PATH_MAX) == -1 || stat(vm_path, &tmp_stat) == -1)
 		vm_path = NULL;
 #endif
 

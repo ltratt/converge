@@ -285,14 +285,49 @@ if [[ "$pcre_config" = "fail" ]]; then
 	AC_MSG_ERROR([Unable to find pcre-config])
 fi
 extra_cflags="$extra_cflags `$pcre_config --cflags`"
-extra_libs="$extra_libs `$pcre_config --libs`"
+if [[ $mingw -eq 1 ]]; then
+	# Statically link pcre on MinGW
+	AC_MSG_CHECKING([location of libpcre.a])
+	libpcre_a=""
+	for dir in `pcre-config --libs | tr " " "\n" | grep "^-L" | sort -u | sed "s/^-L//"`; do
+		cnd=$dir/libpcre.a
+		if [[ -f $cnd ]]; then
+			libpcre_a=$cnd
+		fi
+	done
+	if [[ "$libpcre_a" = "" ]]; then
+		AC_MSG_ERROR([unable to find libpcre.a.])
+	fi
+	AC_MSG_RESULT($libpcre_a)
+	extra_cflags="$extra_cflags -DPCRE_STATIC"
+	extra_libs="$extra_libs $libpcre_a `$pcre_config --libs | sed 's/-lpcre//'`"
+else
+	extra_libs="$extra_libs `$pcre_config --libs`"
+fi
 
 AC_PATH_PROG(xml2_config, xml2-config, fail)
 if [[ "$xml2_config" = "fail" ]]; then
 	AC_MSG_ERROR([Unable to find xml2-config])
 fi
 extra_cflags="$extra_cflags `$xml2_config --cflags`"
-extra_libs="$extra_libs `$xml2_config --libs`"
+if [[ $mingw -eq 1 ]]; then
+	# Statically link libxml2 on MinGW
+	AC_MSG_CHECKING([location of libxml2.a])
+	libxml2_a=""
+	for dir in `xml2-config --libs | tr " " "\n" | grep "^-L" | sort -u | sed "s/^-L//"`; do
+		cnd=$dir/libxml2.a
+		if [[ -f $cnd ]]; then
+			libxml2_a=$cnd
+		fi
+	done
+	if [[ "$libxml2_a" = "" ]]; then
+		AC_MSG_ERROR([unable to find libxml2.a.])
+	fi
+	AC_MSG_RESULT($libxml2_a)
+	extra_libs="$extra_libs $libxml2_a `$xml2_config --libs | sed 's/-lxml2//'`"
+else
+	extra_libs="$extra_libs `$xml2_config --libs`"
+fi
 
 AC_MSG_CHECKING([which modules to compile])
 mod_paths=`ls vm/Modules/*.c | sed "s/c$/o/"`

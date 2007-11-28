@@ -414,9 +414,6 @@ ssize_t find_bytecode_start(u_char *bytecode, size_t bytecode_size)
 
 void make_mode(char *prog_path, u_char **bytecode, size_t *bytecode_size, char *vm_path, int verbosity)
 {
-#	ifdef CON_PLATFORM_MINGW
-	CON_XXX;
-#	else
 	// First of all we try and work out if we can construct a cached path name.
 
 	char cache_path[PATH_MAX];
@@ -460,6 +457,60 @@ void make_mode(char *prog_path, u_char **bytecode, size_t *bytecode_size, char *
 			return;
 		}
 	}
+
+#	ifdef CON_PLATFORM_MINGW
+	// XXX On MinGW pipes seem too complicated, so we take a simpler approach and dump
+	// everything out to a temporary file. This is ugly and someone should fix it.
+	
+	char *convergec_path;
+	// GCC 3.3.5 (at least) barfs if a label comes before a variable declaration.
+make:	
+	convergec_path = find_con_exec("convergec", vm_path);
+	char tmp_path[PATH_MAX];
+	if (GetTempFileName(".", "con", 1, tmp_path) == 0)
+		CON_XXX;
+
+	const char *first_args[] = {vm_path, convergec_path, "-m", "-o", tmp_path, (char *) NULL};
+	int num_first_args = verbosity;
+	for (int i = 0; first_args[i] != NULL; i += 1) {
+		num_first_args += 1;
+	}
+
+	const char *args[num_first_args + verbosity + 1];
+	int j = 0;
+	for (int i = 0; first_args[j] != NULL; i += 1) {
+		args[j] = first_args[j];
+		j += 1;
+	}
+	for (int i = 0; i < verbosity; i += 1) {
+		args[j++] = "-v";
+	}
+	args[j++] = prog_path;
+	args[j++] = NULL;
+	
+	int rtn = _spawnv(_P_WAIT, vm_path, args);
+	if (rtn != 0)
+		exit(rtn);
+	
+	struct stat tmp_stat;
+	if (stat(tmp_path, &tmp_stat) != 0)
+		CON_XXX;
+	
+	*bytecode = realloc(*bytecode, tmp_stat.st_size);
+	FILE *tmp_file = fopen(tmp_path, "rb");
+	if (tmp_file == NULL)
+		CON_XXX;
+
+	if (fread(*bytecode, 1, tmp_stat.st_size, tmp_file) < tmp_stat.st_size)
+		CON_XXX;
+	
+	// Ignore errors when closing and deleting the temporary file - errors are annoying, but not
+	// fatal.
+	
+	fclose(tmp_file);
+	unlink(tmp_path);
+	
+#	else
 
 	// GCC 3.3.5 (at least) barfs if a label comes before a variable declaration.
 	int filedes[2];
@@ -543,6 +594,7 @@ make:
 	*bytecode = realloc(*bytecode, *bytecode_size);
 	if (*bytecode == NULL)
 		CON_XXX;
+#	endif
 
 	// Try and write the file to its cached equivalent. Since this isn't strictly necessary, if at
 	// any point anything fails, we simply give up without reporting an error.
@@ -574,12 +626,11 @@ make:
 			fclose(cache_file);
 		}
 
-		cache_file = fopen(cache_path, "w");
+		cache_file = fopen(cache_path, "wb");
 		if (cache_file == NULL)
 			return;
 		// We intentionally ignore any errors from fwrite or fclose.
 		fwrite(*bytecode, 1, *bytecode_size, cache_file);
 		fclose(cache_file);
 	}
-#	endif
 }

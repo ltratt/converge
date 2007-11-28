@@ -37,8 +37,8 @@ install: all
 	install -c -m 555 convergep ${bindir}
 	install -d ${conlibdir}/Compiler
 	install -d ${conlibdir}/Compiler/Targets
-	install -c -m 444 ${BASE_OBJ_FILES} ${BASE_OBJ_FILES:.cvb=.cv} ${conlibdir}/Compiler
-	install -c -m 444 ${TARGET_OBJ_FILES} ${TARGET_OBJ_FILES:.cvb=.cv} ${conlibdir}/Compiler/Targets
+	install -c -m 444 ${BASE_OBJ_FILES:.cvb=.cv} ${conlibdir}/Compiler
+	install -c -m 444 ${TARGET_OBJ_FILES:.cvb=.cv} ${conlibdir}/Compiler/Targets
 	install -c -m 444 libcompiler.cvl ${conlibdir}/Compiler
 
 

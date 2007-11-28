@@ -33,7 +33,7 @@ install: all
 	install -d ${conlibdir}/CPK/Earley
 	install -d ${conlibdir}/Platform
 	install -d ${conlibdir}/XML
-	echo ${ALL_OBJS:.cvb=.cv} | xargs -n 1 -I{} install -c -m 444 {} ${conlibdir}/{}
+	echo ${ALL_OBJS:.cvb=.cv} | tr " " "\n" | xargs -n 1 -I{} install -c -m 444 {} ${conlibdir}/{}
 	install -c -m 444 libconverge.cvl ${conlibdir}
 
 

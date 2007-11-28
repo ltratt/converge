@@ -56,6 +56,7 @@ class _Interactive_Compiler(Eval::Eval_Compiler):
 	func _print_msg(self, pre_msg, msg, src_infos := null):
 
 		Sys::stderr.writeln(Strings::format("%s: %s", pre_msg, msg))
+		Sys::stderr.flush()
 
 
 
@@ -101,3 +102,4 @@ func main():
 			Sys::exit(e.code)
 		catch Exceptions::Exception into e:
 			Sys::stderr.writeln(Exceptions::backtrace(e))
+			Sys::stderr.flush()

@@ -450,6 +450,7 @@ void make_mode(char *prog_path, u_char **bytecode, size_t *bytecode_size, char *
 				goto make;
 			}
 		}
+		fclose(cache_file); // Ignore errors
 
 		ssize_t bytecode_start = find_bytecode_start(*bytecode, *bytecode_size);
 		if (bytecode_start != -1 && Con_Bytecode_upto_date(NULL, *bytecode + bytecode_start, &st.STAT_ST_MTIMESPEC)) {

@@ -497,7 +497,8 @@ make:
 	if (stat(tmp_path, &tmp_stat) != 0)
 		CON_XXX;
 	
-	*bytecode = realloc(*bytecode, tmp_stat.st_size);
+	*bytecode_size = tmp_stat.st_size;
+	*bytecode = realloc(*bytecode, *bytecode_size);
 	FILE *tmp_file = fopen(tmp_path, "rb");
 	if (tmp_file == NULL)
 		CON_XXX;

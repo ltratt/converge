@@ -80,9 +80,12 @@ func split_leaf(path):
 func split_ext(path):
 
 	if i := path.rfind_index(EXT_SEP):
-		return [path[ : i], path[i + 1 : ]]
-	else:
-		return [path, ""]
+		// We only want to split the extension if either the path isn't preceeded by a directory
+		// separator, or if the extension separator comes *after* the final directory separator.
+		if not (j := path.rfind_index(DIR_SEP)) | i > j:
+			return [path[ : i], path[i + 1 : ]]
+
+	return [path, ""]
 	
 
 

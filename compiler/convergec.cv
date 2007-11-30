@@ -440,8 +440,9 @@ class Compiler:
 							imp_mod_ids := [imp_mod_id]
 						
 						for cnd_mod_id := imp_mod_ids.iter():
+							cnd_mod_id := Compiler_Vars::canon_mod_id(cnd_mod_id)
 							if not self.mk_done_cv_mods.find(cnd_mod_id):
-								self.mk_done_cv_mods[cnd_mod_id][1] := null
+								self.mk_done_cv_mods[cnd_mod_id] := [cnd_mod_id, null]
 								again := 1
 								continue
 

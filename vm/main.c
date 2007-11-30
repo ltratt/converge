@@ -629,8 +629,11 @@ make:
 		cache_file = fopen(cache_path, "wb");
 		if (cache_file == NULL)
 			return;
-		// We intentionally ignore any errors from fwrite or fclose.
-		fwrite(*bytecode, 1, *bytecode_size, cache_file);
-		fclose(cache_file);
+		if (fwrite(*bytecode, *bytecode_size, 1, cache_file) < 1) {
+			fclose(cache_file); // Ignore errors.
+			unlink(cache_path);
+			return;
+		}
+		fclose(cache_file); // Ignore errors.
 	}
 }

@@ -91,6 +91,7 @@ Con_Obj *Con_Builtins_Module_Atom_new_c(Con_Obj *thread, Con_Obj *identifier, Co
 	module_atom->state = CON_MODULE_UNINITIALIZED;
 	module_atom->identifier = identifier;
 	module_atom->name = name;
+	module_atom->src_path = identifier;
 	module_atom->module_bytecode = NULL;
 	module_atom->module_bytecode_offset = -1;
 	module_atom->closure = NULL;
@@ -134,6 +135,7 @@ Con_Obj *Con_Builtins_Module_Atom_new_from_bytecode(Con_Obj *thread, u_char *byt
 
 	module_atom->identifier = Con_Builtins_String_Atom_new_copy(thread, ID_MODULE_GET_OFFSET(CON_BYTECODE_MODULE_IDENTIFIER), ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_IDENTIFIER_SIZE), CON_STR_UTF_8);
 	module_atom->name = Con_Builtins_String_Atom_new_copy(thread, ID_MODULE_GET_OFFSET(CON_BYTECODE_MODULE_NAME), ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_NAME_SIZE), CON_STR_UTF_8);
+	module_atom->src_path = Con_Builtins_String_Atom_new_copy(thread, ID_MODULE_GET_OFFSET(CON_BYTECODE_MODULE_SRC_PATH), ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_SRC_PATH_SIZE), CON_STR_UTF_8);
 
 	module_atom->imports = Con_Builtins_List_Atom_new_sized(thread, ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_NUM_IMPORTS));
 	imports_bytecode_offset = ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_IMPORTS);
@@ -525,6 +527,7 @@ void _Con_Builtins_Module_Class_gc_scan_func(Con_Obj *thread, Con_Obj *obj, Con_
 		Con_Memory_gc_push(thread, module_atom->module_bytecode);
 	Con_Memory_gc_push(thread, module_atom->identifier);
 	Con_Memory_gc_push(thread, module_atom->name);
+	Con_Memory_gc_push(thread, module_atom->src_path);
 	if (module_atom->closure != NULL)
 		Con_Memory_gc_push(thread, module_atom->closure);
 	Con_Memory_gc_push(thread, module_atom->imports);

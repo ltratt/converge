@@ -166,7 +166,7 @@ class Compiler:
 		cv_mod := self._compile_path(src_path)
 		self._write_cache_cvb(src_path, cv_mod.serialize())
 
-		mk_done_cv_mods[src_path] := cv_mod
+		mk_done_cv_mods[src_path] := [src_path, cv_mod]
 		mk_mtime_map[src_path] := Time::current()
 		
 		return cv_mod
@@ -219,7 +219,7 @@ class Compiler:
 		if self.mk_mode == 0:
 			self.error(Strings::format("Can not find compiled version of '%s'.", src_path), src_infos)
 		
-		if cv_mod := self.mk_done_cv_mods.find(src_path):
+		if src_path, cv_mod := self.mk_done_cv_mods.find(src_path):
 			return cv_mod
 	
 		compiler := Compiler.new()
@@ -228,7 +228,7 @@ class Compiler:
 		Compiler_Vars::pop_compiler()
 		
 		if self.verbosity > 0:
-			self.info(Strings::format("Returning to compile of %s...", self.mod_id))
+			self.info(Strings::format("Returning to compile of %s...", self.src_path))
 
 		return cv_mod
 
@@ -255,19 +255,20 @@ class Compiler:
 	
 		for include_dir := self.includes.iter():
 			if matched_path, extra_pos := match_path(0, include_dir):
-				import_full_name := File::canon_path(matched_path)
+				src_path := File::canon_path(matched_path)
+				mod_id := Compiler_Vars::canon_mod_id(src_path)
 				import_extras := import_name_list[extra_pos + 1 : ]
 				break
 		exhausted:
 			// If the first part of the import references a builtin, then looking up that module ID
 			// will succeed.
 			if VM::find_module(import_name_list[0]):
-				import_full_name := import_name_list[0]
+				mod_id := src_path := import_name_list[0]
 				import_extras := import_name_list[1 : ]
 			else:
 				fail
 		
-		return [import_full_name, import_extras]
+		return [mod_id, src_path, import_extras]
 
 
 
@@ -280,6 +281,9 @@ class Compiler:
 		
 		new_mod_id := File::join_names(self._bs_path, mod_id[self._orig_bs_path.len() : ])
 		new_mod_id := new_mod_id.replaced(self._orig_bs_dir_sep, File::DIR_SEP)
+		
+		if Properties::case_sensitive_filenames == 0:
+			new_mod_id := new_mod_id.to_lower_case()
 		
 		return new_mod_id
 
@@ -314,9 +318,10 @@ class Compiler:
 		if self.verbosity > 0:
 			self.info(Strings::format("Compiling %s...", src_path))
 
-		self.mod_id := File::canon_path(src_path)
+		self.src_path := File::canon_path(src_path)
+		self.mod_id := Compiler_Vars::canon_mod_id(self.src_path)
 
-		if (input_file_dir := File::split_leaf(self.mod_id)[0]) == "":
+		if (input_file_dir := File::split_leaf(self.src_path)[0]) == "":
 			self.includes.insert(0, ".")
 		else:
 			self.includes.insert(0, input_file_dir)
@@ -325,11 +330,11 @@ class Compiler:
 		// extension). On platforms with non-case preserving filesystems, perhaps there is a need
 		// for a more sophisticated mechanism?
 
-		self.src_module_name := File::split_ext(File::split_leaf(self.mod_id)[1])[0]
+		self.src_module_name := File::split_ext(File::split_leaf(self.src_path)[1])[0]
 
 		self.includes.extend(Compiler_Vars::find_std_includes())
 
-		src_file := File::open(self.mod_id, "r")
+		src_file := File::open(self.src_path, "r")
 		src_data := src_file.read()
 		src_file.close()
 
@@ -368,8 +373,8 @@ class Compiler:
 		else:
 			do_link := 1
 
-		main_mod_id := File::canon_path(src_path)
-		self.mk_done_cv_mods := Dict{main_mod_id : null} // module id : CV_Module instances map.
+		main_mod_id := Compiler_Vars::canon_mod_id(File::canon_path(src_path))
+		self.mk_done_cv_mods := Dict{main_mod_id : [File::canon_path(src_path), null]} // module id : CV_Module instances map.
 
 		// We want to ensure that we never try to compile any of the stuff in the builtin libraries,
 		// so read these in to make sure this doesn't happen.
@@ -384,7 +389,7 @@ class Compiler:
 			for cv_mod := lib.deserialize(lib_data).iter():
 				lib_mods.append(cv_mod)
 				lib_mod_ids.add(cv_mod.get_mod_id())
-				self.mk_done_cv_mods[cv_mod.get_mod_id()] := cv_mod
+				self.mk_done_cv_mods[cv_mod.get_mod_id()] := [cv_mod.get_src_path(), cv_mod]
 
 		// The main loop. Basically we keep on going around this, reading in cached files or
 		// compiling new files; and updating any modules who are older than their import
@@ -399,9 +404,11 @@ class Compiler:
 
 		while 1:
 			again := 0 // Set to 1 to force another round of the loop.
-			for mod_id, cv_mod := self.mk_done_cv_mods.iter():
+			for mod_id, x := self.mk_done_cv_mods.iter():
 				if lib_mod_ids.find(mod_id):
 					continue
+				
+				mod_src_path, cv_mod := x
 				
 				compile := 0
 				if cv_mod is null:
@@ -409,7 +416,7 @@ class Compiler:
 					// a cached version.
 					if cv_mod, mtime := self._read_cache_cvb(mod_id):
 						mod_id := cv_mod.get_mod_id()
-						self.mk_done_cv_mods[mod_id] := cv_mod
+						self.mk_done_cv_mods[mod_id] := [cv_mod.get_src_path(), cv_mod]
 						self.mk_mtime_map[mod_id] := mtime
 					else:
 						compile := 1
@@ -434,7 +441,7 @@ class Compiler:
 						
 						for cnd_mod_id := imp_mod_ids.iter():
 							if not self.mk_done_cv_mods.find(cnd_mod_id):
-								self.mk_done_cv_mods[cnd_mod_id] := null
+								self.mk_done_cv_mods[cnd_mod_id][1] := null
 								again := 1
 								continue
 
@@ -443,9 +450,9 @@ class Compiler:
 				
 				if compile == 1:
 					// Compilation has been forced.
-					cv_mod := self._compile_path(mod_id)
+					cv_mod := self._compile_path(mod_src_path)
 					self._write_cache_cvb(mod_id, cv_mod.serialize())
-					self.mk_done_cv_mods[mod_id] := cv_mod
+					self.mk_done_cv_mods[mod_id][1] := cv_mod
 					self.mk_mtime_map[mod_id] := Time::current()
 					again := 1
 					do_link := 1
@@ -461,7 +468,7 @@ class Compiler:
 		if do_link == 1:
 			// Create the list of modules to link, including all library modules.
 			link_mods := [main_mod]
-			for mod := self.mk_done_cv_mods.iter_vals():
+			for src_path, mod := self.mk_done_cv_mods.iter_vals():
 				if not mod is main_mod:
 					link_mods.append(mod)
 			link_mods.extend(lib_mods)
@@ -469,6 +476,7 @@ class Compiler:
 			if self.verbosity > 0:
 				self.info("Linking.")
 			self.mod_id := link_mods[0].get_mod_id()
+			self.src_path := link_mods[0].get_src_path()
 			ser_cv_exec := Linker.new().link(link_mods, self.target)
 
 			output_file := File::File.new(self.output_path, "w")

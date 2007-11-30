@@ -45,7 +45,7 @@ Con_Obj *Con_Module_C_Platform_Properties_import(Con_Obj *, Con_Obj *);
 
 Con_Obj *Con_Module_C_Platform_Properties_init(Con_Obj *thread, Con_Obj *identifier)
 {
-	const char* defn_names[] = {"word_bits", "LITTLE_ENDIAN", "BIG_ENDIAN", "endianness", "endianness", NULL};
+	const char* defn_names[] = {"word_bits", "LITTLE_ENDIAN", "BIG_ENDIAN", "endianness", "endianness", "osname", "case_sensitive_filenames", NULL};
 
 	return Con_Builtins_Module_Atom_new_c(thread, identifier, CON_NEW_STRING("C_Platform_Properties"), defn_names, CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
 }
@@ -64,6 +64,12 @@ Con_Obj *Con_Module_C_Platform_Properties_import(Con_Obj *thread, Con_Obj *prope
 	CON_SET_MOD_DEFN(properties_mod, "endianness", CON_GET_MOD_DEFN(properties_mod, "LITTLE_ENDIAN"));
 #	elif CON_BYTEORDER == CON_BIG_ENDIAN
 	CON_SET_MOD_DEFN(properties_mod, "endianness", CON_GET_MOD_DEFN(properties_mod, "BIG_ENDIAN"));
+#	endif
+	CON_SET_MOD_DEFN(properties_mod, "osname", CON_NEW_STRING(CON_OSNAME));
+#	if CON_FILENAMES_CASE_SENSITIVE
+	CON_SET_MOD_DEFN(properties_mod, "case_sensitive_filenames", CON_NEW_INT(1));
+#	else
+	CON_SET_MOD_DEFN(properties_mod, "case_sensitive_filenames", CON_NEW_INT(0));
 #	endif
 
 	return properties_mod;

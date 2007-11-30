@@ -90,19 +90,39 @@ extra_libs="-L/usr/local/lib"
 #
 
 AC_MSG_CHECKING(platform)
+AH_TEMPLATE(CON_OSNAME, [Define to your platforms operating system name. Do not include version numbers.])
 posix=0
 mingw=0
 operating_system=`uname -s`
 case $operating_system in
 	OpenBSD | FreeBSD | NetBSD | Linux | Darwin | CYGWIN_NT*)
-		AC_MSG_RESULT(POSiX);
-		posix=1;
-		AC_DEFINE(CON_PLATFORM_POSIX, [], [Define if you are running on a POSiX platform. Note that you can can only define one CON_PLATFORM_* variable.]);;
+		AC_MSG_RESULT(POSIX)
+		posix=1
+		AC_DEFINE(CON_PLATFORM_POSIX, [], [Define if you are running on a POSiX platform. Note that you can can only define one CON_PLATFORM_* variable.])
+		echo $operating_system | grep "^CYGWIN_NT"
+		if [[ $? -eq 0 ]]; then
+			AC_DEFINE(CON_OSNAME, [CYGWIN_NT])
+		else
+			AC_DEFINE_UNQUOTED(CON_OSNAME, "$operating_system")
+		fi;;
 	MINGW* )
-		AC_MSG_RESULT(MinGW);
-		mingw=1;
-		AC_DEFINE(CON_PLATFORM_MINGW, [], [Define if you are running on the MinGW platform. Note that you can can only define one CON_PLATFORM_* variable.]);;
+		AC_MSG_RESULT(MINGW)
+		mingw=1
+		AC_DEFINE(CON_PLATFORM_MINGW, [], [Define if you are running on the MinGW platform. Note that you can can only define one CON_PLATFORM_* variable.])
+		AC_DEFINE(CON_OSNAME, "MINGW");;
 	*) AC_MSG_ERROR([Unknown platform "$operating_system"]);;
+esac
+
+AC_MSG_CHECKING(for filename case sensitivity)
+AH_TEMPLATE(CON_FILENAMES_CASE_SENSITIVE, [Define if your platforms file names are (in general) case sensitive.])
+case $operating_system in
+	Darwin | MINGW*)
+		AC_MSG_RESULT(case insensitive)
+		case_insensitive_file_system=1;;
+	*)
+		AC_MSG_RESULT(case sensitive)
+		AC_DEFINE(CON_FILENAMES_CASE_SENSITIVE)
+		case_insensitive_file_system=0;;
 esac
 
 case $operating_system in
@@ -369,6 +389,9 @@ for lib_path in `find . | grep cv$ | sed "s/^\\.\\///"`; do
 	if [[ $mingw -eq 1 ]]; then
 		# Clean up MinGW's mutant filenames
 		mod_id=`echo "$mod_id" | sed 's/^\/\([[a-zA-Z]]\)/\1:/; s/\//\\\\\\\/g'`
+	fi
+	if [[ $case_insensitive_file_system -eq 1 ]]; then
+		mod_id=`echo "$mod_id" | sed "y/ABCDEFGHIJKLMNOPQRSTUVWXYZ/abcdefghijklmnopqrstuvwxyz/"`
 	fi
 	mod_ids=`printf "%s\\n#define CON_MOD_ID_%s \"%s\"\\n" "$mod_ids" "$mod_name" "$mod_id"`
 done

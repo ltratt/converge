@@ -35,7 +35,7 @@ typedef struct {
 	// this memory should be enforced by the OS / architecture.
 	u_char *module_bytecode;
 	Con_Int module_bytecode_offset;
-	Con_Obj *identifier, *name, *closure, *imports, *init_func, *container;
+	Con_Obj *identifier, *name, *src_path, *closure, *imports, *init_func, *container;
 	
 	// If closures is NULL, then this is a straight forward mapping of definition names to values.
 	// If closures is not-NULL, then this is a mapping of definition names to variable numbers.

@@ -3,5 +3,7 @@ import C_Platform_Properties
 
 
 
+case_sensitive_filenames := C_Platform_Properties::case_sensitive_filenames
 endianness := C_Platform_Properties::endianness
 word_bits := C_Platform_Properties::word_bits
+osname := C_Platform_Properties::osname

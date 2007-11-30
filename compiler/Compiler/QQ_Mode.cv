@@ -228,7 +228,7 @@ class QQ_Mode:
 	
 	func _get_module_defn_at_qq(self, module_name, defn_name, src_infos):
 	
-		if not mod_id, import_extras := self._compiler.find_import_location(["Compiler", module_name]):
+		if not mod_id, src_path, import_extras := self._compiler.find_import_location(["Compiler", module_name]):
 			raise "XXX"
 				
 		if import_extras.len() > 0:

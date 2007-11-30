@@ -61,6 +61,8 @@ class CV_Module:
 		self._name := self._decode_string(module, module[self._target.MODULE_BYTECODE_NAME], module[self._target.MODULE_BYTECODE_NAME_SIZE])
 
 		self._mod_id := self._decode_string(module, module[self._target.MODULE_BYTECODE_ID], module[self._target.MODULE_BYTECODE_ID_SIZE])
+
+		self._src_path := self._decode_string(module, module[self._target.MODULE_BYTECODE_SRC_PATH], module[self._target.MODULE_BYTECODE_SRC_PATH_SIZE])
 		
 		self._instructions_bytecode := module[module[self._target.MODULE_BYTECODE_INSTRUCTIONS] / self._target.WORDSIZE : (module[self._target.MODULE_BYTECODE_INSTRUCTIONS] + module[self._target.MODULE_BYTECODE_INSTRUCTIONS_SIZE]) / self._target.WORDSIZE]
 
@@ -106,6 +108,18 @@ class CV_Module:
 	func set_mod_id(self, identifier):
 	
 		self._mod_id := identifier
+
+
+
+	func get_src_path(self):
+	
+		return self._src_path
+
+
+
+	func set_src_path(self, src_path):
+	
+		self._src_path := src_path
 
 
 
@@ -294,8 +308,10 @@ class CV_Module:
 
 		module.append(-1) // Absolute position of module name (in bytes)
 		module.append(-1) // Size of module name (in bytes)
-		module.append(-1) // Absolute position of fully qualified module name (in bytes)
-		module.append(-1) // Size of fully qualified module name (in bytes)
+		module.append(-1) // Absolute position of mod id (in bytes)
+		module.append(-1) // Size of mod id (in bytes)
+		module.append(-1) // Absolute position of src path (in bytes)
+		module.append(-1) // Size of src path (in bytes)
 		module.append(-1) // Absolute position of program bytecode (in bytes)
 		module.append(-1) // Size of program bytecode (in bytes)
 		module.append(-1) // Absolute position of imports (in bytes)
@@ -328,6 +344,12 @@ class CV_Module:
 		module[self._target.MODULE_BYTECODE_ID] := module.len_bytes()
 		module.extend(self._target.b_aligned_string(self._mod_id))
 		module[self._target.MODULE_BYTECODE_ID_SIZE] := self._mod_id.len()
+
+		// Src path
+		
+		module[self._target.MODULE_BYTECODE_SRC_PATH] := module.len_bytes()
+		module.extend(self._target.b_aligned_string(self._src_path))
+		module[self._target.MODULE_BYTECODE_SRC_PATH_SIZE] := self._src_path.len()
 
 		// Instructions bytecode
 		

@@ -19,7 +19,7 @@
 // IN THE SOFTWARE.
 
 
-import Exceptions, File, Strings, Sys
+import Exceptions, File, Platform::Properties, Strings, Sys
 
 
 
@@ -202,3 +202,16 @@ func get_std_libraries():
 		peek_compiler().error("Can't find libcompiler.cvl.")
 
 	return libraries
+
+
+
+func canon_mod_id(mod_id):
+
+	if Properties::case_sensitive_filenames == 0:
+		// On operating systems which are case insensitive (but presumably case preserving), mod
+		// IDs need to be lower cased so that they can be compared even when files have different
+		// capitilizations. Of course there is still potential for hilarity if some filing
+		// systems on these OSs are case sensitive, but there's only so much one can cope with.
+		return mod_id.to_lower_case()
+	else:
+		return mod_id

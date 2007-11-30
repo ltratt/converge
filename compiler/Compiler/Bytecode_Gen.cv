@@ -208,6 +208,7 @@ class Bytecode_Gen:
 		module := CV_Module::CV_Module.new(self._target)
 		module.set_name(imodule.module_name)
 		module.set_mod_id(self._mod_id)
+		module.set_src_path(self._compiler.src_path)
 		module.set_top_level_vars_map(self.closures[0][Compiler_Vars::CLOSURE_VARS])
 		module.set_instructions_bytecode(instructions_bytecode)
 		module.set_imports(module_imports)
@@ -348,7 +349,7 @@ class Bytecode_Gen:
 
 	func _add_mod_defn_lookup(self, defn_path, src_infos):
 	
-		if not import_id, import_extras := self._compiler.find_import_location(defn_path):
+		if not import_id, src_path, import_extras := self._compiler.find_import_location(defn_path):
 			self._compiler.error(Strings::format("Can't find module / package '%s'.", Strings::join(defn_path, "::")), src_infos)
 
 		if import_num := self._imports.find(import_id):
@@ -359,17 +360,6 @@ class Bytecode_Gen:
 		
 		for import_extra := import_extras.iter():
 			self._instructions.append(self._target.Instr_Module_Lookup.new(src_infos, import_extra))
-
-
-
-	func _find_import_location(self, mod_path, src_infos):
-	
-		import_name_list := Strings::split(mod_path, "::")
-	
-		if not import_id, import_extras := self._compiler.find_import_location(import_name_list):
-			self._compiler.error(Strings::format("Can't find module / package '%s'.", mod_path), src_infos)
-		
-		return [import_id, import_extras]
 
 
 
@@ -666,7 +656,10 @@ class Bytecode_Gen:
 
 	func _t_iimport(self, node):
 	
-		import_id, import_extras := self._find_import_location(node.mod_path, node.src_infos)
+		import_name_list := Strings::split(node.mod_path, "::")
+	
+		if not import_id, src_path, import_extras := self._compiler.find_import_location(import_name_list):
+			self._compiler.error(Strings::format("Can't find module / package '%s'.", node.mod_path), node.src_infos)
 
 		if import_num := self._imports.find(import_id):
 			self._instructions.append(self._target.Instr_Import.new(node.src_infos, import_num))

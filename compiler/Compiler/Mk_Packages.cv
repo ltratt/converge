@@ -54,14 +54,15 @@ class Mk_Packages:
 			for sub_pkg_id := pkg_ids.iter():
 				if sub_pkg_id == pkg_id:
 					continue
-				if File::is_entry_in_dir(pkg_id, sub_pkg_id):
-					defn_name := File::split_ext(sub_pkg_id)[1]
+				
+				if File::join_names(pkg_id, File::split_leaf(sub_pkg_id)[1]) == sub_pkg_id:
+					defn_name := File::split_ext(File::canon_path(sub_pkg_id))[1]
 					defns[defn_name] := sub_pkg_id
 
 			for mod := mods.iter():
 				mod_id := mod.get_mod_id()
-				if File::is_entry_in_dir(pkg_id, mod_id):
-					defn_name := File::split_ext(File::split_leaf(mod_id)[1])[0]
+				if File::join_names(pkg_id, File::split_leaf(mod_id)[1]) == mod_id:
+					defn_name := File::split_ext(File::split_leaf(mod.get_src_path())[1])[0]
 					defns[defn_name] := mod_id
 
 			// XXX: It's not entirely clear what reasonable src infos for the ITree module are.
@@ -78,6 +79,7 @@ class Mk_Packages:
 
 			self.bootstrap := 0
 			self.mod_id := pkg_id
+			self.src_path := pkg_id
 			self.newlines := []
 			Compiler_Vars::push_compiler(self)
 			pkg_as_mod := Bytecode_Gen::Bytecode_Gen.new().generate(imod, target)

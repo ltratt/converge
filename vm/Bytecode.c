@@ -98,12 +98,12 @@ bool Con_Bytecode_upto_date(Con_Obj *thread, u_char *bytecode, STAT_ST_MTIMESPEC
 #		define ID_MODULE_GET_WORD(x) (*(Con_Int*) (bytecode + module_offset + (x)))
 #		define ID_MODULE_GET_OFFSET(x) ((void *) (bytecode + module_offset + (ID_MODULE_GET_WORD(x))))
 
-		int id_size = ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_IDENTIFIER_SIZE);
+		int id_size = ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_SRC_PATH_SIZE);
 
 		assert(id_size + 2 < PATH_MAX);
 
-		memmove(path, ID_MODULE_GET_OFFSET(CON_BYTECODE_MODULE_IDENTIFIER), id_size);
-		path[ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_IDENTIFIER_SIZE)] = '\0';
+		memmove(path, ID_MODULE_GET_OFFSET(CON_BYTECODE_MODULE_SRC_PATH), id_size);
+		path[ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_SRC_PATH_SIZE)] = '\0';
 		
 		struct stat cv_sb;
 		if (stat(path, &cv_sb) != 0) {
@@ -118,7 +118,7 @@ bool Con_Bytecode_upto_date(Con_Obj *thread, u_char *bytecode, STAT_ST_MTIMESPEC
 			cv_sb.STAT_ST_MTIMESPEC.tv_nsec >= mtime->tv_nsec)
 			return false;
 #		elif defined(STAT_ST_MTIMESPEC_TYPE_TIME_T)
-		if (cv_sb.STAT_ST_MTIMESPEC > mtime)
+		if (cv_sb.STAT_ST_MTIMESPEC > *mtime)
 			return false;
 #		else
 		Unknown type

@@ -35,6 +35,7 @@ class Eval_Compiler:
 		self.bootstrap := 0
 		self.includes := includes
 		self.mod_id := Strings::format(Compiler_Vars::UNIQUE_EVAL_NAME_TEMPLATE, Compiler_Vars::fresh_name())
+		self.src_path := self.mod_id
 		self.internal_target := self.target := Available::TARGETS[Strings::format("%dbit", Properties::word_bits)].new()
 
 
@@ -141,19 +142,20 @@ class Eval_Compiler:
 	
 		for include_dir := self.includes.iter():
 			if matched_path, extra_pos := match_path(0, include_dir):
-				import_full_name := File::canon_path(matched_path)
+				src_path := File::canon_path(matched_path)
+				mod_id := Compiler_Vars::canon_mod_id(src_path)
 				import_extras := import_name_list[extra_pos + 1 : ]
 				break
 		exhausted:
 			// If the first part of the import references a builtin, then looking up that module ID
 			// will succeed.
 			if VM::find_module(import_name_list[0]):
-				import_full_name := import_name_list[0]
+				mod_id := src_path := import_name_list[0]
 				import_extras := import_name_list[1 : ]
 			else:
 				fail
 		
-		return [import_full_name, import_extras]
+		return [mod_id, src_path, import_extras]
 
 
 

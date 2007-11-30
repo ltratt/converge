@@ -208,6 +208,9 @@ Con_Obj *_Con_Builtins_Module_Class_get_slot_func(Con_Obj *thread)
 	else if (CON_C_STRING_EQ("name", slot_name)) {
 		return self_module_atom->name;
 	}
+	else if (CON_C_STRING_EQ("src_path", slot_name)) {
+		return self_module_atom->src_path;
+	}
 	else
 		return CON_APPLY(CON_EXBI(CON_BUILTIN(CON_BUILTIN_OBJECT_CLASS), "get_slot", self), slot_name);
 }

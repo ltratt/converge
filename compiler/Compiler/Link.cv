@@ -89,15 +89,15 @@ func link_exec(mods, linker, target):
 				else:
 					if Compiler_Vars::BUILTIN_MODULES.find(lookedup_mod_id):
 						pass
-					elif not lookedup_mod_id.suffixed_by(Compiler_Vars::CV_EXTENSION):
+					elif File::split_ext(lookedup_mod_id)[1] == "":
 						// This must be an imported package. At this point in linking,
 						// packages don't exist. So we try and look up a sub-package or
 						// sub-module which has a correct identifier.
-						cnd_mod_id := File::join_names(lookedup_mod_id, defn_name)
+						cnd_mod_id := Compiler_Vars::canon_mod_id(File::join_names(lookedup_mod_id, defn_name))
 						if mods_map.find(cnd_mod_id):
 							lookedup_mod_id := cnd_mod_id
 						else:
-							cnd_mod_id := File::join_ext(cnd_mod_id, Compiler_Vars::CV_EXTENSION)
+							cnd_mod_id := Compiler_Vars::canon_mod_id(File::join_ext(cnd_mod_id, Compiler_Vars::CV_EXTENSION))
 							if mods_map.find(cnd_mod_id):
 								todo.append(cnd_mod_id)
 								lookedup_mod_id := cnd_mod_id

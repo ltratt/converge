@@ -6,6 +6,7 @@ bindir = @bindir@
 datarootdir = @datarootdir@
 datadir = @datadir@
 condocsdir = ${datadir}/doc/converge-@CONVERGE_VERSION@
+INSTALL = @INSTALL@
 
 
 MANUALS = modules_cvd/Array.cvd modules_cvd/Builtins.cvd modules_cvd/CEI.cvd \
@@ -24,10 +25,10 @@ all: cvd_to_html
 	${CONVERGE_VM} cvd_to_html -o modules_html ${subst /,@CON_DIR_SEP@,${MANUALS}}
 
 install:
-	install -d ${bindir}
-	install -c -m 555 cvd_to_html ${bindir}
-	install -d ${condocsdir}/modules_html
-	install -c -m 444 modules_html/*.html ${condocsdir}/modules_html
+	${INSTALL} -d ${DESTDIR}${bindir}
+	${INSTALL} -c -m 555 cvd_to_html ${DESTDIR}${bindir}
+	${INSTALL} -d ${DESTDIR}${condocsdir}/modules_html
+	${INSTALL} -c -m 444 modules_html/*.html ${DESTDIR}${condocsdir}/modules_html
 
 cvd_to_html: cvd_to_html.cvb ${CONVERGE_LIB}
 	${CONVERGE_VM} ${CONVERGEL} -o cvd_to_html cvd_to_html.cvb

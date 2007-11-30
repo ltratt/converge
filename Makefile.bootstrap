@@ -1,3 +1,3 @@
-configure: configure.ac
+configure: configure.in
 	autoconf
 	autoheader

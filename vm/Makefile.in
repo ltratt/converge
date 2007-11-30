@@ -4,6 +4,7 @@ LIBS=@LIBS@
 prefix = @prefix@
 exec_prefix = @exec_prefix@
 bindir = @bindir@
+INSTALL = @INSTALL@
 
 .SUFFIXES: .c .S .o
 
@@ -36,8 +37,8 @@ OBJ_FILES = @CON_THREAD_ATOM_OBJ@ @CON_THREAD_CLASS_OBJ@ @CON_THREAD_MODULE_OBJ@
 all: converge
 
 install:
-	install -d ${bindir}
-	install -c -m 555 converge ${bindir}
+	${INSTALL} -d ${DESTDIR}${bindir}
+	${INSTALL} -c -m 555 converge ${DESTDIR}${bindir}
 
 libconverge.a: ${OBJ_FILES}
 	rm -f libconverge.a

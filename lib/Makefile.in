@@ -4,6 +4,7 @@ prefix = @prefix@
 exec_prefix = @exec_prefix@
 libdir = @libdir@
 conlibdir = ${libdir}/converge-@CONVERGE_VERSION@
+INSTALL = @INSTALL@
 
 MINIMAL_OBJS = CPK/Earley/Grammar.cvb CPK/Earley/Parser.cvb CPK/Token.cvb CPK/Tokens.cvb \
 	CPK/Tree.cvb File.cvb Functional.cvb Maths.cvb Numbers.cvb Parse_Options.cvb \
@@ -28,13 +29,13 @@ minimal: ${MINIMAL_OBJS}
 	${CONVERGE_VM} ${CONVERGEL} -l -o libconverge.cvl ${MINIMAL_OBJS}
 
 install: all
-	install -d ${conlibdir}
-	install -d ${conlibdir}/CPK
-	install -d ${conlibdir}/CPK/Earley
-	install -d ${conlibdir}/Platform
-	install -d ${conlibdir}/XML
-	echo ${ALL_OBJS:.cvb=.cv} | tr " " "\n" | xargs -n 1 -I{} install -c -m 444 {} ${conlibdir}/{}
-	install -c -m 444 libconverge.cvl ${conlibdir}
+	${INSTALL} -d ${DESTDIR}${conlibdir}
+	${INSTALL} -d ${DESTDIR}${conlibdir}/CPK
+	${INSTALL} -d ${DESTDIR}${conlibdir}/CPK/Earley
+	${INSTALL} -d ${DESTDIR}${conlibdir}/Platform
+	${INSTALL} -d ${DESTDIR}${conlibdir}/XML
+	echo ${ALL_OBJS:.cvb=.cv} | tr " " "\n" | xargs -n 1 -I{} ${INSTALL} -c -m 444 {} ${DESTDIR}${conlibdir}/{}
+	${INSTALL} -c -m 444 libconverge.cvl ${DESTDIR}${conlibdir}
 
 
 ifdef TARGET

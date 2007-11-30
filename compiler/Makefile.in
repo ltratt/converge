@@ -5,6 +5,7 @@ exec_prefix = @exec_prefix@
 bindir = @bindir@
 libdir = @libdir@
 conlibdir = ${libdir}/converge-@CONVERGE_VERSION@
+INSTALL = @INSTALL@
 
 BASE_OBJ_FILES = Compiler/CV_Parser.cvb Compiler/Tokenizer.cvb \
 	Compiler/IModule_Gen.cvb Compiler/ITree.cvb Compiler/Bytecode_Gen.cvb \
@@ -30,16 +31,16 @@ endif
 all: libcompiler.cvl convergec convergei convergel convergep
 
 install: all
-	install -d ${bindir}
-	install -c -m 555 convergec ${bindir}
-	install -c -m 555 convergei ${bindir}
-	install -c -m 555 convergel ${bindir}
-	install -c -m 555 convergep ${bindir}
-	install -d ${conlibdir}/Compiler
-	install -d ${conlibdir}/Compiler/Targets
-	install -c -m 444 ${BASE_OBJ_FILES:.cvb=.cv} ${conlibdir}/Compiler
-	install -c -m 444 ${TARGET_OBJ_FILES:.cvb=.cv} ${conlibdir}/Compiler/Targets
-	install -c -m 444 libcompiler.cvl ${conlibdir}/Compiler
+	${INSTALL} -d ${DESTDIR}${bindir}
+	${INSTALL} -c -m 555 convergec ${DESTDIR}${bindir}
+	${INSTALL} -c -m 555 convergei ${DESTDIR}${bindir}
+	${INSTALL} -c -m 555 convergel ${DESTDIR}${bindir}
+	${INSTALL} -c -m 555 convergep ${DESTDIR}${bindir}
+	${INSTALL} -d ${DESTDIR}${conlibdir}/Compiler
+	${INSTALL} -d ${DESTDIR}${conlibdir}/Compiler/Targets
+	${INSTALL} -c -m 444 ${BASE_OBJ_FILES:.cvb=.cv} ${DESTDIR}${conlibdir}/Compiler
+	${INSTALL} -c -m 444 ${TARGET_OBJ_FILES:.cvb=.cv} ${DESTDIR}${conlibdir}/Compiler/Targets
+	${INSTALL} -c -m 444 libcompiler.cvl ${DESTDIR}${conlibdir}/Compiler
 
 
 ifdef TARGET

@@ -503,7 +503,7 @@ make:
 	if (tmp_file == NULL)
 		CON_XXX;
 
-	if (fread(*bytecode, 1, tmp_stat.st_size, tmp_file) < tmp_stat.st_size)
+	if (fread(*bytecode, 1, tmp_stat.st_size, tmp_file) < (size_t) tmp_stat.st_size)
 		CON_XXX;
 	
 	// Ignore errors when closing and deleting the temporary file - errors are annoying, but not

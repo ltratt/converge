@@ -563,13 +563,11 @@ Con_Obj *_Con_Module_POSIX_File_iter_dir_entries_func(Con_Obj *thread)
 				_Con_Module_POSIX_File_error(thread, dir_path, errno);
 		}
 
-#		if defined(CON_PLATFORM_POSIX) || defined(CON_PLATFORM_MINGW)
 		// We strip out the "." and ".." entries if they appear, as they are a portability headache
 		// waiting to happen.
 
 		if (strcmp(de->d_name, ".") == 0 || strcmp(de->d_name, "..") == 0)
 			continue;
-#		endif
 
 		CON_YIELD(Con_Builtins_String_Atom_new_copy(thread, (u_char *) de->d_name, strlen(de->d_name), CON_STR_UTF_8));
 	}

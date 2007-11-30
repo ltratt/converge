@@ -187,13 +187,27 @@ class Compiler:
 
 	func warning(self, msg, src_infos := null):
 	
+		// Some consoles (e.g. Windows) are very bad about flushing output, and messages between
+		// stdout and stderr can get horribly confused with each other. By flushing stdout then
+		// printing our message, then flushing stderr, we make a decent attempt at making sure
+		// that messages are both ordered correctly and printed fairly promptly.
+	
+		Sys::stdout.flush()
 		self._print_msg("Warning", msg, src_infos)
+		Sys::stderr.flush()
 
 
 
 	func info(self, msg):
+
+		// Some consoles (e.g. Windows) are very bad about flushing output, and messages between
+		// stdout and stderr can get horribly confused with each other. By flushing stdout then
+		// printing our message, then flushing stderr, we make a decent attempt at making sure
+		// that messages are both ordered correctly and printed fairly promptly.
 	
+		Sys::stdout.flush()
 		Sys::stderr.writeln(Strings::format("===> %s%s", " " * ((Compiler_Vars::num_compilers() - 1) * 2), msg))
+		Sys::stderr.flush()
 
 
 

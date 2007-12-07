@@ -125,6 +125,7 @@
 
 #ifdef __GNUC__
 #	define CON_APPLY(func, ...) Con_Builtins_VM_Atom_apply(thread, func, false, ## __VA_ARGS__, NULL)
+#	define CON_APPLY_NO_FAIL(func, ...) Con_Builtins_VM_Atom_apply(thread, func, true, ## __VA_ARGS__, NULL)
 
 #	define CON_GET_SLOT_APPLY(obj, slot_name, ...) \
 		Con_Builtins_VM_Atom_get_slot_apply(thread, obj, (u_char *) slot_name, sizeof(slot_name) - 1, false, ## __VA_ARGS__, NULL)

@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <dirent.h>
+#include <unistd.h>
 
 #ifndef CON_HAVE_NATIVE_FGETLN
 #	include "Platform/fgetln.h"
@@ -85,17 +86,19 @@ Con_Obj *_Con_Module_POSIX_File_File_Class_writeln_func(Con_Obj *);
 
 Con_Obj *_Con_Module_POSIX_File_canon_path_func(Con_Obj *);
 Con_Obj *_Con_Module_POSIX_File_chmod_func(Con_Obj *);
+Con_Obj *_Con_Module_POSIX_File_rdmod_func(Con_Obj *);
 Con_Obj *_Con_Module_POSIX_File_exists_func(Con_Obj *);
 Con_Obj *_Con_Module_POSIX_File_is_dir_func(Con_Obj *);
 Con_Obj *_Con_Module_POSIX_File_is_file_func(Con_Obj *);
 Con_Obj *_Con_Module_POSIX_File_iter_dir_entries_func(Con_Obj *);
 Con_Obj *_Con_Module_POSIX_File_mtime_func(Con_Obj *);
+Con_Obj *_Con_Module_POSIX_File_rm_func(Con_Obj *);
 
 
 
 Con_Obj *Con_Module_POSIX_File_init(Con_Obj *thread, Con_Obj *identifier)
 {
-	const char* defn_names[] = {"DIR_SEP", "EXT_SEP", "File_Atom_Def", "File", "canon_path", "exists", "is_dir", "is_file", NULL};
+	const char* defn_names[] = {"DIR_SEP", "EXT_SEP", "File_Atom_Def", "File", "canon_path", "exists", "is_dir", "is_file", "chmod", "rdmod", "iter_dir_entries", "mtime", "rm", NULL};
 
 	return Con_Builtins_Module_Atom_new_c(thread, identifier, CON_NEW_STRING("POSIX_File"), defn_names, CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
 }
@@ -129,11 +132,13 @@ Con_Obj *Con_Module_POSIX_File_import(Con_Obj *thread, Con_Obj *posix_file_mod)
 	
 	CON_SET_MOD_DEFN(posix_file_mod, "canon_path", CON_NEW_UNBOUND_C_FUNC(_Con_Module_POSIX_File_canon_path_func, "canon_path", posix_file_mod));
 	CON_SET_MOD_DEFN(posix_file_mod, "chmod", CON_NEW_UNBOUND_C_FUNC(_Con_Module_POSIX_File_chmod_func, "chmod", posix_file_mod));
+	CON_SET_MOD_DEFN(posix_file_mod, "rdmod", CON_NEW_UNBOUND_C_FUNC(_Con_Module_POSIX_File_rdmod_func, "rdmod", posix_file_mod));
 	CON_SET_MOD_DEFN(posix_file_mod, "exists", CON_NEW_UNBOUND_C_FUNC(_Con_Module_POSIX_File_exists_func, "exists", posix_file_mod));
 	CON_SET_MOD_DEFN(posix_file_mod, "is_dir", CON_NEW_UNBOUND_C_FUNC(_Con_Module_POSIX_File_is_dir_func, "is_dir", posix_file_mod));
 	CON_SET_MOD_DEFN(posix_file_mod, "is_file", CON_NEW_UNBOUND_C_FUNC(_Con_Module_POSIX_File_is_file_func, "is_file", posix_file_mod));
 	CON_SET_MOD_DEFN(posix_file_mod, "iter_dir_entries", CON_NEW_UNBOUND_C_FUNC(_Con_Module_POSIX_File_iter_dir_entries_func, "iter_dir_entries", posix_file_mod));
 	CON_SET_MOD_DEFN(posix_file_mod, "mtime", CON_NEW_UNBOUND_C_FUNC(_Con_Module_POSIX_File_mtime_func, "mtime", posix_file_mod));
+	CON_SET_MOD_DEFN(posix_file_mod, "rm", CON_NEW_UNBOUND_C_FUNC(_Con_Module_POSIX_File_rm_func, "rm", posix_file_mod));
 	
 	return posix_file_mod;
 }
@@ -446,10 +451,7 @@ Con_Obj *_Con_Module_POSIX_File_canon_path_func(Con_Obj *thread)
 
 
 //
-// 'chmod(path)' returns a canonicalised version of 'path'.
-//
-// Note that (apparently) some operating systems may not canonacalise some paths; there's nothing
-// that this function can do about that in such cases.
+// 'chmod(path, mode)'.
 //
 
 Con_Obj *_Con_Module_POSIX_File_chmod_func(Con_Obj *thread)
@@ -466,6 +468,27 @@ Con_Obj *_Con_Module_POSIX_File_chmod_func(Con_Obj *thread)
 
 
 //
+// 'rdmod(path)' returns the mode of 'path'.
+//
+
+Con_Obj *_Con_Module_POSIX_File_rdmod_func(Con_Obj *thread)
+{
+	Con_Obj *path;
+	CON_UNPACK_ARGS("S", &path);
+	
+	u_char *path_str = Con_Builtins_String_Atom_to_c_string(thread, path);
+
+	struct stat sb;
+	if (stat(path_str, &sb) == -1)
+		_Con_Module_POSIX_File_error(thread, path, errno);
+
+	return CON_NEW_INT(sb.st_mode);
+}
+
+
+
+
+//
 // 'exists(path)' returns null if 'path' exists, or fails otherwise.
 //
 
@@ -476,8 +499,7 @@ Con_Obj *_Con_Module_POSIX_File_exists_func(Con_Obj *thread)
 	
 	struct stat sb;
 	
-	int rtn;
-	if ((rtn = stat(Con_Builtins_String_Atom_to_c_string(thread, path), &sb)) != 0) {
+	if (stat(Con_Builtins_String_Atom_to_c_string(thread, path), &sb) != 0) {
 		if (errno == ENOENT)
 			return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
 		else
@@ -607,4 +629,27 @@ Con_Obj *_Con_Module_POSIX_File_mtime_func(Con_Obj *thread)
 #	endif
 
 	return CON_APPLY(CON_GET_MOD_DEFN(time_mod, "mk_timespec"), sec, nsec);
+}
+
+
+
+//
+// 'rm(path)' deletes 'path'. If 'path' is a directory, it recursively deletes its contents.
+//
+
+Con_Obj *_Con_Module_POSIX_File_rm_func(Con_Obj *thread)
+{
+	Con_Obj *path;
+	CON_UNPACK_ARGS("S", &path);
+
+	Con_Obj *posix_mod = Con_Builtins_VM_Atom_get_functions_module(thread);	
+	Con_Obj *is_dir = CON_GET_MOD_DEFN(posix_mod, "is_dir");
+	if (CON_APPLY_NO_FAIL(is_dir, path) != NULL)
+		CON_XXX;
+	else {
+		u_char *path_str = Con_Builtins_String_Atom_to_c_string(thread, path);
+		unlink(path_str);
+	}	
+	
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }

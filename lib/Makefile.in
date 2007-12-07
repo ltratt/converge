@@ -34,7 +34,8 @@ install: all
 	${INSTALL} -d ${DESTDIR}${conlibdir}/CPK/Earley
 	${INSTALL} -d ${DESTDIR}${conlibdir}/Platform
 	${INSTALL} -d ${DESTDIR}${conlibdir}/XML
-	echo ${ALL_OBJS:.cvb=.cv} | tr " " "\n" | xargs -n 1 -I{} ${INSTALL} -c -m 444 {} ${DESTDIR}${conlibdir}/{}
+	${foreach obj,${ALL_OBJS},${INSTALL} -c -m 444 ${obj} ${DESTDIR}${conlibdir}/${obj};}
+	${foreach obj,${ALL_OBJS:.cvb=.cv},${INSTALL} -c -m 444 ${obj} ${DESTDIR}${conlibdir}/${obj};}
 	${INSTALL} -c -m 444 libconverge.cvl ${DESTDIR}${conlibdir}
 
 

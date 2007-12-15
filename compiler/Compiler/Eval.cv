@@ -80,14 +80,13 @@ class Eval_Compiler:
 			var_val := ITree::IApplication.new(ITree::ISlot_Lookup.new(vars_val, "set", []), [ITree::IString.new(var_name, []), ITree::IVar.new(var_name, [])], [])
 			vars_assign.append(var_val)
 
-		body.append([|
-			if rtn := $c{expr}:
-				$c{vars_assign}
-				return rtn
-			else:
-				$c{vars_assign}
-				fail
-		|])
+		rtn_ivar := ITree::IVar.new(Compiler_Vars::fresh_name(), [])
+		icond := ITree::IAssignment.new(ITree::STD_ASSIGN, [rtn_ivar], expr, [])
+		iclause_body := ITree::IExpr_Block.new([vars_assign, ITree::IReturn.new(rtn_ivar, [])].flattened(), [])
+		iclause := ITree::IClause.new(icond, iclause_body, [])
+		ielse_body := ITree::IExpr_Block.new([vars_assign, ITree::IFail.new([])].flattened(), [])
+		iif := ITree::IIf.new([iclause], ielse_body, [])
+		body.append(iif)
 
 		eval_name := Compiler_Vars::fresh_name()		
 		dummy_func := ITree::IFunc_Defn.new(0, ITree::IVar.new(eval_name, []), [], null, [], [], ITree::IExpr_Block.new(body, []), [])

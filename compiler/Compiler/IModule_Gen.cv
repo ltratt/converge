@@ -581,11 +581,20 @@ class IModule_Gen:
 								params.append(self._preorder(node[4][1][i]))
 						else:
 							// name ::= "&" "ID"
-							var := [| ITree::IVar.new(${ITree::IString.new(var_def[2].value, var_def[2].src_infos)}, ${Lift::lift(extra_src_infos + var_def[2].src_infos)}) |]
+							
+							itree_mod_imp := ITree::IMod_Id_Import.new(ITree.mod_id, var_def[2].src_infos)
+
+							ivar := ITree::IModule_Lookup.new([itree_mod_imp, ITree::IVar.new("IVar", var_def[2].src_infos)], var_def[2].src_infos)
+							ivar_new := ITree::ISlot_Lookup.new(ivar, "new", var_def[2].src_infos)
+							var := ITree::IApplication.new(ivar_new, [ITree::IString.new(var_def[2].value, var_def[2].src_infos), Lift::lift(extra_src_infos + var_def[2].src_infos)], var_def[2].src_infos)
+
+							iparam := ITree::IModule_Lookup.new([itree_mod_imp, ITree::IVar.new("IParam", var_def[2].src_infos)], var_def[2].src_infos)
+							iparam_new := ITree::ISlot_Lookup.new(iparam, "new", var_def[2].src_infos)
 							if param_default is null:
-								param := [| ITree::IParam.new(${var}, null, ${Lift::lift(extra_src_infos + var_def[2].src_infos)}) |]
+								inull := ITree::IVar.new("null", var_def[2].src_infos)
+								param := ITree::IApplication.new(iparam_new, [var, inull, Lift::lift(extra_src_infos + var_def[2].src_infos)], var_def[2].src_infos)
 							else:
-								param := [| ITree::IParam.new(${var}, ${param_default}, ${Lift::lift(extra_src_infos + var_def[2].src_infos)}) |]
+								param := ITree::IApplication.new(iparam_new, [var, param_default, Lift::lift(extra_src_infos + var_def[2].src_infos)], var_def[2].src_infos)
 							
 							params.append(ITree::IInsert.new(ITree::INSERT_CAPTURING, param, extra_src_infos + var_def[2].src_infos))
 						i += 3
@@ -854,8 +863,11 @@ class IModule_Gen:
 				return ITree::IVar.new(node[1].value, extra_src_infos + node[1].src_infos)
 		elif node.len() == 3:
 			// name ::= "&" "ID"
-			ivar := [| ITree::IVar.new(${ITree::IString.new(node[2].value, node[1].src_infos)}, ${Lift::lift(extra_src_infos + node[1].src_infos)}) |]
-			return ITree::IInsert.new(ITree::INSERT_CAPTURING, ivar, extra_src_infos + node[1].src_infos)
+			itree_mod_imp := ITree::IMod_Id_Import.new(ITree.mod_id, node[1].src_infos)
+			ivar := ITree::IModule_Lookup.new([itree_mod_imp, ITree::IVar.new("IVar", node[1].src_infos)], node[1].src_infos)
+			ivar_new := ITree::ISlot_Lookup.new(ivar, "new", node[1].src_infos)
+			var := ITree::IApplication.new(ivar_new, [ITree::IString.new(node[2].value, node[1].src_infos), Lift::lift(extra_src_infos + node[1].src_infos)], node[1].src_infos)
+			return ITree::IInsert.new(ITree::INSERT_CAPTURING, var, extra_src_infos + node[1].src_infos)
 		elif node[1][0] == "splice":
 			// name ::= splice
 			raise "XXX"
@@ -881,7 +893,12 @@ class IModule_Gen:
 				return ITree::IVar.new(node[1].value, extra_src_infos + node[1].src_infos)
 		elif node.len() == 3:
 			// name ::= "&" "ID"
-			return ITree::IInsert.new(ITree::INSERT_CAPTURING, [<node[2].src_infos>| ITree::IVar.new(${ITree::IString.new(node[2].value, node[2].src_infos)}, ${Lift::lift(node[2].src_infos)}) |], node[2].src_infos)
+			itree_mod_imp := ITree::IMod_Id_Import.new(ITree.mod_id, node[2].src_infos)
+			ivar := ITree::IModule_Lookup.new([itree_mod_imp, ITree::IVar.new("IVar", node[2].src_infos)], node[2].src_infos)
+			ivar_new := ITree::ISlot_Lookup.new(ivar, "new", node[2].src_infos)
+			var := ITree::IApplication.new(ivar_new, [ITree::IString.new(node[2].value, node[2].src_infos), Lift::lift(node[2].src_infos)], node[2].src_infos)
+			
+			return ITree::IInsert.new(ITree::INSERT_CAPTURING, var, node[2].src_infos)
 
 
 

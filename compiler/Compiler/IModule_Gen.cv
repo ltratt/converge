@@ -131,15 +131,6 @@ class IModule_Gen:
 		// splice ::= expr_splice
 		//        ::= dsl_splice
 		
-		if self._compiler.bootstrap == 1:
-			// Evaluating splices in bootstrapping mode is a tremendously bad idea. It's not just
-			// that we would have to do fiddly mod id conversions (from "new" mod ids to "old" mod
-			// ids), but the fact that it creates a mess when the bytecode format changes in any
-			// way. We would have to generate "old" bytecode to evaluate the splice while generating
-			// new bytecode for the eventual .cvb file being saved. This is a guaranteed recipe for
-			// disaster. Converge used to try and do this and it was horrible.
-			self._compiler.error("Can not evaluate a splice in bootstrapping mode.")
-		
 		// This function is unique since it's the "coal face" for compile-time meta-programming.
 		//
 		// This is a euphemism for "it's a bit complicated".

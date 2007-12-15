@@ -173,7 +173,6 @@ class _Link_Exec:
 
 			// We now setup a minimal compiler and compile the ITree into a CV_Module.
 
-			self.bootstrap := 0
 			self.mod_id := pkg_id
 			self.src_path := pkg_id
 			self.newlines := []

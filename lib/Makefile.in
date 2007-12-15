@@ -16,11 +16,7 @@ ALL_OBJS = ${MINIMAL_OBJS} \
 
 
 %.cvb: %.cv
-ifdef BOOTSTRAP
-	${CONVERGE_VM} ${CONVERGEC} --bootstrap -o $@ $<
-else
 	${CONVERGE_VM} ${CONVERGEC} -o $@ $<
-endif
 
 
 all: libconverge.cvl

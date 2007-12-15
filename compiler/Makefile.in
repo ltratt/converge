@@ -21,11 +21,7 @@ OBJ_FILES = ${BASE_OBJ_FILES} ${TARGET_OBJ_FILES}
 
 
 %.cvb: %.cv
-ifdef BOOTSTRAP
-	${CONVERGE_VM} ${CONVERGEC} --bootstrap -o $@ $<
-else
 	${CONVERGE_VM} ${CONVERGEC} -o $@ $<
-endif
 
 
 all: libcompiler.cvl convergec convergei convergel convergep

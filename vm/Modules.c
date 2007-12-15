@@ -56,17 +56,6 @@ extern Con_Modules_Spec Con_Builtin_Modules[];
 
 Con_Obj *Con_Modules_find(Con_Obj *thread, Con_Obj *mod_id)
 {
-	// If the compiler is in bootstrap mode, then the VM also has to manipulate module IDs in some
-	// situations (e.g. when Con_Modules_find is called with a static module ID from Std_Modules.h).
-
-	Con_Obj *bootstrap_compiler = Con_Builtins_VM_Atom_get_bootstrap_compiler(thread);
-	if (bootstrap_compiler != NULL) {
-		// OK, we're in bootstrapping mode and we've got a "new" module ID that we need to convert
-		// to an "old" module ID.
-		
-		mod_id = CON_GET_SLOT_APPLY(bootstrap_compiler, "mod_id_to_old", mod_id);
-	}
-
 	Con_Obj *modules = CON_GET_SLOT(Con_Builtins_Thread_Atom_get_vm(thread), "modules");
 
 	Con_Obj *mod = CON_GET_SLOT_APPLY_NO_FAIL(modules, "find", mod_id);

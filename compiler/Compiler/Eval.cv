@@ -32,7 +32,6 @@ class Eval_Compiler:
 		self._str := str
 		self.vars := vars
 		
-		self.bootstrap := 0
 		self.includes := includes
 		self.mod_id := Strings::format(Compiler_Vars::UNIQUE_EVAL_NAME_TEMPLATE, Compiler_Vars::fresh_name())
 		self.src_path := self.mod_id

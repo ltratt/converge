@@ -234,11 +234,6 @@ class Bytecode_Gen:
 			if mod_id == self._mod_id:
 				import_num := -1
 			else:
-				if self._compiler.bootstrap == 1:
-					// In bootstrapping mode we have to make sure that anything we output is
-					// entirely in terms of new module ids.
-					mod_id := self._compiler.mod_id_to_new(mod_id)
-
 				if not (import_num := self._imports.find(mod_id)):
 					import_num := self._imports.len()
 					self._imports[mod_id] := import_num
@@ -360,17 +355,6 @@ class Bytecode_Gen:
 		
 		for import_extra := import_extras.iter():
 			self._instructions.append(self._target.Instr_Module_Lookup.new(src_infos, import_extra))
-
-
-
-	func _get_original_name_mod_id(self, orig_name):
-
-		if self._compiler.bootstrap == 1:
-			// In bootstrapping mode we have to make sure that anything we output is entirely in
-			// terms of new module ids.
-			return self._compiler.mod_id_to_new(orig_name.mod_id)
-		else:
-			return orig_name.mod_id
 
 
 
@@ -1247,10 +1231,8 @@ class Bytecode_Gen:
 
 	func _t_imod_id_import(self, node):
 	
-		mod_id := self._get_original_name_mod_id(node)
-		
-		if import_num := self._imports.find(mod_id):
+		if import_num := self._imports.find(node.mod_id):
 			self._instructions.append(self._target.Instr_Import.new(node.src_infos, import_num))
 		else:
-			self._imports[mod_id] := self._imports.len()
+			self._imports[node.mod_id] := self._imports.len()
 			self._instructions.append(self._target.Instr_Import.new(node.src_infos, self._imports.len() - 1))

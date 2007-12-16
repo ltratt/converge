@@ -33,6 +33,7 @@ typedef struct {
 
 Con_Obj *Con_Modules_find(Con_Obj *, Con_Obj *);
 Con_Obj *Con_Modules_get(Con_Obj *, Con_Obj *);
+Con_Obj *Con_Modules_get_stdlib(Con_Obj *, const char *);
 Con_Obj *Con_Modules_import_mod_from_bytecode(Con_Obj *, Con_Obj *, Con_Int);
 Con_Obj *Con_Modules_import(Con_Obj *, Con_Obj *);
 

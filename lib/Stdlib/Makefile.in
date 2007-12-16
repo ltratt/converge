@@ -8,14 +8,20 @@ INSTALL = @INSTALL@
 
 MINIMAL_OBJS = CPK/Earley/Grammar.cvb CPK/Earley/Parser.cvb CPK/Token.cvb CPK/Tokens.cvb \
 	CPK/Tree.cvb File.cvb Functional.cvb Maths.cvb Numbers.cvb Parse_Options.cvb \
-	Platform/Properties.cvb Strings.cvb Time.cvb
+	Platform/Properties.cvb Platform/Host.cvb Strings.cvb Time.cvb
 
-ALL_OBJS = ${MINIMAL_OBJS} \
-	CEI.cvb CPK/Traverser.cvb Platform/Env.cvb Platform/Exec.cvb Sort.cvb \
+MAXIMAL_OBJS = CEI.cvb CPK/Traverser.cvb Platform/Env.cvb Platform/Exec.cvb Sort.cvb \
 	XML/Nodes.cvb XML/XDM.cvb XML/XHTML.cvb
+
+MAXIMAL_PKG_OBJS = CPK.cvb CPK/Earley.cvb Platform.cvb XML.cvb
+
+ALL_OBJS = ${MINIMAL_OBJS} ${MAXIMAL_OBJS} ${MAXIMAL_PKG_OBJS}
 
 
 %.cvb: %.cv
+	${CONVERGE_VM} ${CONVERGEC} -o $@ $<
+
+%.cvb: %
 	${CONVERGE_VM} ${CONVERGEC} -o $@ $<
 
 
@@ -25,20 +31,24 @@ minimal: ${MINIMAL_OBJS}
 	${CONVERGE_VM} ${CONVERGEL} -l -o libconverge.cvl ${MINIMAL_OBJS}
 
 install: all
-	${INSTALL} -d ${DESTDIR}${conlibdir}
-	${INSTALL} -d ${DESTDIR}${conlibdir}/CPK
-	${INSTALL} -d ${DESTDIR}${conlibdir}/CPK/Earley
-	${INSTALL} -d ${DESTDIR}${conlibdir}/Platform
-	${INSTALL} -d ${DESTDIR}${conlibdir}/XML
-	${foreach obj,${ALL_OBJS},${INSTALL} -c -m 444 ${obj} ${DESTDIR}${conlibdir}/${obj};}
-	${foreach obj,${ALL_OBJS:.cvb=.cv},${INSTALL} -c -m 444 ${obj} ${DESTDIR}${conlibdir}/${obj};}
-	${INSTALL} -c -m 444 libconverge.cvl ${DESTDIR}${conlibdir}
+	${INSTALL} -d ${DESTDIR}${conlibdir}/Stdlib
+	${INSTALL} -d ${DESTDIR}${conlibdir}/Stdlib/CPK
+	${INSTALL} -d ${DESTDIR}${conlibdir}/Stdlib/CPK/Earley
+	${INSTALL} -d ${DESTDIR}${conlibdir}/Stdlib/Platform
+	${INSTALL} -d ${DESTDIR}${conlibdir}/Stdlib/XML
+	${foreach obj,${MINIMAL_OBJS:.cvb=.cv},${INSTALL} -c -m 444 ${obj} ${DESTDIR}${conlibdir}/Stdlib/${obj};}
+	${foreach obj,${MAXIMAL_OBJS:.cvb=.cv},${INSTALL} -c -m 444 ${obj} ${DESTDIR}${conlibdir}/Stdlib/${obj};}
+	${foreach obj,${ALL_OBJS},${INSTALL} -c -m 444 ${obj} ${DESTDIR}${conlibdir}/Stdlib/${obj};}
+	${INSTALL} -c -m 444 libconverge.cvl ${DESTDIR}${conlibdir}/Stdlib
 
 
 ifdef TARGET
 CROSS_OBJS = ${ALL_OBJS:.cvb=.${TARGET}.cvb}
 
 %.${TARGET}.cvb: %.cv
+	${CONVERGE_VM} ${CONVERGEC} -T ${TARGET} -o $@ $<
+
+%.${TARGET}.cvb: %
 	${CONVERGE_VM} ${CONVERGEC} -T ${TARGET} -o $@ $<
 
 cross: ${CROSS_OBJS}

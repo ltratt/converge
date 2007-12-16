@@ -67,7 +67,7 @@ class CVD_To_HTML:
 
 		Sys::println("Creating module index")
 
-		Sort::sort(modules, func (x, y) { return x[1].to_lower_case() < y[1].to_lower_case() })
+		Sort::sort(modules, func (x, y) { return x[1].lower_cased() < y[1].lower_cased() })
 
 		modules_table := []
 		if modules.len() % _NUM_MODULES_COLUMNS == 0:
@@ -183,7 +183,7 @@ class CVD_To_HTML:
 
 	func _preorder_elem(self, node):
 
-		if f := self.find_slot("_e_" + node.name.to_lower_case()):
+		if f := self.find_slot("_e_" + node.name.lower_cased()):
 			return f(node)
 		else:
 			// We assume this is a raw HTML tag.

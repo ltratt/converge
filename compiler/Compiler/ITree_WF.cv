@@ -78,7 +78,7 @@ class ITree_WF:
 
 	func _preorder(self, node):
 	
-		return self.get_slot("_t_" + node.instance_of.name.to_lower_case())(node)
+		return self.get_slot("_t_" + node.instance_of.name.lower_cased())(node)
 
 
 
@@ -465,6 +465,9 @@ class ITree_WF:
 	
 		if not Builtins::String.instantiated(node.mod_id):
 			self._type_error(node, "mod_id", node.mod_id, "String")
+
+		if not Builtins::String.instantiated(node.src_path):
+			self._type_error(node, "src_path", node.src_path, "String")
 	
 
 	

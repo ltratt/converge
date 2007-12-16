@@ -109,7 +109,7 @@ class _Renamer:
 
 	func _preorder(self, node):
 	
-		return self.get_slot("_t_" + node.instance_of.name.to_lower_case())(node)
+		return self.get_slot("_t_" + node.instance_of.name.lower_cased())(node)
 
 
 

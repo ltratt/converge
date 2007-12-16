@@ -1,4 +1,4 @@
-// Copyright (c) 2006 King's College London, created by Laurence Tratt
+// Copyright (c) 2007 Laurence Tratt <laurie@tratt.net>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to
@@ -23,6 +23,11 @@
 
 #include <sys/param.h>
 #include <string.h>
+#include <unistd.h>
+
+#ifdef CON_PLATFORM_MINGW
+#	include <winsock2.h>
+#endif
 
 #include "Core.h"
 #include "Memory.h"
@@ -41,41 +46,50 @@
 
 
 
-Con_Obj *Con_Module_C_Platform_Properties_init(Con_Obj *, Con_Obj *);
-Con_Obj *Con_Module_C_Platform_Properties_import(Con_Obj *, Con_Obj *);
+Con_Obj *Con_Module_C_Platform_Host_init(Con_Obj *, Con_Obj *);
+Con_Obj *Con_Module_C_Platform_Host_import(Con_Obj *, Con_Obj *);
+
+Con_Obj *_Con_Module_C_Platform_Host_get_hostname(Con_Obj *);
 
 
 
-Con_Obj *Con_Module_C_Platform_Properties_init(Con_Obj *thread, Con_Obj *identifier)
+Con_Obj *Con_Module_C_Platform_Host_init(Con_Obj *thread, Con_Obj *identifier)
 {
-	const char* defn_names[] = {"word_bits", "LITTLE_ENDIAN", "BIG_ENDIAN", "endianness", "endianness", "osname", "case_sensitive_filenames", NULL};
+	const char* defn_names[] = {"get_hostname", NULL};
 
-	return Con_Builtins_Module_Atom_new_c(thread, identifier, CON_NEW_STRING("C_Platform_Properties"), defn_names, CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+	return Con_Builtins_Module_Atom_new_c(thread, identifier, CON_NEW_STRING("C_Platform_Host"), defn_names, CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
 }
 
 
 
-Con_Obj *Con_Module_C_Platform_Properties_import(Con_Obj *thread, Con_Obj *properties_mod)
+Con_Obj *Con_Module_C_Platform_Host_import(Con_Obj *thread, Con_Obj *mod)
 {
-	CON_SET_MOD_DEFN(properties_mod, "word_bits", CON_NEW_INT(sizeof(Con_Int) * 8));
+	CON_SET_MOD_DEFN(mod, "get_hostname", CON_NEW_UNBOUND_C_FUNC(_Con_Module_C_Platform_Host_get_hostname, "get_hostname", mod));
 
-	// Endianness
+	return mod;
+}
 
-	CON_SET_MOD_DEFN(properties_mod, "LITTLE_ENDIAN", CON_NEW_INT(0));
-	CON_SET_MOD_DEFN(properties_mod, "BIG_ENDIAN", CON_NEW_INT(1));
-#	if CON_BYTEORDER == CON_LITTLE_ENDIAN
-	CON_SET_MOD_DEFN(properties_mod, "endianness", CON_GET_MOD_DEFN(properties_mod, "LITTLE_ENDIAN"));
-#	elif CON_BYTEORDER == CON_BIG_ENDIAN
-	CON_SET_MOD_DEFN(properties_mod, "endianness", CON_GET_MOD_DEFN(properties_mod, "BIG_ENDIAN"));
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Functions in Host module
+//
+
+//
+// 'get_hostname(name)' returns the machines hostname.
+//
+
+Con_Obj *_Con_Module_C_Platform_Host_get_hostname(Con_Obj *thread)
+{
+	CON_UNPACK_ARGS("");
+
+#	ifndef MAXHOSTNAMELEN
+#	define MAXHOSTNAMELEN 256
 #	endif
 
-	CON_SET_MOD_DEFN(properties_mod, "osname", CON_NEW_STRING(CON_OSNAME));
-
-#	if CON_FILENAMES_CASE_SENSITIVE
-	CON_SET_MOD_DEFN(properties_mod, "case_sensitive_filenames", CON_NEW_INT(1));
-#	else
-	CON_SET_MOD_DEFN(properties_mod, "case_sensitive_filenames", CON_NEW_INT(0));
-#	endif
-
-	return properties_mod;
+	char hostname[MAXHOSTNAMELEN];
+	if (gethostname(hostname, MAXHOSTNAMELEN) != 0)
+		CON_XXX;
+	
+	return Con_Builtins_String_Atom_new_copy(thread, (u_char *) hostname, strlen(hostname), CON_STR_UTF_8);
 }

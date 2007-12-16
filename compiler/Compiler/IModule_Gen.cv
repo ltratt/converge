@@ -226,13 +226,13 @@ class IModule_Gen:
 		for known_module_names.add(Compiler_Vars::BUILTIN_MODULES.iter())
 		while modules_stack.len() > 0:
 			module := modules_stack.pop()
-			for import_ := module.get_imports().iter():
-				if not known_module_names.find(import_):
-					cv_mod := self._compiler.get_cv_mod(import_, node[1][1].src_infos)
+			for import_id, import_src_path := module.get_imports().iter():
+				if not known_module_names.find(import_id):
+					cv_mod := self._compiler.get_cv_mod(import_id, import_src_path, node[1][1].src_infos)
 					modules_to_add.append(Builtins::Module.new(cv_mod.serialize()))
 					modules_stack.append(cv_mod)
 					assert(import_ == new_module.full_name)
-					known_module_names.add(import_)
+					known_module_names.add(import_id)
 			i += 1
 
 		// Import all the modules into the VM.
@@ -573,7 +573,7 @@ class IModule_Gen:
 						else:
 							// name ::= "&" "ID"
 							
-							itree_mod_imp := ITree::IMod_Id_Import.new(ITree.mod_id, var_def[2].src_infos)
+							itree_mod_imp := ITree::IMod_Id_Import.new(ITree.mod_id, ITree.src_path, var_def[2].src_infos)
 
 							ivar := ITree::IModule_Lookup.new([itree_mod_imp, ITree::IVar.new("IVar", var_def[2].src_infos)], var_def[2].src_infos)
 							ivar_new := ITree::ISlot_Lookup.new(ivar, "new", var_def[2].src_infos)
@@ -854,7 +854,7 @@ class IModule_Gen:
 				return ITree::IVar.new(node[1].value, extra_src_infos + node[1].src_infos)
 		elif node.len() == 3:
 			// name ::= "&" "ID"
-			itree_mod_imp := ITree::IMod_Id_Import.new(ITree.mod_id, node[1].src_infos)
+			itree_mod_imp := ITree::IMod_Id_Import.new(ITree.mod_id, ITree.src_path, node[1].src_infos)
 			ivar := ITree::IModule_Lookup.new([itree_mod_imp, ITree::IVar.new("IVar", node[1].src_infos)], node[1].src_infos)
 			ivar_new := ITree::ISlot_Lookup.new(ivar, "new", node[1].src_infos)
 			var := ITree::IApplication.new(ivar_new, [ITree::IString.new(node[2].value, node[1].src_infos), Lift::lift(extra_src_infos + node[1].src_infos)], node[1].src_infos)
@@ -884,7 +884,7 @@ class IModule_Gen:
 				return ITree::IVar.new(node[1].value, extra_src_infos + node[1].src_infos)
 		elif node.len() == 3:
 			// name ::= "&" "ID"
-			itree_mod_imp := ITree::IMod_Id_Import.new(ITree.mod_id, node[2].src_infos)
+			itree_mod_imp := ITree::IMod_Id_Import.new(ITree.mod_id, ITree.src_path, node[2].src_infos)
 			ivar := ITree::IModule_Lookup.new([itree_mod_imp, ITree::IVar.new("IVar", node[2].src_infos)], node[2].src_infos)
 			ivar_new := ITree::ISlot_Lookup.new(ivar, "new", node[2].src_infos)
 			var := ITree::IApplication.new(ivar_new, [ITree::IString.new(node[2].value, node[2].src_infos), Lift::lift(node[2].src_infos)], node[2].src_infos)

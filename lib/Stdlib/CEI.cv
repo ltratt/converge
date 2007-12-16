@@ -99,7 +99,7 @@ func _ibuilder():
 			continue
 		num_params := ITree::IInt.new(defn.get_field("init").num_params, __SRC_INFO__)
 		builders.append([|
-			func $c{ITree::IVar.new(name.to_lower_case(), __SRC_INFO__)}(*args):
+			func $c{ITree::IVar.new(name.lower_cased(), __SRC_INFO__)}(*args):
 			
 				// Add src info from the calling function.
 

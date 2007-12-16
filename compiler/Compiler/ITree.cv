@@ -1253,9 +1253,10 @@ class IQuasi_Quotes:
 
 class IMod_Id_Import:
 
-	func init(self, mod_id, src_infos):
+	func init(self, mod_id, src_path, src_infos):
 	
 		self.mod_id := mod_id
+		self.src_path := src_path
 		self.src_infos := src_infos
 		
 		self.bound_vars := Set{}
@@ -1268,7 +1269,7 @@ class IMod_Id_Import:
 
 	func extended_src_infos(self, extra_src_infos):
 	
-		return IMod_Id_Import.new(self.mod_id, self.src_infos + extra_src_infos)
+		return IMod_Id_Import.new(self.mod_id, self.src_path, self.src_infos + extra_src_infos)
 
 
 

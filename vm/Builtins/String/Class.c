@@ -62,8 +62,8 @@ Con_Obj *_Con_Builtins_String_Class_replaced_func(Con_Obj *);
 Con_Obj *_Con_Builtins_String_Class_rfind_index_func(Con_Obj *);
 Con_Obj *_Con_Builtins_String_Class_stripped_func(Con_Obj *);
 Con_Obj *_Con_Builtins_String_Class_suffixed_by_func(Con_Obj *);
-Con_Obj *_Con_Builtins_String_Class_to_lower_case_func(Con_Obj *);
-Con_Obj *_Con_Builtins_String_Class_to_upper_case_func(Con_Obj *);
+Con_Obj *_Con_Builtins_String_Class_lower_cased_func(Con_Obj *);
+Con_Obj *_Con_Builtins_String_Class_upper_cased_func(Con_Obj *);
 
 
 
@@ -105,8 +105,8 @@ void Con_Builtins_String_Class_bootstrap(Con_Obj *thread)
 	CON_SET_FIELD(string_class, "replaced", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_replaced_func, "replaced", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
 	CON_SET_FIELD(string_class, "stripped", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_stripped_func, "stripped", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
 	CON_SET_FIELD(string_class, "suffixed_by", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_suffixed_by_func, "suffixed_by", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
-	CON_SET_FIELD(string_class, "to_lower_case", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_to_lower_case_func, "to_lower_case", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
-	CON_SET_FIELD(string_class, "to_upper_case", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_to_upper_case_func, "to_upper_case", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
+	CON_SET_FIELD(string_class, "lower_cased", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_lower_cased_func, "lower_cased", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
+	CON_SET_FIELD(string_class, "upper_cased", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_upper_cased_func, "upper_cased", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
 }
 
 
@@ -653,10 +653,10 @@ Con_Obj *_Con_Builtins_String_Class_suffixed_by_func(Con_Obj *thread)
 
 
 //
-// 'to_lower_case()' returns a lower case version of the string.
+// 'lower_cased()' returns a lower case version of the string.
 //
 
-Con_Obj *_Con_Builtins_String_Class_to_lower_case_func(Con_Obj *thread)
+Con_Obj *_Con_Builtins_String_Class_lower_cased_func(Con_Obj *thread)
 {
 	Con_Obj *self;
 	CON_UNPACK_ARGS("S", &self);
@@ -680,10 +680,10 @@ Con_Obj *_Con_Builtins_String_Class_to_lower_case_func(Con_Obj *thread)
 
 
 //
-// 'to_upper_case()' returns an upper case version of the string.
+// 'upper_cased()' returns an upper case version of the string.
 //
 
-Con_Obj *_Con_Builtins_String_Class_to_upper_case_func(Con_Obj *thread)
+Con_Obj *_Con_Builtins_String_Class_upper_cased_func(Con_Obj *thread)
 {
 	Con_Obj *self;
 	CON_UNPACK_ARGS("S", &self);

@@ -127,9 +127,9 @@ class Elem(Builtins::List):
 	
 	func get_elem(self, name, namespace := ""):
 
-		lc_name := name.to_lower_case()
+		lc_name := name.lower_cased()
 		for node := self.iter():
-			if Elem.instantiated(node) & node.name.to_lower_case() == lc_name & node.namespace == namespace:
+			if Elem.instantiated(node) & node.name.lower_cased() == lc_name & node.namespace == namespace:
 				return node
 
 		raise XML_Exception.new(Strings::format("No such element '%s'.", name))
@@ -138,9 +138,9 @@ class Elem(Builtins::List):
 	
 	func iter_elem(self, name, namespace := ""):
 
-		lc_name := name.to_lower_case()
+		lc_name := name.lower_cased()
 		for node := self.iter():
-			if Elem.instantiated(node) & node.name.to_lower_case() == lc_name & node.namespace == namespace:
+			if Elem.instantiated(node) & node.name.lower_cased() == lc_name & node.namespace == namespace:
 				yield node
 
 		fail

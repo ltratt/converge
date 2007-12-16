@@ -89,6 +89,32 @@ Con_Obj *Con_Modules_get(Con_Obj *thread, Con_Obj *mod_id)
 
 
 
+Con_Obj *Con_Modules_get_stdlib(Con_Obj *thread, const char *ptl_mod_id)
+{
+	assert(strlen(ptl_mod_id) > strlen(CON_DIR_SEP));
+	
+	Con_Obj *ptl_mod_id_obj = Con_Builtins_String_Atom_new_copy(thread, ptl_mod_id, strlen(ptl_mod_id), CON_STR_UTF_8);
+	if (memcmp(ptl_mod_id, CON_DIR_SEP, strlen(CON_DIR_SEP)) != 0) {
+		return Con_Modules_get(thread, ptl_mod_id_obj);
+	}
+	else {
+		Con_Obj *modules = CON_GET_SLOT(Con_Builtins_Thread_Atom_get_vm(thread), "modules");
+		CON_PRE_GET_SLOT_APPLY_PUMP(modules, "iter_keys");
+		while (1) {
+			Con_Obj *key = CON_APPLY_PUMP();
+			if (key == NULL)
+				break;
+
+			if (CON_GET_SLOT_APPLY_NO_FAIL(key, "suffixed_by", ptl_mod_id_obj) != NULL)
+				return Con_Modules_get(thread, key);
+		}
+		
+		CON_XXX;
+	}
+}
+
+
+
 Con_Obj *Con_Modules_import_mod_from_bytecode(Con_Obj *thread, Con_Obj *module, Con_Int import_num)
 {
 	Con_Builtins_Module_Atom *module_atom = CON_GET_ATOM(module, CON_BUILTIN(CON_BUILTIN_MODULE_ATOM_DEF_OBJECT));

@@ -118,7 +118,7 @@ class Grammar:
 				continue
 			
 			if match := _RE_SYMBOLS.match(grammar, i):
-				tokens.append(Token::Token.new(match[0].to_upper_case(), match[0], [[null, i]]))
+				tokens.append(Token::Token.new(match[0].upper_cased(), match[0], [[null, i]]))
 				i += match[0].len()
 				continue
 

@@ -19,7 +19,7 @@
 // IN THE SOFTWARE.
 
 
-import Exceptions, File, Platform::Properties, Strings, Sys
+import Exceptions, File, Platform::Host, Platform::Properties, Strings, Sys
 
 
 
@@ -48,7 +48,7 @@ DEFAULT_VARS := Set{"self_module", "null"}
 
 //
 
-BUILTIN_MODULES := Set{"Sys", "Backtrace", "Builtins", "POSIX_File", "Array", "OS", "Exceptions", "C_Earley_Parser", "PCRE", "VM", "Processes", "PThreads", "CEI", "C_Strings", "Thread", "libXML2", "Random", "C_Platform_Properties", "C_Platform_Env", "C_Platform_Exec", "C_Time"}
+BUILTIN_MODULES := Set{"Sys", "Backtrace", "Builtins", "POSIX_File", "Array", "OS", "Exceptions", "C_Earley_Parser", "PCRE", "VM", "Processes", "PThreads", "CEI", "C_Strings", "Thread", "libXML2", "Random", "C_Platform_Properties", "C_Platform_Env", "C_Platform_Exec", "C_Time", "C_Platform_Host"}
 
 
 
@@ -113,46 +113,41 @@ func cvb_cache_path(path):
 	name, ext := File::split_ext(path)
 	if ext == CV_EXTENSION:
 		return File::join_ext(name, CVB_EXTENSION)
+	else:
+		return File::join_ext(path, CVB_EXTENSION)
 	
-	fail
+	return path
 
 
 
 func find_std_includes():
 
 	includes := []
-
-	// In order to make a good stab at finding the Converge library we check in order:
-	//
-	//   ../lib/converge-<version>
-	//   ../lib/converge
-	//   ../lib
-	//
-	// where ".." is relative to the directory convergec was contained in.
+	
+	// Find Stdlib library.
 
 	bin_dir := File::split_leaf(Sys::program_path)[0]
-	lib_path_candidates := [File::join_names(bin_dir, "..", "lib", "converge-" + Sys::version), File::join_names(bin_dir, "..", "lib", "converge"), File::join_names(bin_dir, "..", "lib")]
+	lib_path_candidates := [File::join_names(bin_dir, "..", "lib", "converge-" + Sys::version, "Stdlib"), \
+	  File::join_names(bin_dir, "..", "lib", "converge", "Stdlib"), \
+	  File::join_names(bin_dir, "..", "lib", "Stdlib")]
 	for lib_path := lib_path_candidates.iter():
 		if File::exists(lib_path):
 			includes.append(File::canon_path(lib_path))
 			break
 	exhausted:
-		peek_compiler().error("Can't find Converge library.")
+		peek_compiler().error("Can't find Converge Stdlib library.")
 
-	// In order to make a good stab at finding the Compiler package we check in order:
-	//
-	//   ./Compiler
-	//   ../lib/Compiler
-	//
-	// where ".." is relative to the directory convergec was contained in.
+	// Find Compiler library.
 
-	compiler_path_candidates := [File::join_names(bin_dir, "Compiler"), File::join_names(lib_path, "Compiler")]
+	compiler_path_candidates := [File::join_names(bin_dir, "..", "lib", "converge-" + Sys::version, "Compiler"), \
+	  File::join_names(bin_dir, "..", "lib", "converge", "Compiler"), \
+	  File::join_names(bin_dir, "Compiler")]
 	for lib_path := compiler_path_candidates.iter():
 		if File::exists(lib_path):
 			includes.append(File::canon_path(File::join_names(lib_path, "..")))
 			break
 	exhausted:
-		peek_compiler().error("Can't find Compiler package.")
+		peek_compiler().error("Can't find Converge Compiler library.")
 
 	return includes
 
@@ -160,20 +155,15 @@ func find_std_includes():
 
 func get_std_libraries():
 
+	bin_dir := File::split_leaf(Sys::program_path)[0]
+	
 	libraries := []
 
-	// In order to make a good stab at finding libconverge.cvl we check in order:
-	//
-	//   ../lib/converge-<version>
-	//   ../lib/converge
-	//   ../lib
-	//
-	// where ".." is relative to the directory convergec was contained in.
+	// Find libconverge.cvl
 
-	bin_dir := File::split_leaf(Sys::program_path)[0]
-	cnd_dirs := [File::join_names(bin_dir, "..", "lib", "converge-" + Sys::version), \
-	  File::join_names(bin_dir, "..", "lib", "converge"), \
-	  File::join_names(bin_dir, "..", "lib")]
+	cnd_dirs := [File::join_names(bin_dir, "..", "lib", "converge-" + Sys::version, "Stdlib"), \
+	  File::join_names(bin_dir, "..", "lib", "converge", "Stdlib"), \
+	  File::join_names(bin_dir, "..", "lib", "Stdlib")]
 	for cnd_dir := cnd_dirs.iter():
 		cnd_path := File::join_names(cnd_dir, "libconverge.cvl")
 		if File::exists(cnd_path):
@@ -182,17 +172,11 @@ func get_std_libraries():
 	exhausted:
 		peek_compiler().error("Can't find libconverge.cvl.")
 
-	// In order to make a good stab at finding libconverge.cvl we check in order:
-	//
-	//   ../lib/converge-<version>/Compiler
-	//   ../lib/converge/Compiler
-	//   ../compiler/
-	//
-	// where ".." is relative to the directory convergec was contained in.
+	// Find libcompiler.cvl.
 
 	cnd_dirs := [File::join_names(bin_dir, "..", "lib", "converge-" + Sys::version, "Compiler"), \
 	  File::join_names(bin_dir, "..", "lib", "converge", "Compiler"), \
-	  File::join_names(bin_dir, "..", "compiler")]
+	  File::join_names(bin_dir)]
 	for cnd_dir := cnd_dirs.iter():
 		cnd_path := File::join_names(cnd_dir, "libcompiler.cvl")
 		if File::exists(cnd_path):
@@ -205,13 +189,13 @@ func get_std_libraries():
 
 
 
-func canon_mod_id(mod_id):
+func mk_mod_id(src_path):
 
 	if Properties::case_sensitive_filenames == 0:
 		// On operating systems which are case insensitive (but presumably case preserving), mod
 		// IDs need to be lower cased so that they can be compared even when files have different
 		// capitilizations. Of course there is still potential for hilarity if some filing
 		// systems on these OSs are case sensitive, but there's only so much one can cope with.
-		return mod_id.to_lower_case()
-	else:
-		return mod_id
+		src_path := src_path.lower_cased()
+
+	return Strings::format("%s:%s", Host::get_hostname(), src_path)

@@ -20,7 +20,7 @@
 
 
 import Builtins, Exceptions, File, Parse_Options, Platform::Properties, Strings, Sys, Time, VM
-import Compiler::Bytecode_Gen, Compiler::Compiler_Vars, Compiler::CV_Exec, Compiler::CV_Library, Compiler::CV_Module, Compiler::CV_Parser, Compiler::IModule_Gen, Compiler::Link, Compiler::Targets, Compiler::Tokenizer
+import Compiler::Bytecode_Gen, Compiler::Compiler_Vars, Compiler::CV_Exec, Compiler::CV_Library, Compiler::CV_Module, Compiler::CV_Parser, Compiler::CV_Pkg, Compiler::IModule_Gen, Compiler::Link, Compiler::Targets, Compiler::Tokenizer
 
 
 
@@ -96,7 +96,7 @@ class Compiler:
 
 
 
-	func from_mk_mode(self, src_path, start_includes, verbosity, target, internal_target, mk_done_cv_mods, mk_mtime_map):
+	func from_mk_mode(self, mod_id, src_path, start_includes, verbosity, target, internal_target, mk_done_cv_mods, mk_mtime_map):
 
 		self.mk_mode := 1
 		self.output_path := null
@@ -110,8 +110,8 @@ class Compiler:
 		cv_mod := self._compile_path(src_path)
 		self._write_cache_cvb(src_path, cv_mod.serialize())
 
-		mk_done_cv_mods[src_path] := [src_path, cv_mod]
-		mk_mtime_map[src_path] := Time::current()
+		mk_done_cv_mods[mod_id] := [src_path, cv_mod]
+		mk_mtime_map[mod_id] := Time::current()
 		
 		return cv_mod
 
@@ -155,7 +155,11 @@ class Compiler:
 
 
 
-	func get_cv_mod(self, src_path, src_infos := null):
+	func get_cv_mod(self, mod_id, src_path, src_infos := null):
+	
+		if self.mk_mode == 1:
+			if src_path, cv_mod := self.mk_done_cv_mods.find(mod_id):
+				return cv_mod
 	
 		if cv_mod, mtime := self._read_cache_cvb(src_path):
 			return cv_mod
@@ -163,12 +167,9 @@ class Compiler:
 		if self.mk_mode == 0:
 			self.error(Strings::format("Can not find compiled version of '%s'.", src_path), src_infos)
 		
-		if src_path, cv_mod := self.mk_done_cv_mods.find(src_path):
-			return cv_mod
-	
 		compiler := Compiler.new()
 		Compiler_Vars::push_compiler(compiler)
-		cv_mod := compiler.from_mk_mode(src_path, self.start_includes, self.verbosity, self.target, self.internal_target, self.mk_done_cv_mods, self.mk_mtime_map)
+		cv_mod := compiler.from_mk_mode(mod_id, src_path, self.start_includes, self.verbosity, self.target, self.internal_target, self.mk_done_cv_mods, self.mk_mtime_map)
 		Compiler_Vars::pop_compiler()
 		
 		if self.verbosity > 0:
@@ -200,7 +201,18 @@ class Compiler:
 		for include_dir := self.includes.iter():
 			if matched_path, extra_pos := match_path(0, include_dir):
 				src_path := File::canon_path(matched_path)
-				mod_id := Compiler_Vars::canon_mod_id(src_path)
+				if cvb_path := Compiler_Vars::cvb_cache_path(src_path) & File::exists(cvb_path):
+					f := File::open(cvb_path, "r")
+					bc := f.read()
+					if bc.prefixed_by(CV_Module::MODULE_INIT_STRING):
+						cv_mod := CV_Module::CV_Module.new(self.internal_target)
+					else:
+						cv_mod := CV_Pkg::CV_Pkg.new(self.internal_target)
+					cv_mod.deserialize_str(bc)
+					f.close()
+					mod_id := cv_mod.get_mod_id()
+				else:
+					mod_id := Compiler_Vars::mk_mod_id(src_path)
 				import_extras := import_name_list[extra_pos + 1 : ]
 				break
 		exhausted:
@@ -223,16 +235,53 @@ class Compiler:
 
 	func _compile_path(self, src_path):
 
-		self.includes := self.start_includes
-
 		if not File::exists(src_path):
 			self.error(Strings::format("Source file '%s' not found.", src_path))
+		
+		if File::is_dir(src_path):
+			return self._compile_pkg(src_path)
+		else:
+			return self._compile_mod(src_path)
+
+
+
+	func _compile_pkg(self, src_path):
+
+		if self.verbosity > 0:
+			self.info(Strings::format("Compiling %s...", src_path))
+		
+		pkg_entries := Dict{}
+		for leaf := File::iter_dir_entries(src_path):
+			defn_name, ext := File::split_ext(leaf)
+			if not (ext == "" | ext == CV_Module::CV_EXTENSION):
+				continue
+		
+			entry_path := File::canon_path(File::join_names(src_path, leaf))
+			entry_mod_id := Compiler_Vars::mk_mod_id(entry_path)
+			pkg_entries[defn_name] := [entry_mod_id, entry_path]
+
+		cv_pkg := CV_Pkg::CV_Pkg.new(self.target)
+		cv_pkg.set_name(File::split_leaf(src_path)[1])
+		cv_pkg.set_mod_id(Compiler_Vars::mk_mod_id(File::canon_path(src_path)))
+		cv_pkg.set_src_path(src_path)
+		cv_pkg.set_entries(pkg_entries)
+
+		if self.verbosity > 0:
+			self.info(Strings::format("Finished compiling %s.", src_path))
+		
+		return cv_pkg
+
+
+
+	func _compile_mod(self, src_path):
+
+		self.includes := self.start_includes
 
 		if self.verbosity > 0:
 			self.info(Strings::format("Compiling %s...", src_path))
 
 		self.src_path := File::canon_path(src_path)
-		self.mod_id := Compiler_Vars::canon_mod_id(self.src_path)
+		self.mod_id := Compiler_Vars::mk_mod_id(self.src_path)
 
 		if (input_file_dir := File::split_leaf(self.src_path)[0]) == "":
 			self.includes.insert(0, ".")
@@ -286,7 +335,7 @@ class Compiler:
 		else:
 			do_link := 1
 
-		main_mod_id := Compiler_Vars::canon_mod_id(File::canon_path(src_path))
+		main_mod_id := Compiler_Vars::mk_mod_id(File::canon_path(src_path))
 		self.mk_done_cv_mods := Dict{main_mod_id : [File::canon_path(src_path), null]} // module id : CV_Module instances map.
 
 		// We want to ensure that we never try to compile any of the stuff in the builtin libraries,
@@ -317,11 +366,11 @@ class Compiler:
 
 		while 1:
 			again := 0 // Set to 1 to force another round of the loop.
-			for mod_id, x := self.mk_done_cv_mods.iter():
+			for mod_id, t := self.mk_done_cv_mods.iter():
+				mod_src_path, cv_mod := t
+
 				if lib_mod_ids.find(mod_id):
 					continue
-				
-				mod_src_path, cv_mod := x
 				
 				compile := 0
 				if cv_mod is null:
@@ -335,37 +384,34 @@ class Compiler:
 						compile := 1
 				
 				if not cv_mod is null:
-					// We check to see whether this module is "stale" i.e. is older than any of its
-					// import dependencies.
-					assert(mod_id == cv_mod.get_mod_id())
 					mtime := self.mk_mtime_map[mod_id]
-					for imp_mod_id := cv_mod.get_imports().iter():
-						if Compiler_Vars::BUILTIN_MODULES.find(imp_mod_id):
-							continue
-
-						if File::is_dir(imp_mod_id):
-							// This must be a package. We therefore expand things so that this module
-							// is dependent on all the packages sub-modules. We could be more
-							// efficient about this by only depending on the package modules that
-							// this module uses.
-							imp_mod_ids := self._locate_cv_files(imp_mod_id)
-						else:
-							imp_mod_ids := [imp_mod_id]
-						
-						for cnd_mod_id := imp_mod_ids.iter():
-							cnd_mod_id := Compiler_Vars::canon_mod_id(cnd_mod_id)
-							if not self.mk_done_cv_mods.find(cnd_mod_id):
-								self.mk_done_cv_mods[cnd_mod_id] := [cnd_mod_id, null]
-								again := 1
+					ndif CV_Module::CV_Module.instantiated(cv_mod):
+						// We check to see whether this module is "stale" i.e. is older than any of its
+						// import dependencies.
+						for imp_mod_id, imp_src_path := cv_mod.get_imports().iter():
+							if Compiler_Vars::BUILTIN_MODULES.find(imp_mod_id):
 								continue
 
-							if mtime < self.mk_mtime_map.find(cnd_mod_id):
+							if not self.mk_done_cv_mods.find(imp_mod_id):
+								self.mk_done_cv_mods[imp_mod_id] := [imp_src_path, null]
+								again := 1
+							elif mtime < self.mk_mtime_map.find(imp_mod_id):
+								compile := 1
+					elif CV_Pkg::CV_Pkg.instantiated(cv_mod):
+						// We check to see whether this package is "stale" i.e. is older than any of its
+						// entries.
+						for defn_name, t := cv_mod.get_entries().iter():
+							entry_mod_id, entry_src_path := t
+							if not self.mk_done_cv_mods.find(entry_mod_id):
+								self.mk_done_cv_mods[entry_mod_id] := [entry_src_path, null]
+								again := 1
+							elif mtime < self.mk_mtime_map.find(entry_mod_id):
 								compile := 1
 				
 				if compile == 1:
 					// Compilation has been forced.
 					cv_mod := self._compile_path(mod_src_path)
-					self._write_cache_cvb(mod_id, cv_mod.serialize())
+					self._write_cache_cvb(mod_src_path, cv_mod.serialize())
 					self.mk_done_cv_mods[mod_id][1] := cv_mod
 					self.mk_mtime_map[mod_id] := Time::current()
 					again := 1
@@ -386,7 +432,7 @@ class Compiler:
 				if not mod is main_mod:
 					link_mods.append(mod)
 			link_mods.extend(lib_mods)
-
+			
 			if self.verbosity > 0:
 				self.info("Linking.")
 			self.mod_id := link_mods[0].get_mod_id()

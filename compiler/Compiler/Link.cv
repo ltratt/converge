@@ -20,7 +20,7 @@
 
 
 import Array, File, Strings
-import Bytecode_Gen, Compiler_Vars, CV_Exec, ITree
+import Bytecode_Gen, Compiler_Vars, CV_Exec, CV_Pkg, ITree
 
 
 
@@ -33,14 +33,19 @@ class _Link_Exec:
 		self._linker := linker
 		self._target := target
 		
+		self._mods_map := Dict{}
+		for mod := mods.iter():
+			self._mods_map[mod.get_mod_id()] := mod
+		
 		self._done_mods := [] // List of CV_Module instances
 		self._done_mod_ids := Set{} // Set of module IDs
-		self._pkgs := Dict{} // Map modules ids to dicts of Dict{defn name : mod id}
+		self._pkgs := Dict{} // Map package mod ids to sets of definition names to be included
+
 		self._scan()
 		self._mk_pkgs()
 
 		for mod := self._done_mods.iter():
-			for import_mod_id := mod.get_imports().iter():
+			for import_mod_id, import_src_path := mod.get_imports().iter():
 				if not Compiler_Vars::BUILTIN_MODULES.find(import_mod_id) & not self._done_mod_ids.find(import_mod_id):
 					linker.error(Strings::format("Module '%s' referenced in '%s' not found in input files.", import_mod_id, mod.get_mod_id()))
 				
@@ -71,10 +76,6 @@ class _Link_Exec:
 
 	func _scan(self):
 
-		mods_map := Dict{}
-		for mod := self._mods.iter():
-			mods_map[mod.get_mod_id()] := mod
-
 		// Using the first module on the command line as a "seed", we now scan through and try and
 		// pluck out all the imports that it refers to (directly and indirectly through other
 		// modules).
@@ -83,98 +84,97 @@ class _Link_Exec:
 		while todo.len() > 0:
 			mod_id := todo[0]
 			todo.del(0)
+			mod := self._mods_map[mod_id]
+			
+			if CV_Pkg::CV_Pkg.instantiated(mod):
+				// Packages at this point are CV_Pkg instances, so we don't scan through them.
+				if not self._pkgs.find(mod_id):
+					self._pkgs[mod_id] := Set{}
+				continue
+
 			self._done_mod_ids.add(mod_id)
-			mod := mods_map[mod_id]
 			self._done_mods.append(mod)
 
-			for imp_mod_id := mod.get_imports().iter():
+			for imp_mod_id, imp_src_path := mod.get_imports().iter():
 				if not Compiler_Vars::BUILTIN_MODULES.find(imp_mod_id):
-					if File::split_ext(imp_mod_id)[1] == "":
-						self._add_pkg(imp_mod_id)
-
 					if not (self._done_mod_ids.find(imp_mod_id) | todo.find(imp_mod_id)):
-						if mods_map.find(imp_mod_id):
-							todo.append(imp_mod_id)
+						todo.append(imp_mod_id)
 
-			for mod_num, defn_names, src_infos := mod.get_mod_lookups().iter():
-				lookedup_mod_id := mod.get_imports()[mod_num]
+			for mod_num, defn_names, src_infos := mod.get_mod_lookups().iter():	
+				lookedup_mod_id := mod.get_imports()[mod_num][0]
 				j := 1
 				while j < defn_names.len():
 					defn_name := defn_names[j]
-					if lookedup_mod := mods_map.find(lookedup_mod_id):
-						if not (defn_num := lookedup_mod.get_top_level_vars_map().find(defn_name)):
-							// The requested definition definitely doesn't exist in the looked-up
-							// module, so raise an error.
-							self._linker.error(Strings::format("Can't find definition '%s' in '%s'.", defn_name, Strings::join(defn_names[ : j], "::")), _tn_src_infos(src_infos, mods_map[mod_id]))
-
-						if lookedup_mod_num := lookedup_mod.get_import_defns().find(defn_num):
-							lookedup_mod_id := lookedup_mod.get_imports()[lookedup_mod_num]
+					if lookedup_mod := self._mods_map.find(lookedup_mod_id):
+						if CV_Pkg::CV_Pkg.instantiated(lookedup_mod):
+							if not entry_mod_id, entry_src_path := lookedup_mod.get_entries().find(defn_name):
+								// The requested definition definitely doesn't exist in the looked-up
+								// module, so raise an error.
+								self._linker.error(Strings::format("Can't find definition '%s' in '%s'.", defn_name, Strings::join(defn_names[ : j], "::")), _tn_src_infos(src_infos, self._mods_map[mod_id]))
+							
+							self._add_to_pkg(lookedup_mod_id, defn_name)
+							
+							lookedup_mod_id := entry_mod_id
 						else:
-							if j + 1 < defn_names.len():
-								// We can't trace the next definition in the current known
-								// module; it might exist at run-time, it might not. Print
-								// a warning, and give up further processing of this lookup,
-								// but do not halt the linking process.
-								msg := Strings::format("Unable to trace definition '%s' in '%s'.", defn_names[j + 1], Strings::join(defn_names[ : j + 1], "::"))
-								self._linker.warning(msg, _tn_src_infos(src_infos, mods_map[mod_id]))
-								break
-					else:
-						if Compiler_Vars::BUILTIN_MODULES.find(lookedup_mod_id):
-							pass
-						elif File::split_ext(lookedup_mod_id)[1] == "":
-							// This must be an imported package. At this point in linking,
-							// packages don't exist. So we try and look up a sub-package or
-							// sub-module which has a correct identifier.
-							cnd_mod_id := Compiler_Vars::canon_mod_id(File::join_names(lookedup_mod_id, defn_name))
-							if mods_map.find(cnd_mod_id):
-								self._add_to_pkg(lookedup_mod_id, defn_name, cnd_mod_id)
-								lookedup_mod_id := cnd_mod_id
+							if not (defn_num := lookedup_mod.get_top_level_vars_map().find(defn_name)):
+								// The requested definition definitely doesn't exist in the looked-up
+								// module, so raise an error.
+								self._linker.error(Strings::format("Can't find definition '%s' in '%s'.", defn_name, Strings::join(defn_names[ : j], "::")), _tn_src_infos(src_infos, self._mods_map[mod_id]))
+
+							if lookedup_mod_num := lookedup_mod.get_import_defns().find(defn_num):
+								lookedup_mod_id := lookedup_mod.get_imports()[lookedup_mod_num][0]
 							else:
-								cnd_mod_id := Compiler_Vars::canon_mod_id(File::join_ext(cnd_mod_id, Compiler_Vars::CV_EXTENSION))
-								if mods_map.find(cnd_mod_id):
-									self._add_to_pkg(lookedup_mod_id, defn_name, cnd_mod_id)
-									todo.append(cnd_mod_id)
-									lookedup_mod_id := cnd_mod_id
+								if j + 1 < defn_names.len():
+									// We can't trace the next definition in the current known
+									// module; it might exist at run-time, it might not. Print
+									// a warning, and give up further processing of this lookup,
+									// but do not halt the linking process.
+									msg := Strings::format("Unable to trace definition '%s' in '%s'.", defn_names[j + 1], Strings::join(defn_names[ : j + 1], "::"))
+									self._linker.warning(msg, _tn_src_infos(src_infos, self._mods_map[mod_id]))
+									break
+						
+						if not (self._done_mod_ids.find(lookedup_mod_id) | todo.find(lookedup_mod_id)):
+							todo.append(lookedup_mod_id)
+					elif Compiler_Vars::BUILTIN_MODULES.find(lookedup_mod_id):
+						// XXX we don't trace builtins yet
+						break
+					else:
+						self._linker.error(Strings::format("Module '%s' referenced in '%s' not found.", lookedup_mod_id, mod_id), _tn_src_infos(src_infos, self._mods_map[mod_id]))
+
 					j += 1
 
 
 
-	func _add_pkg(self, pkg_id):
+	func _add_to_pkg(self, pkg_id, defn_name):
 	
 		if not pkg := self._pkgs.find(pkg_id):
-			self._pkgs[pkg_id] := Dict{}
-
-
-
-	func _add_to_pkg(self, pkg_id, defn_name, mod_id):
-	
-		if not pkg := self._pkgs.find(pkg_id):
-			self._pkgs[pkg_id] := Dict{}
+			self._pkgs[pkg_id] := pkg := Set{}
 		
-		if pkg.find(defn_name) != mod_id:
-			raise "XXX"
-		
-		pkg[defn_name] := mod_id
+		pkg.add(defn_name)
 
 
 
 	func _mk_pkgs(self):
 
-		for pkg_id, defns := self._pkgs.iter():
+		for pkg_id, defn_names := self._pkgs.iter():
 			// XXX: It's not entirely clear what reasonable src infos for the ITree module are.
 
+			cv_pkg := self._mods_map[pkg_id]
+			entries := cv_pkg.get_entries()
+
 			idefns := []
-			for defn_name, mod_id := defns.iter():
-				mod_import := ITree::IMod_Id_Import.new(mod_id, [])
+			for defn_name := defn_names.iter():
+				entry_mod_id, entry_src_path := entries[defn_name]
+				mod_import := ITree::IMod_Id_Import.new(entry_mod_id, entry_src_path, [])
 				var_name := ITree::IVar.new(defn_name, [])
 				asgn := ITree::IAssignment.new(ITree::STD_ASSIGN, [var_name], mod_import, [])
 				idefns.append(asgn)
-			imod := ITree::IModule.new(File::split_leaf(pkg_id)[1], idefns, [])
+			imod := ITree::IModule.new(cv_pkg.get_name(), idefns, [])
 
 			// We now setup a minimal compiler and compile the ITree into a CV_Module.
 
 			self.mod_id := pkg_id
-			self.src_path := pkg_id
+			self.src_path := cv_pkg.get_src_path()
 			self.newlines := []
 			Compiler_Vars::push_compiler(self)
 			pkg_as_mod := Bytecode_Gen::Bytecode_Gen.new().generate(imod, self._target)
@@ -204,6 +204,6 @@ func _tn_src_infos(src_infos, mod):
 		if mod_num == -1:
 			new_src_infos.append([mod.get_mod_id(), offset])
 		else:
-			new_src_infos.append([mod.get_imports()[mod_num], offset])
+			new_src_infos.append([mod.get_imports()[mod_num][0], offset])
 
 	return new_src_infos

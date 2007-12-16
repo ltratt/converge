@@ -316,7 +316,7 @@ class Tokenizer:
 				// otherwise be incorrectly tokenized as an identifier and a different symbol.
 
 				if m := self._re_symbols.match(self._str, i):
-					self.tokens.append(Token.new(m[0].to_upper_case(), null, [[self._src_path, self._src_offset + i]]))
+					self.tokens.append(Token.new(m[0].upper_cased(), null, [[self._src_path, self._src_offset + i]]))
 					i += m[0].len()
 					if m[0] == ":" & self.tokens.len() > 2 & self.tokens[-2].type == ">>":
 						// We have just matched the beginning of a DSL block (when tokens
@@ -377,7 +377,7 @@ class Tokenizer:
 
 				if m := self._re_keywords.match(self._str, i):
 					// Keywords are automatically capitalized for their type.
-					self.tokens.append(Token.new(m[0].to_upper_case(), m[0], [[self._src_path, self._src_offset + i]]))
+					self.tokens.append(Token.new(m[0].upper_cased(), m[0], [[self._src_path, self._src_offset + i]]))
 					i += m[0].len()
 					continue
 
@@ -507,7 +507,7 @@ func tokens_map(extra_symbols, extra_keywords):
 
 	tokens := ["NEWLINE", "INDENT", "DEDENT", "ID", "INT", "FLOAT", "STRING", "DSL_BLOCK"]
 	for keyword := (KEYWORDS + extra_keywords + SYMBOLS + extra_symbols).iter():
-		tokens.append(keyword.to_upper_case())
+		tokens.append(keyword.upper_cased())
 
 	return Tokens::tokens_map(tokens)
 

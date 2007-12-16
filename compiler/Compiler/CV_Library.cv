@@ -20,7 +20,7 @@
 
 
 import Array, File, Sys
-import CV_Module
+import CV_Module, CV_Pkg
 
 
 
@@ -53,10 +53,21 @@ class CV_Library:
 	
 		self.modules := []
 		for i := 0.iter_to(library[self._target.LIBRARY_BYTECODE_NUM_MODULES]):
-			cv_mod := CV_Module::CV_Module.new(self._target)
 			mod_offset := library[self._target.LIBRARY_BYTECODE_MODULE_OFFSETS + i] / self._target.WORDSIZE
-			to := mod_offset + library[mod_offset + self._target.MODULE_BYTECODE_SIZE] / self._target.WORDSIZE
-			cv_mod.deserialize_str(mod_str[mod_offset * self._target.WORDSIZE : to * self._target.WORDSIZE])
+			
+			assert CV_Module::MODULE_INIT_STRING.len() == CV_Pkg::PKG_INIT_STRING.len()
+			
+			mod_header := mod_str[mod_offset * self._target.WORDSIZE : mod_offset * self._target.WORDSIZE + CV_Module::MODULE_INIT_STRING.len()]
+			
+			ndif mod_header == CV_Module::MODULE_INIT_STRING:
+				to := mod_offset + library[mod_offset + self._target.MODULE_BYTECODE_SIZE] / self._target.WORDSIZE
+				cv_mod := CV_Module::CV_Module.new(self._target)
+				cv_mod.deserialize_str(mod_str[mod_offset * self._target.WORDSIZE : to * self._target.WORDSIZE])
+			elif mod_header == CV_Pkg::PKG_INIT_STRING:
+				to := mod_offset + library[mod_offset + self._target.PKG_BYTECODE_SIZE] / self._target.WORDSIZE
+				cv_mod := CV_Pkg::CV_Pkg.new(self._target)
+				cv_mod.deserialize_str(mod_str[mod_offset * self._target.WORDSIZE : to * self._target.WORDSIZE])
+				
 			self.modules.append(cv_mod)
 		
 		return self.modules

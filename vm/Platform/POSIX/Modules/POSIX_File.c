@@ -612,11 +612,10 @@ Con_Obj *_Con_Module_POSIX_File_mtime_func(Con_Obj *thread)
 	
 	struct stat sb;
 	
-	int rtn;
-	if ((rtn = stat(Con_Builtins_String_Atom_to_c_string(thread, path), &sb)) != 0)
+	if (stat(Con_Builtins_String_Atom_to_c_string(thread, path), &sb) != 0)
 		_Con_Module_POSIX_File_error(thread, path, errno);
 	
-	Con_Obj *time_mod = Con_Modules_import(thread, Con_Modules_get(thread, CON_NEW_STRING(CON_MOD_ID_TIME)));
+	Con_Obj *time_mod = Con_Modules_import(thread, Con_Modules_get_stdlib(thread, CON_STDLIB_TIME));
 	
 #	ifdef STAT_ST_MTIMESPEC_TYPE_STRUCT_TIMESPEC
 	Con_Obj *sec = CON_NEW_INT(sb.STAT_ST_MTIMESPEC.tv_sec);

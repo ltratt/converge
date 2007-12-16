@@ -7,20 +7,25 @@ libdir = @libdir@
 conlibdir = ${libdir}/converge-@CONVERGE_VERSION@
 INSTALL = @INSTALL@
 
-BASE_OBJ_FILES = Compiler/CV_Parser.cvb Compiler/Tokenizer.cvb \
+COMPILER_OBJS = Compiler/CV_Parser.cvb Compiler/Tokenizer.cvb \
 	Compiler/IModule_Gen.cvb Compiler/ITree.cvb Compiler/Bytecode_Gen.cvb \
 	Compiler/Targets/Thirty_Two_Bit.cvb Compiler/Compiler_Vars.cvb Compiler/CV_Module.cvb \
 	Compiler/QQ_Mode.cvb Compiler/ITree_PP.cvb Compiler/ITree_WF.cvb \
 	Compiler/CV_Library.cvb Compiler/CV_Exec.cvb Compiler/Eval.cvb \
-	Compiler/Lift.cvb Compiler/Link.cvb Compiler/ITree_Rename.cvb \
-	convergec.cvb convergel.cvb convergei.cvb convergep.cvb
+	Compiler/Lift.cvb Compiler/Link.cvb Compiler/ITree_Rename.cvb Compiler/CV_Pkg.cvb \
+	Compiler/Targets/Sixty_Four_Bit.cvb Compiler/Targets/Available.cvb
 
-TARGET_OBJ_FILES = Compiler/Targets/Sixty_Four_Bit.cvb Compiler/Targets/Available.cvb
+PKG_OBJS = Compiler.cvb Compiler/Targets.cvb
 
-OBJ_FILES = ${BASE_OBJ_FILES} ${TARGET_OBJ_FILES}
+EXEC_OBJS = convergec.cvb convergel.cvb convergei.cvb convergep.cvb
+
+OBJ_FILES = ${COMPILER_OBJS} ${TARGET_OBJ_FILES} ${PKG_OBJS} ${EXEC_OBJS}
 
 
 %.cvb: %.cv
+	${CONVERGE_VM} ${CONVERGEC} -o $@ $<
+
+%.cvb: %
 	${CONVERGE_VM} ${CONVERGEC} -o $@ $<
 
 
@@ -34,8 +39,9 @@ install: all
 	${INSTALL} -c -m 555 convergep ${DESTDIR}${bindir}
 	${INSTALL} -d ${DESTDIR}${conlibdir}/Compiler
 	${INSTALL} -d ${DESTDIR}${conlibdir}/Compiler/Targets
-	${INSTALL} -c -m 444 ${BASE_OBJ_FILES:.cvb=.cv} ${DESTDIR}${conlibdir}/Compiler
-	${INSTALL} -c -m 444 ${TARGET_OBJ_FILES:.cvb=.cv} ${DESTDIR}${conlibdir}/Compiler/Targets
+	${foreach obj,${COMPILER_OBJS:.cvb=.cv},${INSTALL} -c -m 444 ${obj} ${DESTDIR}${conlibdir}/${obj};}
+	${foreach obj,${COMPILER_OBJS},${INSTALL} -c -m 444 ${obj} ${DESTDIR}${conlibdir}/${obj};}
+	${foreach obj,${PKG_OBJS},${INSTALL} -c -m 444 ${obj} ${DESTDIR}${conlibdir}/${obj};}
 	${INSTALL} -c -m 444 libcompiler.cvl ${DESTDIR}${conlibdir}/Compiler
 
 
@@ -45,9 +51,12 @@ CROSS_OBJS = ${OBJ_FILES:.cvb=.${TARGET}.cvb}
 %.${TARGET}.cvb: %.cv
 	${CONVERGE_VM} ${CONVERGEC} -T ${TARGET} -o $@ $<
 
-cross: ${CROSS_OBJS} ${CONVERGE_LIB_DIR}/libconverge.${TARGET}.cvl
-	${CONVERGE_VM} ${CONVERGEL} -T ${TARGET} -o convergec.${TARGET} convergec.${TARGET}.cvb ${CROSS_OBJS} ${CONVERGE_LIB_DIR}/libconverge.${TARGET}.cvl
-	${CONVERGE_VM} ${CONVERGEL} -T ${TARGET} -o convergel.${TARGET} convergel.${TARGET}.cvb ${CROSS_OBJS} ${CONVERGE_LIB_DIR}/libconverge.${TARGET}.cvl
+%.${TARGET}.cvb: %
+	${CONVERGE_VM} ${CONVERGEC} -T ${TARGET} -o $@ $<
+
+cross: ${CROSS_OBJS} ${CONVERGE_STDLIB_DIR}/libconverge.${TARGET}.cvl
+	${CONVERGE_VM} ${CONVERGEL} -T ${TARGET} -o convergec.${TARGET} convergec.${TARGET}.cvb ${CROSS_OBJS} ${CONVERGE_STDLIB_DIR}/libconverge.${TARGET}.cvl
+	${CONVERGE_VM} ${CONVERGEL} -T ${TARGET} -o convergel.${TARGET} convergel.${TARGET}.cvb ${CROSS_OBJS} ${CONVERGE_STDLIB_DIR}/libconverge.${TARGET}.cvl
 
 cross-clean:
 	rm -f ${CROSS_OBJS} convergec.${TARGET} convergel.${TARGET}
@@ -57,16 +66,16 @@ endif
 libcompiler.cvl: ${OBJ_FILES}
 	${CONVERGE_VM} ${CONVERGEL} -l -o libcompiler.cvl ${OBJ_FILES}
 
-convergec: ${OBJ_FILES} ${CONVERGE_LIB}
+convergec: ${OBJ_FILES} ${CONVERGE_STDLIB}
 	${CONVERGE_VM} ${CONVERGEL} -o convergec convergec.cvb ${OBJ_FILES}
 
-convergei: ${OBJ_FILES} ${CONVERGE_LIB}
+convergei: ${OBJ_FILES} ${CONVERGE_STDLIB}
 	${CONVERGE_VM} ${CONVERGEL} -o convergei convergei.cvb ${OBJ_FILES}
 
-convergel: ${OBJ_FILES} ${CONVERGE_LIB}
+convergel: ${OBJ_FILES} ${CONVERGE_STDLIB}
 	${CONVERGE_VM} ${CONVERGEL} -o convergel convergel.cvb ${OBJ_FILES}
 
-convergep: ${OBJ_FILES} ${CONVERGE_LIB}
+convergep: ${OBJ_FILES} ${CONVERGE_STDLIB}
 	${CONVERGE_VM} ${CONVERGEL} -o convergep convergep.cvb ${OBJ_FILES}
 
 clean:

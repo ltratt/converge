@@ -50,7 +50,7 @@ class ITree_PP:
 
 	func _preorder(self, node):
 	
-		return self.get_slot("_t_" + node.instance_of.name.to_lower_case())(node)
+		return self.get_slot("_t_" + node.instance_of.name.lower_cased())(node)
 
 
 
@@ -464,7 +464,7 @@ class ITree_PP:
 
 	func _t_imod_id_import(self, node):
 	
-		return Strings::format("$<CEI::imod_id_import(\"%s\")>", node.mod_id)
+		return Strings::format("$<CEI::imod_id_import(\"%s\", \"%s\")>", node.mod_id, node.src_path)
 
 
 

@@ -1,0 +1,6 @@
+import C_Platform_Host
+
+
+
+
+get_hostname := C_Platform_Host::get_hostname

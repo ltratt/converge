@@ -20,7 +20,7 @@
 
 
 import Platform::Properties
-import Builtins, Bytecode_Gen, Compiler_Vars, CV_Module, CV_Parser, File, Functional, IModule_Gen, ITree, Strings, Targets::Available, Tokenizer, VM
+import Builtins, Bytecode_Gen, Compiler_Vars, CV_Library, CV_Module, CV_Parser, CV_Pkg, File, Functional, IModule_Gen, ITree, Strings, Targets::Available, Tokenizer, VM
 
 
 
@@ -37,6 +37,15 @@ class Eval_Compiler:
 		self.src_path := self.mod_id
 		self.internal_target := self.target := Available::TARGETS[Strings::format("%dbit", Properties::word_bits)].new()
 
+		self._cached_mods := Dict{}
+		for lib_path := Compiler_Vars::get_std_libraries().iter():
+			lib := CV_Library::CV_Library.new(self.target)
+			lib_file := File::open(lib_path, "r")
+			lib_data := lib_file.read()
+			lib_file.close()
+			for cv_mod := lib.deserialize(lib_data).iter():
+				self._cached_mods[cv_mod.get_mod_id()] := [cv_mod.get_src_path(), cv_mod]
+
 
 
 	func eval(self):
@@ -49,7 +58,7 @@ class Eval_Compiler:
 		
 		compiler_var_name := Compiler_Vars::fresh_name()
 		compiler_var := ITree::IVar.new(compiler_var_name, [])
-		peek_compiler := ITree::IModule_Lookup.new([ITree::IMod_Id_Import.new(Compiler_Vars.mod_id, []), ITree::IVar.new("peek_compiler", [])], [])
+		peek_compiler := ITree::IModule_Lookup.new([ITree::IMod_Id_Import.new(Compiler_Vars.mod_id, Compiler_Vars.src_path, []), ITree::IVar.new("peek_compiler", [])], [])
 		body.append(ITree::IAssignment.new(ITree::STD_ASSIGN, [compiler_var], ITree::IApplication.new(peek_compiler, [], []), []))
 		
 		vars_val := ITree::ISlot_Lookup.new(compiler_var, "vars", [])
@@ -101,12 +110,12 @@ class Eval_Compiler:
 		i := 0
 		while i < mod_stack.len():
 			cv_mod := cv_mod_stack[i]
-			for import_ := cv_mod.get_imports().iter():
-				if not VM::find_module(import_) & not mod_ids.find(import_):
-					cv_mod := self.get_cv_mod(import_, [])
+			for import_id, import_src_path := cv_mod.get_imports().iter():
+				if not VM::find_module(import_id) & not mod_ids.find(import_id):
+					cv_mod := self.get_cv_mod(import_id, import_src_path, [])
 					cv_mod_stack.append(cv_mod)
 					mod_stack.append(Builtins::Module.new(cv_mod.serialize()))
-					mod_ids.add(import_)
+					mod_ids.add(import_id)
 
 			i += 1
 		
@@ -141,7 +150,18 @@ class Eval_Compiler:
 		for include_dir := self.includes.iter():
 			if matched_path, extra_pos := match_path(0, include_dir):
 				src_path := File::canon_path(matched_path)
-				mod_id := Compiler_Vars::canon_mod_id(src_path)
+				if cvb_path := Compiler_Vars::cvb_cache_path(src_path) & File::exists(cvb_path):
+					f := File::open(cvb_path, "r")
+					bc := f.read()
+					if bc.prefixed_by(CV_Module::MODULE_INIT_STRING):
+						cv_mod := CV_Module::CV_Module.new(self.internal_target)
+					else:
+						cv_mod := CV_Pkg::CV_Pkg.new(self.internal_target)
+					cv_mod.deserialize_str(bc)
+					f.close()
+					mod_id := cv_mod.get_mod_id()
+				else:
+					mod_id := Compiler_Vars::mk_mod_id(src_path)
 				import_extras := import_name_list[extra_pos + 1 : ]
 				break
 		exhausted:
@@ -157,19 +177,20 @@ class Eval_Compiler:
 
 
 
-	func get_cv_mod(self, src_path, src_infos):
+	func get_cv_mod(self, mod_id, src_path, src_infos):
 
-		name, ext := File::split_ext(src_path)
-		if ext == Compiler_Vars::CV_EXTENSION:
-			cvb_path := File::join_ext(name, Compiler_Vars::CVB_EXTENSION)
-			if File::exists(cvb_path):
-				cvb_file := File::open(cvb_path, "r")
-				cvb_data := cvb_file.read()
-				cvb_file.close()
-				if cvb_data.prefixed_by(CV_Module::MODULE_INIT_STRING):
-					mod := CV_Module::CV_Module.new(self.target)
-					mod.deserialize_str(cvb_data)
-					return mod
+		if cache_src_path, cache_cv_mod := self._cached_mods.find(mod_id):
+			return cache_cv_mod
+
+		cvb_path := Compiler_Vars::cvb_cache_path(src_path)
+		if File::exists(cvb_path):
+			cvb_file := File::open(cvb_path, "r")
+			cvb_data := cvb_file.read()
+			cvb_file.close()
+			if cvb_data.prefixed_by(CV_Module::MODULE_INIT_STRING):
+				mod := CV_Module::CV_Module.new(self.target)
+				mod.deserialize_str(cvb_data)
+				return mod
 		
 		self.error(Strings::format("Unable to import '%s'.", src_path), src_infos)
 

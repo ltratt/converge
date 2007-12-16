@@ -19,7 +19,7 @@
 // IN THE SOFTWARE.
 
 
-import Array, File, Sys
+import Array, File
 
 
 
@@ -144,9 +144,18 @@ class CV_Module:
 		imports_pos := 0
 		imports := []
 		while i < self._num_imports:
-			import_id_size := self._imports[imports_pos / self._target.WORDSIZE + self._target.MODULE_BYTECODE_MODULE_IMPORT_FULL_NAME_SIZE]
-			imports.append(self._decode_string(self._imports, imports_pos + self._target.MODULE_BYTECODE_MODULE_IMPORT_FULL_NAME * self._target.WORDSIZE, import_id_size))
-			imports_pos += self._target.align(import_id_size) + self._target.MODULE_BYTECODE_MODULE_IMPORT_FULL_NAME * self._target.WORDSIZE
+			import_id_size := self._imports[imports_pos / self._target.WORDSIZE]
+			imports_pos += self._target.WORDSIZE
+			import_id := self._decode_string(self._imports, imports_pos, import_id_size)
+			imports_pos += self._target.align(import_id_size)
+
+			import_src_path_size := self._imports[imports_pos / self._target.WORDSIZE]
+			imports_pos += self._target.WORDSIZE
+			import_src_path := self._decode_string(self._imports, imports_pos, import_src_path_size)
+			imports_pos += self._target.align(import_src_path_size)
+			
+			imports.append([import_id, import_src_path])
+
 			i += 1
 		
 		self._cached_imports := imports
@@ -158,9 +167,11 @@ class CV_Module:
 	func set_imports(self, imports):
 
 		self._imports := Array::Array.new(self._target.ARRAY_TYPE)
-		for import_ := imports.iter():
-			self._imports.append(import_.len())
-			self._imports.extend(self._target.b_aligned_string(import_))
+		for import_id, import_src_path := imports.iter():
+			self._imports.append(import_id.len())
+			self._imports.extend(self._target.b_aligned_string(import_id))
+			self._imports.append(import_src_path.len())
+			self._imports.extend(self._target.b_aligned_string(import_src_path))
 		self._num_imports := imports.len()
 
 

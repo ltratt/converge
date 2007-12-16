@@ -102,14 +102,17 @@ case $operating_system in
 		AC_DEFINE(CON_PLATFORM_POSIX, [], [Define if you are running on a POSiX platform. Note that you can can only define one CON_PLATFORM_* variable.])
 		echo $operating_system | grep "^CYGWIN_NT"
 		if [[ $? -eq 0 ]]; then
+			AC_SUBST(EXEC_EXT, ".exe")
 			AC_DEFINE(CON_OSNAME, [CYGWIN_NT])
 		else
+			AC_SUBST(EXEC_EXT, "")
 			AC_DEFINE_UNQUOTED(CON_OSNAME, "$operating_system")
 		fi;;
 	MINGW* )
 		AC_MSG_RESULT(MINGW)
 		mingw=1
 		AC_DEFINE(CON_PLATFORM_MINGW, [], [Define if you are running on the MinGW platform. Note that you can can only define one CON_PLATFORM_* variable.])
+		AC_SUBST(EXEC_EXT, ".exe")
 		AC_DEFINE(CON_OSNAME, "MINGW");;
 	*) AC_MSG_ERROR([Unknown platform "$operating_system"]);;
 esac
@@ -378,25 +381,26 @@ for mod_name in $sorted_mod_names; do
 	externs=`printf "%s\\n%s\\n%s" "$externs" "extern _Con_Modules_get_init_t Con_Module_${mod_name}_init;" "extern _Con_Modules_get_import_t Con_Module_${mod_name}_import;"`
 	modules_list="$modules_list{ (u_char *) \"$mod_name\", Con_Module_${mod_name}_init, Con_Module_${mod_name}_import }"
 	cap_mod_name=`echo $mod_name | sed "y/abcdefghijklmnopqrstuvwxyz/ABCDEFGHIJKLMNOPQRSTUVWXYZ/"`
-	mod_ids=`printf "%s\\n#define CON_MOD_ID_%s %s\\n" "$mod_ids" "$cap_mod_name" "$mod_name"`
+	mod_ids=`printf "%s\\n#define CON_STDLIB_%s \"%s\"\\n" "$mod_ids" "$cap_mod_name" "$mod_name"`
 	i=$(($i + 1))
 done
 AC_SUBST(MODULES_LIST, $modules_list)
 
-cd lib
-for lib_path in `find . | grep cv$ | sed "s/^\\.\\///"`; do
-	mod_name=`echo $lib_path | sed "s/\\//_/g" | sed "s/\\.cv$//" | sed "y/abcdefghijklmnopqrstuvwxyz/ABCDEFGHIJKLMNOPQRSTUVWXYZ/"`
-	mod_id=`readlink -f $lib_path`
+lib_dir=`readlink -f lib | sed "s/\//\\\\\\\\\//g"`
+cd lib/Stdlib
+for mod_path in `find . | grep cv$ | sed "s/^\\.\\///"`; do
+	mod_name=`echo $mod_path | sed "s/\\//_/g" | sed "s/\\.cv$//" | sed "y/abcdefghijklmnopqrstuvwxyz/ABCDEFGHIJKLMNOPQRSTUVWXYZ/"`
+	mod_id=`readlink -f $mod_path | sed "s/$lib_dir//"`
 	if [[ $mingw -eq 1 ]]; then
 		# Clean up MinGW's mutant filenames
-		mod_id=`echo "$mod_id" | sed 's/^\/\([[a-zA-Z]]\)/\1:/; s/\//\\\\\\\/g'`
+		mod_id=`echo "$mod_id" | sed 's/\//\\\\\\\/g'`
 	fi
 	if [[ $case_insensitive_file_system -eq 1 ]]; then
 		mod_id=`echo "$mod_id" | sed "y/ABCDEFGHIJKLMNOPQRSTUVWXYZ/abcdefghijklmnopqrstuvwxyz/"`
 	fi
-	mod_ids=`printf "%s\\n#define CON_MOD_ID_%s \"%s\"\\n" "$mod_ids" "$mod_name" "$mod_id"`
+	mod_ids=`printf "%s\\n#define CON_STDLIB_%s \"%s\"\\n" "$mod_ids" "$mod_name" "$mod_id"`
 done
-cd ..
+cd ../..
 
 cat << EOF > vm/Std_Modules.c
 // This file is auto-generated.
@@ -421,7 +425,6 @@ cat << EOF > vm/Std_Modules.h
 
 #ifndef CON_STD_MODULES_H
 #define CON_STD_MODULES_H
-
 $mod_ids
 
 #endif
@@ -725,7 +728,7 @@ fi
 
 LIBS="$extra_libs"
 
-AC_CONFIG_FILES([Makefile Makefile.inc compiler/Makefile vm/Version.h vm/Makefile lib/Makefile
+AC_CONFIG_FILES([Makefile Makefile.inc compiler/Makefile vm/Version.h vm/Makefile lib/Stdlib/Makefile
 	bootstrap/Makefile tests/Makefile tests/threads/Makefile tests/threads/pthreads/Makefile
 	tests/threads/single_thread/Makefile manuals/Makefile examples/Makefile
 	examples/compile_time/Makefile examples/dsls/Makefile examples/metaclasses/Makefile])

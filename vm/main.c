@@ -30,6 +30,7 @@
 #ifdef CON_PLATFORM_MINGW
 #	include "Platform/MinGW/realpath.h"
 #	include <windows.h>
+#	include <winsock2.h>
 #endif
 
 #ifdef CON_HAVE_NATIVE_ERR
@@ -130,10 +131,16 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 	argc -= i;
 	argv += i;
 
-#if CON_FULL_DEBUG
+#	if CON_FULL_DEBUG
 		printf("%s %s (%s) %s\n", CON_NAME, CON_VERSION, CON_DATE, CON_COPYRIGHT);
 		printf("stack root %p\n", root_stack_start);
-#endif
+#	endif
+
+#	ifdef CON_PLATFORM_MINGW
+	WSADATA wsaData;
+	if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
+		CON_XXX;
+#	endif
 
 	// We want to determine the path of the VM executable, when possible, to later populate
 	// Sys::vm_path. This is one of those areas where UNIX falls down badly. On Linux, we

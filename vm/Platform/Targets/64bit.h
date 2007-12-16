@@ -53,9 +53,6 @@
 #define CON_BYTECODE_MODULE_NUM_IMPORT_DEFNS 26 * sizeof(Con_Int)
 #define CON_BYTECODE_MODULE_SIZE 27 * sizeof(Con_Int)
 
-#define CON_BYTECODE_IMPORT_IDENTIFIER_SIZE 0 * sizeof(Con_Int)
-#define CON_BYTECODE_IMPORT_IDENTIFIER 1 * sizeof(Con_Int)
-
 #define CON_BYTECODE_TOP_LEVEL_VAR_NUM 0 * sizeof(Con_Int)
 #define CON_BYTECODE_TOP_LEVEL_VAR_NAME_SIZE 1 * sizeof(Con_Int)
 #define CON_BYTECODE_TOP_LEVEL_VAR_NAME 2 * sizeof(Con_Int)

@@ -38,7 +38,7 @@ all: converge
 
 install:
 	${INSTALL} -d ${DESTDIR}${bindir}
-	${INSTALL} -c -m 555 converge ${DESTDIR}${bindir}
+	${INSTALL} -c -m 555 converge@EXEC_EXT@ ${DESTDIR}${bindir}
 
 libconverge.a: ${OBJ_FILES}
 	rm -f libconverge.a

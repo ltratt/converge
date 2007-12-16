@@ -140,8 +140,14 @@ Con_Obj *Con_Builtins_Module_Atom_new_from_bytecode(Con_Obj *thread, u_char *byt
 	module_atom->imports = Con_Builtins_List_Atom_new_sized(thread, ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_NUM_IMPORTS));
 	imports_bytecode_offset = ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_IMPORTS);
 	for (j = 0; j < ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_NUM_IMPORTS); j += 1) {
-		CON_GET_SLOT_APPLY(module_atom->imports, "append", Con_Builtins_String_Atom_new_copy(thread, bytecode + imports_bytecode_offset + CON_BYTECODE_IMPORT_IDENTIFIER, ID_MODULE_GET_WORD(imports_bytecode_offset + CON_BYTECODE_IMPORT_IDENTIFIER_SIZE), CON_STR_UTF_8));
-		imports_bytecode_offset += CON_BYTECODE_IMPORT_IDENTIFIER + Con_Arch_align(thread, ID_MODULE_GET_WORD(imports_bytecode_offset + CON_BYTECODE_IMPORT_IDENTIFIER_SIZE));
+		Con_Int import_id_size = ID_MODULE_GET_WORD(imports_bytecode_offset);
+		imports_bytecode_offset += sizeof(Con_Int);
+		Con_Obj *import_id = Con_Builtins_String_Atom_new_copy(thread, bytecode + imports_bytecode_offset, import_id_size, CON_STR_UTF_8);
+		CON_GET_SLOT_APPLY(module_atom->imports, "append", import_id);	
+		imports_bytecode_offset += Con_Arch_align(thread, import_id_size);
+		// For now, we simply ignore the import src path.
+		Con_Int import_src_path_size = ID_MODULE_GET_WORD(imports_bytecode_offset);
+		imports_bytecode_offset += sizeof(Con_Int) + Con_Arch_align(thread, import_src_path_size);
 	}
 
 	Con_Slots_init(thread, &module_atom->top_level_vars);

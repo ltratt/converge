@@ -11,3 +11,9 @@ execute correctly. The following works for me:
 
   "C:/MinGW/bin/sh.exe"-2.04$ export PATH=/c/MinGW/bin/:/c/pcre/bin/:/c/libxml2/bin/:$PATH
   
+Since the install script included with MinGW appears to be defective, you
+may need to specify an alternative via the INSTALL variable when running
+configure. A suitable alternative is included in the distribution, and can
+be used as follows:
+
+  "C:/MinGW/bin/sh.exe"-2.04$ INSTALL=./install-sh ./configure

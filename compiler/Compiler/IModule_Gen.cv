@@ -210,35 +210,35 @@ class IModule_Gen:
 			if defns_to_include.find(i):
 				defns.append(self._defns[i])
 
-		dummy_func := ITree::IFunc_Defn.new(0, splice_var, [], null, [], [], ITree::IExpr_Block.new([ITree::IReturn.new(expr, extra_src_infos + node[1][1].src_infos)], expr.src_infos), extra_src_infos + node[1][1].src_infos)
-		dummy_defns := defns + [ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(splice_name, extra_src_infos + node[1][1].src_infos)], dummy_func, extra_src_infos + node[1][1].src_infos)]
-		dummy_imodule := ITree::IModule.new(splice_name, dummy_defns, extra_src_infos + node[1][1].src_infos)
+		tmp_func := ITree::IFunc_Defn.new(0, splice_var, [], null, [], [], ITree::IExpr_Block.new([ITree::IReturn.new(expr, extra_src_infos + node[1][1].src_infos)], expr.src_infos), extra_src_infos + node[1][1].src_infos)
+		tmp_defns := defns + [ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(splice_name, extra_src_infos + node[1][1].src_infos)], tmp_func, extra_src_infos + node[1][1].src_infos)]
+		tmp_imodule := ITree::IModule.new(splice_name, tmp_defns, extra_src_infos + node[1][1].src_infos)
 
-		ITree_WF::wf(dummy_imodule)
+		ITree_WF::wf(tmp_imodule)
 
-		dummy_module := Bytecode_Gen::Bytecode_Gen.new().generate(dummy_imodule, self._compiler.internal_target)
+		tmp_bc_mod := Bytecode_Gen::Bytecode_Gen.new().generate(tmp_imodule, self._compiler.internal_target)
 
-		modules_stack := [dummy_module]
-		modules_to_add := [Builtins::Module.new(dummy_module.serialize())]
+		bc_mod_stack := [tmp_bc_mod]
+		mods_to_add := [Builtins::Module.new(tmp_bc_mod.serialize())]
 		i := 0
-		known_module_names := Set{}
-		for known_module_names.add(VM::vm.modules.iter_keys())
-		for known_module_names.add(Core::BUILTIN_MODULES.iter())
-		while modules_stack.len() > 0:
-			module := modules_stack.pop()
-			for import_id, import_src_path := module.get_imports().iter():
-				if not known_module_names.find(import_id):
-					bc_mod := self._compiler.get_bc_mod(import_id, import_src_path, node[1][1].src_infos)
-					modules_to_add.append(Builtins::Module.new(bc_mod.serialize()))
-					modules_stack.append(bc_mod)
+		known_mod_ids := Set{}
+		for known_mod_ids.add(VM::vm.modules.iter_keys())
+		for known_mod_ids.add(Core::BUILTIN_MODULES.iter())
+		while bc_mod_stack.len() > 0:
+			bc_mod := bc_mod_stack.pop()
+			for import_id, import_src_path := bc_mod.get_imports().iter():
+				if not known_mod_ids.find(import_id):
+					imp_bc_mod := self._compiler.get_bc_mod(import_id, import_src_path, node[1][1].src_infos)
+					mods_to_add.append(Builtins::Module.new(imp_bc_mod.serialize()))
+					bc_mod_stack.append(imp_bc_mod)
 					assert(import_ == new_module.full_name)
-					known_module_names.add(import_id)
+					known_mod_ids.add(import_id)
 			i += 1
 
 		// Import all the modules into the VM.
 
-		VM::add_modules(modules_to_add)
-		module := VM::import_module(modules_to_add[0])
+		VM::add_modules(mods_to_add)
+		module := VM::import_module(mods_to_add[0])
 		
 		if st == ITree::SPLICE_PRAGMA:
 			// Pragmas are nice and easy to deal with as we ignore the splices return value and

@@ -20,7 +20,7 @@
 
 
 import Array, File, Strings
-import Bytecode_Gen, Core, BC_Exec, CV_Pkg, ITree
+import Bytecode_Gen, Core, BC_Exec, BC_Pkg, ITree
 
 
 
@@ -86,8 +86,8 @@ class _Link_Exec:
 			todo.del(0)
 			mod := self._mods_map[mod_id]
 			
-			if CV_Pkg::CV_Pkg.instantiated(mod):
-				// Packages at this point are CV_Pkg instances, so we don't scan through them.
+			if BC_Pkg::BC_Pkg.instantiated(mod):
+				// Packages at this point are BC_Pkg instances, so we don't scan through them.
 				if not self._pkgs.find(mod_id):
 					self._pkgs[mod_id] := Set{}
 				continue
@@ -106,7 +106,7 @@ class _Link_Exec:
 				while j < defn_names.len():
 					defn_name := defn_names[j]
 					if lookedup_mod := self._mods_map.find(lookedup_mod_id):
-						if CV_Pkg::CV_Pkg.instantiated(lookedup_mod):
+						if BC_Pkg::BC_Pkg.instantiated(lookedup_mod):
 							if not entry_mod_id, entry_src_path := lookedup_mod.get_entries().find(defn_name):
 								// The requested definition definitely doesn't exist in the looked-up
 								// module, so raise an error.
@@ -159,8 +159,8 @@ class _Link_Exec:
 		for pkg_id, defn_names := self._pkgs.iter():
 			// XXX: It's not entirely clear what reasonable src infos for the ITree module are.
 
-			cv_pkg := self._mods_map[pkg_id]
-			entries := cv_pkg.get_entries()
+			bc_pkg := self._mods_map[pkg_id]
+			entries := bc_pkg.get_entries()
 
 			idefns := []
 			for defn_name := defn_names.iter():
@@ -169,12 +169,12 @@ class _Link_Exec:
 				var_name := ITree::IVar.new(defn_name, [])
 				asgn := ITree::IAssignment.new(ITree::STD_ASSIGN, [var_name], mod_import, [])
 				idefns.append(asgn)
-			imod := ITree::IModule.new(cv_pkg.get_name(), idefns, [])
+			imod := ITree::IModule.new(bc_pkg.get_name(), idefns, [])
 
 			// We now setup a minimal compiler and compile the ITree into a BC_Mod.
 
 			self.mod_id := pkg_id
-			self.src_path := cv_pkg.get_src_path()
+			self.src_path := bc_pkg.get_src_path()
 			self.newlines := []
 			Core::push_compiler(self)
 			pkg_as_mod := Bytecode_Gen::Bytecode_Gen.new().generate(imod, self._target)

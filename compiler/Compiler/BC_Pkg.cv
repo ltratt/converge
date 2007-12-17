@@ -32,7 +32,7 @@ PKG_VERSION := 0
 
 
 
-class CV_Pkg:
+class BC_Pkg:
 
 	func init(self, target):
 	

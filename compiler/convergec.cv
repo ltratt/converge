@@ -20,7 +20,7 @@
 
 
 import Builtins, Exceptions, File, Parse_Options, Platform::Properties, Strings, Sys, Time, VM
-import Compiler::Bytecode_Gen, Compiler::Core, Compiler::BC_Exec, Compiler::BC_Lib, Compiler::BC_Mod, Compiler::Parser, Compiler::CV_Pkg, Compiler::IModule_Gen, Compiler::Link, Compiler::Targets, Compiler::Tokenizer
+import Compiler::Bytecode_Gen, Compiler::Core, Compiler::BC_Exec, Compiler::BC_Lib, Compiler::BC_Mod, Compiler::Parser, Compiler::BC_Pkg, Compiler::IModule_Gen, Compiler::Link, Compiler::Targets, Compiler::Tokenizer
 
 
 
@@ -207,7 +207,7 @@ class Compiler:
 					if bc.prefixed_by(BC_Mod::MODULE_INIT_STRING):
 						bc_mod := BC_Mod::BC_Mod.new(self.internal_target)
 					else:
-						bc_mod := CV_Pkg::CV_Pkg.new(self.internal_target)
+						bc_mod := BC_Pkg::BC_Pkg.new(self.internal_target)
 					bc_mod.deserialize_str(bc)
 					f.close()
 					mod_id := bc_mod.get_mod_id()
@@ -260,16 +260,16 @@ class Compiler:
 			entry_mod_id := Core::mk_mod_id(entry_path)
 			pkg_entries[defn_name] := [entry_mod_id, entry_path]
 
-		cv_pkg := CV_Pkg::CV_Pkg.new(self.target)
-		cv_pkg.set_name(File::split_leaf(src_path)[1])
-		cv_pkg.set_mod_id(Core::mk_mod_id(File::canon_path(src_path)))
-		cv_pkg.set_src_path(src_path)
-		cv_pkg.set_entries(pkg_entries)
+		bc_pkg := BC_Pkg::BC_Pkg.new(self.target)
+		bc_pkg.set_name(File::split_leaf(src_path)[1])
+		bc_pkg.set_mod_id(Core::mk_mod_id(File::canon_path(src_path)))
+		bc_pkg.set_src_path(src_path)
+		bc_pkg.set_entries(pkg_entries)
 
 		if self.verbosity > 0:
 			self.info(Strings::format("Finished compiling %s.", src_path))
 		
-		return cv_pkg
+		return bc_pkg
 
 
 
@@ -397,7 +397,7 @@ class Compiler:
 								again := 1
 							elif mtime < self.mk_mtime_map.find(imp_mod_id):
 								compile := 1
-					elif CV_Pkg::CV_Pkg.instantiated(bc_mod):
+					elif BC_Pkg::BC_Pkg.instantiated(bc_mod):
 						// We check to see whether this package is "stale" i.e. is older than any of its
 						// entries.
 						for defn_name, t := bc_mod.get_entries().iter():

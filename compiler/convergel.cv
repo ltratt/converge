@@ -20,7 +20,7 @@
 
 
 import Array, Builtins, File, Maths, Parse_Options, Platform::Properties, Strings, Sys, VM
-import Compiler::Core, Compiler::BC_Exec, Compiler::BC_Mod, Compiler::BC_Lib, Compiler::CV_Pkg, Compiler::Link, Compiler::Targets::Available
+import Compiler::Core, Compiler::BC_Exec, Compiler::BC_Mod, Compiler::BC_Lib, Compiler::BC_Pkg, Compiler::Link, Compiler::Targets::Available
 
 
 
@@ -70,10 +70,10 @@ class Linker:
 				bc_mod := BC_Mod::BC_Mod.new(target)
 				bc_mod.deserialize_str(input_file_data)
 				bc_mods.append(bc_mod)
-			elif file_type == CV_Pkg::PKG_INIT_STRING:
-				cv_pkg := CV_Pkg::CV_Pkg.new(target)
-				cv_pkg.deserialize_str(input_file_data)
-				bc_mods.append(cv_pkg)
+			elif file_type == BC_Pkg::PKG_INIT_STRING:
+				bc_pkg := BC_Pkg::BC_Pkg.new(target)
+				bc_pkg.deserialize_str(input_file_data)
+				bc_mods.append(bc_pkg)
 			else:
 				self.error(Strings::format("File '%s' is not of a known type.", input_path))
 
@@ -130,7 +130,7 @@ class Linker:
 					ser_mods.append(bc_mod.serialize())
 			elif file_type == BC_Mod::MODULE_INIT_STRING:
 				ser_mods.append(input_file_data)
-			elif file_type == CV_Pkg::PKG_INIT_STRING:
+			elif file_type == BC_Pkg::PKG_INIT_STRING:
 				ser_mods.append(input_file_data)
 			else:
 				self.error(Strings::format("File '%s' is not of a known type.", input_path))

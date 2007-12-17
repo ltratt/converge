@@ -34,7 +34,7 @@ LIBRARY_VERSION := 0
 
 
 
-class CV_Library:
+class BC_Lib:
 
 	func init(self, target):
 	

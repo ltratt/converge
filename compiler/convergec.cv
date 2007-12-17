@@ -20,7 +20,7 @@
 
 
 import Builtins, Exceptions, File, Parse_Options, Platform::Properties, Strings, Sys, Time, VM
-import Compiler::Bytecode_Gen, Compiler::Core, Compiler::BC_Exec, Compiler::CV_Library, Compiler::CV_Module, Compiler::Parser, Compiler::CV_Pkg, Compiler::IModule_Gen, Compiler::Link, Compiler::Targets, Compiler::Tokenizer
+import Compiler::Bytecode_Gen, Compiler::Core, Compiler::BC_Exec, Compiler::BC_Lib, Compiler::CV_Module, Compiler::Parser, Compiler::CV_Pkg, Compiler::IModule_Gen, Compiler::Link, Compiler::Targets, Compiler::Tokenizer
 
 
 
@@ -344,11 +344,11 @@ class Compiler:
 		lib_mods := []
 		lib_mod_ids := Set{}
 		for lib_path := Core::get_std_libraries().iter():
-			lib := CV_Library::CV_Library.new(self.target)
+			bc_lib := BC_Lib::BC_Lib.new(self.target)
 			lib_file := File::open(lib_path, "r")
 			lib_data := lib_file.read()
 			lib_file.close()
-			for cv_mod := lib.deserialize(lib_data).iter():
+			for cv_mod := bc_lib.deserialize(lib_data).iter():
 				lib_mods.append(cv_mod)
 				lib_mod_ids.add(cv_mod.get_mod_id())
 				self.mk_done_cv_mods[cv_mod.get_mod_id()] := [cv_mod.get_src_path(), cv_mod]

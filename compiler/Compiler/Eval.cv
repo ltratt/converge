@@ -20,7 +20,7 @@
 
 
 import Platform::Properties
-import Builtins, Bytecode_Gen, Core, CV_Library, CV_Module, Parser, CV_Pkg, File, Functional, IModule_Gen, ITree, Strings, Targets::Available, Tokenizer, VM
+import Builtins, Bytecode_Gen, Core, BC_Lib, CV_Module, Parser, CV_Pkg, File, Functional, IModule_Gen, ITree, Strings, Targets::Available, Tokenizer, VM
 
 
 
@@ -39,11 +39,11 @@ class Eval_Compiler:
 
 		self._cached_mods := Dict{}
 		for lib_path := Core::get_std_libraries().iter():
-			lib := CV_Library::CV_Library.new(self.target)
+			bc_lib := BC_Lib::BC_Lib.new(self.target)
 			lib_file := File::open(lib_path, "r")
 			lib_data := lib_file.read()
 			lib_file.close()
-			for cv_mod := lib.deserialize(lib_data).iter():
+			for cv_mod := bc_lib.deserialize(lib_data).iter():
 				self._cached_mods[cv_mod.get_mod_id()] := [cv_mod.get_src_path(), cv_mod]
 
 

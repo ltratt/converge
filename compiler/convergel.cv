@@ -20,7 +20,7 @@
 
 
 import Array, Builtins, File, Maths, Parse_Options, Platform::Properties, Strings, Sys, VM
-import Compiler::Core, Compiler::BC_Exec, Compiler::CV_Module, Compiler::CV_Library, Compiler::CV_Pkg, Compiler::Link, Compiler::Targets::Available
+import Compiler::Core, Compiler::BC_Exec, Compiler::CV_Module, Compiler::BC_Lib, Compiler::CV_Pkg, Compiler::Link, Compiler::Targets::Available
 
 
 
@@ -59,12 +59,12 @@ class Linker:
 			input_path := File::canon_path(input_path)
 			input_file := File::open(input_path, "r")
 			input_file_data := input_file.read()
-			assert(CV_Library::LIBRARY_INIT_STRING.len() == CV_Module::MODULE_INIT_STRING.len())
-			file_type := input_file_data[ : CV_Library::LIBRARY_INIT_STRING.len()]
+			assert(BC_Lib::LIBRARY_INIT_STRING.len() == CV_Module::MODULE_INIT_STRING.len())
+			file_type := input_file_data[ : BC_Lib::LIBRARY_INIT_STRING.len()]
 			
-			if file_type == CV_Library::LIBRARY_INIT_STRING:
-				library := CV_Library::CV_Library.new(target)
-				for cv_mod := library.deserialize(input_file_data).iter():
+			if file_type == BC_Lib::LIBRARY_INIT_STRING:
+				bc_lib := BC_Lib::BC_Lib.new(target)
+				for cv_mod := bc_lib.deserialize(input_file_data).iter():
 					cv_mods.append(cv_mod)
 			elif file_type == CV_Module::MODULE_INIT_STRING:
 				cv_mod := CV_Module::CV_Module.new(target)
@@ -90,19 +90,19 @@ class Linker:
 
 
 
-	func library_link(self):
+	func lib_link(self):
 	
 		self.includes := []
 	
 		options := Parse_Options::Options.new(self.usage)
-		options.add(Parse_Options::Option_Spec.new("library_mode", "l", Parse_Options::NONE, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ONE))
+		options.add(Parse_Options::Option_Spec.new("lib_mode", "l", Parse_Options::NONE, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ONE))
 		options.add(Parse_Options::Option_Spec.new("output", "o", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ONE))
 		options.add(Parse_Options::Option_Spec.new("target", "T", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_ONE))
 		
 		target_name := Strings::format("%dbit", Properties::word_bits)
 		parsed_args, extra_args := options.parse()
 		for option_name, option_val := parsed_args.iter():
-			if option_name == "library_mode":
+			if option_name == "lib_mode":
 				pass
 			elif option_name == "output":
 				output_path := option_val
@@ -121,12 +121,12 @@ class Linker:
 			input_path := File::canon_path(input_path)
 			input_file := File::open(input_path, "r")
 			input_file_data := input_file.read()
-			assert(CV_Library::LIBRARY_INIT_STRING.len() == CV_Module::MODULE_INIT_STRING.len())
-			file_type := input_file_data[ : CV_Library::LIBRARY_INIT_STRING.len()]
+			assert(BC_Lib::LIBRARY_INIT_STRING.len() == CV_Module::MODULE_INIT_STRING.len())
+			file_type := input_file_data[ : BC_Lib::LIBRARY_INIT_STRING.len()]
 			
-			if file_type == CV_Library::LIBRARY_INIT_STRING:
-				library := CV_Library::CV_Library.new(target)
-				for cv_mod := library.deserialize(input_file_data).iter():
+			if file_type == BC_Lib::LIBRARY_INIT_STRING:
+				bc_lib := BC_Lib::BC_Lib.new(target)
+				for cv_mod := bc_lib.deserialize(input_file_data).iter():
 					ser_mods.append(cv_mod.serialize())
 			elif file_type == CV_Module::MODULE_INIT_STRING:
 				ser_mods.append(input_file_data)
@@ -135,26 +135,26 @@ class Linker:
 			else:
 				self.error(Strings::format("File '%s' is not of a known type.", input_path))
 
-		// In one sense, the following should belong in CV_Library::CV_Library.serialize. But by
+		// In one sense, the following should belong in BC_Lib::BC_Lib.serialize. But by
 		// doing it here we can forego the pointless string -> array -> string conversion.
 
-		library := Array::Array.new(target.ARRAY_TYPE)
-		library.extend_from_string(CV_Library::LIBRARY_INIT_STRING)
-		library.append(CV_Library::LIBRARY_VERSION)
+		lib := Array::Array.new(target.ARRAY_TYPE)
+		lib.extend_from_string(BC_Lib::LIBRARY_INIT_STRING)
+		lib.append(BC_Lib::LIBRARY_VERSION)
 
-		library.append(ser_mods.len())
+		lib.append(ser_mods.len())
 		
 		offsets := Array::Array.new(target.ARRAY_TYPE)
 		serialized_modules := Array::Array.new(target.ARRAY_TYPE)
 		for module := ser_mods.iter():
-			offsets.append((library.len() + ser_mods.len() + serialized_modules.len()) * target.WORDSIZE)
+			offsets.append((lib.len() + ser_mods.len() + serialized_modules.len()) * target.WORDSIZE)
 			serialized_modules.extend_from_string(module)
 		
-		library.extend(offsets)
-		library.extend(serialized_modules)		
+		lib.extend(offsets)
+		lib.extend(serialized_modules)		
 		
 		output_file := File::File.new(output_path, "w")
-		output_file.write(library.serialize())
+		output_file.write(lib.serialize())
 
 
 
@@ -226,6 +226,6 @@ class Linker:
 func main():
 
 	if Sys::argv.len() > 1 & Sys::argv[0] == "-l":
-		Linker.new().library_link()
+		Linker.new().lib_link()
 	else:
 		Linker.new().link()

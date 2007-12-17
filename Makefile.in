@@ -2,13 +2,13 @@ all:
 	cd vm && ${MAKE} ${MFLAGS}
 ifeq (${wildcard lib/Stdlib/libconverge.cvl}, )
 	@echo "===> lib/Stdlib/libconverge.cvl does not exist: entering bootstrapping mode"
-	cd lib/Stdlib && ${MAKE} ${MFLAGS} minimal
+	cd lib && ${MAKE} ${MFLAGS} minimal
 	cd compiler && ${MAKE} ${MFLAGS}
 	rm lib/Stdlib/libconverge.cvl
-	cd lib/Stdlib && ${MAKE} ${MFLAGS}
+	cd lib && ${MAKE} ${MFLAGS}
 	cd compiler && ${MAKE} ${MFLAGS}
 else
-	cd lib/Stdlib && ${MAKE} ${MFLAGS}
+	cd lib && ${MAKE} ${MFLAGS}
 	cd compiler && ${MAKE} ${MFLAGS}
 endif
 	cd examples && ${MAKE} ${MFLAGS}
@@ -17,7 +17,7 @@ endif
 
 install: all
 	cd vm && ${MAKE} ${MFLAGS} install
-	cd lib/Stdlib && ${MAKE} ${MFLAGS} install
+	cd lib && ${MAKE} ${MFLAGS} install
 	cd compiler && ${MAKE} ${MFLAGS} install
 	cd examples && ${MAKE} ${MFLAGS} install
 	cd manuals && ${MAKE} ${MFLAGS} install
@@ -25,7 +25,7 @@ install: all
 clean:
 	cd bootstrap && ${MAKE} ${MFLAGS} clean
 	cd vm && ${MAKE} ${MFLAGS} clean
-	cd lib/Stdlib && ${MAKE} ${MFLAGS} clean
+	cd lib && ${MAKE} ${MFLAGS} clean
 	cd compiler && ${MAKE} ${MFLAGS} clean
 	cd examples && ${MAKE} ${MFLAGS} clean
 	cd manuals && ${MAKE} ${MFLAGS} clean
@@ -33,18 +33,18 @@ clean:
 
 ifdef TARGET
 cross: all
-	cd lib/Stdlib && ${MAKE} ${MFLAGS} cross
+	cd lib && ${MAKE} ${MFLAGS} cross
 	cd compiler && ${MAKE} ${MFLAGS} cross
 
 cross-clean:
-	cd lib/Stdlib && ${MAKE} ${MFLAGS} cross-clean
+	cd lib && ${MAKE} ${MFLAGS} cross-clean
 	cd compiler && ${MAKE} ${MFLAGS} cross-clean
 endif
 
 distclean:
 	cd bootstrap && ${MAKE} ${MFLAGS} distclean
 	cd vm && ${MAKE} ${MFLAGS} distclean
-	cd lib/Stdlib && ${MAKE} ${MFLAGS} distclean
+	cd lib && ${MAKE} ${MFLAGS} distclean
 	cd compiler && ${MAKE} ${MFLAGS} distclean
 	cd examples && ${MAKE} ${MFLAGS} distclean
 	cd manuals && ${MAKE} ${MFLAGS} distclean

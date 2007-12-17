@@ -1,0 +1,48 @@
+include @abs_top_srcdir@/Makefile.inc
+
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+libdir = @libdir@
+conlibdir = ${libdir}/converge-@CONVERGE_VERSION@
+INSTALL = @INSTALL@
+
+PKG_OBJS = Stdlib.cvb
+
+ALL_OBJS = ${PKG_OBJS}
+
+
+%.cvb: %
+	${CONVERGE_VM} ${CONVERGEC} -o $@ $<
+
+
+all: ${PKG_OBJS}
+	cd Stdlib && ${MAKE} ${MFLAGS}
+
+minimal:
+	cd Stdlib && ${MAKE} ${MFLAGS} minimal
+
+install: all
+	cd Stdlib && ${MAKE} ${MFLAGS} install
+	${foreach obj,${ALL_OBJS},${INSTALL} -c -m 444 ${obj} ${DESTDIR}${conlibdir};}
+
+ifdef TARGET
+CROSS_OBJS = ${ALL_OBJS:.cvb=.${TARGET}.cvb}
+
+%.${TARGET}.cvb: %
+	${CONVERGE_VM} ${CONVERGEC} -T ${TARGET} -o $@ $<
+
+cross: ${CROSS_OBJS}
+	cd Stdlib && ${MAKE} ${MFLAGS} cross
+
+cross-clean:
+	rm -f ${CROSS_OBJS}
+	cd Stdlib && ${MAKE} ${MFLAGS} cross-clean
+endif
+
+clean:	
+	rm -f ${ALL_OBJS}
+	cd Stdlib && ${MAKE} ${MFLAGS} clean
+
+distclean: clean
+	cd Stdlib && ${MAKE} ${MFLAGS} distclean
+	rm -f Makefile

@@ -45,7 +45,7 @@ class _Link_Exec:
 		self._mk_pkgs()
 
 		for mod := self._done_mods.iter():
-			for import_mod_id, import_src_path := mod.get_imports().iter():
+			for import_mod_id, imp_src_path := mod.get_imports().iter():
 				if not Core::BUILTIN_MODULES.find(import_mod_id) & not self._done_mod_ids.find(import_mod_id):
 					linker.error(Strings::format("Module '%s' referenced in '%s' not found in input files.", import_mod_id, mod.get_mod_id()))
 				

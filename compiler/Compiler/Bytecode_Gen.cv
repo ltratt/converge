@@ -189,9 +189,9 @@ class Bytecode_Gen:
 		// Calculate the imports that we'll populate the module with. Note that we calculate
 
 		module_imports := [null] * self._imports.len()
-		for import_id, t := self._imports.iter():
-			import_num, import_src_path := t
-			module_imports[import_num] := [import_id, import_src_path]
+		for imp_mod_id, t := self._imports.iter():
+			import_num, imp_src_path := t
+			module_imports[import_num] := [imp_mod_id, imp_src_path]
 		
 		constants_offsets := []
 		for label := self._constants_labels.iter():
@@ -307,26 +307,26 @@ class Bytecode_Gen:
 
 	//
 	// Add an instruction assigning the curent value on the stack to 'var_name'. If this assignment
-	// is to an import, 'import_id' should be the ID of the module being assigned to this variable.
-	// Note that for normal assignments, 'import_id' should not be specified.
+	// is to an import, 'imp_mod_id' should be the ID of the module being assigned to this variable.
+	// Note that for normal assignments, 'imp_mod_id' should not be specified.
 	//
 
-	func _add_assign_to_var(self, var_name, src_infos, import_id := null):
+	func _add_assign_to_var(self, var_name, src_infos, imp_mod_id := null):
 	
 		closures_offset, var_num := self._get_var_offsets(var_name, src_infos)
 
 		// What we do now is to see if this assignment overwrites a 'protected' import variable.
 		
 		reversed_closures_offset := self.closures.len() - closures_offset - 1
-		if existing_import_id := self.closures[reversed_closures_offset][Core::CLOSURE_IMPORTS].find(var_name):
+		if existing_imp_mod_id := self.closures[reversed_closures_offset][Core::CLOSURE_IMPORTS].find(var_name):
 			// OK, this does refer to an import. If it's a normal variable assignment (i.e.
-			// 'import_id' wasn't specified), or if it's an import that's already been assigned
+			// 'imp_mod_id' wasn't specified), or if it's an import that's already been assigned
 			// then we raise an error.
-			if import_id is null | not existing_import_id is null:
+			if imp_mod_id is null | not existing_imp_mod_id is null:
 				self._compiler.error(Strings::format("Can not assign to '%s' variable in more than one place.", var_name), src_infos)
 				
 			// Update our idea of what the import variable refers to.
-			self.closures[reversed_closures_offset][Core::CLOSURE_IMPORTS][var_name] := import_id
+			self.closures[reversed_closures_offset][Core::CLOSURE_IMPORTS][var_name] := imp_mod_id
 		
 		self._instructions.append(self._target.Instr_Assign_Var.new(src_infos, closures_offset, var_num))
 
@@ -350,13 +350,13 @@ class Bytecode_Gen:
 
 	func _add_mod_defn_lookup(self, defn_path, src_infos):
 	
-		if not import_id, src_path, import_extras := self._compiler.find_import_location(defn_path):
+		if not imp_mod_id, src_path, import_extras := self._compiler.find_import_location(defn_path):
 			self._compiler.error(Strings::format("Can't find module / package '%s'.", Strings::join(defn_path, "::")), src_infos)
 
-		if import_num, import_src_path := self._imports.find(import_id):
+		if import_num, imp_src_path := self._imports.find(imp_mod_id):
 			self._instructions.append(self._target.Instr_Import.new(src_infos, import_num))
 		else:
-			self._imports[import_id] := [self._imports.len(), src_path]
+			self._imports[imp_mod_id] := [self._imports.len(), src_path]
 			self._instructions.append(self._target.Instr_Import.new(src_infos, self._imports.len() - 1))
 		
 		for import_extra := import_extras.iter():
@@ -648,19 +648,19 @@ class Bytecode_Gen:
 	
 		import_name_list := Strings::split(node.mod_path, "::")
 	
-		if not import_id, src_path, import_extras := self._compiler.find_import_location(import_name_list):
+		if not imp_mod_id, src_path, import_extras := self._compiler.find_import_location(import_name_list):
 			self._compiler.error(Strings::format("Can't find module / package '%s'.", node.mod_path), node.src_infos)
 		
-		if import_num, import_src_path := self._imports.find(import_id):
+		if import_num, imp_src_path := self._imports.find(imp_mod_id):
 			self._instructions.append(self._target.Instr_Import.new(node.src_infos, import_num))
 		else:
-			self._imports[import_id] := [self._imports.len(), src_path]
+			self._imports[imp_mod_id] := [self._imports.len(), src_path]
 			self._instructions.append(self._target.Instr_Import.new(node.src_infos, self._imports.len() - 1))
 		
 		for import_extra := import_extras.iter():
 			self._instructions.append(self._target.Instr_Module_Lookup.new(node.src_infos, import_extra))
 		
-		self._add_assign_to_var(node.var_name, node.src_infos, import_id)
+		self._add_assign_to_var(node.var_name, node.src_infos, imp_mod_id)
 
 
 
@@ -1237,7 +1237,7 @@ class Bytecode_Gen:
 
 	func _t_imod_id_import(self, node):
 	
-		if import_num, import_src_path := self._imports.find(node.mod_id):
+		if import_num, imp_src_path := self._imports.find(node.mod_id):
 			self._instructions.append(self._target.Instr_Import.new(node.src_infos, import_num))
 		else:
 			self._imports[node.mod_id] := [self._imports.len(), node.src_path]

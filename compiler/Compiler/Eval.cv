@@ -110,12 +110,12 @@ class Eval_Compiler:
 		i := 0
 		while i < mod_stack.len():
 			bc_mod := bc_mod_stack[i]
-			for import_id, import_src_path := bc_mod.get_imports().iter():
-				if not VM::find_module(import_id) & not mod_ids.find(import_id):
-					bc_mod := self.get_bc_mod(import_id, import_src_path, [])
+			for imp_mod_id, imp_src_path := bc_mod.get_imports().iter():
+				if not VM::find_module(imp_mod_id) & not mod_ids.find(imp_mod_id):
+					bc_mod := self.get_bc_mod(imp_mod_id, imp_src_path, [])
 					bc_mod_stack.append(bc_mod)
 					mod_stack.append(Builtins::Module.new(bc_mod.serialize()))
-					mod_ids.add(import_id)
+					mod_ids.add(imp_mod_id)
 
 			i += 1
 		

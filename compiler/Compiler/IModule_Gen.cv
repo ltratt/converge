@@ -226,13 +226,13 @@ class IModule_Gen:
 		for known_mod_ids.add(Core::BUILTIN_MODULES.iter())
 		while bc_mod_stack.len() > 0:
 			bc_mod := bc_mod_stack.pop()
-			for import_id, import_src_path := bc_mod.get_imports().iter():
-				if not known_mod_ids.find(import_id):
-					imp_bc_mod := self._compiler.get_bc_mod(import_id, import_src_path, node[1][1].src_infos)
+			for imp_mod_id, imp_src_path := bc_mod.get_imports().iter():
+				if not known_mod_ids.find(imp_mod_id):
+					imp_bc_mod := self._compiler.get_bc_mod(imp_mod_id, imp_src_path, node[1][1].src_infos)
 					mods_to_add.append(Builtins::Module.new(imp_bc_mod.serialize()))
 					bc_mod_stack.append(imp_bc_mod)
 					assert(import_ == new_module.full_name)
-					known_mod_ids.add(import_id)
+					known_mod_ids.add(imp_mod_id)
 			i += 1
 
 		// Import all the modules into the VM.

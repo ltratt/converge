@@ -281,7 +281,8 @@ Con_Obj *_Con_Builtins_Int_Class_div_func(Con_Obj *thread)
 	Con_Builtins_Int_Atom *o_int_atom = CON_FIND_ATOM(o_obj, CON_BUILTIN(CON_BUILTIN_INT_ATOM_DEF_OBJECT));
 	
 	if (o_int_atom == NULL) {
-		CON_XXX;
+		Con_Builtins_Float_Atom *o_float_atom = CON_GET_ATOM(o_obj, CON_BUILTIN(CON_BUILTIN_FLOAT_ATOM_DEF_OBJECT));
+		return Con_Builtins_Float_Atom_new(thread, self_int_atom->val / o_float_atom->val);
 	}
 	else {
 		Con_Int o = o_int_atom->val;

@@ -20,7 +20,7 @@
 
 
 import Platform::Properties
-import Builtins, Bytecode_Gen, Core, BC_Lib, CV_Module, Parser, CV_Pkg, File, Functional, IModule_Gen, ITree, Strings, Targets::Available, Tokenizer, VM
+import Builtins, Bytecode_Gen, Core, BC_Lib, BC_Mod, Parser, CV_Pkg, File, Functional, IModule_Gen, ITree, Strings, Targets::Available, Tokenizer, VM
 
 
 
@@ -43,8 +43,8 @@ class Eval_Compiler:
 			lib_file := File::open(lib_path, "r")
 			lib_data := lib_file.read()
 			lib_file.close()
-			for cv_mod := bc_lib.deserialize(lib_data).iter():
-				self._cached_mods[cv_mod.get_mod_id()] := [cv_mod.get_src_path(), cv_mod]
+			for bc_mod := bc_lib.deserialize(lib_data).iter():
+				self._cached_mods[bc_mod.get_mod_id()] := [bc_mod.get_src_path(), bc_mod]
 
 
 
@@ -101,20 +101,20 @@ class Eval_Compiler:
 		dummy_defns := [ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(eval_name, [])], dummy_func, [])]
 		dummy_imodule := ITree::IModule.new(eval_name, dummy_defns, [])
 		
-		cv_mod := _Eval_Bytecode_Gen.new().generate(dummy_imodule, self.target)
-		mod := Builtins::Module.new(cv_mod.serialize())
+		bc_mod := _Eval_Bytecode_Gen.new().generate(dummy_imodule, self.target)
+		mod := Builtins::Module.new(bc_mod.serialize())
 		
-		cv_mod_stack := [cv_mod]
+		bc_mod_stack := [bc_mod]
 		mod_stack := [mod]
 		mod_ids := Set{}
 		i := 0
 		while i < mod_stack.len():
-			cv_mod := cv_mod_stack[i]
-			for import_id, import_src_path := cv_mod.get_imports().iter():
+			bc_mod := bc_mod_stack[i]
+			for import_id, import_src_path := bc_mod.get_imports().iter():
 				if not VM::find_module(import_id) & not mod_ids.find(import_id):
-					cv_mod := self.get_cv_mod(import_id, import_src_path, [])
-					cv_mod_stack.append(cv_mod)
-					mod_stack.append(Builtins::Module.new(cv_mod.serialize()))
+					bc_mod := self.get_bc_mod(import_id, import_src_path, [])
+					bc_mod_stack.append(bc_mod)
+					mod_stack.append(Builtins::Module.new(bc_mod.serialize()))
 					mod_ids.add(import_id)
 
 			i += 1
@@ -153,13 +153,13 @@ class Eval_Compiler:
 				if cvb_path := Core::get_cache_path(src_path) & File::exists(cvb_path):
 					f := File::open(cvb_path, "r")
 					bc := f.read()
-					if bc.prefixed_by(CV_Module::MODULE_INIT_STRING):
-						cv_mod := CV_Module::CV_Module.new(self.internal_target)
+					if bc.prefixed_by(BC_Mod::MODULE_INIT_STRING):
+						bc_mod := BC_Mod::BC_Mod.new(self.internal_target)
 					else:
-						cv_mod := CV_Pkg::CV_Pkg.new(self.internal_target)
-					cv_mod.deserialize_str(bc)
+						bc_mod := CV_Pkg::CV_Pkg.new(self.internal_target)
+					bc_mod.deserialize_str(bc)
 					f.close()
-					mod_id := cv_mod.get_mod_id()
+					mod_id := bc_mod.get_mod_id()
 				else:
 					mod_id := Core::mk_mod_id(src_path)
 				import_extras := import_name_list[extra_pos + 1 : ]
@@ -177,18 +177,18 @@ class Eval_Compiler:
 
 
 
-	func get_cv_mod(self, mod_id, src_path, src_infos):
+	func get_bc_mod(self, mod_id, src_path, src_infos):
 
-		if cache_src_path, cache_cv_mod := self._cached_mods.find(mod_id):
-			return cache_cv_mod
+		if cache_src_path, cache_bc_mod := self._cached_mods.find(mod_id):
+			return cache_bc_mod
 
 		cvb_path := Core::get_cache_path(src_path)
 		if File::exists(cvb_path):
 			cvb_file := File::open(cvb_path, "r")
 			cvb_data := cvb_file.read()
 			cvb_file.close()
-			if cvb_data.prefixed_by(CV_Module::MODULE_INIT_STRING):
-				mod := CV_Module::CV_Module.new(self.target)
+			if cvb_data.prefixed_by(BC_Mod::MODULE_INIT_STRING):
+				mod := BC_Mod::BC_Mod.new(self.target)
 				mod.deserialize_str(cvb_data)
 				return mod
 		

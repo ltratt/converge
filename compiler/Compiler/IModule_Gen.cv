@@ -20,7 +20,7 @@
 
 
 import Builtins, Exceptions, File, Strings, Sys, VM
-import Bytecode_Gen, Core, CV_Module, ITree, ITree_Rename, ITree_WF, Lift
+import Bytecode_Gen, Core, BC_Mod, ITree, ITree_Rename, ITree_WF, Lift
 
 
 
@@ -228,9 +228,9 @@ class IModule_Gen:
 			module := modules_stack.pop()
 			for import_id, import_src_path := module.get_imports().iter():
 				if not known_module_names.find(import_id):
-					cv_mod := self._compiler.get_cv_mod(import_id, import_src_path, node[1][1].src_infos)
-					modules_to_add.append(Builtins::Module.new(cv_mod.serialize()))
-					modules_stack.append(cv_mod)
+					bc_mod := self._compiler.get_bc_mod(import_id, import_src_path, node[1][1].src_infos)
+					modules_to_add.append(Builtins::Module.new(bc_mod.serialize()))
+					modules_stack.append(bc_mod)
 					assert(import_ == new_module.full_name)
 					known_module_names.add(import_id)
 			i += 1

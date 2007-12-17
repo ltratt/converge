@@ -20,7 +20,7 @@
 
 
 import Array, Builtins, File, Maths, Parse_Options, Platform::Properties, Strings, Sys, VM
-import Compiler::Core, Compiler::BC_Exec, Compiler::CV_Module, Compiler::BC_Lib, Compiler::CV_Pkg, Compiler::Link, Compiler::Targets::Available
+import Compiler::Core, Compiler::BC_Exec, Compiler::BC_Mod, Compiler::BC_Lib, Compiler::CV_Pkg, Compiler::Link, Compiler::Targets::Available
 
 
 
@@ -54,34 +54,34 @@ class Linker:
 		input_paths := extra_args
 		input_paths.extend(Core::get_std_libraries())
 
-		cv_mods := []
+		bc_mods := []
 		for input_path := extra_args.iter():
 			input_path := File::canon_path(input_path)
 			input_file := File::open(input_path, "r")
 			input_file_data := input_file.read()
-			assert(BC_Lib::LIBRARY_INIT_STRING.len() == CV_Module::MODULE_INIT_STRING.len())
+			assert(BC_Lib::LIBRARY_INIT_STRING.len() == BC_Mod::MODULE_INIT_STRING.len())
 			file_type := input_file_data[ : BC_Lib::LIBRARY_INIT_STRING.len()]
 			
 			if file_type == BC_Lib::LIBRARY_INIT_STRING:
 				bc_lib := BC_Lib::BC_Lib.new(target)
-				for cv_mod := bc_lib.deserialize(input_file_data).iter():
-					cv_mods.append(cv_mod)
-			elif file_type == CV_Module::MODULE_INIT_STRING:
-				cv_mod := CV_Module::CV_Module.new(target)
-				cv_mod.deserialize_str(input_file_data)
-				cv_mods.append(cv_mod)
+				for bc_mod := bc_lib.deserialize(input_file_data).iter():
+					bc_mods.append(bc_mod)
+			elif file_type == BC_Mod::MODULE_INIT_STRING:
+				bc_mod := BC_Mod::BC_Mod.new(target)
+				bc_mod.deserialize_str(input_file_data)
+				bc_mods.append(bc_mod)
 			elif file_type == CV_Pkg::PKG_INIT_STRING:
 				cv_pkg := CV_Pkg::CV_Pkg.new(target)
 				cv_pkg.deserialize_str(input_file_data)
-				cv_mods.append(cv_pkg)
+				bc_mods.append(cv_pkg)
 			else:
 				self.error(Strings::format("File '%s' is not of a known type.", input_path))
 
-		self.cv_mods_map := Dict{}
-		for cv_mod := cv_mods.iter():
-			self.cv_mods_map[cv_mod.get_mod_id()] := cv_mod
+		self.bc_mods_map := Dict{}
+		for bc_mod := bc_mods.iter():
+			self.bc_mods_map[bc_mod.get_mod_id()] := bc_mod
 
-		ser_bc_exec := Link::link_exec(cv_mods, self, target)
+		ser_bc_exec := Link::link_exec(bc_mods, self, target)
 
 		output_file := File::File.new(output_path, "w")
 		output_file.write(ser_bc_exec)
@@ -121,14 +121,14 @@ class Linker:
 			input_path := File::canon_path(input_path)
 			input_file := File::open(input_path, "r")
 			input_file_data := input_file.read()
-			assert(BC_Lib::LIBRARY_INIT_STRING.len() == CV_Module::MODULE_INIT_STRING.len())
+			assert(BC_Lib::LIBRARY_INIT_STRING.len() == BC_Mod::MODULE_INIT_STRING.len())
 			file_type := input_file_data[ : BC_Lib::LIBRARY_INIT_STRING.len()]
 			
 			if file_type == BC_Lib::LIBRARY_INIT_STRING:
 				bc_lib := BC_Lib::BC_Lib.new(target)
-				for cv_mod := bc_lib.deserialize(input_file_data).iter():
-					ser_mods.append(cv_mod.serialize())
-			elif file_type == CV_Module::MODULE_INIT_STRING:
+				for bc_mod := bc_lib.deserialize(input_file_data).iter():
+					ser_mods.append(bc_mod.serialize())
+			elif file_type == BC_Mod::MODULE_INIT_STRING:
 				ser_mods.append(input_file_data)
 			elif file_type == CV_Pkg::PKG_INIT_STRING:
 				ser_mods.append(input_file_data)
@@ -184,7 +184,7 @@ class Linker:
 		if not src_infos is null:
 			Sys::stderr.writeln(Strings::format("%s:", pre_msg))
 			for src_info := src_infos.iter():
-				mod := Builtins::Module.new(self.cv_mods_map[src_info[0]].serialize())
+				mod := Builtins::Module.new(self.bc_mods_map[src_info[0]].serialize())
 				line, col := mod.src_offset_to_line_column(src_info[1])
 				
 				Sys::stderr.writeln(Strings::format("  %s, line %d, column %d", src_info[0], line, col))

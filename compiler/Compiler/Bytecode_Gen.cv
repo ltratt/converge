@@ -20,7 +20,7 @@
 
 
 import Array, Builtins, File, Functional, Strings, Sys
-import Core, CV_Module, ITree, QQ_Mode
+import Core, BC_Mod, ITree, QQ_Mode
 
 
 
@@ -210,7 +210,7 @@ class Bytecode_Gen:
 		for mod_id, defn, src_infos := self._mod_lookups.iter():
 			mod_lookups.append([self._imports[mod_id][IMPORT_NUM], Strings::split(defn, "::"), self._tn_src_infos(src_infos)])
 		
-		module := CV_Module::CV_Module.new(self._target)
+		module := BC_Mod::BC_Mod.new(self._target)
 		module.set_name(imodule.module_name)
 		module.set_mod_id(self._mod_id)
 		module.set_src_path(self._compiler.src_path)

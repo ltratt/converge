@@ -32,7 +32,7 @@ MODULE_VERSION := 0
 
 
 
-class CV_Module:
+class BC_Mod:
 
 	func init(self, target):
 	

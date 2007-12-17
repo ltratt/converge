@@ -19,7 +19,7 @@
 // IN THE SOFTWARE.
 
 import Array
-import CV_Module
+import BC_Mod
 
 
 
@@ -62,7 +62,7 @@ func deserialize(target, exec_str):
 	for i := 0.iter_to(exec_array[EXEC_BYTECODE_NUM_MODULES]):
 		module_offset := exec_array[EXEC_BYTECODE_MODULE_OFFSETS + i] / target.WORDSIZE
 		to := module_offset + (exec_array[module_offset + target.MODULE_BYTECODE_SIZE] / target.WORDSIZE)
-		module := CV_Module::CV_Module.new(target)
+		module := BC_Mod::BC_Mod.new(target)
 		module.deserialize_array(exec_array[module_offset : to])
 		modules.append([exec_str[module_offset * target.WORDSIZE : to * target.WORDSIZE], module])
 		assert module.serialize() == exec_str[module_offset * target.WORDSIZE : to * target.WORDSIZE]

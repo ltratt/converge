@@ -37,7 +37,7 @@ class _Link_Exec:
 		for mod := mods.iter():
 			self._mods_map[mod.get_mod_id()] := mod
 		
-		self._done_mods := [] // List of CV_Module instances
+		self._done_mods := [] // List of BC_Mod instances
 		self._done_mod_ids := Set{} // Set of module IDs
 		self._pkgs := Dict{} // Map package mod ids to sets of definition names to be included
 
@@ -171,7 +171,7 @@ class _Link_Exec:
 				idefns.append(asgn)
 			imod := ITree::IModule.new(cv_pkg.get_name(), idefns, [])
 
-			// We now setup a minimal compiler and compile the ITree into a CV_Module.
+			// We now setup a minimal compiler and compile the ITree into a BC_Mod.
 
 			self.mod_id := pkg_id
 			self.src_path := cv_pkg.get_src_path()

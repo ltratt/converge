@@ -20,7 +20,7 @@
 
 
 import Builtins, Exceptions, File, Strings, Sys, VM
-import Bytecode_Gen, Core, BC_Mod, ITree, ITree_Rename, ITree_WF, Lift
+import Code_Gen, Core, BC_Mod, ITree, ITree_Rename, ITree_WF, Lift
 
 
 
@@ -216,7 +216,7 @@ class IModule_Gen:
 
 		ITree_WF::wf(tmp_imodule)
 
-		tmp_bc_mod := Bytecode_Gen::Bytecode_Gen.new().generate(tmp_imodule, self._compiler.internal_target)
+		tmp_bc_mod := Code_Gen::Code_Gen.new().generate(tmp_imodule, self._compiler.internal_target)
 
 		bc_mod_stack := [tmp_bc_mod]
 		mods_to_add := [Builtins::Module.new(tmp_bc_mod.serialize())]

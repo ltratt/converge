@@ -20,7 +20,7 @@
 
 
 import Builtins, Exceptions, File, Parse_Options, Platform::Properties, Strings, Sys, Time, VM
-import Compiler::Bytecode_Gen, Compiler::Core, Compiler::BC_Exec, Compiler::BC_Lib, Compiler::BC_Mod, Compiler::Parser, Compiler::BC_Pkg, Compiler::IModule_Gen, Compiler::Link, Compiler::Targets, Compiler::Tokenizer
+import Compiler::Code_Gen, Compiler::Core, Compiler::BC_Exec, Compiler::BC_Lib, Compiler::BC_Mod, Compiler::Parser, Compiler::BC_Pkg, Compiler::IModule_Gen, Compiler::Link, Compiler::Targets, Compiler::Tokenizer
 
 
 
@@ -306,7 +306,7 @@ class Compiler:
 
 		imodule := IModule_Gen::IModule_Gen.new().gen(parse_tree)
 		
-		bc := Bytecode_Gen::Bytecode_Gen.new().generate(imodule, self.target)
+		bc := Code_Gen::Code_Gen.new().generate(imodule, self.target)
 		
 		if self.verbosity > 0:
 			self.info(Strings::format("Finished compiling %s.", src_path))

@@ -20,7 +20,7 @@
 
 
 import Platform::Properties
-import Builtins, Bytecode_Gen, Core, BC_Lib, BC_Mod, Parser, BC_Pkg, File, Functional, IModule_Gen, ITree, Strings, Targets::Available, Tokenizer, VM
+import Builtins, Code_Gen, Core, BC_Lib, BC_Mod, Parser, BC_Pkg, File, Functional, IModule_Gen, ITree, Strings, Targets::Available, Tokenizer, VM
 
 
 
@@ -101,7 +101,7 @@ class Eval_Compiler:
 		dummy_defns := [ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(eval_name, [])], dummy_func, [])]
 		dummy_imodule := ITree::IModule.new(eval_name, dummy_defns, [])
 		
-		bc_mod := _Eval_Bytecode_Gen.new().generate(dummy_imodule, self.target)
+		bc_mod := _Eval_Code_Gen.new().generate(dummy_imodule, self.target)
 		mod := Builtins::Module.new(bc_mod.serialize())
 		
 		bc_mod_stack := [bc_mod]
@@ -197,7 +197,7 @@ class Eval_Compiler:
 
 
 
-class _Eval_Bytecode_Gen(Bytecode_Gen::Bytecode_Gen):
+class _Eval_Code_Gen(Code_Gen::Code_Gen):
 
 	func _prc_mod_lookup(self, mod_lookup):
 

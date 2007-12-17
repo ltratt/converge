@@ -37,7 +37,7 @@ class QQ_Mode:
 	
 		self.parent_mode := parent_mode
 		
-		// 'closures' is exactly as in Bytecode_Gen; see that file for descriptions of
+		// 'closures' is exactly as in Code_Gen; see that file for descriptions of
 		// them.
 		
 		self.closures := []

@@ -20,7 +20,7 @@
 
 
 import Array, File, Strings
-import Bytecode_Gen, Core, BC_Exec, BC_Pkg, ITree
+import Code_Gen, Core, BC_Exec, BC_Pkg, ITree
 
 
 
@@ -177,7 +177,7 @@ class _Link_Exec:
 			self.src_path := bc_pkg.get_src_path()
 			self.newlines := []
 			Core::push_compiler(self)
-			pkg_as_mod := Bytecode_Gen::Bytecode_Gen.new().generate(imod, self._target)
+			pkg_as_mod := Code_Gen::Code_Gen.new().generate(imod, self._target)
 			Core::pop_compiler()
 			
 			self._done_mods.append(pkg_as_mod)

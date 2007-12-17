@@ -24,12 +24,6 @@ import Array, File
 
 
 
-// Filename extensions.
-
-CV_EXTENSION := "cv"
-CVB_EXTENSION := "cvb"
-
-
 //
 
 MODULE_INIT_STRING := "CONVMODL"

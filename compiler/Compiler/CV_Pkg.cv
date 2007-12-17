@@ -24,12 +24,6 @@ import Array, File, Sys
 
 
 
-// Filename extensions.
-
-CV_EXTENSION := "cv"
-CVB_EXTENSION := "cvb"
-
-
 //
 
 PKG_INIT_STRING := "CONVPACK"

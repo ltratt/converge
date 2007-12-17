@@ -25,11 +25,6 @@ import CV_Module, CV_Pkg
 
 
 
-// Filename extensions.
-
-CVL_EXTENSION := "cvl"
-
-
 //
 
 LIBRARY_INIT_STRING := "CONVLIBR"

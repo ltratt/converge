@@ -70,8 +70,8 @@ class Compiler:
 		if self.output_path is null:
 			if self.mk_mode == 1:
 				main, ext := File::split_ext(extra[0])
-				if ext != Core::CV_EXTENSION:
-					self._usage_callback(Strings::format("-o can not be left out if input file does not end in '.%s'.", Core::CV_EXTENSION))
+				if ext != Core::SRC_EXT:
+					self._usage_callback(Strings::format("-o can not be left out if input file does not end in '.%s'.", Core::SRC_EXT))
 				if File::exists(main):
 					// If there already exists a file with the name we want to write to, check that
 					// it really is a Converge executeable. If it isn't, we refuse to carry on.
@@ -191,7 +191,7 @@ class Compiler:
 				else:
 					return match_path(i + 1, cnd_path)
 
-			cnd_file_path := File::join_ext(cnd_path, CV_Module::CV_EXTENSION)
+			cnd_file_path := File::join_ext(cnd_path, Core::SRC_EXT)
 			if File::exists(cnd_file_path) & File::is_file(cnd_file_path):
 				return [cnd_file_path, i]
 			
@@ -201,7 +201,7 @@ class Compiler:
 		for include_dir := self.includes.iter():
 			if matched_path, extra_pos := match_path(0, include_dir):
 				src_path := File::canon_path(matched_path)
-				if cvb_path := Core::cvb_cache_path(src_path) & File::exists(cvb_path):
+				if cvb_path := Core::get_cache_path(src_path) & File::exists(cvb_path):
 					f := File::open(cvb_path, "r")
 					bc := f.read()
 					if bc.prefixed_by(CV_Module::MODULE_INIT_STRING):
@@ -253,7 +253,7 @@ class Compiler:
 		pkg_entries := Dict{}
 		for leaf := File::iter_dir_entries(src_path):
 			defn_name, ext := File::split_ext(leaf)
-			if not (ext == "" | ext == CV_Module::CV_EXTENSION):
+			if not (ext == "" | ext == Core::SRC_EXT):
 				continue
 		
 			entry_path := File::canon_path(File::join_names(src_path, leaf))
@@ -523,7 +523,7 @@ class Compiler:
 
 	func _read_cache_cvb(self, src_path):
 
-		if (cvb_path := Core::cvb_cache_path(src_path)) & File::exists(cvb_path):
+		if (cvb_path := Core::get_cache_path(src_path)) & File::exists(cvb_path):
 			cvb_mtime := File::mtime(cvb_path)
 			if cvb_mtime > File::mtime(src_path):
 				cvb_file := File::open(cvb_path, "r")
@@ -545,7 +545,7 @@ class Compiler:
 
 	func _write_cache_cvb(self, src_path, bc):
 
-		if cvb_path := Core::cvb_cache_path(src_path):
+		if cvb_path := Core::get_cache_path(src_path):
 			can_write := 1
 			if File::exists(cvb_path):
 				cvb_file := File::open(cvb_path, "r")
@@ -565,7 +565,7 @@ class Compiler:
 		cv_files := []
 		for leaf := File::iter_dir_entries(path):
 			entry_path := File::join_names(path, leaf)
-			if File::is_file(entry_path) & File::split_ext(leaf)[1] == Core::CV_EXTENSION:
+			if File::is_file(entry_path) & File::split_ext(leaf)[1] == Core::SRC_EXT:
 				cv_files.append(entry_path)
 			elif File::is_dir(entry_path):
 				cv_files.extend(self._locate_cv_files(entry_path))

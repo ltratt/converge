@@ -24,13 +24,21 @@ import Exceptions, File, Platform::Host, Platform::Properties, Strings, Sys
 
 
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Filename extensions
+//
+
 // The file name extension of a normal Converge file.
 
-CV_EXTENSION := "cv"
+SRC_EXT := "cv"
 
 // The file name extension of a Converge binary file.
 
-CVB_EXTENSION := "cvb"
+CACHE_EXT := "cvb"
+
+// File name extension of library files.
+
+LIB_EXT := "cvl"
 
 
 
@@ -108,13 +116,15 @@ func num_compilers():
 
 
 
-func cvb_cache_path(path):
+func get_cache_path(path):
 
 	name, ext := File::split_ext(path)
-	if ext == CV_EXTENSION:
-		return File::join_ext(name, CVB_EXTENSION)
+	if ext == SRC_EXT:
+		// Rename module M.cv to M.cvb
+		return File::join_ext(name, CACHE_EXT)
 	else:
-		return File::join_ext(path, CVB_EXTENSION)
+		// Rename package P to P.cvb
+		return File::join_ext(path, CACHE_EXT)
 	
 	return path
 

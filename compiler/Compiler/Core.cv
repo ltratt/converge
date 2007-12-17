@@ -25,27 +25,16 @@ import Exceptions, File, Platform::Host, Platform::Properties, Strings, Sys
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-// Filename extensions
+// Shared information between different Converge compilers
 //
 
-// The file name extension of a normal Converge file.
-
-SRC_EXT := "cv"
-
-// The file name extension of a Converge binary file.
-
-CACHE_EXT := "cvb"
-
-// File name extension of library files.
-
-LIB_EXT := "cvl"
-
-
-
+// Closure triples
 
 CLOSURE_VARS := 0
 CLOSURE_RENAMES := 1
 CLOSURE_IMPORTS := 2
+
+
 
 // The default variables in scope in every Converge module.
 
@@ -53,42 +42,16 @@ DEFAULT_VARS := Set{"self_module", "null"}
 
 
 
-
-//
+// Builtin modules
 
 BUILTIN_MODULES := Set{"Sys", "Backtrace", "Builtins", "POSIX_File", "Array", "OS", "Exceptions", "C_Earley_Parser", "PCRE", "VM", "Processes", "PThreads", "CEI", "C_Strings", "Thread", "libXML2", "Random", "C_Platform_Properties", "C_Platform_Env", "C_Platform_Exec", "C_Time", "C_Platform_Host"}
 
 
 
-UNIQUE_NAME_PREFIX := "$$"
-UNIQUE_EVAL_NAME_TEMPLATE := "$$eval$$%s"
-UNIQUE_NAME_TEMPLATE := "$$%s$$"
-UNIQUE_NAME_EXTRA_TEMPLATE := "$$%s$$%s$$"
-QUASI_QUOTES_NAME := "$$qq$$%s$$"
 
-
-
-
-class Compiler_Exception(Exceptions::User_Exception):
-	pass
-
-
-
-
-_fresh_name_counter := 0
-
-func fresh_name(name := null):
-
-	nonlocal _fresh_name_counter
-	
-	_fresh_name_counter += 1
-	
-	if name is null:
-		return Strings::format(UNIQUE_NAME_TEMPLATE, (_fresh_name_counter - 1).to_str())
-	else:
-		return Strings::format(UNIQUE_NAME_EXTRA_TEMPLATE, (_fresh_name_counter - 1).to_str(), name)
-
-
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Compiler stack
+//
 
 _compilers := []
 
@@ -116,6 +79,29 @@ func num_compilers():
 
 
 
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Filename extension handling
+//
+
+// The file name extension of a normal Converge file.
+
+SRC_EXT := "cv"
+
+// The file name extension of a Converge bytecode file.
+
+CACHE_EXT := "cvb"
+
+// File name extension of library files.
+
+LIB_EXT := "cvl"
+
+
+
+//
+// For a given module or packages path, return the cached bytecode path.
+//
+
 func get_cache_path(path):
 
 	name, ext := File::split_ext(path)
@@ -129,6 +115,40 @@ func get_cache_path(path):
 	return path
 
 
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Fresh names
+//
+
+UNIQUE_NAME_PREFIX := "$$"
+UNIQUE_EVAL_NAME_TEMPLATE := "$$eval$$%s"
+UNIQUE_NAME_TEMPLATE := "$$%s$$"
+UNIQUE_NAME_EXTRA_TEMPLATE := "$$%s$$%s$$"
+QUASI_QUOTES_NAME := "$$qq$$%s$$"
+
+
+
+_fresh_name_counter := 0
+
+func fresh_name(name := null):
+
+	nonlocal _fresh_name_counter
+	
+	_fresh_name_counter += 1
+	
+	if name is null:
+		return Strings::format(UNIQUE_NAME_TEMPLATE, (_fresh_name_counter - 1).to_str())
+	else:
+		return Strings::format(UNIQUE_NAME_EXTRA_TEMPLATE, (_fresh_name_counter - 1).to_str(), name)
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Location of standard libraries
+//
 
 func find_std_includes():
 
@@ -198,6 +218,11 @@ func get_std_libraries():
 	return libraries
 
 
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Mod ids
+//
 
 func mk_mod_id(src_path):
 

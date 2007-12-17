@@ -1,10 +1,11 @@
 all: 
 	cd vm && ${MAKE} ${MFLAGS}
 ifeq (${wildcard lib/Stdlib/libconverge.cvl}, )
-	@echo "===> lib/Stdlib/libconverge.cvl does not exist: entering bootstrapping mode"
+	@echo "===> lib/Stdlib/libconverge.cvl does not exist: compiling minimal library"
 	cd lib && ${MAKE} ${MFLAGS} minimal
 	cd compiler && ${MAKE} ${MFLAGS}
 	rm lib/Stdlib/libconverge.cvl
+	@echo "===> compiling rest of library"
 	cd lib && ${MAKE} ${MFLAGS}
 	cd compiler && ${MAKE} ${MFLAGS}
 else

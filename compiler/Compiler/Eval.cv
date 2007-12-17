@@ -20,7 +20,7 @@
 
 
 import Platform::Properties
-import Builtins, Bytecode_Gen, Core, CV_Library, CV_Module, CV_Parser, CV_Pkg, File, Functional, IModule_Gen, ITree, Strings, Targets::Available, Tokenizer, VM
+import Builtins, Bytecode_Gen, Core, CV_Library, CV_Module, Parser, CV_Pkg, File, Functional, IModule_Gen, ITree, Strings, Targets::Available, Tokenizer, VM
 
 
 
@@ -51,7 +51,7 @@ class Eval_Compiler:
 	func eval(self):
 		
 		self.tokenizer := Tokenizer::Tokenizer.new()
-		parse_tree := CV_Parser::parse_expr_body(self._str)
+		parse_tree := Parser::parse_expr_body(self._str)
 		self.newlines := self.tokenizer.newlines
 		
 		body := []

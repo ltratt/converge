@@ -10,12 +10,14 @@ MINIMAL_OBJS = CPK/Earley/Grammar.cvb CPK/Earley/Parser.cvb CPK/Token.cvb CPK/To
 	CPK/Tree.cvb File.cvb Functional.cvb Maths.cvb Numbers.cvb Parse_Options.cvb \
 	Platform/Properties.cvb Platform/Host.cvb Strings.cvb Time.cvb
 
+MINIMAL_PKG_OBJS = CPK.cvb CPK/Earley.cvb
+
 MAXIMAL_OBJS = CEI.cvb CPK/Traverser.cvb Platform/Env.cvb Platform/Exec.cvb Sort.cvb \
 	XML/Nodes.cvb XML/XDM.cvb XML/XHTML.cvb
 
-MAXIMAL_PKG_OBJS = CPK.cvb CPK/Earley.cvb Platform.cvb XML.cvb
+MAXIMAL_PKG_OBJS = Platform.cvb XML.cvb
 
-ALL_OBJS = ${MINIMAL_OBJS} ${MAXIMAL_OBJS} ${MAXIMAL_PKG_OBJS}
+ALL_OBJS = ${MINIMAL_OBJS} ${MINIMAL_PKG_OBJS} ${MAXIMAL_OBJS} ${MAXIMAL_PKG_OBJS}
 
 
 %.cvb: %.cv
@@ -27,8 +29,8 @@ ALL_OBJS = ${MINIMAL_OBJS} ${MAXIMAL_OBJS} ${MAXIMAL_PKG_OBJS}
 
 all: libconverge.cvl
 
-minimal: ${MINIMAL_OBJS}
-	${CONVERGE_VM} ${CONVERGEL} -l -o libconverge.cvl ${MINIMAL_OBJS}
+minimal: ${MINIMAL_OBJS} ${MINIMAL_PKG_OBJS}
+	${CONVERGE_VM} ${CONVERGEL} -l -o libconverge.cvl ${MINIMAL_OBJS} ${MINIMAL_PKG_OBJS}
 
 install: all
 	${INSTALL} -d ${DESTDIR}${conlibdir}/Stdlib

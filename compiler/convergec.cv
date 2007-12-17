@@ -20,7 +20,7 @@
 
 
 import Builtins, Exceptions, File, Parse_Options, Platform::Properties, Strings, Sys, Time, VM
-import Compiler::Bytecode_Gen, Compiler::Core, Compiler::CV_Exec, Compiler::CV_Library, Compiler::CV_Module, Compiler::CV_Parser, Compiler::CV_Pkg, Compiler::IModule_Gen, Compiler::Link, Compiler::Targets, Compiler::Tokenizer
+import Compiler::Bytecode_Gen, Compiler::Core, Compiler::CV_Exec, Compiler::CV_Library, Compiler::CV_Module, Compiler::Parser, Compiler::CV_Pkg, Compiler::IModule_Gen, Compiler::Link, Compiler::Targets, Compiler::Tokenizer
 
 
 
@@ -301,7 +301,7 @@ class Compiler:
 		src_file.close()
 
 		self.tokenizer := Tokenizer::Tokenizer.new()
-		parse_tree := CV_Parser::parse(src_data)
+		parse_tree := Parser::parse(src_data)
 		self.newlines := self.tokenizer.newlines
 
 		imodule := IModule_Gen::IModule_Gen.new().gen(parse_tree)

@@ -20,7 +20,7 @@
 
 
 import File, Strings, Sys
-import CPK::Earley::Grammar, CPK::Earley::Parser, CPK::Tokens, CPK::Tree
+import CPK::Earley::Grammar, CPK::Earley, CPK::Tokens, CPK::Tree
 import Core, Tokenizer
 
 
@@ -285,7 +285,7 @@ brackets ::= "(" expr ")"
 
 
 
-class CV_Parser(Parser::Parser):
+class Parser(Earley::Parser::Parser):
 
 	func error(self, token):
 
@@ -307,7 +307,7 @@ func parse(src_data):
 	tokens_map := Tokenizer::tokens_map([], [])
 	grammar, rule_names := Grammar::compile(GRAMMAR, "top_level", tokens_map)
 
-	return CV_Parser.new().parse(grammar, rule_names, tokens_map, compiler.tokenizer.tokens)
+	return Parser.new().parse(grammar, rule_names, tokens_map, compiler.tokenizer.tokens)
 
 
 
@@ -319,4 +319,4 @@ func parse_expr_body(src_data):
 	tokens_map := Tokenizer::tokens_map([], [])
 	grammar, rule_names := Grammar::compile(GRAMMAR, "expr_body", tokens_map)
 
-	return CV_Parser.new().parse(grammar, rule_names, tokens_map, compiler.tokenizer.tokens)
+	return Parser.new().parse(grammar, rule_names, tokens_map, compiler.tokenizer.tokens)

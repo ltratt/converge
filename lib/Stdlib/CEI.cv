@@ -21,7 +21,7 @@
 
 import Builtins, Exceptions, Strings, Thread
 import CPK::Earley::Grammar
-import Compiler::Core, Compiler::CV_Parser, Compiler::Eval, Compiler::ITree, Compiler::ITree_PP, Compiler::ITree_Rename, Compiler::ITree_WF, Compiler::Lift, Compiler::Tokenizer
+import Compiler::Core, Compiler::Parser, Compiler::Eval, Compiler::ITree, Compiler::ITree_PP, Compiler::ITree_Rename, Compiler::ITree_WF, Compiler::Lift, Compiler::Tokenizer
 
 
 
@@ -81,7 +81,7 @@ func dsl_parse(dsl_block, src_infos, extra_keywords, extra_symbols, grammar, sta
 	
 	tokens_map := Tokenizer::tokens_map(extra_symbols, extra_keywords)
 	grammar, rule_names := Grammar::compile(grammar, start_rule, tokens_map)
-	parser := CV_Parser::CV_Parser.new()
+	parser := Parser::Parser.new()
 	
 	return parser.parse(grammar, rule_names, tokens_map, tokenizer.tokens)
 

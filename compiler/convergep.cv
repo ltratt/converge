@@ -21,7 +21,7 @@
 
 import File, Strings, Sys
 import CPK::Earley::Grammar, CPK::Tree
-import Compiler::Core, Compiler::CV_Parser, Compiler::Tokenizer
+import Compiler::Core, Compiler::Parser, Compiler::Tokenizer
 
 
 
@@ -36,9 +36,9 @@ class Parser_Compiler:
 		self.tokenizer := Tokenizer::Tokenizer.new()
 		self.tokenizer.tokenize(file.read(), [[path, 0]], [], [])
 		tokens_map := Tokenizer::tokens_map([], [])
-		grammar, rule_names := Grammar::compile(CV_Parser::GRAMMAR, "top_level", tokens_map)
+		grammar, rule_names := Grammar::compile(Parser::GRAMMAR, "top_level", tokens_map)
 
-		parse_tree := CV_Parser::CV_Parser.new().parse(grammar, rule_names, tokens_map, self.tokenizer.tokens)
+		parse_tree := Parser::Parser.new().parse(grammar, rule_names, tokens_map, self.tokenizer.tokens)
 
 		Core::pop_compiler()
 		

@@ -7,7 +7,7 @@ libdir = @libdir@
 conlibdir = ${libdir}/converge-@CONVERGE_VERSION@
 INSTALL = @INSTALL@
 
-COMPILER_OBJS = Compiler/CV_Parser.cvb Compiler/Tokenizer.cvb \
+COMPILER_OBJS = Compiler/Parser.cvb Compiler/Tokenizer.cvb \
 	Compiler/IModule_Gen.cvb Compiler/ITree.cvb Compiler/Bytecode_Gen.cvb \
 	Compiler/Targets/Thirty_Two_Bit.cvb Compiler/Core.cvb Compiler/CV_Module.cvb \
 	Compiler/QQ_Mode.cvb Compiler/ITree_PP.cvb Compiler/ITree_WF.cvb \

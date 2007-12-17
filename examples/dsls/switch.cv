@@ -20,13 +20,12 @@
 
 
 import CEI, Sys
-import Compiler::CV_Parser, Compiler::IModule_Gen, Compiler::ITree_PP, Compiler::Tokenizer
-import CPK::Earley::Grammar, CPK::Earley::Parser
+import Compiler::Parser, Compiler::IModule_Gen, Compiler::ITree_PP, Compiler::Tokenizer
 
 
 
 
-GRAMMAR := CV_Parser::GRAMMAR + """
+GRAMMAR := Parser::GRAMMAR + """
 switch  ::= "SWITCH" "ID" ":" "INDENT" clauses default "DEDENT"
 clauses ::= ( clause "NEWLINE" )* clause
 clause  ::= "CASE" expr ":" "INDENT" expr_body "DEDENT"

@@ -20,7 +20,7 @@
 
 
 import Array, Builtins, File, Maths, Parse_Options, Platform::Properties, Strings, Sys, VM
-import Compiler::Core, Compiler::CV_Exec, Compiler::CV_Module, Compiler::CV_Library, Compiler::CV_Pkg, Compiler::Link, Compiler::Targets::Available
+import Compiler::Core, Compiler::BC_Exec, Compiler::CV_Module, Compiler::CV_Library, Compiler::CV_Pkg, Compiler::Link, Compiler::Targets::Available
 
 
 
@@ -81,10 +81,10 @@ class Linker:
 		for cv_mod := cv_mods.iter():
 			self.cv_mods_map[cv_mod.get_mod_id()] := cv_mod
 
-		ser_cv_exec := Link::link_exec(cv_mods, self, target)
+		ser_bc_exec := Link::link_exec(cv_mods, self, target)
 
 		output_file := File::File.new(output_path, "w")
-		output_file.write(ser_cv_exec)
+		output_file.write(ser_bc_exec)
 		output_file.close()
 		File::chmod(output_path, 493)
 

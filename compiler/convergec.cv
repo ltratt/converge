@@ -20,7 +20,7 @@
 
 
 import Builtins, Exceptions, File, Parse_Options, Platform::Properties, Strings, Sys, Time, VM
-import Compiler::Bytecode_Gen, Compiler::Core, Compiler::CV_Exec, Compiler::CV_Library, Compiler::CV_Module, Compiler::Parser, Compiler::CV_Pkg, Compiler::IModule_Gen, Compiler::Link, Compiler::Targets, Compiler::Tokenizer
+import Compiler::Bytecode_Gen, Compiler::Core, Compiler::BC_Exec, Compiler::CV_Library, Compiler::CV_Module, Compiler::Parser, Compiler::CV_Pkg, Compiler::IModule_Gen, Compiler::Link, Compiler::Targets, Compiler::Tokenizer
 
 
 
@@ -76,7 +76,7 @@ class Compiler:
 					// If there already exists a file with the name we want to write to, check that
 					// it really is a Converge executeable. If it isn't, we refuse to carry on.
 					file := File::open(main, "r")
-					if not file.read(1024).find(CV_Exec::EXEC_INIT_STRING):
+					if not file.read(1024).find(BC_Exec::EXEC_INIT_STRING):
 						self._usage_callback(Strings::format("-o can not be left out as '%s' can not be overwritten as it does not appear to be a Converge executeable.", main))
 					file.close()
 				self.output_path := main
@@ -437,10 +437,10 @@ class Compiler:
 				self.info("Linking.")
 			self.mod_id := link_mods[0].get_mod_id()
 			self.src_path := link_mods[0].get_src_path()
-			ser_cv_exec := Linker.new().link(link_mods, self.target)
+			ser_bc_exec := Linker.new().link(link_mods, self.target)
 
 			output_file := File::File.new(self.output_path, "w")
-			output_file.write(ser_cv_exec)
+			output_file.write(ser_bc_exec)
 			output_file.close()
 			try:
 				File::chmod(self.output_path, 493)

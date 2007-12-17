@@ -11,7 +11,7 @@ COMPILER_OBJS = Compiler/Parser.cvb Compiler/Tokenizer.cvb \
 	Compiler/IModule_Gen.cvb Compiler/ITree.cvb Compiler/Bytecode_Gen.cvb \
 	Compiler/Targets/Thirty_Two_Bit.cvb Compiler/Core.cvb Compiler/CV_Module.cvb \
 	Compiler/QQ_Mode.cvb Compiler/ITree_PP.cvb Compiler/ITree_WF.cvb \
-	Compiler/CV_Library.cvb Compiler/CV_Exec.cvb Compiler/Eval.cvb \
+	Compiler/CV_Library.cvb Compiler/BC_Exec.cvb Compiler/Eval.cvb \
 	Compiler/Lift.cvb Compiler/Link.cvb Compiler/ITree_Rename.cvb Compiler/CV_Pkg.cvb \
 	Compiler/Targets/Sixty_Four_Bit.cvb Compiler/Targets/Available.cvb
 

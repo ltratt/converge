@@ -21,26 +21,26 @@
 
 import Builtins, Exceptions, Strings, Thread
 import CPK::Earley::Grammar
-import Compiler::Compiler_Vars, Compiler::CV_Parser, Compiler::Eval, Compiler::ITree, Compiler::ITree_PP, Compiler::ITree_Rename, Compiler::ITree_WF, Compiler::Lift, Compiler::Tokenizer
+import Compiler::Core, Compiler::CV_Parser, Compiler::Eval, Compiler::ITree, Compiler::ITree_PP, Compiler::ITree_Rename, Compiler::ITree_WF, Compiler::Lift, Compiler::Tokenizer
 
 
 
 
 func compiler():
 
-	return Compiler_Vars::peek_compiler()
+	return Core::peek_compiler()
 
 
 
 func error(msg, src_infos := null):
 
-	Compiler_Vars::peek_compiler().error(msg, src_infos)
+	Core::peek_compiler().error(msg, src_infos)
 
 
 
 func warning(msg, src_infos := null):
 
-	Compiler_Vars::peek_compiler().warning(msg, src_infos)
+	Core::peek_compiler().warning(msg, src_infos)
 
 
 
@@ -52,7 +52,7 @@ func eval(str, vars := Dict{}, includes := []):
 
 func fresh_name(name := null):
 
-	return Compiler_Vars::fresh_name(name)
+	return Core::fresh_name(name)
 
 
 

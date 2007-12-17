@@ -20,7 +20,7 @@
 
 
 import Builtins, Strings
-import Compiler_Vars, ITree
+import Core, ITree
 
 
 
@@ -40,7 +40,7 @@ class _Renamer:
 	
 		self._preorders := Dict{}
 		for var := rename_vars.iter():
-			self._preorders[var] := Compiler_Vars::fresh_name(var)
+			self._preorders[var] := Core::fresh_name(var)
 
 		// closures is a list of (set{variable names}, list(renames)) tuples. This is different, and
 		// rather simpler, than in many other parts of the compiler.

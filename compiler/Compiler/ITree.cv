@@ -20,7 +20,7 @@
 
 
 import Builtins, Functional, Strings, Sys
-import Compiler_Vars
+import Core
 
 
 
@@ -67,7 +67,7 @@ class IModule:
 		self.defns := defns
 		self.src_infos := src_infos
 
-		self.bound_vars := Compiler_Vars::DEFAULT_VARS.scopy()
+		self.bound_vars := Core::DEFAULT_VARS.scopy()
 		self.import_vars := Set{}
 		for defn := defns.iter():
 			self.bound_vars.extend(defn.bound_vars)
@@ -1225,11 +1225,11 @@ class IQuasi_Quotes:
 		self.free_vars := body.free_vars.scopy()
 		self.mod_id_lookups := body.mod_id_lookups.scopy()
 		for var := body.qq_bound_vars.iter():
-			self.qq_bound_vars.add(Strings::format(Compiler_Vars::QUASI_QUOTES_NAME, var))
-			self.bound_vars.add(Strings::format(Compiler_Vars::QUASI_QUOTES_NAME, var))
+			self.qq_bound_vars.add(Strings::format(Core::QUASI_QUOTES_NAME, var))
+			self.bound_vars.add(Strings::format(Core::QUASI_QUOTES_NAME, var))
 		
 		if not extra_src_infos is null:
-			self.extra_src_infos_var_name := Compiler_Vars::fresh_name()
+			self.extra_src_infos_var_name := Core::fresh_name()
 			self.bound_vars.add(self.extra_src_infos_var_name)
 			self.qq_bound_vars.add(self.extra_src_infos_var_name)
 			

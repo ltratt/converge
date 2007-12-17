@@ -20,7 +20,7 @@
 
 
 import Builtins, File, Functional, Strings
-import Compiler_Vars, ITree
+import Core, ITree
 
 
 
@@ -530,7 +530,7 @@ func wf_expr(itree, msg, src_infos):
 		if elem_class.instantiated(itree):
 			break
 	exhausted:
-		Compiler_Vars::peek_compiler().error(Strings::format("Node %s is of type %s instead of IExpr.", msg, itree.instance_of.name), src_infos)
+		Core::peek_compiler().error(Strings::format("Node %s is of type %s instead of IExpr.", msg, itree.instance_of.name), src_infos)
 
 	return ITree_WF.new().wf(itree)
 
@@ -538,4 +538,4 @@ func wf_expr(itree, msg, src_infos):
 
 func type_error(parent_node_name, part, node, should_be, src_infos):
 
-	Compiler_Vars::peek_compiler().error(Strings::format("In %s node, got %s type for %s instead of %s.", parent_node_name, node.instance_of.name, part, should_be), src_infos)
+	Core::peek_compiler().error(Strings::format("In %s node, got %s type for %s instead of %s.", parent_node_name, node.instance_of.name, part, should_be), src_infos)

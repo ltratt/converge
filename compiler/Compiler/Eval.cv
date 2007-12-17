@@ -20,7 +20,7 @@
 
 
 import Platform::Properties
-import Builtins, Bytecode_Gen, Compiler_Vars, CV_Library, CV_Module, CV_Parser, CV_Pkg, File, Functional, IModule_Gen, ITree, Strings, Targets::Available, Tokenizer, VM
+import Builtins, Bytecode_Gen, Core, CV_Library, CV_Module, CV_Parser, CV_Pkg, File, Functional, IModule_Gen, ITree, Strings, Targets::Available, Tokenizer, VM
 
 
 
@@ -33,12 +33,12 @@ class Eval_Compiler:
 		self.vars := vars
 		
 		self.includes := includes
-		self.mod_id := Strings::format(Compiler_Vars::UNIQUE_EVAL_NAME_TEMPLATE, Compiler_Vars::fresh_name())
+		self.mod_id := Strings::format(Core::UNIQUE_EVAL_NAME_TEMPLATE, Core::fresh_name())
 		self.src_path := self.mod_id
 		self.internal_target := self.target := Available::TARGETS[Strings::format("%dbit", Properties::word_bits)].new()
 
 		self._cached_mods := Dict{}
-		for lib_path := Compiler_Vars::get_std_libraries().iter():
+		for lib_path := Core::get_std_libraries().iter():
 			lib := CV_Library::CV_Library.new(self.target)
 			lib_file := File::open(lib_path, "r")
 			lib_data := lib_file.read()
@@ -56,9 +56,9 @@ class Eval_Compiler:
 		
 		body := []
 		
-		compiler_var_name := Compiler_Vars::fresh_name()
+		compiler_var_name := Core::fresh_name()
 		compiler_var := ITree::IVar.new(compiler_var_name, [])
-		peek_compiler := ITree::IModule_Lookup.new([ITree::IMod_Id_Import.new(Compiler_Vars.mod_id, Compiler_Vars.src_path, []), ITree::IVar.new("peek_compiler", [])], [])
+		peek_compiler := ITree::IModule_Lookup.new([ITree::IMod_Id_Import.new(Core.mod_id, Core.src_path, []), ITree::IVar.new("peek_compiler", [])], [])
 		body.append(ITree::IAssignment.new(ITree::STD_ASSIGN, [compiler_var], ITree::IApplication.new(peek_compiler, [], []), []))
 		
 		vars_val := ITree::ISlot_Lookup.new(compiler_var, "vars", [])
@@ -88,7 +88,7 @@ class Eval_Compiler:
 			var_val := ITree::IApplication.new(ITree::ISlot_Lookup.new(vars_val, "set", []), [ITree::IString.new(var_name, []), ITree::IVar.new(var_name, [])], [])
 			vars_assign.append(var_val)
 
-		rtn_ivar := ITree::IVar.new(Compiler_Vars::fresh_name(), [])
+		rtn_ivar := ITree::IVar.new(Core::fresh_name(), [])
 		icond := ITree::IAssignment.new(ITree::STD_ASSIGN, [rtn_ivar], expr, [])
 		iclause_body := ITree::IExpr_Block.new([vars_assign, ITree::IReturn.new(rtn_ivar, [])].flattened(), [])
 		iclause := ITree::IClause.new(icond, iclause_body, [])
@@ -96,7 +96,7 @@ class Eval_Compiler:
 		iif := ITree::IIf.new([iclause], ielse_body, [])
 		body.append(iif)
 
-		eval_name := Compiler_Vars::fresh_name()		
+		eval_name := Core::fresh_name()		
 		dummy_func := ITree::IFunc_Defn.new(0, ITree::IVar.new(eval_name, []), [], null, [], [], ITree::IExpr_Block.new(body, []), [])
 		dummy_defns := [ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(eval_name, [])], dummy_func, [])]
 		dummy_imodule := ITree::IModule.new(eval_name, dummy_defns, [])
@@ -150,7 +150,7 @@ class Eval_Compiler:
 		for include_dir := self.includes.iter():
 			if matched_path, extra_pos := match_path(0, include_dir):
 				src_path := File::canon_path(matched_path)
-				if cvb_path := Compiler_Vars::cvb_cache_path(src_path) & File::exists(cvb_path):
+				if cvb_path := Core::cvb_cache_path(src_path) & File::exists(cvb_path):
 					f := File::open(cvb_path, "r")
 					bc := f.read()
 					if bc.prefixed_by(CV_Module::MODULE_INIT_STRING):
@@ -161,7 +161,7 @@ class Eval_Compiler:
 					f.close()
 					mod_id := cv_mod.get_mod_id()
 				else:
-					mod_id := Compiler_Vars::mk_mod_id(src_path)
+					mod_id := Core::mk_mod_id(src_path)
 				import_extras := import_name_list[extra_pos + 1 : ]
 				break
 		exhausted:
@@ -182,7 +182,7 @@ class Eval_Compiler:
 		if cache_src_path, cache_cv_mod := self._cached_mods.find(mod_id):
 			return cache_cv_mod
 
-		cvb_path := Compiler_Vars::cvb_cache_path(src_path)
+		cvb_path := Core::cvb_cache_path(src_path)
 		if File::exists(cvb_path):
 			cvb_file := File::open(cvb_path, "r")
 			cvb_data := cvb_file.read()
@@ -217,10 +217,10 @@ class _Eval_Bytecode_Gen(Bytecode_Gen::Bytecode_Gen):
 func eval(str, vars := Dict{}, includes := []):
 
 	compiler := Eval_Compiler.new(str, vars, includes)
-	Compiler_Vars::push_compiler(compiler)
+	Core::push_compiler(compiler)
 	if not (result := compiler.eval()):
-		Compiler_Vars::pop_compiler()
+		Core::pop_compiler()
 		fail
 	else:
-		Compiler_Vars::pop_compiler()
+		Core::pop_compiler()
 		return result

@@ -20,7 +20,7 @@
 
 
 import Builtins, Strings
-import Compiler_Vars, ITree, ITree_Rename, ITree_WF, Lift
+import Core, ITree, ITree_Rename, ITree_WF, Lift
 
 
 
@@ -44,7 +44,7 @@ class QQ_Mode:
 		
 		// These next two slots are purely for convenience.
 
-		self._compiler := Compiler_Vars::peek_compiler()
+		self._compiler := Core::peek_compiler()
 		self._mod_id := self._compiler.mod_id
 		
 		// We need to track when we're dealing with class fields or not. So we track when we're nested
@@ -105,7 +105,7 @@ class QQ_Mode:
 				continue
 
 			qq_bound_var := ITree::IVar.new(var_name, node.src_infos)
-			fresh_name_func := self._get_module_defn_at_qq("Compiler_Vars", "fresh_name", node.src_infos)
+			fresh_name_func := self._get_module_defn_at_qq("Core", "fresh_name", node.src_infos)
 			fresh_name := ITree::IApplication.new(fresh_name_func, [ITree::IString.new(var_name, node.src_infos)], node.src_infos)
 			return_exprs.append(ITree::IAssignment.new(ITree::STD_ASSIGN, [qq_bound_var], fresh_name, node.src_infos))
 
@@ -139,7 +139,7 @@ class QQ_Mode:
 
 	func _qq_bound_var_name(self, var_name):
 	
-		return Strings::format(Compiler_Vars::QUASI_QUOTES_NAME, var_name)
+		return Strings::format(Core::QUASI_QUOTES_NAME, var_name)
 	
 	
 	
@@ -165,9 +165,9 @@ class QQ_Mode:
 			i := mode.closures.len() - 1
 			search_var_name := var_name
 			while i >= 0:
-				if mode.closures[i][Compiler_Vars::CLOSURE_VARS].find(search_var_name):
+				if mode.closures[i][Core::CLOSURE_VARS].find(search_var_name):
 					break
-				if rename_as := mode.closures[i][Compiler_Vars::CLOSURE_RENAMES].find(search_var_name):
+				if rename_as := mode.closures[i][Core::CLOSURE_RENAMES].find(search_var_name):
 					search_var_name := rename_as
 				i -= 1
 			broken:

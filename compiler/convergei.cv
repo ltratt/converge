@@ -20,7 +20,7 @@
 
 
 import Exceptions, Strings, Sys
-import Compiler::Compiler_Vars, Compiler::Eval
+import Compiler::Core, Compiler::Eval
 
 
 
@@ -63,7 +63,7 @@ class _Interactive_Compiler(Eval::Eval_Compiler):
 
 func main():
 
-	includes := Compiler_Vars::find_std_includes()
+	includes := Core::find_std_includes()
 
 	Sys::println("Converge ", Sys::version)
 	d := Dict{}
@@ -92,10 +92,10 @@ func main():
 
 		try:
 			compiler := _Interactive_Compiler.new(input, d, includes)
-			Compiler_Vars::push_compiler(compiler)
+			Core::push_compiler(compiler)
 			if rtn := compiler.eval():
 				Sys::println(rtn)
-			Compiler_Vars::pop_compiler()
+			Core::pop_compiler()
 		catch _Dummy_Exception into e:
 			pass
 		catch Exceptions::System_Exit_Exception into e:

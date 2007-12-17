@@ -20,7 +20,7 @@
 
 
 import File, Functional, Strings
-import Compiler_Vars, ITree
+import Core, ITree
 
 
 

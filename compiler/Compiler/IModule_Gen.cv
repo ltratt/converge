@@ -20,7 +20,7 @@
 
 
 import Builtins, Exceptions, File, Strings, Sys, VM
-import Bytecode_Gen, Compiler_Vars, CV_Module, ITree, ITree_Rename, ITree_WF, Lift
+import Bytecode_Gen, Core, CV_Module, ITree, ITree_Rename, ITree_WF, Lift
 
 
 
@@ -43,7 +43,7 @@ class IModule_Gen:
 
 		// These next two slots are purely for convenience.
 
-		self._compiler := Compiler_Vars::peek_compiler()
+		self._compiler := Core::peek_compiler()
 		self._mod_id := self._compiler.mod_id
 
 
@@ -164,7 +164,7 @@ class IModule_Gen:
 			
 			expr := ITree::IApplication.new(self._preorder(node[1][4], extra_src_infos), [dsl_block, src_infos], extra_src_infos + node[1][1].src_infos)
 
-		splice_name := Compiler_Vars::fresh_name()
+		splice_name := Core::fresh_name()
 		splice_var := ITree::IVar.new(splice_name, extra_src_infos + node[1][1].src_infos)
 
 		// Determine all the definitions we've currently processed into ITree's.
@@ -223,7 +223,7 @@ class IModule_Gen:
 		i := 0
 		known_module_names := Set{}
 		for known_module_names.add(VM::vm.modules.iter_keys())
-		for known_module_names.add(Compiler_Vars::BUILTIN_MODULES.iter())
+		for known_module_names.add(Core::BUILTIN_MODULES.iter())
 		while modules_stack.len() > 0:
 			module := modules_stack.pop()
 			for import_id, import_src_path := module.get_imports().iter():

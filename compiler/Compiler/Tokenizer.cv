@@ -22,7 +22,7 @@
 
 import File, PCRE, Strings, Sys
 import CPK::Token::Token, CPK::Tokens
-import Compiler_Vars
+import Core
 
 
 
@@ -490,7 +490,7 @@ class Tokenizer:
 
 	func error(self, msg, src_pos):
 	
-		Compiler_Vars::peek_compiler().error(msg, [[self._src_path, src_pos]])
+		Core::peek_compiler().error(msg, [[self._src_path, src_pos]])
 					
 
 

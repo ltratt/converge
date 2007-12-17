@@ -20,7 +20,7 @@
 
 
 import Array, File, Strings
-import Bytecode_Gen, Compiler_Vars, CV_Exec, CV_Pkg, ITree
+import Bytecode_Gen, Core, CV_Exec, CV_Pkg, ITree
 
 
 
@@ -46,7 +46,7 @@ class _Link_Exec:
 
 		for mod := self._done_mods.iter():
 			for import_mod_id, import_src_path := mod.get_imports().iter():
-				if not Compiler_Vars::BUILTIN_MODULES.find(import_mod_id) & not self._done_mod_ids.find(import_mod_id):
+				if not Core::BUILTIN_MODULES.find(import_mod_id) & not self._done_mod_ids.find(import_mod_id):
 					linker.error(Strings::format("Module '%s' referenced in '%s' not found in input files.", import_mod_id, mod.get_mod_id()))
 				
 		ser_mods := Array::Array.new(target.ARRAY_TYPE)
@@ -96,7 +96,7 @@ class _Link_Exec:
 			self._done_mods.append(mod)
 
 			for imp_mod_id, imp_src_path := mod.get_imports().iter():
-				if not Compiler_Vars::BUILTIN_MODULES.find(imp_mod_id):
+				if not Core::BUILTIN_MODULES.find(imp_mod_id):
 					if not (self._done_mod_ids.find(imp_mod_id) | todo.find(imp_mod_id)):
 						todo.append(imp_mod_id)
 
@@ -135,7 +135,7 @@ class _Link_Exec:
 						
 						if not (self._done_mod_ids.find(lookedup_mod_id) | todo.find(lookedup_mod_id)):
 							todo.append(lookedup_mod_id)
-					elif Compiler_Vars::BUILTIN_MODULES.find(lookedup_mod_id):
+					elif Core::BUILTIN_MODULES.find(lookedup_mod_id):
 						// XXX we don't trace builtins yet
 						break
 					else:
@@ -176,9 +176,9 @@ class _Link_Exec:
 			self.mod_id := pkg_id
 			self.src_path := cv_pkg.get_src_path()
 			self.newlines := []
-			Compiler_Vars::push_compiler(self)
+			Core::push_compiler(self)
 			pkg_as_mod := Bytecode_Gen::Bytecode_Gen.new().generate(imod, self._target)
-			Compiler_Vars::pop_compiler()
+			Core::pop_compiler()
 			
 			self._done_mods.append(pkg_as_mod)
 			self._done_mod_ids.add(pkg_id)

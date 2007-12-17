@@ -20,7 +20,7 @@
 
 
 import Array, Builtins, File, Functional, Strings, Sys
-import Compiler_Vars, CV_Module, ITree, QQ_Mode
+import Core, CV_Module, ITree, QQ_Mode
 
 
 
@@ -124,7 +124,7 @@ class Bytecode_Gen:
 		
 		// The next three slots are purely for convenience.
 		
-		self._compiler := Compiler_Vars::peek_compiler()
+		self._compiler := Core::peek_compiler()
 		self._mod_id := self._compiler.mod_id
 		self._target := target
 		
@@ -201,8 +201,8 @@ class Bytecode_Gen:
 		// number.
 
 		import_defns := Dict{}
-		for defn_name, mod_id := self.closures[0][Compiler_Vars::CLOSURE_IMPORTS].iter():
-			import_defns[self.closures[0][Compiler_Vars::CLOSURE_VARS][defn_name]] := self._imports[mod_id][IMPORT_NUM]
+		for defn_name, mod_id := self.closures[0][Core::CLOSURE_IMPORTS].iter():
+			import_defns[self.closures[0][Core::CLOSURE_VARS][defn_name]] := self._imports[mod_id][IMPORT_NUM]
 
 		// Calculate all the module lookups performed by this module.
 
@@ -214,7 +214,7 @@ class Bytecode_Gen:
 		module.set_name(imodule.module_name)
 		module.set_mod_id(self._mod_id)
 		module.set_src_path(self._compiler.src_path)
-		module.set_top_level_vars_map(self.closures[0][Compiler_Vars::CLOSURE_VARS])
+		module.set_top_level_vars_map(self.closures[0][Core::CLOSURE_VARS])
 		module.set_instructions_bytecode(instructions_bytecode)
 		module.set_imports(module_imports)
 		module.set_src_infos(all_src_infos)
@@ -293,15 +293,15 @@ class Bytecode_Gen:
 		i := self.closures.len() - 1
 		search_var_name := var_name
 		while i >= 0:
-			if self.closures[i][Compiler_Vars::CLOSURE_VARS].find(search_var_name):
+			if self.closures[i][Core::CLOSURE_VARS].find(search_var_name):
 				break
-			if rename_as := self.closures[i][Compiler_Vars::CLOSURE_RENAMES].find(search_var_name):
+			if rename_as := self.closures[i][Core::CLOSURE_RENAMES].find(search_var_name):
 				search_var_name := rename_as
 			i -= 1
 		exhausted:
 			self._compiler.error(Strings::format("Unknown variable '%s'.", var_name), src_infos)
 		
-		return [(self.closures.len() - i) - 1, self.closures[i][Compiler_Vars::CLOSURE_VARS][search_var_name]]
+		return [(self.closures.len() - i) - 1, self.closures[i][Core::CLOSURE_VARS][search_var_name]]
 
 
 
@@ -318,7 +318,7 @@ class Bytecode_Gen:
 		// What we do now is to see if this assignment overwrites a 'protected' import variable.
 		
 		reversed_closures_offset := self.closures.len() - closures_offset - 1
-		if existing_import_id := self.closures[reversed_closures_offset][Compiler_Vars::CLOSURE_IMPORTS].find(var_name):
+		if existing_import_id := self.closures[reversed_closures_offset][Core::CLOSURE_IMPORTS].find(var_name):
 			// OK, this does refer to an import. If it's a normal variable assignment (i.e.
 			// 'import_id' wasn't specified), or if it's an import that's already been assigned
 			// then we raise an error.
@@ -326,7 +326,7 @@ class Bytecode_Gen:
 				self._compiler.error(Strings::format("Can not assign to '%s' variable in more than one place.", var_name), src_infos)
 				
 			// Update our idea of what the import variable refers to.
-			self.closures[reversed_closures_offset][Compiler_Vars::CLOSURE_IMPORTS][var_name] := import_id
+			self.closures[reversed_closures_offset][Core::CLOSURE_IMPORTS][var_name] := import_id
 		
 		self._instructions.append(self._target.Instr_Assign_Var.new(src_infos, closures_offset, var_num))
 
@@ -369,7 +369,7 @@ class Bytecode_Gen:
 		closures_offset, var_num := self._get_var_offsets(mod_lookup.names[0].name, mod_lookup.names[0].src_infos)
 
 		reversed_closures_offset := self.closures.len() - closures_offset - 1
-		if mod_id := self.closures[reversed_closures_offset][Compiler_Vars::CLOSURE_IMPORTS].find(mod_lookup.names[0].name):
+		if mod_id := self.closures[reversed_closures_offset][Core::CLOSURE_IMPORTS].find(mod_lookup.names[0].name):
 			lookup := Strings::join(Functional::map(func (x) { return x.name }, mod_lookup.names), "::")
 			if not (lookups := self._mod_lookups_seen.find(mod_id)):
 				lookups := Set{}
@@ -865,7 +865,7 @@ class Bytecode_Gen:
 				// The module ID we want to lookup in is the same as the module we're currently
 				// building, so we try and turn the module lookup into a simple variable lookup.
 				var := node.names[1]
-				if var_num := self.closures[0][Compiler_Vars::CLOSURE_VARS].find(var.name):
+				if var_num := self.closures[0][Core::CLOSURE_VARS].find(var.name):
 					self._instructions.append(self._target.Instr_Lookup_Var.new(var.src_infos, self.closures.len() - 1, var_num))
 					i := 2
 				else:

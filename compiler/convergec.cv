@@ -20,7 +20,7 @@
 
 
 import Builtins, Exceptions, File, Parse_Options, Platform::Properties, Strings, Sys, Time, VM
-import Compiler::Bytecode_Gen, Compiler::Compiler_Vars, Compiler::CV_Exec, Compiler::CV_Library, Compiler::CV_Module, Compiler::CV_Parser, Compiler::CV_Pkg, Compiler::IModule_Gen, Compiler::Link, Compiler::Targets, Compiler::Tokenizer
+import Compiler::Bytecode_Gen, Compiler::Core, Compiler::CV_Exec, Compiler::CV_Library, Compiler::CV_Module, Compiler::CV_Parser, Compiler::CV_Pkg, Compiler::IModule_Gen, Compiler::Link, Compiler::Targets, Compiler::Tokenizer
 
 
 
@@ -70,8 +70,8 @@ class Compiler:
 		if self.output_path is null:
 			if self.mk_mode == 1:
 				main, ext := File::split_ext(extra[0])
-				if ext != Compiler_Vars::CV_EXTENSION:
-					self._usage_callback(Strings::format("-o can not be left out if input file does not end in '.%s'.", Compiler_Vars::CV_EXTENSION))
+				if ext != Core::CV_EXTENSION:
+					self._usage_callback(Strings::format("-o can not be left out if input file does not end in '.%s'.", Core::CV_EXTENSION))
 				if File::exists(main):
 					// If there already exists a file with the name we want to write to, check that
 					// it really is a Converge executeable. If it isn't, we refuse to carry on.
@@ -150,7 +150,7 @@ class Compiler:
 		// that messages are both ordered correctly and printed fairly promptly.
 	
 		Sys::stdout.flush()
-		Sys::stderr.writeln(Strings::format("===> %s%s", " " * ((Compiler_Vars::num_compilers() - 1) * 2), msg))
+		Sys::stderr.writeln(Strings::format("===> %s%s", " " * ((Core::num_compilers() - 1) * 2), msg))
 		Sys::stderr.flush()
 
 
@@ -168,9 +168,9 @@ class Compiler:
 			self.error(Strings::format("Can not find compiled version of '%s'.", src_path), src_infos)
 		
 		compiler := Compiler.new()
-		Compiler_Vars::push_compiler(compiler)
+		Core::push_compiler(compiler)
 		cv_mod := compiler.from_mk_mode(mod_id, src_path, self.start_includes, self.verbosity, self.target, self.internal_target, self.mk_done_cv_mods, self.mk_mtime_map)
-		Compiler_Vars::pop_compiler()
+		Core::pop_compiler()
 		
 		if self.verbosity > 0:
 			self.info(Strings::format("Returning to compile of %s...", self.src_path))
@@ -201,7 +201,7 @@ class Compiler:
 		for include_dir := self.includes.iter():
 			if matched_path, extra_pos := match_path(0, include_dir):
 				src_path := File::canon_path(matched_path)
-				if cvb_path := Compiler_Vars::cvb_cache_path(src_path) & File::exists(cvb_path):
+				if cvb_path := Core::cvb_cache_path(src_path) & File::exists(cvb_path):
 					f := File::open(cvb_path, "r")
 					bc := f.read()
 					if bc.prefixed_by(CV_Module::MODULE_INIT_STRING):
@@ -212,7 +212,7 @@ class Compiler:
 					f.close()
 					mod_id := cv_mod.get_mod_id()
 				else:
-					mod_id := Compiler_Vars::mk_mod_id(src_path)
+					mod_id := Core::mk_mod_id(src_path)
 				import_extras := import_name_list[extra_pos + 1 : ]
 				break
 		exhausted:
@@ -257,12 +257,12 @@ class Compiler:
 				continue
 		
 			entry_path := File::canon_path(File::join_names(src_path, leaf))
-			entry_mod_id := Compiler_Vars::mk_mod_id(entry_path)
+			entry_mod_id := Core::mk_mod_id(entry_path)
 			pkg_entries[defn_name] := [entry_mod_id, entry_path]
 
 		cv_pkg := CV_Pkg::CV_Pkg.new(self.target)
 		cv_pkg.set_name(File::split_leaf(src_path)[1])
-		cv_pkg.set_mod_id(Compiler_Vars::mk_mod_id(File::canon_path(src_path)))
+		cv_pkg.set_mod_id(Core::mk_mod_id(File::canon_path(src_path)))
 		cv_pkg.set_src_path(src_path)
 		cv_pkg.set_entries(pkg_entries)
 
@@ -281,7 +281,7 @@ class Compiler:
 			self.info(Strings::format("Compiling %s...", src_path))
 
 		self.src_path := File::canon_path(src_path)
-		self.mod_id := Compiler_Vars::mk_mod_id(self.src_path)
+		self.mod_id := Core::mk_mod_id(self.src_path)
 
 		if (input_file_dir := File::split_leaf(self.src_path)[0]) == "":
 			self.includes.insert(0, ".")
@@ -294,7 +294,7 @@ class Compiler:
 
 		self.src_module_name := File::split_ext(File::split_leaf(self.src_path)[1])[0]
 
-		self.includes.extend(Compiler_Vars::find_std_includes())
+		self.includes.extend(Core::find_std_includes())
 
 		src_file := File::open(self.src_path, "r")
 		src_data := src_file.read()
@@ -335,7 +335,7 @@ class Compiler:
 		else:
 			do_link := 1
 
-		main_mod_id := Compiler_Vars::mk_mod_id(File::canon_path(src_path))
+		main_mod_id := Core::mk_mod_id(File::canon_path(src_path))
 		self.mk_done_cv_mods := Dict{main_mod_id : [File::canon_path(src_path), null]} // module id : CV_Module instances map.
 
 		// We want to ensure that we never try to compile any of the stuff in the builtin libraries,
@@ -343,7 +343,7 @@ class Compiler:
 		
 		lib_mods := []
 		lib_mod_ids := Set{}
-		for lib_path := Compiler_Vars::get_std_libraries().iter():
+		for lib_path := Core::get_std_libraries().iter():
 			lib := CV_Library::CV_Library.new(self.target)
 			lib_file := File::open(lib_path, "r")
 			lib_data := lib_file.read()
@@ -389,7 +389,7 @@ class Compiler:
 						// We check to see whether this module is "stale" i.e. is older than any of its
 						// import dependencies.
 						for imp_mod_id, imp_src_path := cv_mod.get_imports().iter():
-							if Compiler_Vars::BUILTIN_MODULES.find(imp_mod_id):
+							if Core::BUILTIN_MODULES.find(imp_mod_id):
 								continue
 
 							if not self.mk_done_cv_mods.find(imp_mod_id):
@@ -523,7 +523,7 @@ class Compiler:
 
 	func _read_cache_cvb(self, src_path):
 
-		if (cvb_path := Compiler_Vars::cvb_cache_path(src_path)) & File::exists(cvb_path):
+		if (cvb_path := Core::cvb_cache_path(src_path)) & File::exists(cvb_path):
 			cvb_mtime := File::mtime(cvb_path)
 			if cvb_mtime > File::mtime(src_path):
 				cvb_file := File::open(cvb_path, "r")
@@ -545,7 +545,7 @@ class Compiler:
 
 	func _write_cache_cvb(self, src_path, bc):
 
-		if cvb_path := Compiler_Vars::cvb_cache_path(src_path):
+		if cvb_path := Core::cvb_cache_path(src_path):
 			can_write := 1
 			if File::exists(cvb_path):
 				cvb_file := File::open(cvb_path, "r")
@@ -565,7 +565,7 @@ class Compiler:
 		cv_files := []
 		for leaf := File::iter_dir_entries(path):
 			entry_path := File::join_names(path, leaf)
-			if File::is_file(entry_path) & File::split_ext(leaf)[1] == Compiler_Vars::CV_EXTENSION:
+			if File::is_file(entry_path) & File::split_ext(leaf)[1] == Core::CV_EXTENSION:
 				cv_files.append(entry_path)
 			elif File::is_dir(entry_path):
 				cv_files.extend(self._locate_cv_files(entry_path))
@@ -627,6 +627,6 @@ class Linker:
 func main():
 
 	compiler := Compiler.new()
-	Compiler_Vars::push_compiler(compiler)
+	Core::push_compiler(compiler)
 	compiler.from_cmd_line()
-	Compiler_Vars::pop_compiler()
+	Core::pop_compiler()

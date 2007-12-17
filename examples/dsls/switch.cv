@@ -20,7 +20,7 @@
 
 
 import CEI, Sys
-import Compiler::Parser, Compiler::IModule_Gen, Compiler::ITree_PP, Compiler::Tokenizer
+import Compiler::Parser, Compiler::IMod_Gen, Compiler::ITree_PP, Compiler::Tokenizer
 
 
 
@@ -36,7 +36,7 @@ default ::= "NEWLINE" "DEFAULT" ":" "INDENT" expr_body "DEDENT"
 
 
 
-class Switch_Translator(IModule_Gen::IModule_Gen):
+class Switch_Translator(IMod_Gen::IMod_Gen):
 
 	func _t_switch(self, node, extra_src_infos):
 	

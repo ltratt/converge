@@ -20,7 +20,7 @@
 
 
 import Platform::Properties
-import Builtins, Code_Gen, Core, BC_Lib, BC_Mod, Parser, BC_Pkg, File, Functional, IModule_Gen, ITree, Strings, Targets::Available, Tokenizer, VM
+import Builtins, Code_Gen, Core, BC_Lib, BC_Mod, Parser, BC_Pkg, File, Functional, IMod_Gen, ITree, Strings, Targets::Available, Tokenizer, VM
 
 
 
@@ -66,7 +66,7 @@ class Eval_Compiler:
 			var_val := ITree::IApplication.new(ITree::ISlot_Lookup.new(vars_val, "get", []), [ITree::IString.new(var_name, [])], [])
 			body.append(ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(var_name, [])], var_val, []))
 
-		expr_body := IModule_Gen::IModule_Gen.new().gen_expr_body(parse_tree)
+		expr_body := IMod_Gen::IMod_Gen.new().gen_expr_body(parse_tree)
 		if expr_body.exprs.len() == 0:
 			fail
 		elif expr_body.exprs.len() > 1:

@@ -20,7 +20,7 @@
 
 
 import Builtins, Exceptions, File, Parse_Options, Platform::Properties, Strings, Sys, Time, VM
-import Compiler::Code_Gen, Compiler::Core, Compiler::BC_Exec, Compiler::BC_Lib, Compiler::BC_Mod, Compiler::Parser, Compiler::BC_Pkg, Compiler::IModule_Gen, Compiler::Link, Compiler::Targets, Compiler::Tokenizer
+import Compiler::Code_Gen, Compiler::Core, Compiler::BC_Exec, Compiler::BC_Lib, Compiler::BC_Mod, Compiler::Parser, Compiler::BC_Pkg, Compiler::IMod_Gen, Compiler::Link, Compiler::Targets, Compiler::Tokenizer
 
 
 
@@ -304,7 +304,7 @@ class Compiler:
 		parse_tree := Parser::parse(src_data)
 		self.newlines := self.tokenizer.newlines
 
-		imodule := IModule_Gen::IModule_Gen.new().gen(parse_tree)
+		imodule := IMod_Gen::IMod_Gen.new().gen(parse_tree)
 		
 		bc := Code_Gen::Code_Gen.new().generate(imodule, self.target)
 		

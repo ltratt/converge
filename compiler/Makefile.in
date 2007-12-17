@@ -8,7 +8,7 @@ conlibdir = ${libdir}/converge-@CONVERGE_VERSION@
 INSTALL = @INSTALL@
 
 COMPILER_OBJS = Compiler/Parser.cvb Compiler/Tokenizer.cvb \
-	Compiler/IModule_Gen.cvb Compiler/ITree.cvb Compiler/Code_Gen.cvb \
+	Compiler/IMod_Gen.cvb Compiler/ITree.cvb Compiler/Code_Gen.cvb \
 	Compiler/Targets/Thirty_Two_Bit.cvb Compiler/Core.cvb Compiler/BC_Mod.cvb \
 	Compiler/QQ_Mode.cvb Compiler/ITree_PP.cvb Compiler/ITree_WF.cvb \
 	Compiler/BC_Lib.cvb Compiler/BC_Exec.cvb Compiler/Eval.cvb \

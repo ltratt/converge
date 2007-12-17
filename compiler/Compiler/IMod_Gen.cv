@@ -33,7 +33,7 @@ _NEST_CLASS := 1
 
 
 
-class IModule_Gen:
+class IMod_Gen:
 
 	func init(self):
 

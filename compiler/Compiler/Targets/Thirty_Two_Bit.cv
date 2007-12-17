@@ -1000,7 +1000,7 @@ func b_aligned_string(s):
 
 	aligned_str := Array::Array.new("i32", s + ("\0" * (align(s.len()) - s.len())))
 	
-	assert(aligned_str.len() * WORDSIZE == align(s.len()))
+	assert aligned_str.len() * WORDSIZE == align(s.len())
 	
 	return aligned_str
 

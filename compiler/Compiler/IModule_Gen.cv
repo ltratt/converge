@@ -157,7 +157,7 @@ class IModule_Gen:
 			//            ::= "$" splice_type "<<" expr ">>" "<<" "DSL_BLOCK" ">>"
 			dsl_block := ITree::IString.new(node[1][7].value, extra_src_infos + node[1][7].src_infos)
 
-			assert(node[1][1].src_infos.len() == 1)			
+			assert node[1][1].src_infos.len() == 1
 			src_path := ITree::IString.new(node[1][1].src_infos[0][0], extra_src_infos + node[1][1].src_infos)
 			src_offset := ITree::IInt.new(node[1][7].src_infos[0][1], extra_src_infos + node[1][1].src_infos)
 			src_infos := ITree::IList.new([ITree::IList.new([src_path, src_offset], extra_src_infos + node[1][1].src_infos)], extra_src_infos + node[1][1].src_infos)
@@ -231,7 +231,6 @@ class IModule_Gen:
 					imp_bc_mod := self._compiler.get_bc_mod(imp_mod_id, imp_src_path, node[1][1].src_infos)
 					mods_to_add.append(Builtins::Module.new(imp_bc_mod.serialize()))
 					bc_mod_stack.append(imp_bc_mod)
-					assert(import_ == new_module.full_name)
 					known_mod_ids.add(imp_mod_id)
 			i += 1
 
@@ -876,7 +875,7 @@ class IModule_Gen:
 		if node.len() == 2 & not Builtins::List.conformed_by(node[1]):
 			// name ::= "ID"
 			if node[1].value == SRC_INFO_VAR:
-				assert(node.src_infos.len() == 1)
+				assert node.src_infos.len() == 1
 				src_path := ITree::IString.new(node[1].src_infos[0][0], extra_src_infos + node[1].src_infos)
 				src_infos := ITree::IInt.new(node[1].src_infos[0][1], extra_src_infos + node[1].src_infos)
 				return ITree::IList.new([ITree::IList.new([src_path, src_infos], extra_src_infos + node[1].src_infos)], extra_src_infos + node[1].src_infos)

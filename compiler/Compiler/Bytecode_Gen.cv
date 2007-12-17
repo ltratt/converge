@@ -533,7 +533,7 @@ class Bytecode_Gen:
 		params_info := []
 		for param := node.params.iter():
 			closures_offset, var_num := self._get_var_offsets(param.var.name, param.var.src_infos)
-			assert(closures_offset == 0)
+			assert closures_offset == 0
 			if param.default is null:
 				params_info.append([var_num, 0])
 			else:
@@ -543,7 +543,7 @@ class Bytecode_Gen:
 			self._instructions.append(self._target.Instr_Unpack_Args.new(node.src_infos, params_info, 0))
 		else:
 			closures_offset, var_num := self._get_var_offsets(node.var_arg.name, node.var_arg.src_infos)
-			assert(closures_offset == 0)
+			assert closures_offset == 0
 			params_info.append([var_num, 0])
 			self._instructions.append(self._target.Instr_Unpack_Args.new(node.src_infos, params_info, 1))
 		

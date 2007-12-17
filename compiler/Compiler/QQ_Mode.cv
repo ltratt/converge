@@ -195,7 +195,7 @@ class QQ_Mode:
 			else:
 				self._compiler.error(Strings::format("Trying to reference variable '%s' which is not defined in the outer-most scope.", var_name), node_src_infos)
 		
-		assert(var_name == renamed_var_name)
+		assert var_name == renamed_var_name
 		
 		return self._qq("IVar", [ITree::IVar.new(self._qq_bound_var_name(var_name), node_src_infos)], node_src_infos)
 
@@ -208,7 +208,7 @@ class QQ_Mode:
 		if not mode is self:
 			raise "XXX"
 
-		assert(var_name == renamed_var_name)
+		assert var_name == renamed_var_name
 		
 		if self._nesting.len() > 0 & self._nesting[-1] == _NEST_CLASS:
 			return ITree::IVar.new(var_name, node_src_infos)
@@ -470,7 +470,7 @@ class QQ_Mode:
 
 	func _t_imodule_lookup(self, node):
 
-		assert(ITree::IVar.instantiated(node.names[0]))
+		assert ITree::IVar.instantiated(node.names[0])
 
 		names := []
 

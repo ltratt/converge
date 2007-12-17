@@ -59,7 +59,7 @@ class Linker:
 			input_path := File::canon_path(input_path)
 			input_file := File::open(input_path, "r")
 			input_file_data := input_file.read()
-			assert(BC_Lib::LIBRARY_INIT_STRING.len() == BC_Mod::MODULE_INIT_STRING.len())
+			assert BC_Lib::LIBRARY_INIT_STRING.len() == BC_Mod::MODULE_INIT_STRING.len()
 			file_type := input_file_data[ : BC_Lib::LIBRARY_INIT_STRING.len()]
 			
 			if file_type == BC_Lib::LIBRARY_INIT_STRING:
@@ -121,7 +121,7 @@ class Linker:
 			input_path := File::canon_path(input_path)
 			input_file := File::open(input_path, "r")
 			input_file_data := input_file.read()
-			assert(BC_Lib::LIBRARY_INIT_STRING.len() == BC_Mod::MODULE_INIT_STRING.len())
+			assert BC_Lib::LIBRARY_INIT_STRING.len() == BC_Mod::MODULE_INIT_STRING.len()
 			file_type := input_file_data[ : BC_Lib::LIBRARY_INIT_STRING.len()]
 			
 			if file_type == BC_Lib::LIBRARY_INIT_STRING:

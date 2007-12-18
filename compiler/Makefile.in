@@ -37,6 +37,12 @@ install: all
 	${INSTALL} -c -m 555 convergei ${DESTDIR}${bindir}
 	${INSTALL} -c -m 555 convergel ${DESTDIR}${bindir}
 	${INSTALL} -c -m 555 convergep ${DESTDIR}${bindir}
+ifeq (@PLATFORM@, MinGW)
+	${INSTALL} -c -m 555 ../platform/MinGW/convergec.bat ${DESTDIR}${bindir}
+	${INSTALL} -c -m 555 ../platform/MinGW/convergei.bat ${DESTDIR}${bindir}
+	${INSTALL} -c -m 555 ../platform/MinGW/convergel.bat ${DESTDIR}${bindir}
+	${INSTALL} -c -m 555 ../platform/MinGW/convergep.bat ${DESTDIR}${bindir}
+endif
 	${INSTALL} -d ${DESTDIR}${conlibdir}/Compiler
 	${INSTALL} -d ${DESTDIR}${conlibdir}/Compiler/Targets
 	${foreach obj,${COMPILER_OBJS:.cvb=.cv},${INSTALL} -c -m 444 ${obj} ${DESTDIR}${conlibdir}/${obj};}

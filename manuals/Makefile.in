@@ -27,6 +27,9 @@ all: cvd_to_html
 install:
 	${INSTALL} -d ${DESTDIR}${bindir}
 	${INSTALL} -c -m 555 cvd_to_html ${DESTDIR}${bindir}
+ifeq (@PLATFORM@, MinGW)
+	${INSTALL} -c -m 555 ../platform/MinGW/cvd_to_html.bat ${DESTDIR}${bindir}
+endif
 	${INSTALL} -d ${DESTDIR}${condocsdir}/modules_html
 	${INSTALL} -c -m 444 modules_html/*.html ${DESTDIR}${condocsdir}/modules_html
 

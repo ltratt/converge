@@ -112,6 +112,7 @@ case $operating_system in
 		AC_MSG_RESULT(MINGW)
 		mingw=1
 		AC_DEFINE(CON_PLATFORM_MINGW, [], [Define if you are running on the MinGW platform. Note that you can can only define one CON_PLATFORM_* variable.])
+		AC_SUBST(PLATFORM, MinGW)
 		AC_SUBST(EXEC_EXT, ".exe")
 		AC_DEFINE(CON_OSNAME, "MINGW");;
 	*) AC_MSG_ERROR([Unknown platform "$operating_system"]);;

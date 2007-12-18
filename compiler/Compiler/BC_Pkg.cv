@@ -26,7 +26,7 @@ import Array, File, Sys
 
 //
 
-PKG_INIT_STRING := "CONVPACK"
+PKG_INIT_STR := "CONVPACK"
 PKG_VERSION := 0
 
 
@@ -136,7 +136,7 @@ class BC_Pkg:
 	func serialize(self):
 	
 		pkg := Array::Array.new(self._target.ARRAY_TYPE)
-		pkg.extend_from_string(PKG_INIT_STRING)
+		pkg.extend_from_string(PKG_INIT_STR)
 		pkg.append(PKG_VERSION)
 
 		pkg.append(-1) // Absolute position of pkg name (in bytes)
@@ -184,3 +184,17 @@ class BC_Pkg:
 	func _decode_string(self, pkg, start, size):
 
 		return pkg[start / self._target.WORDSIZE : start / self._target.WORDSIZE + self._target.align(size) / self._target.WORDSIZE].to_str()[ : size]
+
+
+
+
+//
+// Succeeds if bc appears to be a valid Converge bytecode package.
+//
+
+func is_bc_pkg(bc):
+
+	if bc.prefixed_by(PKG_INIT_STR):
+		return 1
+
+	fail

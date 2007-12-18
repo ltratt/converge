@@ -69,7 +69,7 @@ class Linker:
 				bc_mod := BC_Mod::BC_Mod.new(target)
 				bc_mod.deserialize_str(input_file_data)
 				bc_mods.append(bc_mod)
-			elif file_type == BC_Pkg::PKG_INIT_STRING:
+			elif BC_Pkg::is_bc_pkg(input_file_data):
 				bc_pkg := BC_Pkg::BC_Pkg.new(target)
 				bc_pkg.deserialize_str(input_file_data)
 				bc_mods.append(bc_pkg)
@@ -128,7 +128,7 @@ class Linker:
 					ser_mods.append(bc_mod.serialize())
 			elif BC_Mod::is_bc_mod(input_file_data):
 				ser_mods.append(input_file_data)
-			elif file_type == BC_Pkg::PKG_INIT_STRING:
+			elif BC_Pkg::is_bc_pkg(input_file_data):
 				ser_mods.append(input_file_data)
 			else:
 				self.error(Strings::format("File '%s' is not of a known type.", input_path))

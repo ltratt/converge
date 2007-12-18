@@ -1455,5 +1455,5 @@ void _Con_Builtins_Con_Stack_Class_gc_scan_func(Con_Obj *thread, Con_Obj *obj, C
 
 	Con_Memory_gc_push(thread, con_stack_atom->stack);
 	// Conservative scanning is pure laziness, but is easy.
-	Con_Memory_gc_scan_conservative(thread, con_stack_atom->stack, con_stack_atom->stackp+8);
+	Con_Memory_gc_scan_conservative(thread, con_stack_atom->stack, con_stack_atom->stackp);
 }

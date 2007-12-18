@@ -705,7 +705,7 @@ if [[ "$GCC" = "yes" ]]; then
 	CFLAGS="-std=c99 -g -DNDEBUG -Wall -Wstrict-prototypes -Wmissing-prototypes -Wwrite-strings -Wpointer-arith -Wbad-function-cast -Wsign-compare $extra_cflags"
 
 	AC_MSG_CHECKING([for gcc version])
-	version=`gcc -v 2>&1 /dev/null | grep "gcc version" | sed "s/gcc version //" | sed "s/ .*//"`
+	version=`$CC -v 2>&1 /dev/null | grep "gcc version" | sed "s/gcc version //" | sed "s/ .*//"`
 	AC_MSG_RESULT($version)
 
 	# We only enable optimisation on GCC 3.3 - on later versions it seems to cause problems.

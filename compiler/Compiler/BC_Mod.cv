@@ -26,7 +26,7 @@ import Array, File
 
 //
 
-MODULE_INIT_STRING := "CONVMODL"
+MOD_INIT_STR := "CONVMODL"
 MODULE_VERSION := 0
 
 
@@ -308,7 +308,7 @@ class BC_Mod:
 	func serialize(self):
 	
 		module := Array::Array.new(self._target.ARRAY_TYPE)
-		module.extend_from_string(MODULE_INIT_STRING)
+		module.extend_from_string(MOD_INIT_STR)
 		module.append(MODULE_VERSION)
 
 		module.append(-1) // Absolute position of module name (in bytes)
@@ -417,3 +417,16 @@ class BC_Mod:
 	func _decode_string(self, module, start, size):
 
 		return module[start / self._target.WORDSIZE : start / self._target.WORDSIZE + self._target.align(size) / self._target.WORDSIZE].to_str()[ : size]
+
+
+
+//
+// Succeeds if bc appears to be a valid Converge bytecode module.
+//
+
+func is_bc_mod(bc):
+
+	if bc.prefixed_by(MOD_INIT_STR):
+		return 1
+
+	fail

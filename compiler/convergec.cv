@@ -211,7 +211,7 @@ class Compiler:
 				if cvb_path := Core::get_cache_path(src_path) & File::exists(cvb_path):
 					f := File::open(cvb_path, "r")
 					bc := f.read()
-					if bc.prefixed_by(BC_Mod::MODULE_INIT_STRING):
+					if BC_Mod::is_bc_mod(bc):
 						bc_mod := BC_Mod::BC_Mod.new(self.internal_target)
 					else:
 						bc_mod := BC_Pkg::BC_Pkg.new(self.internal_target)
@@ -539,7 +539,7 @@ class Compiler:
 				cvb_file := File::open(cvb_path, "r")
 				cvb_data := cvb_file.read()
 				cvb_file.close()
-				if cvb_data.prefixed_by(BC_Mod::MODULE_INIT_STRING):
+				if BC_Mod::is_bc_mod(cvb_data):
 					mod := BC_Mod::BC_Mod.new(self.internal_target)
 					mod.deserialize_str(cvb_data)
 					return [mod, cvb_mtime]
@@ -559,9 +559,10 @@ class Compiler:
 			can_write := 1
 			if File::exists(cvb_path):
 				cvb_file := File::open(cvb_path, "r")
-				if cvb_file.read(BC_Mod::MODULE_INIT_STRING.len()) != BC_Mod::MODULE_INIT_STRING:
-					can_write := 0
+				cvb_data := cvb_file.read()
 				cvb_file.close()
+				if not BC_Mod::is_bc_mod(cvb_data):
+					can_write := 0
 
 			if can_write == 1:
 				try:

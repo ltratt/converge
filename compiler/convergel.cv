@@ -59,14 +59,13 @@ class Linker:
 			input_path := File::canon_path(input_path)
 			input_file := File::open(input_path, "r")
 			input_file_data := input_file.read()
-			assert BC_Lib::LIBRARY_INIT_STRING.len() == BC_Mod::MODULE_INIT_STRING.len()
+
 			file_type := input_file_data[ : BC_Lib::LIBRARY_INIT_STRING.len()]
-			
 			if file_type == BC_Lib::LIBRARY_INIT_STRING:
 				bc_lib := BC_Lib::BC_Lib.new(target)
 				for bc_mod := bc_lib.deserialize(input_file_data).iter():
 					bc_mods.append(bc_mod)
-			elif file_type == BC_Mod::MODULE_INIT_STRING:
+			elif BC_Mod::is_bc_mod(input_file_data):
 				bc_mod := BC_Mod::BC_Mod.new(target)
 				bc_mod.deserialize_str(input_file_data)
 				bc_mods.append(bc_mod)
@@ -121,14 +120,13 @@ class Linker:
 			input_path := File::canon_path(input_path)
 			input_file := File::open(input_path, "r")
 			input_file_data := input_file.read()
-			assert BC_Lib::LIBRARY_INIT_STRING.len() == BC_Mod::MODULE_INIT_STRING.len()
+
 			file_type := input_file_data[ : BC_Lib::LIBRARY_INIT_STRING.len()]
-			
 			if file_type == BC_Lib::LIBRARY_INIT_STRING:
 				bc_lib := BC_Lib::BC_Lib.new(target)
 				for bc_mod := bc_lib.deserialize(input_file_data).iter():
 					ser_mods.append(bc_mod.serialize())
-			elif file_type == BC_Mod::MODULE_INIT_STRING:
+			elif BC_Mod::is_bc_mod(input_file_data):
 				ser_mods.append(input_file_data)
 			elif file_type == BC_Pkg::PKG_INIT_STRING:
 				ser_mods.append(input_file_data)

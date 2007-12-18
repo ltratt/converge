@@ -50,11 +50,11 @@ class BC_Lib:
 		for i := 0.iter_to(library[self._target.LIBRARY_BYTECODE_NUM_MODULES]):
 			mod_offset := library[self._target.LIBRARY_BYTECODE_MODULE_OFFSETS + i] / self._target.WORDSIZE
 			
-			assert BC_Mod::MODULE_INIT_STRING.len() == BC_Pkg::PKG_INIT_STRING.len()
+			assert BC_Mod::MOD_INIT_STR.len() == BC_Pkg::PKG_INIT_STRING.len()
 			
-			mod_header := mod_str[mod_offset * self._target.WORDSIZE : mod_offset * self._target.WORDSIZE + BC_Mod::MODULE_INIT_STRING.len()]
+			mod_header := mod_str[mod_offset * self._target.WORDSIZE : mod_offset * self._target.WORDSIZE + BC_Mod::MOD_INIT_STR.len()]
 			
-			ndif mod_header == BC_Mod::MODULE_INIT_STRING:
+			ndif mod_header == BC_Mod::MOD_INIT_STR:
 				to := mod_offset + library[mod_offset + self._target.MODULE_BYTECODE_SIZE] / self._target.WORDSIZE
 				bc_mod := BC_Mod::BC_Mod.new(self._target)
 				bc_mod.deserialize_str(mod_str[mod_offset * self._target.WORDSIZE : to * self._target.WORDSIZE])

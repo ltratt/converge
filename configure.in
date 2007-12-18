@@ -712,8 +712,8 @@ if [[ "$GCC" = "yes" ]]; then
 	AC_MSG_CHECKING([for safe gcc optimisation level])
 	$CC -v 2>&1 /dev/null | grep "gcc version 3\.3" > /dev/null
 	if [[ $? -eq 0 ]]; then
-		AC_MSG_RESULT(-O2 -fno-strict-aliasing)
-		CFLAGS="$CFLAGS -O2 -fno-strict-aliasing"
+		AC_MSG_RESULT(-O3 -fno-strict-aliasing)
+		CFLAGS="$CFLAGS -O3 -fno-strict-aliasing"
 	else
 		AC_MSG_RESULT(none)
 	fi

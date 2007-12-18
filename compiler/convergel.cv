@@ -60,8 +60,7 @@ class Linker:
 			input_file := File::open(input_path, "r")
 			input_file_data := input_file.read()
 
-			file_type := input_file_data[ : BC_Lib::LIBRARY_INIT_STRING.len()]
-			if file_type == BC_Lib::LIBRARY_INIT_STRING:
+			if BC_Lib::is_bc_lib(input_file_data):
 				bc_lib := BC_Lib::BC_Lib.new(target)
 				for bc_mod := bc_lib.deserialize(input_file_data).iter():
 					bc_mods.append(bc_mod)
@@ -121,8 +120,7 @@ class Linker:
 			input_file := File::open(input_path, "r")
 			input_file_data := input_file.read()
 
-			file_type := input_file_data[ : BC_Lib::LIBRARY_INIT_STRING.len()]
-			if file_type == BC_Lib::LIBRARY_INIT_STRING:
+			if BC_Lib::is_bc_lib(input_file_data):
 				bc_lib := BC_Lib::BC_Lib.new(target)
 				for bc_mod := bc_lib.deserialize(input_file_data).iter():
 					ser_mods.append(bc_mod.serialize())
@@ -137,7 +135,7 @@ class Linker:
 		// doing it here we can forego the pointless string -> array -> string conversion.
 
 		lib := Array::Array.new(target.ARRAY_TYPE)
-		lib.extend_from_string(BC_Lib::LIBRARY_INIT_STRING)
+		lib.extend_from_string(BC_Lib::LIB_INIT_STR)
 		lib.append(BC_Lib::LIBRARY_VERSION)
 
 		lib.append(ser_mods.len())

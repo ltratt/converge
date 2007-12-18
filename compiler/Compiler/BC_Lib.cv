@@ -27,7 +27,7 @@ import BC_Mod, BC_Pkg
 
 //
 
-LIBRARY_INIT_STRING := "CONVLIBR"
+LIB_INIT_STR := "CONVLIBR"
 LIBRARY_VERSION := 0
 
 
@@ -72,7 +72,7 @@ class BC_Lib:
 	func serialize(self):
 	
 		library := Array::Array.new(self._target.ARRAY_TYPE)
-		library.extend_from_string(LIBRARY_INIT_STRING)
+		library.extend_from_string(LIB_INIT_STR)
 		library.append(LIBRARY_VERSION)
 
 		library.append(self.modules.len())
@@ -88,3 +88,17 @@ class BC_Lib:
 		library.extend(serialized_modules)
 		
 		return library
+
+
+
+
+//
+// Succeeds if bc appears to be a valid Converge bytecode package.
+//
+
+func is_bc_lib(bc):
+
+	if bc.prefixed_by(LIB_INIT_STR):
+		return 1
+
+	fail

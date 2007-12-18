@@ -320,6 +320,10 @@ Successively generates, in order, each character in the string.
 Returns the number of characters in the string.
 </function>
 
+<function name="lower_cased">
+Returns a copy of this string with all characters converted to lower case.
+</function>
+
 <function name="prefixed_by">
 <argument name="s" />
 Succeeds if the string begins with <code>s</code> in its entirety.
@@ -339,6 +343,10 @@ Succeeds if the string ends with <code>s</code> in its entirety.
 <argument name="old" />
 <argument name="new" />
 Returns a new string with each substring matching <code>old</code> replaced with <code>new</code>.
+</function>
+
+<function name="upper_cased">
+Returns a copy of this string with all characters converted to upper case.
 </function>
 </class>
 

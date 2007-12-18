@@ -476,7 +476,7 @@ Con_Obj *_Con_Module_POSIX_File_rdmod_func(Con_Obj *thread)
 	Con_Obj *path;
 	CON_UNPACK_ARGS("S", &path);
 	
-	u_char *path_str = Con_Builtins_String_Atom_to_c_string(thread, path);
+	char *path_str = Con_Builtins_String_Atom_to_c_string(thread, path);
 
 	struct stat sb;
 	if (stat(path_str, &sb) == -1)
@@ -646,7 +646,7 @@ Con_Obj *_Con_Module_POSIX_File_rm_func(Con_Obj *thread)
 	if (CON_APPLY_NO_FAIL(is_dir, path) != NULL)
 		CON_XXX;
 	else {
-		u_char *path_str = Con_Builtins_String_Atom_to_c_string(thread, path);
+		char *path_str = Con_Builtins_String_Atom_to_c_string(thread, path);
 		unlink(path_str);
 	}	
 	

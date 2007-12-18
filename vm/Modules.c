@@ -93,7 +93,7 @@ Con_Obj *Con_Modules_get_stdlib(Con_Obj *thread, const char *ptl_mod_id)
 {
 	assert(strlen(ptl_mod_id) > strlen(CON_DIR_SEP));
 	
-	Con_Obj *ptl_mod_id_obj = Con_Builtins_String_Atom_new_copy(thread, ptl_mod_id, strlen(ptl_mod_id), CON_STR_UTF_8);
+	Con_Obj *ptl_mod_id_obj = Con_Builtins_String_Atom_new_copy(thread, (u_char *) ptl_mod_id, strlen(ptl_mod_id), CON_STR_UTF_8);
 	if (memcmp(ptl_mod_id, CON_DIR_SEP, strlen(CON_DIR_SEP)) != 0) {
 		return Con_Modules_get(thread, ptl_mod_id_obj);
 	}

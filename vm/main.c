@@ -79,7 +79,7 @@ int main_do(int, char **, u_char *);
 void usage(void);
 char *find_con_exec(const char *, const char *);
 ssize_t find_bytecode_start(u_char *, size_t);
-void make_mode(char *, u_char **, size_t *, char *, int);
+void make_mode(char *, u_char **, size_t *, char *, int, bool);
 
 
 
@@ -109,6 +109,7 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 	char *argv0 = argv[0];
 
 	int verbosity = 0;
+	bool mk_fresh = false;
 
 	int i = 1;
 	while (i < argc) {
@@ -119,6 +120,10 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 			switch (argv[i][1]) {
 				case 'v':
 					verbosity += 1;
+					i += 1;
+					break;
+				case 'f':
+					mk_fresh = true;
 					i += 1;
 					break;
 				default:
@@ -262,7 +267,7 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 	
 	ssize_t bytecode_start = find_bytecode_start(bytecode, bytecode_size);
 	if (bytecode_start == -1) {
-		make_mode(prog_path, &bytecode, &bytecode_size, vm_path, verbosity);
+		make_mode(prog_path, &bytecode, &bytecode_size, vm_path, verbosity, mk_fresh);
 		bytecode_start = find_bytecode_start(bytecode, bytecode_size);
 		if (bytecode_start == -1) {
 			fprintf(stderr, "convergec does not appear to have produced an executeable.\n");
@@ -339,7 +344,7 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 
 void usage()
 {
-	fprintf(stderr, "Usage: %s [-v] [source file | executeable file\n", __progname);
+	fprintf(stderr, "Usage: %s [-vf] [source file | executeable file\n", __progname);
 	exit(1);
 }
 
@@ -419,7 +424,7 @@ ssize_t find_bytecode_start(u_char *bytecode, size_t bytecode_size)
 // Compile and link 'prog_path'.
 //
 
-void make_mode(char *prog_path, u_char **bytecode, size_t *bytecode_size, char *vm_path, int verbosity)
+void make_mode(char *prog_path, u_char **bytecode, size_t *bytecode_size, char *vm_path, int verbosity, bool mk_fresh)
 {
 	// First of all we try and work out if we can construct a cached path name.
 
@@ -435,7 +440,10 @@ void make_mode(char *prog_path, u_char **bytecode, size_t *bytecode_size, char *
 		cache_path[i] = '\0';
 	}
 
-	if (have_cache_path) {
+	// If we've constructed a cached path name, and unless fresh compilation is being forced, we see
+	// if we can read in the cached bytecode; if it's upto date we'll use it as is.
+
+	if (have_cache_path && !mk_fresh) {
 		if (stat(cache_path, &st) == -1)
 			goto make;
 
@@ -480,6 +488,8 @@ make:
 
 	const char *first_args[] = {vm_path, convergec_path, "-m", "-o", tmp_path, (char *) NULL};
 	int num_first_args = verbosity;
+	if (mk_fresh)
+		num_first_args += 1;
 	for (int i = 0; first_args[i] != NULL; i += 1) {
 		num_first_args += 1;
 	}
@@ -493,6 +503,8 @@ make:
 	for (int i = 0; i < verbosity; i += 1) {
 		args[j++] = "-v";
 	}
+	if (mk_fresh)
+		args[j++] = "-f";
 	args[j++] = prog_path;
 	args[j++] = NULL;
 	
@@ -543,6 +555,8 @@ make:
 
 		const char *first_args[] = {vm_path, convergec_path, "-m", "-o", fd_path, (char *) NULL};
 		int num_first_args = verbosity;
+		if (mk_fresh)
+			num_first_args += 1;
 		for (int i = 0; first_args[i] != NULL; i += 1) {
 			num_first_args += 1;
 		}
@@ -556,6 +570,8 @@ make:
 		for (int i = 0; i < verbosity; i += 1) {
 			args[j++] = "-v";
 		}
+		if (mk_fresh)
+			args[j++] = "-f";
 		args[j++] = prog_path;
 		args[j++] = NULL;
 		execv(vm_path, (char **const) args);

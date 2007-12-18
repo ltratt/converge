@@ -39,11 +39,13 @@ class Compiler:
 		options.add(Parse_Options::Option_Spec.new("output", "o", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_ONE))
 		options.add(Parse_Options::Option_Spec.new("includes", "I", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_MORE))
 		options.add(Parse_Options::Option_Spec.new("make", "m", Parse_Options::NONE, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_ONE))
+		options.add(Parse_Options::Option_Spec.new("fresh", "f", Parse_Options::NONE, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_ONE))
 		options.add(Parse_Options::Option_Spec.new("optimise", "O", Parse_Options::NONE))
 		options.add(Parse_Options::Option_Spec.new("target", "T", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_ONE))
 		options.add(Parse_Options::Option_Spec.new("verbose", "v", Parse_Options::NONE, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_MORE))
 		
 		self.mk_mode := 0
+		self.mk_fresh := 0
 		self.output_path := null
 		self.start_includes := []
 		self.verbosity := 0
@@ -57,6 +59,8 @@ class Compiler:
 				self.start_includes.extend(option_val)
 			elif option_name == "make":
 				self.mk_mode := 1
+			elif option_name == "fresh":
+				self.mk_fresh := 1
 			elif option_name == "target":
 				target_name := option_val
 			elif option_name == "verbose":
@@ -66,6 +70,9 @@ class Compiler:
 			self._usage_callback("Not enough arguments.")
 		elif extra.len() > 1:
 			self._usage_callback("Too many arguments.")
+		
+		if self.mk_fresh == 1 & self.mk_mode == 0:
+			self._usage_callback("-f makes no sense without -m.")
 
 		if self.output_path is null:
 			if self.mk_mode == 1:
@@ -374,14 +381,17 @@ class Compiler:
 				
 				compile := 0
 				if bc_mod is null:
-					// We haven't previously encountered this module, so try seeing if we can read in
-					// a cached version.
-					if bc_mod, mtime := self._read_cache_cvb(mod_id):
-						mod_id := bc_mod.get_mod_id()
-						self.mk_done_bc_mods[mod_id] := [bc_mod.get_src_path(), bc_mod]
-						self.mk_mtime_map[mod_id] := mtime
-					else:
+					if self.mk_fresh == 1:
 						compile := 1
+					else:
+						// We haven't previously encountered this module, so try seeing if we can
+						// read in a cached version.
+						if bc_mod, mtime := self._read_cache_cvb(mod_src_path):
+							mod_id := bc_mod.get_mod_id()
+							self.mk_done_bc_mods[mod_id] := [bc_mod.get_src_path(), bc_mod]
+							self.mk_mtime_map[mod_id] := mtime
+						else:
+							compile := 1
 				
 				if not bc_mod is null:
 					mtime := self.mk_mtime_map[mod_id]
@@ -425,7 +435,7 @@ class Compiler:
 		
 		// Everything is compiled. If anything has been updated, then we need to link things.
 		
-		if do_link == 1:
+		if do_link == 1 | self.mk_fresh == 1:
 			// Create the list of modules to link, including all library modules.
 			link_mods := [main_mod]
 			for src_path, mod := self.mk_done_bc_mods.iter_vals():

@@ -540,7 +540,7 @@ class Compiler:
 
 	//
 	// Attempt to write the bytecode 'bc' to the correct cached location for the src file 'src_path'.
-	// This fails silently if it is unable to do so.
+	// No exception is raised if it is unable to do so.
 	//
 
 	func _write_cache_cvb(self, src_path, bc):
@@ -554,9 +554,13 @@ class Compiler:
 				cvb_file.close()
 
 			if can_write == 1:
-				cvb_file := File::open(cvb_path, "w")
-				cvb_file.write(bc)
-				cvb_file.close()
+				try:
+					cvb_file := File::open(cvb_path, "w")
+					cvb_file.write(bc)
+					cvb_file.close()
+				catch Exceptions::File_Exception:
+					// Whatever the file exception was, we intentionally ignore it.
+					pass
 
 
 

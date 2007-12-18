@@ -1,5 +1,13 @@
 include @abs_top_srcdir@/Makefile.inc
 
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+bindir = @bindir@
+datarootdir = @datarootdir@
+datadir = @datadir@
+conexamplesdir = ${datadir}/examples/converge-@CONVERGE_VERSION@
+INSTALL = @INSTALL@
+
 
 %.cvb: %.cv
 	${CONVERGE_VM} ${CONVERGEC} -o $@ $<
@@ -7,6 +15,9 @@ include @abs_top_srcdir@/Makefile.inc
 
 all: singleton
 
+install: all
+	${INSTALL} -d ${DESTDIR}${conexamplesdir}/metaclasses
+	${INSTALL} -c -m 444 singleton.cv ${DESTDIR}${conexamplesdir}/metaclasses
 
 singleton: singleton.cvb
 	${CONVERGE_VM} ${CONVERGEL} -o singleton singleton.cvb

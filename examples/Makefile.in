@@ -4,6 +4,9 @@ all:
 	cd metaclasses && ${MAKE} ${MFLAGS}
 
 install:
+	cd compile_time && ${MAKE} ${MFLAGS} install
+	cd dsls && ${MAKE} ${MFLAGS} install
+	cd metaclasses && ${MAKE} ${MFLAGS} install
 
 clean:
 	cd compile_time && ${MAKE} ${MFLAGS} clean

@@ -1,11 +1,23 @@
 include @abs_top_srcdir@/Makefile.inc
 
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+bindir = @bindir@
+datarootdir = @datarootdir@
+datadir = @datadir@
+conexamplesdir = ${datadir}/examples/converge-@CONVERGE_VERSION@
+INSTALL = @INSTALL@
+
 
 %.cvb: %.cv
 	${CONVERGE_VM} ${CONVERGEC} -o $@ $<
 
 
 all: nested powers printf
+
+install: all
+	${INSTALL} -d ${DESTDIR}${conexamplesdir}/compile_time
+	${INSTALL} -c -m 444 nested.cv powers.cv printf.cv ${DESTDIR}${conexamplesdir}/compile_time
 
 nested: nested.cvb
 	${CONVERGE_VM} ${CONVERGEL} -o nested nested.cvb

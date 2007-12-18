@@ -708,13 +708,39 @@ if [[ "$GCC" = "yes" ]]; then
 	version=`$CC -v 2>&1 /dev/null | grep "gcc version" | sed "s/gcc version //" | sed "s/ .*//"`
 	AC_MSG_RESULT($version)
 
-	# We only enable optimisation on GCC 3.3 - on later versions it seems to cause problems.
+	# We now have to check what the safe optimisations for GCC are. This varies between versions
+	# it seems.
+	
 	AC_MSG_CHECKING([for safe gcc optimisation level])
+	found_opts=0
+	
+	# On GCC 3.3, optimisations work pretty much as advertised.
 	$CC -v 2>&1 /dev/null | grep "gcc version 3\.3" > /dev/null
 	if [[ $? -eq 0 ]]; then
 		AC_MSG_RESULT(-O3 -fno-strict-aliasing)
 		CFLAGS="$CFLAGS -O3 -fno-strict-aliasing"
-	else
+		found_opts=1
+	fi
+
+	# On GCC 4.1, we need to turn off both -fno-tree-copyrename -fno-expensive-optimizations. I have
+	# no idea why.
+	$CC -v 2>&1 /dev/null | grep "gcc version 4\.1" > /dev/null
+	if [[ $? -eq 0 ]]; then
+		AC_MSG_RESULT(-O2 -fno-strict-aliasing -fno-tree-copyrename -fno-expensive-optimizations)
+		CFLAGS="$CFLAGS -O2 -fno-strict-aliasing -fno-tree-copyrename -fno-expensive-optimizations"
+		found_opts=1
+	fi
+
+	# On GCC 4.2, we need to turn off both -fno-tree-copyrename -fno-expensive-optimizations. I have
+	# no idea why.
+	$CC -v 2>&1 /dev/null | grep "gcc version 4\.2" > /dev/null
+	if [[ $? -eq 0 ]]; then
+		AC_MSG_RESULT(-O2 -fno-strict-aliasing -fno-tree-copyrename -fno-expensive-optimizations)
+		CFLAGS="$CFLAGS -O2 -fno-strict-aliasing -fno-tree-copyrename -fno-expensive-optimizations"
+		found_opts=1
+	fi
+	
+	if [[ $found_opts -eq 0 ]]; then
 		AC_MSG_RESULT(none)
 	fi
 else

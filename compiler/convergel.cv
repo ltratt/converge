@@ -58,19 +58,19 @@ class Linker:
 		for input_path := extra_args.iter():
 			input_path := File::canon_path(input_path)
 			input_file := File::open(input_path, "r")
-			input_file_data := input_file.read()
+			bc := input_file.read()
 
-			if BC_Lib::is_bc_lib(input_file_data):
+			if BC_Lib::is_bc_lib(bc):
 				bc_lib := BC_Lib::BC_Lib.new(target)
-				for bc_mod := bc_lib.deserialize(input_file_data).iter():
+				for bc_mod := bc_lib.deserialize(bc).iter():
 					bc_mods.append(bc_mod)
-			elif BC_Mod::is_bc_mod(input_file_data):
+			elif BC_Mod::is_bc_mod(bc):
 				bc_mod := BC_Mod::BC_Mod.new(target)
-				bc_mod.deserialize_str(input_file_data)
+				bc_mod.deserialize_str(bc)
 				bc_mods.append(bc_mod)
-			elif BC_Pkg::is_bc_pkg(input_file_data):
+			elif BC_Pkg::is_bc_pkg(bc):
 				bc_pkg := BC_Pkg::BC_Pkg.new(target)
-				bc_pkg.deserialize_str(input_file_data)
+				bc_pkg.deserialize_str(bc)
 				bc_mods.append(bc_pkg)
 			else:
 				self.error(Strings::format("File '%s' is not of a known type.", input_path))
@@ -118,16 +118,16 @@ class Linker:
 		for input_path := extra_args.iter():
 			input_path := File::canon_path(input_path)
 			input_file := File::open(input_path, "r")
-			input_file_data := input_file.read()
+			bc := input_file.read()
 
-			if BC_Lib::is_bc_lib(input_file_data):
+			if BC_Lib::is_bc_lib(bc):
 				bc_lib := BC_Lib::BC_Lib.new(target)
-				for bc_mod := bc_lib.deserialize(input_file_data).iter():
+				for bc_mod := bc_lib.deserialize(bc).iter():
 					ser_mods.append(bc_mod.serialize())
-			elif BC_Mod::is_bc_mod(input_file_data):
-				ser_mods.append(input_file_data)
-			elif BC_Pkg::is_bc_pkg(input_file_data):
-				ser_mods.append(input_file_data)
+			elif BC_Mod::is_bc_mod(bc):
+				ser_mods.append(bc)
+			elif BC_Pkg::is_bc_pkg(bc):
+				ser_mods.append(bc)
 			else:
 				self.error(Strings::format("File '%s' is not of a known type.", input_path))
 

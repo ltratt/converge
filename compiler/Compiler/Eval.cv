@@ -41,9 +41,9 @@ class Eval_Compiler:
 		for lib_path := Core::get_std_libraries().iter():
 			bc_lib := BC_Lib::BC_Lib.new(self.target)
 			lib_file := File::open(lib_path, "r")
-			lib_data := lib_file.read()
+			lib_bc := lib_file.read()
 			lib_file.close()
-			for bc_mod := bc_lib.deserialize(lib_data).iter():
+			for bc_mod := bc_lib.deserialize(lib_bc).iter():
 				self._cached_mods[bc_mod.get_mod_id()] := [bc_mod.get_src_path(), bc_mod]
 
 
@@ -185,11 +185,11 @@ class Eval_Compiler:
 		cvb_path := Core::get_cache_path(src_path)
 		if File::exists(cvb_path):
 			cvb_file := File::open(cvb_path, "r")
-			cvb_data := cvb_file.read()
+			bc := cvb_file.read()
 			cvb_file.close()
-			if BC_Mod::is_bc_mod(cvb_data):
+			if BC_Mod::is_bc_mod(bc):
 				mod := BC_Mod::BC_Mod.new(self.target)
-				mod.deserialize_str(cvb_data)
+				mod.deserialize_str(bc)
 				return mod
 		
 		self.error(Strings::format("Unable to import '%s'.", src_path), src_infos)

@@ -353,9 +353,9 @@ class Compiler:
 		for lib_path := Core::get_std_libraries().iter():
 			bc_lib := BC_Lib::BC_Lib.new(self.target)
 			lib_file := File::open(lib_path, "r")
-			lib_data := lib_file.read()
+			lib_bc := lib_file.read()
 			lib_file.close()
-			for bc_mod := bc_lib.deserialize(lib_data).iter():
+			for bc_mod := bc_lib.deserialize(lib_bc).iter():
 				lib_mods.append(bc_mod)
 				lib_mod_ids.add(bc_mod.get_mod_id())
 				self.mk_done_bc_mods[bc_mod.get_mod_id()] := [bc_mod.get_src_path(), bc_mod]
@@ -537,11 +537,11 @@ class Compiler:
 			cvb_mtime := File::mtime(cvb_path)
 			if cvb_mtime > File::mtime(src_path):
 				cvb_file := File::open(cvb_path, "r")
-				cvb_data := cvb_file.read()
+				bc := cvb_file.read()
 				cvb_file.close()
-				if BC_Mod::is_bc_mod(cvb_data):
+				if BC_Mod::is_bc_mod(bc):
 					mod := BC_Mod::BC_Mod.new(self.internal_target)
-					mod.deserialize_str(cvb_data)
+					mod.deserialize_str(bc)
 					return [mod, cvb_mtime]
 		
 		fail
@@ -559,9 +559,9 @@ class Compiler:
 			can_write := 1
 			if File::exists(cvb_path):
 				cvb_file := File::open(cvb_path, "r")
-				cvb_data := cvb_file.read()
+				bc := cvb_file.read()
 				cvb_file.close()
-				if not BC_Mod::is_bc_mod(cvb_data):
+				if not BC_Mod::is_bc_mod(bc):
 					can_write := 0
 
 			if can_write == 1:

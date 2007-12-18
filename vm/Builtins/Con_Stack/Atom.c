@@ -1216,7 +1216,7 @@ bool Con_Builtins_Con_Stack_Atom_pop_n_object_or_slot_lookup_apply(Con_Obj *thre
 		*((Con_Builtins_Con_Stack_Class_Type *) (con_stack_atom->stack + slot_lookup_stackp + sizeof(Con_Obj *))) = CON_BUILTINS_CON_STACK_CLASS_OBJECT;
 		
 		Con_Int shift_stackp = obj_stackp - (sizeof(Con_Builtins_Con_Stack_Class_Slot_Lookup_Apply) - sizeof(Con_Obj *));
-		memmove(con_stack_atom->stack + shift_stackp, con_stack_atom->stack + obj_stackp, con_stack_atom->stackp - shift_stackp);
+		memmove(con_stack_atom->stack + shift_stackp, con_stack_atom->stack + obj_stackp, con_stack_atom->stackp - obj_stackp);
 		con_stack_atom->stackp -= sizeof(Con_Builtins_Con_Stack_Class_Slot_Lookup_Apply) - sizeof(Con_Obj *);
 		
 		return true;

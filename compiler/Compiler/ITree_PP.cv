@@ -86,30 +86,39 @@ class ITree_PP:
 
 	func _t_ifunc_defn(self, node):
 
+		pp := []
+
 		if self._nesting.len() == 0 | self._nesting[-1] == _NEST_FUNC:
 			if node.is_bound == 0:
-				func_type := "func"
+				pp.append("func ")
 			else:
-				func_type := "bound_func"
+				pp.append("bound_func ")
 		else:
 			if node.is_bound == 1:
-				func_type := "func"
+				pp.append("func ")
 			else:
-				func_type := "unbound_func"
+				pp.append("unbound_func ")
 
-		if node.func_name is null:
-			func_name := ""
-		else:
-			func_name := self._preorder(node.func_name)
+		if not node.func_name is null:
+			pp.append(self._preorder(node.func_name))
 
-		params := Strings::join(Functional::map(self._preorder, node.params), ", ")
+		pp.append("(")
+		pp.append(Strings::join(Functional::map(self._preorder, node.params), ", "))
 		if not node.var_arg is null:
-			var_arg := self._preorder(node.var_arg)
-		else:
-			var_arg := ""
+			if node.params.len() > 0:
+				pp.append(", ")
+			pp.append("*")
+			pp.append(self._preorder(node.var_arg))
+		pp.append("):")
 		
-		if node.nonlocals.len() != 0:
-			raise "XXX"
+		nonlocals := []
+		for nonlocal_ := node.nonlocals.iter():
+			nonlocals.append(self._preorder(nonlocal_))
+		if nonlocals.len() > 0:
+			pp.append("\n")
+			pp.append(_INDENT_STRING * (self._indent_level + 1))
+			pp.append("nonlocal ")
+			pp.append(Strings::join(nonlocals, ", "))
 
 		if node.renames.len() != 0:
 			raise "XXX"
@@ -120,9 +129,11 @@ class ITree_PP:
 		self._nesting.pop()
 		self._indent_level -= 1
 
-		return Strings::format("""%s %s(%s%s):
-
-%s%s""", func_type, func_name, params, var_arg, _INDENT_STRING * (self._indent_level + 1), body)
+		pp.append("\n")
+		pp.append(_INDENT_STRING * (self._indent_level + 1))
+		pp.append(body)
+		
+		return Strings::join(pp, "")
 
 
 

@@ -170,8 +170,9 @@ class Compiler:
 			if src_path, bc_mod := self.mk_done_bc_mods.find(mod_id):
 				return bc_mod
 	
-		if bc_mod, mtime := self._read_cache_cvb(src_path):
-			return bc_mod
+		if not(self.mk_mode == 1 & self.mk_fresh == 1):
+			if bc_mod, mtime := self._read_cache_cvb(src_path):
+				return bc_mod
 
 		if self.mk_mode == 0:
 			self.error(Strings::format("Can not find compiled version of '%s'.", src_path), src_infos)

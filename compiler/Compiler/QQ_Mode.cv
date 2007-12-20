@@ -268,7 +268,7 @@ class QQ_Mode:
 		contains_iinsert := 0
 		for expr := node.exprs.iter():
 			if ITree::IInsert.instantiated(expr):
-				block.append(self._process_insert(expr, _pi_expr_body))
+				block.append(self._process_insert(expr, _pi_expr_seq))
 				contains_iinsert := 1
 			else:
 				block.append(self._preorder(expr))
@@ -832,7 +832,7 @@ func _expr_block_magic(exprs):
 // normally count as an expression).
 //
 
-func _pi_expr_body(expr, src_infos):
+func _pi_expr_seq(expr, src_infos):
 
 	if Builtins::List.instantiated(expr):
 		post := []

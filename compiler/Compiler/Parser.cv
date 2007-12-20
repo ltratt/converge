@@ -67,8 +67,8 @@ class_field     ::= class_defn
 				::= insert
                 ::= "PASS"
 
-func_defn            ::= func_type func_name "(" func_params ")" ":" "INDENT" func_decls expr_body "DEDENT"
-                    ::= func_type func_name "(" func_params ")" "{" "INDENT" func_decls expr_body "DEDENT" "NEWLINE" "}"
+func_defn            ::= func_type func_name "(" func_params ")" ":" "INDENT" func_decls expr_seq "DEDENT"
+                    ::= func_type func_name "(" func_params ")" "{" "INDENT" func_decls expr_seq "DEDENT" "NEWLINE" "}"
                     ::= func_type func_name "(" func_params ")" "{" expr "}"
 func_type           ::= "FUNC"
                     ::= "BOUND_FUNC"
@@ -103,7 +103,7 @@ func_decl_nonlocals ::= "NONLOCAL" "ID" ( "," "ID" )* "NEWLINE"
 func_decl_rename    ::= "RENAME" "ID" "AS" "ID" ( "," "ID" "AS" "ID" )* "NEWLINE"
 
 
-expr_body ::= expr ( "NEWLINE" expr )*
+expr_seq ::= expr ( "NEWLINE" expr )*
 
 expr ::= class_defn
      ::= func_defn
@@ -147,31 +147,31 @@ expr ::= class_defn
      ::= quasi_quotes
      ::= brackets
 
-if      ::= "IF" expr ":" "INDENT" expr_body "DEDENT" ( if_elif )* if_else
-        ::= "IF" expr "{" "INDENT" expr_body "DEDENT" "NEWLINE" "}" ( if_elif )* if_else
-ndif    ::= "NDIF" expr ":" "INDENT" expr_body "DEDENT" ( if_elif )*
-        ::= "NDIF" expr "{" "INDENT" expr_body "DEDENT" "NEWLINE" "}" ( if_elif )*
-if_elif ::= "NEWLINE" "ELIF" expr ":" "INDENT" expr_body "DEDENT"
-        ::= "NEWLINE" "ELIF" expr "{" "INDENT" expr_body "DEDENT" "NEWLINE" "}"
-if_else ::= "NEWLINE" "ELSE" ":" "INDENT" expr_body "DEDENT"
-        ::= "NEWLINE" "ELSE" "{" "INDENT" expr_body "DEDENT" "NEWLINE" "}"
+if      ::= "IF" expr ":" "INDENT" expr_seq "DEDENT" ( if_elif )* if_else
+        ::= "IF" expr "{" "INDENT" expr_seq "DEDENT" "NEWLINE" "}" ( if_elif )* if_else
+ndif    ::= "NDIF" expr ":" "INDENT" expr_seq "DEDENT" ( if_elif )*
+        ::= "NDIF" expr "{" "INDENT" expr_seq "DEDENT" "NEWLINE" "}" ( if_elif )*
+if_elif ::= "NEWLINE" "ELIF" expr ":" "INDENT" expr_seq "DEDENT"
+        ::= "NEWLINE" "ELIF" expr "{" "INDENT" expr_seq "DEDENT" "NEWLINE" "}"
+if_else ::= "NEWLINE" "ELSE" ":" "INDENT" expr_seq "DEDENT"
+        ::= "NEWLINE" "ELSE" "{" "INDENT" expr_seq "DEDENT" "NEWLINE" "}"
         ::=
 
-while ::= "WHILE" expr ":" "INDENT" expr_body "DEDENT" exhausted broken
+while ::= "WHILE" expr ":" "INDENT" expr_seq "DEDENT" exhausted broken
       ::= "WHILE" expr
 
-for ::= "FOR" expr ":" "INDENT" expr_body "DEDENT" exhausted broken
+for ::= "FOR" expr ":" "INDENT" expr_seq "DEDENT" exhausted broken
     ::= "FOR" expr
 
-try           ::= "TRY" ":" "INDENT" expr_body "DEDENT" ( try_catch )*
-try_catch     ::= "NEWLINE" "CATCH" expr try_catch_var ":" "INDENT" expr_body "DEDENT"
+try           ::= "TRY" ":" "INDENT" expr_seq "DEDENT" ( try_catch )*
+try_catch     ::= "NEWLINE" "CATCH" expr try_catch_var ":" "INDENT" expr_seq "DEDENT"
 try_catch_var ::= "INTO" name
               ::=
 
-exhausted ::= "NEWLINE" "EXHAUSTED" ":" "INDENT" expr_body "DEDENT"
+exhausted ::= "NEWLINE" "EXHAUSTED" ":" "INDENT" expr_seq "DEDENT"
           ::=
 
-broken ::= "NEWLINE" "BROKEN" ":" "INDENT" expr_body "DEDENT"
+broken ::= "NEWLINE" "BROKEN" ":" "INDENT" expr_seq "DEDENT"
        ::=
 
 number ::= "INT"
@@ -273,7 +273,7 @@ insert        ::= "$" insert_type "{" expr "}"
 insert_type   ::= "ID"
               ::=
 
-quasi_quotes ::= quasi_quotes_customize "INDENT" expr_body "DEDENT" "NEWLINE" "|]"
+quasi_quotes ::= quasi_quotes_customize "INDENT" expr_seq "DEDENT" "NEWLINE" "|]"
              ::= quasi_quotes_customize expr "|]"
 quasi_quotes_customize ::= "[" "<" expr ">" "|"
 quasi_quotes_customize ::= "[|"
@@ -311,12 +311,12 @@ func parse(src_data):
 
 
 
-func parse_expr_body(src_data):
+func parse_expr_seq(src_data):
 
 	compiler := Core::peek_compiler()
 
 	compiler.tokenizer.tokenize(src_data, [[compiler.mod_id, 0]], [], [])
 	tokens_map := Tokenizer::tokens_map([], [])
-	grammar, rule_names := Grammar::compile(GRAMMAR, "expr_body", tokens_map)
+	grammar, rule_names := Grammar::compile(GRAMMAR, "expr_seq", tokens_map)
 
 	return Parser.new().parse(grammar, rule_names, tokens_map, compiler.tokenizer.tokens)

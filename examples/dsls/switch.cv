@@ -28,8 +28,8 @@ import Compiler::Parser, Compiler::IMod_Gen, Compiler::ITree_PP, Compiler::Token
 GRAMMAR := Parser::GRAMMAR + """
 switch  ::= "SWITCH" "ID" ":" "INDENT" clauses default "DEDENT"
 clauses ::= ( clause "NEWLINE" )* clause
-clause  ::= "CASE" expr ":" "INDENT" expr_body "DEDENT"
-default ::= "NEWLINE" "DEFAULT" ":" "INDENT" expr_body "DEDENT"
+clause  ::= "CASE" expr ":" "INDENT" expr_seq "DEDENT"
+default ::= "NEWLINE" "DEFAULT" ":" "INDENT" expr_seq "DEDENT"
         ::=
 """
 
@@ -68,21 +68,21 @@ class Switch_Translator(IMod_Gen::IMod_Gen):
 	
 	func _t_clause(self, node, extra_src_infos):
 	
-		// clause ::= "CASE" expr ":" "INDENT" expr_body "DEDENT"
+		// clause ::= "CASE" expr ":" "INDENT" expr_seq "DEDENT"
 		
-		return CEI::iclause([<node[1].src_infos>| $c{self._var} == ${self._preorder(node[2], extra_src_infos + __SRC_INFO__)} |], self._eval_expr_body(node[5], extra_src_infos + __SRC_INFO__))
+		return CEI::iclause([<node[1].src_infos>| $c{self._var} == ${self._preorder(node[2], extra_src_infos + __SRC_INFO__)} |], self._preorder(node[5], extra_src_infos + __SRC_INFO__))
 		
 
 
 	func _t_default(self, node, extra_src_infos):
 	
-		// default ::= "NEWLINE" "DEFAULT" ":" "INDENT" expr_body "DEDENT"
+		// default ::= "NEWLINE" "DEFAULT" ":" "INDENT" expr_seq "DEDENT"
 		//         ::=
 		
 		if node.len() == 1:
 			return [| pass |]
 		else:
-			return self._eval_expr_body(node[5], extra_src_infos + __SRC_INFO__)
+			return self._preorder(node[5], extra_src_infos + __SRC_INFO__)
 	
 
 

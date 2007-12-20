@@ -57,9 +57,9 @@ class IMod_Gen:
 
 
 
-	func gen_expr_body(self, parse_tree):
+	func gen_expr_seq(self, parse_tree):
 
-		itree := self._eval_expr_body(parse_tree)
+		itree := self._preorder(parse_tree)
 		ITree_WF::wf(itree)
 
 		return itree
@@ -69,62 +69,6 @@ class IMod_Gen:
 	/////////////////////////////////////////////////////////////////////////////////////////////////
 	// Helper functions
 	//
-
-	//
-	// Returns an IExpr_Seq representing the expressions in 'node' which should be an 'expr_body'
-	// node.
-	//
-
-	func _eval_expr_body(self, node, extra_src_infos := []):
-
-		// expr_body ::= expr ( "NEWLINE" expr )*
-
-		exprs := []
-		i := 1
-		while i < node.len():
-			if node[i][1][0] == "splice":
-				expr := self._eval_splice(node[i][1], extra_src_infos)
-				if Builtins::List.conformed_by(expr):
-					tmp_exprs := []
-					for e := expr.iter():
-						ITree_WF::wf_expr(e, "splice result", extra_src_infos + node[i][1][1][1].src_infos)
-						if node[i][1][1][0] == "expr_splice":
-							// expr_splice  ::= "$" splice_type "<" expr ">"
-
-							// With normal splices, we augment the src infos with the position of the
-							// splice (as well as the src infos that the returned itree has as
-							// standard).
-
-							tmp_exprs.append(e.extended_src_infos(node[i][1][1][1].src_infos))
-						else:
-							tmp_exprs.append(e)
-					exprs.extend(tmp_exprs)
-				elif not ITree::IPass.instantiated(expr):
-					// Note that we only execute this clause if the expression returned wasn't a
-					// "pass" statement; if it was, we let it sail on harmlessly by.
-
-					ITree_WF::wf_expr(expr, "splice result", extra_src_infos + node[i][1][1][1].src_infos)
-					if node[i][1][1][0] == "expr_splice":
-						// expr_splice  ::= "$" splice_type "<" expr ">"
-
-						// With normal splices, we augment the src infos with the position of the
-						// splice (as well as the src infos that the returned itree has as standard).
-
-						exprs.append(expr.extended_src_infos(node[i][1][1][1].src_infos))
-					else:
-						exprs.append(expr)
-			elif node[i][1][0] == "import":
-				exprs.extend(self._t_import(node[i][1], extra_src_infos))
-			else:
-				exprs.append(self._preorder(node[i], extra_src_infos))
-			i += 2
-
-		if exprs.len() == 0:
-			return ITree::IExpr_Seq.new(exprs, extra_src_infos)
-		else:
-			return ITree::IExpr_Seq.new(exprs, extra_src_infos + exprs[0].src_infos)
-
-
 
 	func _eval_splice(self, node, extra_src_infos):
 
@@ -496,9 +440,9 @@ class IMod_Gen:
 
 	func _t_func_defn(self, node, extra_src_infos):
 
-		// func_defn ::= func_type func_name "(" func_params ")" ":" "INDENT" func_decls expr_body
+		// func_defn ::= func_type func_name "(" func_params ")" ":" "INDENT" func_decls expr_seq
 		//              "DEDENT"
-		//          ::= func_type func_name "(" func_params ")" "{" "INDENT" func_decls expr_body
+		//          ::= func_type func_name "(" func_params ")" "{" "INDENT" func_decls expr_seq
 		//              "DEDENT" "NEWLINE" "}"
 		//          ::= func_type func_name "(" func_params ")" "{" expr "}"
 
@@ -632,7 +576,7 @@ class IMod_Gen:
 
 				i += 2
 
-			body := self._eval_expr_body(node[9])
+			body := self._preorder(node[9], extra_src_infos)
 
 		self._nesting.pop()
 		
@@ -703,26 +647,26 @@ class IMod_Gen:
 
 	func _t_if(self, node, extra_src_infos):
 	
-		// if ::= "IF" expr ":" "INDENT" expr_body "DEDENT" ( if_elif )* if_else
-		//    ::= "IF" expr "{" "INDENT" expr_body "DEDENT" "NEWLINE" "}" ( if_elif )* if_else
+		// if ::= "IF" expr ":" "INDENT" expr_seq "DEDENT" ( if_elif )* if_else
+		//    ::= "IF" expr "{" "INDENT" expr_seq "DEDENT" "NEWLINE" "}" ( if_elif )* if_else
 		
-		clauses := [ITree::IClause.new(self._preorder(node[2], extra_src_infos), self._eval_expr_body(node[5]), extra_src_infos + node[1].src_infos)]
+		clauses := [ITree::IClause.new(self._preorder(node[2], extra_src_infos), self._preorder(node[5]), extra_src_infos + node[1].src_infos)]
 		if Builtins::List.conformed_by(node[7]):
-			// if ::= "IF" expr ":" "INDENT" expr_body "DEDENT" ( if_elif )* if_else
+			// if ::= "IF" expr ":" "INDENT" expr_seq "DEDENT" ( if_elif )* if_else
 			i := 7
 		else:
-			// if ::= "IF" expr "{" "INDENT" expr_body "DEDENT" "NEWLINE" "}" ( if_elif )* if_else
+			// if ::= "IF" expr "{" "INDENT" expr_seq "DEDENT" "NEWLINE" "}" ( if_elif )* if_else
 			i := 9
 		while node[i][0] == "if_elif":
-			// if_elif ::= "NEWLINE" "ELIF" expr ":" "INDENT" expr_body "DEDENT"
-			//         ::= "NEWLINE" "ELIF" expr "{" "INDENT" expr_body "DEDENT" "NEWLINE" "}"
-			clauses.append(ITree::IClause.new(self._preorder(node[i][3], extra_src_infos), self._eval_expr_body(node[i][6]), extra_src_infos + node[i][2].src_infos))
+			// if_elif ::= "NEWLINE" "ELIF" expr ":" "INDENT" expr_seq "DEDENT"
+			//         ::= "NEWLINE" "ELIF" expr "{" "INDENT" expr_seq "DEDENT" "NEWLINE" "}"
+			clauses.append(ITree::IClause.new(self._preorder(node[i][3], extra_src_infos), self._preorder(node[i][6]), extra_src_infos + node[i][2].src_infos))
 			i += 1
 		
 		if node[-1].len() > 1:
-			// if_else ::= "NEWLINE" "ELSE" ":" "INDENT" expr_body "DEDENT"
-			//         ::= "NEWLINE" "ELSE" "{" "INDENT" expr_body "DEDENT" "NEWLINE" "}"
-			else_body := self._eval_expr_body(node[-1][5])
+			// if_else ::= "NEWLINE" "ELSE" ":" "INDENT" expr_seq "DEDENT"
+			//         ::= "NEWLINE" "ELSE" "{" "INDENT" expr_seq "DEDENT" "NEWLINE" "}"
+			else_body := self._preorder(node[-1][5])
 		else:
 			// if_else ::=
 			else_body := null
@@ -733,20 +677,20 @@ class IMod_Gen:
 
 	func _t_ndif(self, node, extra_src_infos):
 	
-		// ndif ::= "NDIF" expr ":" "INDENT" expr_body "DEDENT" ( if_elif )*
-		//      ::= "NDIF" expr "{" "INDENT" expr_body "DEDENT" "NEWLINE" "}" ( if_elif )*
+		// ndif ::= "NDIF" expr ":" "INDENT" expr_seq "DEDENT" ( if_elif )*
+		//      ::= "NDIF" expr "{" "INDENT" expr_seq "DEDENT" "NEWLINE" "}" ( if_elif )*
 		
-		clauses := [ITree::IClause.new(self._preorder(node[2], extra_src_infos), self._eval_expr_body(node[5]), extra_src_infos + node[1].src_infos)]
+		clauses := [ITree::IClause.new(self._preorder(node[2], extra_src_infos), self._preorder(node[5]), extra_src_infos + node[1].src_infos)]
 		if node.len() == 7 | Builtins::List.conformed_by(node[7]):
-			// ndif ::= "NDIF" expr ":" "INDENT" expr_body "DEDENT" ( if_elif )*
+			// ndif ::= "NDIF" expr ":" "INDENT" expr_seq "DEDENT" ( if_elif )*
 			i := 7
 		else:
-			// ndif ::= "NDIF" expr "{" "INDENT" expr_body "DEDENT" "NEWLINE" "}" ( if_elif )*
+			// ndif ::= "NDIF" expr "{" "INDENT" expr_seq "DEDENT" "NEWLINE" "}" ( if_elif )*
 			i := 9
 		while i < node.len() & node[i][0] == "if_elif":
-			// if_elif ::= "NEWLINE" "ELIF" expr ":" "INDENT" expr_body "DEDENT"
-			//         ::= "NEWLINE" "ELIF" expr "{" "INDENT" expr_body "DEDENT" "NEWLINE" "}"
-			clauses.append(ITree::IClause.new(self._preorder(node[i][3], extra_src_infos), self._eval_expr_body(node[i][6]), extra_src_infos + node[i][2].src_infos))
+			// if_elif ::= "NEWLINE" "ELIF" expr ":" "INDENT" expr_seq "DEDENT"
+			//         ::= "NEWLINE" "ELIF" expr "{" "INDENT" expr_seq "DEDENT" "NEWLINE" "}"
+			clauses.append(ITree::IClause.new(self._preorder(node[i][3], extra_src_infos), self._preorder(node[i][6]), extra_src_infos + node[i][2].src_infos))
 			i += 1
 
 		return ITree::INDIf.new(clauses, extra_src_infos + node[1].src_infos)
@@ -755,42 +699,42 @@ class IMod_Gen:
 
 	func _t_while(self, node, extra_src_infos):
 	
-		// while ::= "WHILE" expr ":" "INDENT" expr_body "DEDENT" exhausted broken
+		// while ::= "WHILE" expr ":" "INDENT" expr_seq "DEDENT" exhausted broken
 		//       ::= "WHILE" expr
 		
 		if node.len() == 9:
-			// while ::= "WHILE" expr ":" "INDENT" expr_body "DEDENT" exhausted broken
-			expr_body := self._eval_expr_body(node[5])
+			// while ::= "WHILE" expr ":" "INDENT" expr_seq "DEDENT" exhausted broken
+			expr_seq := self._preorder(node[5])
 			if node[7].len() > 1:
-				exhausted_body := self._eval_expr_body(node[7][5])
+				exhausted_body := self._preorder(node[7][5])
 			else:
 				exhausted_body := null
 			if node[8].len() > 1:
-				broken_body := self._eval_expr_body(node[8][5])
+				broken_body := self._preorder(node[8][5])
 			else:
 				broken_body := null
 		else:
 			// while ::= "WHILE" expr
-			expr_body := exhausted_body := broken_body := null
+			expr_seq := exhausted_body := broken_body := null
 		
-		return ITree::IWhile.new(self._preorder(node[2], extra_src_infos), expr_body, exhausted_body, broken_body, extra_src_infos + node[1].src_infos)
+		return ITree::IWhile.new(self._preorder(node[2], extra_src_infos), expr_seq, exhausted_body, broken_body, extra_src_infos + node[1].src_infos)
 
 
 
 	func _t_for(self, node, extra_src_infos):
 	
-		// for ::= "FOR" expr ":" "INDENT" expr_body "DEDENT" exhausted broken
+		// for ::= "FOR" expr ":" "INDENT" expr_seq "DEDENT" exhausted broken
 		//     ::= "FOR" expr
 
 		if node.len() == 9:
-			// while ::= "FOR" expr ":" "INDENT" expr_body "DEDENT" exhausted broken
-			body := self._eval_expr_body(node[5])
+			// while ::= "FOR" expr ":" "INDENT" expr_seq "DEDENT" exhausted broken
+			body := self._preorder(node[5])
 			if node[7].len() > 1:
-				exhausted_body := self._eval_expr_body(node[7][5])
+				exhausted_body := self._preorder(node[7][5])
 			else:
 				exhausted_body := null
 			if node[8].len() > 1:
-				broken_body := self._eval_expr_body(node[8][5])
+				broken_body := self._preorder(node[8][5])
 			else:
 				broken_body := null
 		else:
@@ -805,21 +749,21 @@ class IMod_Gen:
 
 	func _t_try(self, node, extra_src_infos):
 
-		// try ::= "TRY" ":" "INDENT" expr_body "DEDENT" ( try_catch )*
+		// try ::= "TRY" ":" "INDENT" expr_seq "DEDENT" ( try_catch )*
 		
-		body := self._eval_expr_body(node[4])
+		body := self._preorder(node[4])
 
 		catches := []
 		i := 6
 		while i < node.len():
-			// try_catch ::= "NEWLINE" "CATCH" expr try_catch_var ":" "INDENT" expr_body "DEDENT"
+			// try_catch ::= "NEWLINE" "CATCH" expr try_catch_var ":" "INDENT" expr_seq "DEDENT"
 			catch_expr := self._preorder(node[i][3])
 			if node[i][4].len() > 1:
 				// try_catch_var ::= "INTO" name
 				catch_var := self._preorder(node[i][4][2])
 			else:
 				catch_var := null
-			catch_body := self._eval_expr_body(node[i][7])
+			catch_body := self._preorder(node[i][7])
 			catches.append(ITree::ICatch.new(catch_expr, catch_var, catch_body, node[i][2].src_infos))
 			i += 1
 		
@@ -1281,13 +1225,13 @@ class IMod_Gen:
 
 	func _t_quasi_quotes(self, node, extra_src_infos):
 
-		// quasi_quotes ::= quasi_quotes_customize "INDENT" expr_body "DEDENT" "NEWLINE" "|]"
+		// quasi_quotes ::= quasi_quotes_customize "INDENT" expr_seq "DEDENT" "NEWLINE" "|]"
 		//              ::= quasi_quotes_customize expr "|]"
 
 		if node.len() == 7:
-			// expr_quasi_quotes ::= quasi_quotes_customize "INDENT" expr_body "DEDENT" "NEWLINE"
+			// expr_quasi_quotes ::= quasi_quotes_customize "INDENT" expr_seq "DEDENT" "NEWLINE"
 			//                       "|]"
-			body := self._eval_expr_body(node[3], extra_src_infos)
+			body := self._preorder(node[3], extra_src_infos)
 		else:
 			// expr_quasi_quotes ::= quasi_quotes_customize expr "|]"
 			expr := self._preorder(node[2])
@@ -1305,3 +1249,63 @@ class IMod_Gen:
 		ITree_WF::wf(sqq)
 
 		return sqq
+
+
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////
+	// "Virtual" functions
+	//
+
+	//
+	// Returns an IExpr_Seq representing the expressions in 'node' which should be an 'expr_seq'
+	// node.
+	//
+
+	func _t_expr_seq(self, node, extra_src_infos := []):
+
+		// expr_seq ::= expr ( "NEWLINE" expr )*
+
+		exprs := []
+		i := 1
+		while i < node.len():
+			if node[i][1][0] == "splice":
+				expr := self._eval_splice(node[i][1], extra_src_infos)
+				if Builtins::List.conformed_by(expr):
+					tmp_exprs := []
+					for e := expr.iter():
+						ITree_WF::wf_expr(e, "splice result", extra_src_infos + node[i][1][1][1].src_infos)
+						if node[i][1][1][0] == "expr_splice":
+							// expr_splice  ::= "$" splice_type "<" expr ">"
+
+							// With normal splices, we augment the src infos with the position of the
+							// splice (as well as the src infos that the returned itree has as
+							// standard).
+
+							tmp_exprs.append(e.extended_src_infos(node[i][1][1][1].src_infos))
+						else:
+							tmp_exprs.append(e)
+					exprs.extend(tmp_exprs)
+				elif not ITree::IPass.instantiated(expr):
+					// Note that we only execute this clause if the expression returned wasn't a
+					// "pass" statement; if it was, we let it sail on harmlessly by.
+
+					ITree_WF::wf_expr(expr, "splice result", extra_src_infos + node[i][1][1][1].src_infos)
+					if node[i][1][1][0] == "expr_splice":
+						// expr_splice  ::= "$" splice_type "<" expr ">"
+
+						// With normal splices, we augment the src infos with the position of the
+						// splice (as well as the src infos that the returned itree has as standard).
+
+						exprs.append(expr.extended_src_infos(node[i][1][1][1].src_infos))
+					else:
+						exprs.append(expr)
+			elif node[i][1][0] == "import":
+				exprs.extend(self._t_import(node[i][1], extra_src_infos))
+			else:
+				exprs.append(self._preorder(node[i], extra_src_infos))
+			i += 2
+
+		if exprs.len() == 0:
+			return ITree::IExpr_Seq.new(exprs, extra_src_infos)
+		else:
+			return ITree::IExpr_Seq.new(exprs, extra_src_infos + exprs[0].src_infos)

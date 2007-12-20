@@ -58,19 +58,6 @@ class ITree_WF:
 
 
 
-	func _check_expr_block(self, parent_node, part, node):
-	
-		if not Builtins::List.conformed_by(node.exprs):
-			self._type_error(node, "exprs", node.exprs, "List")
-		
-		for i := 0.iter_to(node.exprs.len()):
-			expr := node.exprs[i]
-			if ITree::IPass.instantiated(expr):
-				continue
-			self._check_expr(node, Strings::format("%s[%d]", part, i), expr)
-
-
-
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Traversal
 	//
@@ -154,7 +141,7 @@ class ITree_WF:
 		for i := 0.iter_to(node.renames.len()):
 			raise "XXX"
 		
-		self._check_expr_block(node, "body", node.body)
+		self._preorder(node.body)
 
 
 
@@ -165,10 +152,10 @@ class ITree_WF:
 			if not ITree::IClause.instantiated(clause):
 				self._type_error(node, "clause", clause, "IClause")
 			self._check_expr(node, Strings::format("clause[%d].condition", i), clause.condition)
-			self._check_expr_block(node, Strings::format("clause[%d].body", i), clause.body)
+			self._preorder(clause.body)
 		
 		if not node.else_body is null:
-			self._check_expr_block(node, "else body", node.else_body)
+			self._preorder(node.else_body)
 
 
 
@@ -179,7 +166,7 @@ class ITree_WF:
 			if not ITree::IClause.instantiated(clause):
 				self._type_error(node, "clause", clause, "IClause")
 			self._check_expr(node, Strings::format("clause[%d].condition", i), clause.condition)
-			self._check_expr_block(node, Strings::format("clause[%d].body", i), clause.body)
+			self._preorder(clause.body)
 
 
 
@@ -200,11 +187,11 @@ class ITree_WF:
 	
 		self._check_expr(node, "condition", node.condition)
 		if not node.body is null:
-			self._check_expr_block(node, "body", node.body)
+			self._preorder(node.body)
 		if not node.exhausted_body is null:
-			self._check_expr_block(node, "exhausted_body", node.exhausted_body)
+			self._preorder(node.exhausted_body)
 		if not node.broken_body is null:
-			self._check_expr_block(node, "broken_body", node.broken_body)
+			self._preorder(node.broken_body)
 
 
 
@@ -212,17 +199,17 @@ class ITree_WF:
 	
 		self._check_expr(node, "condition", node.condition)
 		if not node.body is null:
-			self._check_expr_block(node, "body", node.body)
+			self._preorder(node.body)
 		if not node.exhausted_body is null:
-			self._check_expr_block(node, "exhausted_body", node.exhausted_body)
+			self._preorder(node.exhausted_body)
 		if not node.broken_body is null:
-			self._check_expr_block(node, "broken_body", node.broken_body)
+			self._preorder(node.broken_body)
 
 
 
 	func _t_itry(self, node):
 
-		self._check_expr_block(node, "body", node.body)
+		self._preorder(node.body)
 		for catch_ := node.catches.iter():
 			self._preorder(catch_)
 
@@ -454,7 +441,7 @@ class ITree_WF:
 	
 	func _t_iquasi_quotes(self, node):
 	
-		self._check_expr_block(node, "body", node.body)
+		self._preorder(node.body)
 		
 		if not node.extra_src_infos is null:
 			self._check_expr(node, "extra_src_infos", node.extra_src_infos)
@@ -475,8 +462,11 @@ class ITree_WF:
 
 		if not Builtins::List.conformed_by(node.exprs):
 			self._type_error(node, "exprs", node.exprs, "List")
-		for elem := node.exprs.iter():
-			self._check_expr(node, "expr", elem)
+
+		for expr := node.exprs.iter():
+			if ITree::IPass.instantiated(expr):
+				continue
+			self._check_expr(node, "expr", expr)
 
 
 
@@ -493,7 +483,7 @@ class ITree_WF:
 	func _t_iclause(self, node):
 	
 		self._check_expr(node, "condition", node.condition)
-		self._check_expr_block(node, "body", node.body)
+		self._preorder(node.body)
 
 
 
@@ -505,7 +495,7 @@ class ITree_WF:
 				self._preorder(node.var)
 			else:
 				self._type_error(node, "var", node.var, "[IVar, IInsert]")
-		self._check_expr_block(node, "body", node.body)
+		self._preorder(node.body)
 
 
 

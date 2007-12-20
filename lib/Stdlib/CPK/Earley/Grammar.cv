@@ -428,7 +428,7 @@ class Grammar:
 	func _error(self, msg, token):
 		
 		Sys::println(self._tokens_map)
-		Sys::println(Strings::format("%s: %s", token.src_info.to_str(), msg))
+		Sys::println(Strings::format("%s: %s", token.src_infos.to_str(), msg))
 		raise "XXX"
 
 

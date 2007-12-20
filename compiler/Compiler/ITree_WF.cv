@@ -128,20 +128,8 @@ class ITree_WF:
 		if not node.var_arg is null:
 			if not ITree::IVar.instantiated(node.var_arg):
 				self._type_error(node, "var_arg", node.var_arg, "IVar")
-
-		if not Builtins::List.conformed_by(node.nonlocals):
-			self._type_error(node, "nonlocals", node.nonlocals, "List")
-		for i := 0.iter_to(node.nonlocals.len()):
-			nonlocal_ := node.nonlocals[i]
-			if not ITree::IVar.instantiated(nonlocal_):
-				self._type_error(node, Strings::format("nonlocal[%s]", i), nonlocal_, "IVar")
-
-		if not Builtins::List.conformed_by(node.renames):
-			self._type_error(node, "renames", node.renames, "List")
-		for i := 0.iter_to(node.renames.len()):
-			raise "XXX"
 		
-		self._preorder(node.body)
+		self._preorder(node.block)
 
 
 
@@ -441,7 +429,7 @@ class ITree_WF:
 	
 	func _t_iquasi_quotes(self, node):
 	
-		self._preorder(node.body)
+		self._preorder(node.block)
 		
 		if not node.extra_src_infos is null:
 			self._check_expr(node, "extra_src_infos", node.extra_src_infos)
@@ -455,6 +443,24 @@ class ITree_WF:
 
 		if not Builtins::String.instantiated(node.src_path):
 			self._type_error(node, "src_path", node.src_path, "String")
+	
+	
+	
+	func _t_iblock(self, node):
+
+		if not Builtins::List.conformed_by(node.nonlocals):
+			self._type_error(node, "nonlocals", node.nonlocals, "List")
+		for i := 0.iter_to(node.nonlocals.len()):
+			nonlocal_ := node.nonlocals[i]
+			if not ITree::IVar.instantiated(nonlocal_):
+				self._type_error(node, Strings::format("nonlocal[%s]", i), nonlocal_, "IVar")
+
+		if not Builtins::List.conformed_by(node.renames):
+			self._type_error(node, "renames", node.renames, "List")
+		for i := 0.iter_to(node.renames.len()):
+			raise "XXX"
+
+		self._preorder(node.body)
 	
 
 	

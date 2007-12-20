@@ -513,7 +513,7 @@ class Code_Gen:
 		bound_vars := node.internal_bound_vars
 		
 		renames := Dict{}
-		for rename_ := node.renames.iter():
+		for rename_ := node.block.renames.iter():
 			raise "XXX"
 		
 		self._add_vars(bound_vars, renames, node.internal_import_vars)
@@ -561,7 +561,7 @@ class Code_Gen:
 			self._nesting.del(-1)
 			self._set_label(next_param_label)
 
-		self.preorder(node.body)
+		self.preorder(node.block.body)
 		self._pop_vars()
 		self._nesting.del(-1)
 

@@ -154,7 +154,10 @@ class IMod_Gen:
 			if defns_to_include.find(i):
 				defns.append(self._defns[i])
 
-		tmp_func := ITree::IFunc_Defn.new(0, splice_var, [], null, [], [], ITree::IExpr_Seq.new([ITree::IReturn.new(expr, extra_src_infos + node[1][1].src_infos)], expr.src_infos), extra_src_infos + node[1][1].src_infos)
+		body := ITree::IExpr_Seq.new([ITree::IReturn.new(expr, extra_src_infos + node[1][1].src_infos)], extra_src_infos + node[1][1].src_infos)
+		block := ITree::IBlock.new([], [], body, extra_src_infos + node[1][1].src_infos)
+
+		tmp_func := ITree::IFunc_Defn.new(0, splice_var, [], null, block, extra_src_infos + node[1][1].src_infos)
 		tmp_defns := defns + [ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(splice_name, extra_src_infos + node[1][1].src_infos)], tmp_func, extra_src_infos + node[1][1].src_infos)]
 		tmp_imodule := ITree::IModule.new(splice_name, tmp_defns, extra_src_infos + node[1][1].src_infos)
 
@@ -440,11 +443,10 @@ class IMod_Gen:
 
 	func _t_func_defn(self, node, extra_src_infos):
 
-		// func_defn ::= func_type func_name "(" func_params ")" ":" "INDENT" func_decls expr_seq
-		//              "DEDENT"
-		//          ::= func_type func_name "(" func_params ")" "{" "INDENT" func_decls expr_seq
-		//              "DEDENT" "NEWLINE" "}"
-		//          ::= func_type func_name "(" func_params ")" "{" expr "}"
+		// func_defn ::= func_type func_name "(" func_params ")" ":" "INDENT" block "DEDENT"
+		//           ::= func_type func_name "(" func_params ")" "{" "INDENT" block "DEDENT"
+		//               "NEWLINE" "}"
+		//           ::= func_type func_name "(" func_params ")" "{" expr "}"
 
 		if node[1][1].type == "FUNC":
 			// func_type ::= "FUNC"
@@ -554,33 +556,13 @@ class IMod_Gen:
 
 		if node.len() == 9:
 			body := ITree::IExpr_Seq.new([self._preorder(node[7])], extra_src_infos + node[6].src_infos)
+			block := ITree::IBlock.new([], [], body, extra_src_infos + node[6].src_infos)
 		else:
-			i := 1
-			while i < node[8].len():
-				// func_decls ::= func_decl { "NEWLINE" func_decl }*
-				// func_decl  ::= func_decl_nonlocals
-				//            ::= func_decl_rename
-
-				if node[8][i][1][0] == "func_decl_nonlocals":
-					// func_decl_nonlocals ::= "NONLOCAL" "ID" ( "," "ID" )* "NEWLINE"
-					j := 2
-					while j < node[8][i][1].len():
-						nonlocals_.append(ITree::IVar.new(node[8][i][1][j].value, extra_src_infos + node[8][i][1][j].src_infos))
-						j += 2
-				else:
-					// func_decl_rename ::= "RENAME" "ID" "AS" "ID" ( "," "RENAME" "ID" "AS" "ID" )* "NEWLINE"
-					j := 2
-					while j < node[8][i][1].len():
-						renames.append([ITree::IVar.new(node[8][i][1][j].value, extra_src_infos + node[8][i][1][j].src_infos), ITree::IVar.new(node[8][i][1][j + 2].value, extra_src_infos + node[8][i][1][j + 2].src_infos)])
-						j += 5
-
-				i += 2
-
-			body := self._preorder(node[9], extra_src_infos)
+			block := self._preorder(node[8])
 
 		self._nesting.pop()
 		
-		return ITree::IFunc_Defn.new(is_bound, func_name, params, var_args, nonlocals_, renames, body, extra_src_infos + node[1][1].src_infos)
+		return ITree::IFunc_Defn.new(is_bound, func_name, params, var_args, block, extra_src_infos + node[1][1].src_infos)
 
 
 
@@ -1231,11 +1213,12 @@ class IMod_Gen:
 		if node.len() == 7:
 			// expr_quasi_quotes ::= quasi_quotes_customize "INDENT" expr_seq "DEDENT" "NEWLINE"
 			//                       "|]"
-			body := self._preorder(node[3], extra_src_infos)
+			block := self._preorder(node[3], extra_src_infos)
 		else:
 			// expr_quasi_quotes ::= quasi_quotes_customize expr "|]"
 			expr := self._preorder(node[2])
 			body := ITree::IExpr_Seq.new([expr], extra_src_infos + expr.src_infos)
+			block := ITree::IBlock.new([], [], body, extra_src_infos + expr.src_infos)
 
 		if node[1].len() == 2:
 			// quasi_quotes_customize ::= "[|"
@@ -1244,7 +1227,7 @@ class IMod_Gen:
 			// quasi_quotes_customize ::= "[" "<" expr ">" "|"
 			qq_extra_src_infos := self._preorder(node[1][3], extra_src_infos)
 
-		sqq := ITree::IQuasi_Quotes.new(body, qq_extra_src_infos, extra_src_infos + node[1][1].src_infos)
+		sqq := ITree::IQuasi_Quotes.new(block, qq_extra_src_infos, extra_src_infos + node[1][1].src_infos)
 
 		ITree_WF::wf(sqq)
 
@@ -1252,14 +1235,44 @@ class IMod_Gen:
 
 
 
-	/////////////////////////////////////////////////////////////////////////////////////////////////
-	// "Virtual" functions
+	////////////////////////////////////////////////////////////////////////////////////////////////
+	// "Virtual" elements
 	//
+		
+	func _t_block(self, node, extra_src_infos):
 
-	//
-	// Returns an IExpr_Seq representing the expressions in 'node' which should be an 'expr_seq'
-	// node.
-	//
+		// block ::= block_decls expr_body
+
+		nonlocals := []
+		renames := []
+
+		i := 1
+		while i < node[1].len():
+			// block_decls ::= block_decl ( "NEWLINE" block_decl )*
+			// block_decl  ::= block_decl_nonlocals
+			//             ::= block_decl_rename
+
+			decl := node[1][i][1]
+			if decl[0] == "block_decl_nonlocals":
+				// block_decl_nonlocals ::= "NONLOCAL" "ID" ( "," "ID" )* "NEWLINE"
+				j := 2
+				while j < decl.len():
+					nonlocals.append(ITree::IVar.new(decl[j].value, extra_src_infos + decl[j].src_infos))
+					j += 2
+			else:
+				// block_decl_rename ::= "RENAME" "ID" "AS" "ID" ( "," "RENAME" "ID" "AS" "ID" )* "NEWLINE"
+				j := 2
+				while j < decl.len():
+					renames.append([ITree::IVar.new(decl[j].value, extra_src_infos + decl[j].src_infos), ITree::IVar.new(decl[j + 2].value, extra_src_infos + decl[j + 2].src_infos)])
+					j += 5
+
+			i += 2
+
+		body := self._preorder(node[2])
+		
+		return ITree::IBlock.new(nonlocals, renames, body, extra_src_infos)
+
+
 
 	func _t_expr_seq(self, node, extra_src_infos := []):
 
@@ -1309,3 +1322,4 @@ class IMod_Gen:
 			return ITree::IExpr_Seq.new(exprs, extra_src_infos)
 		else:
 			return ITree::IExpr_Seq.new(exprs, extra_src_infos + exprs[0].src_infos)
+

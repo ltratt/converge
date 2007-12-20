@@ -79,10 +79,7 @@ class QQ_Mode:
 		else:
 			self._extra_src_infos_var := null
 
-		vars := Set{}
-		for var := node.body.exprs.iter():
-			vars.extend(var.qq_bound_vars)
-		self._add_vars(vars, [])
+		self._add_vars(node.qq_bound_vars, [])
 
 		// We now do the $$qq$x$$ := CEI::fresh_name("x") constrution.
 		//
@@ -109,7 +106,7 @@ class QQ_Mode:
 			fresh_name := ITree::IApplication.new(fresh_name_func, [ITree::IString.new(var_name, node.src_infos)], node.src_infos)
 			return_exprs.append(ITree::IAssignment.new(ITree::STD_ASSIGN, [qq_bound_var], fresh_name, node.src_infos))
 
-		e := self._lift_func_call(_expr_block_magic, [self._eval_expr_block(node.body)], node.src_infos)
+		e := self._lift_func_call(_expr_block_magic, [self._eval_expr_block(node.block.body)], node.src_infos)
 		ITree_WF::wf(e)
 		return_exprs.append(e)
 
@@ -385,19 +382,20 @@ class QQ_Mode:
 			var_arg := self._process_assign_var(node.var_arg.name, node.src_infos)
 		
 		nonlocals := []
-		for nonlocal_ := node.nonlocals.iter():
+		for nonlocal_ := node.block.nonlocals.iter():
 			raise "XXX"
 		
 		renames := []
-		for rename_ := node.renames.iter():
+		for rename_ := node.block.renames.iter():
 			raise "XXX"
 		
-		body := self._preorder(node.body)
+		body := self._preorder(node.block.body)
+		block := self._qq("IBlock", [ITree::IList.new(nonlocals, node.src_infos), ITree::IList.new(renames, node.src_infos), body], node.block.src_infos)
 
 		self._pop_vars()
 		self._nesting.pop()
 		
-		return self._qq("IFunc_Defn", [is_bound, func_name, params, var_arg, ITree::IList.new(nonlocals, node.src_infos), ITree::IList.new(renames, node.src_infos), body], node.src_infos)
+		return self._qq("IFunc_Defn", [is_bound, func_name, params, var_arg, block], node.src_infos)
 
 
 

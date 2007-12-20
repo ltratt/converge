@@ -112,7 +112,7 @@ class ITree_PP:
 		pp.append("):")
 		
 		nonlocals := []
-		for nonlocal_ := node.nonlocals.iter():
+		for nonlocal_ := node.block.nonlocals.iter():
 			nonlocals.append(self._preorder(nonlocal_))
 		if nonlocals.len() > 0:
 			pp.append("\n")
@@ -120,12 +120,12 @@ class ITree_PP:
 			pp.append("nonlocal ")
 			pp.append(Strings::join(nonlocals, ", "))
 
-		if node.renames.len() != 0:
+		if node.block.renames.len() != 0:
 			raise "XXX"
 		
 		self._indent_level += 1
 		self._nesting.append(_NEST_FUNC)
-		body := self._preorder(node.body)
+		body := self._preorder(node.block.body)
 		self._nesting.pop()
 		self._indent_level -= 1
 

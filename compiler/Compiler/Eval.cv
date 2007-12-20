@@ -90,14 +90,14 @@ class Eval_Compiler:
 
 		rtn_ivar := ITree::IVar.new(Core::fresh_name(), [])
 		icond := ITree::IAssignment.new(ITree::STD_ASSIGN, [rtn_ivar], expr, [])
-		iclause_body := ITree::IExpr_Block.new([vars_assign, ITree::IReturn.new(rtn_ivar, [])].flattened(), [])
+		iclause_body := ITree::IExpr_Seq.new([vars_assign, ITree::IReturn.new(rtn_ivar, [])].flattened(), [])
 		iclause := ITree::IClause.new(icond, iclause_body, [])
-		ielse_body := ITree::IExpr_Block.new([vars_assign, ITree::IFail.new([])].flattened(), [])
+		ielse_body := ITree::IExpr_Seq.new([vars_assign, ITree::IFail.new([])].flattened(), [])
 		iif := ITree::IIf.new([iclause], ielse_body, [])
 		body.append(iif)
 
 		eval_name := Core::fresh_name()		
-		dummy_func := ITree::IFunc_Defn.new(0, ITree::IVar.new(eval_name, []), [], null, [], [], ITree::IExpr_Block.new(body, []), [])
+		dummy_func := ITree::IFunc_Defn.new(0, ITree::IVar.new(eval_name, []), [], null, [], [], ITree::IExpr_Seq.new(body, []), [])
 		dummy_defns := [ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(eval_name, [])], dummy_func, [])]
 		dummy_imodule := ITree::IModule.new(eval_name, dummy_defns, [])
 		

@@ -401,9 +401,9 @@ class QQ_Mode:
 
 
 
-	func _t_iexpr_block(self, node):
+	func _t_iexpr_seq(self, node):
 	
-		return self._qq("IExpr_Block", [self._eval_expr_block(node)], node.src_infos)
+		return self._qq("IExpr_Seq", [self._eval_expr_block(node)], node.src_infos)
 
 
 

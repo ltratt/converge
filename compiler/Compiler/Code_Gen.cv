@@ -392,7 +392,7 @@ class Code_Gen:
 
 
 
-	func _t_iexpr_block(self, node):
+	func _t_iexpr_seq(self, node):
 	
 		for expr := node.exprs.iter():
 			end_of_expr_label := self._create_label()

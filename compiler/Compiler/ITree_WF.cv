@@ -471,7 +471,7 @@ class ITree_WF:
 	
 
 	
-	func _t_iexpr_block(self, node):
+	func _t_iexpr_seq(self, node):
 
 		if not Builtins::List.conformed_by(node.exprs):
 			self._type_error(node, "exprs", node.exprs, "List")

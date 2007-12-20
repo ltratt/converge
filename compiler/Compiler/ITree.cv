@@ -1279,7 +1279,7 @@ class IMod_Id_Import:
 // "Virtual" elements
 //
 
-class IExpr_Block:
+class IExpr_Seq:
 
 	func init(self, exprs, src_infos):
 	
@@ -1306,7 +1306,7 @@ class IExpr_Block:
 	
 		exprs := _extended_collection_src_infos(self.exprs, extra_src_infos)
 	
-		return IExpr_Block.new(exprs, self.src_infos + extra_src_infos)
+		return IExpr_Seq.new(exprs, self.src_infos + extra_src_infos)
 
 
 

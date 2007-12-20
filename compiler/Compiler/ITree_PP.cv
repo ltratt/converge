@@ -479,7 +479,7 @@ class ITree_PP:
 
 
 
-	func _t_iexpr_block(self, node):
+	func _t_iexpr_seq(self, node):
 
 		pp := []
 		for expr := node.exprs.iter():

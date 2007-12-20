@@ -513,12 +513,12 @@ class _Renamer:
 
 
 
-	func _t_iexpr_block(self, node):
+	func _t_iexpr_seq(self, node):
 
 		exprs := []
 		for exprs.append(self._preorder(node.exprs.iter()))
 	
-		return ITree::IExpr_Block.new(exprs, node.src_infos)
+		return ITree::IExpr_Seq.new(exprs, node.src_infos)
 
 
 

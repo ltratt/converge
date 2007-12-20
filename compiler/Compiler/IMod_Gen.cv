@@ -71,7 +71,7 @@ class IMod_Gen:
 	//
 
 	//
-	// Returns an IExpr_Block representing the expressions in 'node' which should be an 'expr_body'
+	// Returns an IExpr_Seq representing the expressions in 'node' which should be an 'expr_body'
 	// node.
 	//
 
@@ -120,9 +120,9 @@ class IMod_Gen:
 			i += 2
 
 		if exprs.len() == 0:
-			return ITree::IExpr_Block.new(exprs, extra_src_infos)
+			return ITree::IExpr_Seq.new(exprs, extra_src_infos)
 		else:
-			return ITree::IExpr_Block.new(exprs, extra_src_infos + exprs[0].src_infos)
+			return ITree::IExpr_Seq.new(exprs, extra_src_infos + exprs[0].src_infos)
 
 
 
@@ -210,7 +210,7 @@ class IMod_Gen:
 			if defns_to_include.find(i):
 				defns.append(self._defns[i])
 
-		tmp_func := ITree::IFunc_Defn.new(0, splice_var, [], null, [], [], ITree::IExpr_Block.new([ITree::IReturn.new(expr, extra_src_infos + node[1][1].src_infos)], expr.src_infos), extra_src_infos + node[1][1].src_infos)
+		tmp_func := ITree::IFunc_Defn.new(0, splice_var, [], null, [], [], ITree::IExpr_Seq.new([ITree::IReturn.new(expr, extra_src_infos + node[1][1].src_infos)], expr.src_infos), extra_src_infos + node[1][1].src_infos)
 		tmp_defns := defns + [ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(splice_name, extra_src_infos + node[1][1].src_infos)], tmp_func, extra_src_infos + node[1][1].src_infos)]
 		tmp_imodule := ITree::IModule.new(splice_name, tmp_defns, extra_src_infos + node[1][1].src_infos)
 
@@ -609,7 +609,7 @@ class IMod_Gen:
 		renames := []
 
 		if node.len() == 9:
-			body := ITree::IExpr_Block.new([self._preorder(node[7])], extra_src_infos + node[6].src_infos)
+			body := ITree::IExpr_Seq.new([self._preorder(node[7])], extra_src_infos + node[6].src_infos)
 		else:
 			i := 1
 			while i < node[8].len():
@@ -1291,7 +1291,7 @@ class IMod_Gen:
 		else:
 			// expr_quasi_quotes ::= quasi_quotes_customize expr "|]"
 			expr := self._preorder(node[2])
-			body := ITree::IExpr_Block.new([expr], extra_src_infos + expr.src_infos)
+			body := ITree::IExpr_Seq.new([expr], extra_src_infos + expr.src_infos)
 
 		if node[1].len() == 2:
 			// quasi_quotes_customize ::= "[|"

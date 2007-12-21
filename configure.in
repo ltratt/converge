@@ -85,6 +85,9 @@ extra_cflags="-I/usr/local/include -I/usr/include/pcre"
 extra_libs="-L/usr/local/lib"
 
 
+AC_ARG_ENABLE(static, AC_HELP_STRING([--enable-static], [statically link in external libraries [[default=NO]]]), [static_link=1], [static_link=0])
+
+
 
 ####################################################################################################
 # Platform check
@@ -310,8 +313,8 @@ if [[ "$pcre_config" = "fail" ]]; then
 	AC_MSG_ERROR([Unable to find pcre-config])
 fi
 extra_cflags="$extra_cflags `$pcre_config --cflags`"
-if [[ $mingw -eq 1 ]]; then
-	# Statically link pcre on MinGW
+if [[ $static_link -eq 1 ]]; then
+	# Statically link PCRE
 	AC_MSG_CHECKING([location of libpcre.a])
 	libpcre_a=""
 	for dir in `pcre-config --libs | tr " " "\n" | grep "^-L" | sort -u | sed "s/^-L//"`; do
@@ -335,8 +338,8 @@ if [[ "$xml2_config" = "fail" ]]; then
 	AC_MSG_ERROR([Unable to find xml2-config])
 fi
 extra_cflags="$extra_cflags `$xml2_config --cflags`"
-if [[ $mingw -eq 1 ]]; then
-	# Statically link libxml2 on MinGW
+if [[ $static_link -eq 1 ]]; then
+	# Statically link libXML2 on MinGW
 	AC_MSG_CHECKING([location of libxml2.a])
 	libxml2_a=""
 	for dir in `xml2-config --libs | tr " " "\n" | grep "^-L" | sort -u | sed "s/^-L//"`; do

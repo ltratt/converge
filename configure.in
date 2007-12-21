@@ -723,18 +723,9 @@ if [[ "$GCC" = "yes" ]]; then
 		found_opts=1
 	fi
 
-	# On GCC 4.1, we need to turn off both -fno-tree-copyrename -fno-expensive-optimizations. I have
+	# On GCC 4.*, we need to turn off both -fno-tree-copyrename -fno-expensive-optimizations. I have
 	# no idea why.
-	$CC -v 2>&1 /dev/null | grep "gcc version 4\.1" > /dev/null
-	if [[ $? -eq 0 ]]; then
-		AC_MSG_RESULT(-O2 -fno-strict-aliasing -fno-tree-copyrename -fno-expensive-optimizations)
-		CFLAGS="$CFLAGS -O2 -fno-strict-aliasing -fno-tree-copyrename -fno-expensive-optimizations"
-		found_opts=1
-	fi
-
-	# On GCC 4.2, we need to turn off both -fno-tree-copyrename -fno-expensive-optimizations. I have
-	# no idea why.
-	$CC -v 2>&1 /dev/null | grep "gcc version 4\.2" > /dev/null
+	$CC -v 2>&1 /dev/null | grep "gcc version 4\.[012]" > /dev/null
 	if [[ $? -eq 0 ]]; then
 		AC_MSG_RESULT(-O2 -fno-strict-aliasing -fno-tree-copyrename -fno-expensive-optimizations)
 		CFLAGS="$CFLAGS -O2 -fno-strict-aliasing -fno-tree-copyrename -fno-expensive-optimizations"

@@ -725,8 +725,8 @@ if [[ "$GCC" = "yes" ]]; then
 	CFLAGS="-std=c99 -g -DNDEBUG -Wall -Wstrict-prototypes -Wmissing-prototypes -Wwrite-strings -Wpointer-arith -Wbad-function-cast -Wsign-compare $extra_cflags"
 
 	AC_MSG_CHECKING([for gcc version])
-	version=`$CC -v 2>&1 /dev/null | grep "gcc version" | sed "s/gcc version //" | sed "s/ .*//"`
-	AC_MSG_RESULT($version)
+	gcc_version=`$CC -v 2>&1 | grep "gcc version" | sed "s/gcc version //" | sed "s/ .*//"`
+	AC_MSG_RESULT($gcc_version)
 
 	# We now have to check what the safe optimisations for GCC are. This varies between versions
 	# it seems.
@@ -734,26 +734,26 @@ if [[ "$GCC" = "yes" ]]; then
 	AC_MSG_CHECKING([for safe gcc optimisation level])
 	found_opts=0
 	
-	# On GCC 3.3, optimisations work pretty much as advertised.
-	$CC -v 2>&1 /dev/null | grep "gcc version 3\.3" > /dev/null
-	if [[ $? -eq 0 ]]; then
-		AC_MSG_RESULT(-O3 -fno-strict-aliasing)
-		CFLAGS="$CFLAGS -O3 -fno-strict-aliasing"
-		found_opts=1
-	fi
-
-	# On GCC 4.*, we need to turn off both -fno-tree-copyrename -fno-expensive-optimizations. I have
-	# no idea why.
-	$CC -v 2>&1 /dev/null | grep "gcc version 4\.[012]" > /dev/null
-	if [[ $? -eq 0 ]]; then
-		AC_MSG_RESULT(-O2 -fno-strict-aliasing -fno-tree-copyrename -fno-expensive-optimizations)
-		CFLAGS="$CFLAGS -O2 -fno-strict-aliasing -fno-tree-copyrename -fno-expensive-optimizations"
-		found_opts=1
-	fi
+	case $gcc_version in
+		3\.3* )
+			# On GCC 3.3, optimisations work pretty much as advertised.
+			$CC -v 2>&1 | grep "gcc version 3\.3" > /dev/null
+			if [[ $? -eq 0 ]]; then
+				AC_MSG_RESULT(-O3 -fno-strict-aliasing)
+				CFLAGS="$CFLAGS -O3 -fno-strict-aliasing"
+			fi;;
+		
+		4\.0* | 4\.1* | 4\.2*)
+			# On GCC 4.*, we need to turn off both -fno-tree-copyrename -fno-expensive-optimizations. I have
+			# no idea why.
+			if [[ $? -eq 0 ]]; then
+				AC_MSG_RESULT(-O2 -fno-strict-aliasing -fno-tree-copyrename -fno-expensive-optimizations)
+				CFLAGS="$CFLAGS -O2 -fno-strict-aliasing -fno-tree-copyrename -fno-expensive-optimizations"
+			fi;;
 	
-	if [[ $found_opts -eq 0 ]]; then
-		AC_MSG_RESULT(none)
-	fi
+		* )
+			AC_MSG_RESULT(none);;
+	esac
 else
 	CFLAGS="-DNDEBUG"
 fi

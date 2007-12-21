@@ -22,6 +22,7 @@
 #include "Config.h"
 
 #include <string.h>
+#include <sys/stat.h>
 
 #include "Arch.h"
 #include "Bytecode.h"

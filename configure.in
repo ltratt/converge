@@ -157,6 +157,17 @@ else
 fi
 
 
+AC_MSG_CHECKING(for readlink -f)
+case $operating_system in
+	Darwin)
+		have_readlink_f=0
+		AC_MSG_RESULT(no);;
+	*)
+		have_readlink_f=1
+		AC_MSG_RESULT(yes);;
+esac
+
+
 ####################################################################################################
 # Machine dependent configuration
 #
@@ -390,11 +401,16 @@ for mod_name in $sorted_mod_names; do
 done
 AC_SUBST(MODULES_LIST, $modules_list)
 
-lib_dir=`readlink -f lib | sed "s/\//\\\\\\\\\//g"`
-cd lib/Stdlib
+cd lib
+lib_dir=`pwd -P | sed "s/\//\\\\\\\\\//g"`
+cd Stdlib
 for mod_path in `find . | grep cv$ | sed "s/^\\.\\///"`; do
 	mod_name=`echo $mod_path | sed "s/\\//_/g" | sed "s/\\.cv$//" | sed "y/abcdefghijklmnopqrstuvwxyz/ABCDEFGHIJKLMNOPQRSTUVWXYZ/"`
-	mod_id=`readlink -f $mod_path | sed "s/$lib_dir//"`
+	if [[ $have_readlink_f -eq 0 ]]; then
+		mod_id=`perl -e "use Cwd 'realpath'; print realpath '$mod_path';" | sed "s/$lib_dir//"`
+	else
+		mod_id=`readlink -f $mod_path | sed "s/$lib_dir//"`
+	fi
 	if [[ $mingw -eq 1 ]]; then
 		# Clean up MinGW's mutant filenames
 		mod_id=`echo "$mod_id" | sed 's/\//\\\\\\\/g'`

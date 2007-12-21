@@ -21,6 +21,8 @@
 
 #include "Config.h"
 
+#include <sys/stat.h>
+
 #include "Bytecode.h"
 #include "Core.h"
 #include "Memory.h"

@@ -79,10 +79,11 @@ class Linker:
 		for bc_mod := bc_mods.iter():
 			self.bc_mods_map[bc_mod.get_mod_id()] := bc_mod
 
-		ser_bc_exec := Link::link_exec(bc_mods, self, target)
+		bc_mods := Link::link_min_pkgs(bc_mods, self, target)
 
+		ser := BC_Exec::serialize(target, bc_mods)
 		output_file := File::File.new(output_path, "w")
-		output_file.write(ser_bc_exec)
+		output_file.write(ser)
 		output_file.close()
 		File::chmod(output_path, 493)
 

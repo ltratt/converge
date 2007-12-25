@@ -440,20 +440,22 @@ class Compiler:
 		
 		if do_link == 1 | self.mk_fresh == 1:
 			// Create the list of modules to link, including all library modules.
-			link_mods := [main_mod]
+			bc_mods := [main_mod]
 			for src_path, mod := self.mk_done_bc_mods.iter_vals():
 				if not mod is main_mod:
-					link_mods.append(mod)
-			link_mods.extend(lib_mods)
+					bc_mods.append(mod)
+			bc_mods.extend(lib_mods)
 			
 			if self.verbosity > 0:
 				self.info("Linking.")
-			self.mod_id := link_mods[0].get_mod_id()
-			self.src_path := link_mods[0].get_src_path()
-			ser_bc_exec := Linker.new().link(link_mods, self.target)
 
+			self.mod_id := bc_mods[0].get_mod_id()
+			self.src_path := bc_mods[0].get_src_path()
+			linked_bc_mods := Linker.new().link(bc_mods, self.target)
+
+			ser := BC_Exec::serialize(self.target, linked_bc_mods)
 			output_file := File::File.new(self.output_path, "w")
-			output_file.write(ser_bc_exec)
+			output_file.write(ser)
 			output_file.close()
 			try:
 				File::chmod(self.output_path, 493)
@@ -603,7 +605,7 @@ class Linker:
 
 		self.mods := mods
 
-		return Link::link_exec(mods, self, target)
+		return Link::link_min_pkgs(mods, self, target)
 
 
 

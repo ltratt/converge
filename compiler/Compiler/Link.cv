@@ -25,9 +25,9 @@ import Code_Gen, Core, BC_Exec, BC_Pkg, ITree
 
 
 
-class _Link_Exec:
+class _Link:
 
-	func link_exec(self, mods, linker, target):
+	func link_min_pkgs(self, mods, linker, target):
 
 		self._mods := mods
 		self._linker := linker
@@ -48,29 +48,8 @@ class _Link_Exec:
 			for import_mod_id, imp_src_path := mod.get_imports().iter():
 				if not Core::BUILTIN_MODULES.find(import_mod_id) & not self._done_mod_ids.find(import_mod_id):
 					linker.error(Strings::format("Module '%s' referenced in '%s' not found in input files.", import_mod_id, mod.get_mod_id()))
-				
-		ser_mods := Array::Array.new(target.ARRAY_TYPE)
-		ser_mods_offsets := []
-		for mod := self._done_mods.iter():
-			ser_mods_offsets.append(ser_mods.len_bytes())
-			ser_mods.extend_from_string(mod.serialize())
 
-		linked_bytecode := Array::Array.new(target.ARRAY_TYPE)
-		linked_bytecode.extend_from_string(BC_Exec::EXEC_INIT_STR)
-		linked_bytecode.append(0)  // Version
-		linked_bytecode.append(-1) // Number of modules
-		linked_bytecode[target.LIBRARY_BYTECODE_NUM_MODULES] := ser_mods_offsets.len()
-
-		preamble_length := (linked_bytecode.len() + ser_mods_offsets.len()) * target.WORDSIZE
-		for mod_offset := ser_mods_offsets.iter():
-			linked_bytecode.append(preamble_length + mod_offset)
-
-		linked_bytecode.extend(ser_mods)
-
-		sh_header := "#! /usr/bin/env converge\n"
-		ser := sh_header + "\n" * (target.align(sh_header.len()) - sh_header.len()) + linked_bytecode.serialize()
-
-		return ser
+		return self._done_mods
 
 
 
@@ -186,9 +165,9 @@ class _Link_Exec:
 
 
 
-func link_exec(mods, linker, target):
+func link_min_pkgs(mods, linker, target):
 
-	return _Link_Exec.new().link_exec(mods, linker, target)
+	return _Link.new().link_min_pkgs(mods, linker, target)
 
 
 

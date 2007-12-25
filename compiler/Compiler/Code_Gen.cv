@@ -370,6 +370,10 @@ class Code_Gen:
 
 		reversed_closures_offset := self.closures.len() - closures_offset - 1
 		if mod_id := self.closures[reversed_closures_offset][Core::CLOSURE_IMPORTS].find(mod_lookup.names[0].name):
+			if mod_id is null:
+				msg := Strings::format("Module lookup used on '%s' before it is imported.", mod_lookup.names[0].name)
+				self._compiler.error(msg, mod_lookup.names[0].src_infos)
+
 			lookup := Strings::join(Functional::map(func (x) { return x.name }, mod_lookup.names), "::")
 			if not (lookups := self._mod_lookups_seen.find(mod_id)):
 				lookups := Set{}

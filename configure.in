@@ -717,6 +717,12 @@ int main()
 	[AC_MSG_RESULT(no)])
 
 
+# strlcat / strcpy
+
+AC_CHECK_FUNC(strlcat, [], [AC_SUBST(PLATFORM_STRLCAT, Platform/strlcat.o)])
+AC_CHECK_FUNC(strlcpy, [], [AC_SUBST(PLATFORM_STRLCPY, Platform/strlcpy.o)])
+
+
 ####################################################################################################
 # C compiler
 #

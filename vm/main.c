@@ -201,7 +201,8 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 					}
 					else
 						cnd[j - i] = '\0';
-					strcat(cnd, argv0);
+					if (strlcat(cnd, argv0, PATH_MAX - (j - i)) > PATH_MAX - (j - i))
+						CON_XXX;
 
 					if (realpath(cnd, vm_path) != NULL && stat(vm_path, &tmp_stat) == 0)
 						break;
@@ -233,7 +234,8 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 	if (realpath(prog_path, canon_prog_path) == NULL) {
 		// If we can't canonicalise the programs path name, we fall back on the "raw" path and cross
 		// our fingers.
-		strcpy(canon_prog_path, prog_path);
+		if (strlcpy(canon_prog_path, prog_path, PATH_MAX) > PATH_MAX)
+			CON_XXX;
 	}
 	
 	struct stat con_binary_file_stat;
@@ -365,21 +367,25 @@ char *find_con_exec(const char *name, const char *vm_path)
 		char *canon_cnd = malloc(PATH_MAX);
 		int i;
 		for (i = 0; cnds[i] != NULL; i += 1) {
-			strcpy(cnd, vm_path);
+			if (strlcpy(cnd, vm_path, PATH_MAX) > PATH_MAX)
+				CON_XXX;
 			int j;
 			for (j = strlen(cnd) - 1; j >= 0
 			  && strlen(cnd) - j >= strlen(CON_DIR_SEP)
 			  && memcmp(cnd + j, CON_DIR_SEP, strlen(CON_DIR_SEP)) != 0
 			  ; j -= 1) {}
 			if (memcmp(cnd + j, CON_DIR_SEP, strlen(CON_DIR_SEP)) == 0) {
-				strcpy(cnd + j + strlen(CON_DIR_SEP), cnds[i]);
+				if (strlcpy(cnd + j + strlen(CON_DIR_SEP), cnds[i],
+					PATH_MAX - j - strlen(CON_DIR_SEP)) >= PATH_MAX - j - strlen(CON_DIR_SEP))
+					CON_XXX;
 				j += strlen(cnds[i]) + strlen(CON_DIR_SEP);
 			}
 			else {
-				strcpy(cnd + j, cnds[i]);
+				if (strlcpy(cnd + j, cnds[i], PATH_MAX - j) > (size_t) (PATH_MAX - j));
 				j += strlen(cnds[i]);
 			}
-			strcpy(cnd + j, name);
+			if (strlcpy(cnd + j, name, PATH_MAX - j) > (size_t) (PATH_MAX - j))
+				CON_XXX;
 			struct stat tmp_stat;
 			if (realpath(cnd, canon_cnd) != NULL && stat(canon_cnd, &tmp_stat) == 0)
 				break;

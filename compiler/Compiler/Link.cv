@@ -27,7 +27,7 @@ import Code_Gen, Core, BC_Exec, BC_Pkg, ITree
 
 class _Link:
 
-	func link_min_pkgs(self, mods, linker, target):
+	func link(self, mods, linker, target, max_pkgs):
 
 		self._mods := mods
 		self._linker := linker
@@ -41,7 +41,7 @@ class _Link:
 		self._done_mod_ids := Set{} // Set of module IDs
 		self._pkgs := Dict{} // Map package mod ids to sets of definition names to be included
 
-		self._scan()
+		self._scan(max_pkgs)
 		self._mk_pkgs()
 
 		for mod := self._done_mods.iter():
@@ -53,7 +53,7 @@ class _Link:
 
 
 
-	func _scan(self):
+	func _scan(self, max_pkgs):
 
 		// Using the first module on the command line as a "seed", we now scan through and try and
 		// pluck out all the imports that it refers to (directly and indirectly through other
@@ -66,9 +66,21 @@ class _Link:
 			mod := self._mods_map[mod_id]
 			
 			if BC_Pkg::BC_Pkg.instantiated(mod):
-				// Packages at this point are BC_Pkg instances, so we don't scan through them.
 				if not self._pkgs.find(mod_id):
 					self._pkgs[mod_id] := Set{}
+				
+				if max_pkgs == 1:
+					// In max_pkgs mode, we deliberately force every entry of a package to be linked
+					// in.
+					for defn_name, t := mod.get_entries().iter():
+						entry_mod_id, entry_src_path := t
+						if not (self._done_mod_ids.find(entry_mod_id) | todo.find(entry_mod_id)):
+							todo.append(entry_mod_id)
+						self._add_to_pkg(mod_id, defn_name)
+
+				// Packages at this point are BC_Pkg instances, so we don't scan through them as we
+				// do normal modules.
+
 				continue
 
 			self._done_mod_ids.add(mod_id)
@@ -167,7 +179,13 @@ class _Link:
 
 func link_min_pkgs(mods, linker, target):
 
-	return _Link.new().link_min_pkgs(mods, linker, target)
+	return _Link.new().link(mods, linker, target, 0)
+
+
+
+func link_max_pkgs(mods, linker, target):
+
+	return _Link.new().link(mods, linker, target, 1)
 
 
 

@@ -20,7 +20,7 @@
 
 
 import Platform::Properties
-import Builtins, Code_Gen, Core, BC_Lib, BC_Mod, Parser, BC_Pkg, File, Functional, IMod_Gen, ITree, Strings, Targets::Available, Tokenizer, VM
+import Builtins, Code_Gen, Core, BC_Lib, BC_Mod, Parser, BC_Pkg, File, Functional, IMod_Gen, ITree, Link,  Strings, Targets::Available, Tokenizer, VM
 
 
 
@@ -105,26 +105,25 @@ class Eval_Compiler:
 		dummy_imodule := ITree::IModule.new(eval_name, dummy_defns, [])
 		
 		bc_mod := _Eval_Code_Gen.new().generate(dummy_imodule, self.target)
-		mod := Builtins::Module.new(bc_mod.serialize())
 		
-		bc_mod_stack := [bc_mod]
-		mod_stack := [mod]
-		mod_ids := Set{}
-		i := 0
-		while i < mod_stack.len():
-			bc_mod := bc_mod_stack[i]
-			for imp_mod_id, imp_src_path := bc_mod.get_imports().iter():
-				if not VM::find_module(imp_mod_id) & not mod_ids.find(imp_mod_id):
-					bc_mod := self.get_bc_mod(imp_mod_id, imp_src_path, [])
-					bc_mod_stack.append(bc_mod)
-					mod_stack.append(Builtins::Module.new(bc_mod.serialize()))
-					mod_ids.add(imp_mod_id)
-
-			i += 1
+		bc_mods := [bc_mod]
+		for cached_mod_id, cached_bc_mod := self._cached_mods.iter_vals():
+			bc_mods.append(cached_bc_mod)
 		
-		VM::add_modules(mod_stack)
-		main_mod := VM::import_module(mod_stack[0])
-		for mod := mod_stack.iter(1):
+		linked_bc_mods := Link::link_max_pkgs(bc_mods, Core::peek_compiler(), self.target)
+		
+		// We always make sure that the first bc mod is linked in, as it's the "main" module, and
+		// might already have had a partial version of itself included in the VM if the user used
+		// CTMP in an eval expression.
+		
+		main_mod := Builtins::Module.new(linked_bc_mods[0].serialize())
+		mods := [main_mod]
+		for linked_bc_mod := linked_bc_mods.iter(1):
+			if not VM::find_module(linked_bc_mod.get_mod_id()):
+				mods.append(Builtins::Module.new(linked_bc_mod.serialize()))
+		
+		VM::add_modules(mods)
+		for mod := mods.iter():
 			VM::import_module(mod)
 		
 		return main_mod.get_defn(eval_name)()
@@ -156,9 +155,9 @@ class Eval_Compiler:
 				if cvb_path := Core::get_cache_path(src_path) & File::exists(cvb_path):
 					f := File::open(cvb_path, "r")
 					bc := f.read()
-					if BC_Mod::is_bc_mod(bc):
+					ndif BC_Mod::is_bc_mod(bc):
 						bc_mod := BC_Mod::BC_Mod.new(self.internal_target)
-					else:
+					elif BC_Pkg::is_bc_pkg(bc):
 						bc_mod := BC_Pkg::BC_Pkg.new(self.internal_target)
 					bc_mod.deserialize_str(bc)
 					f.close()

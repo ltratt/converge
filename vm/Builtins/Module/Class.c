@@ -50,6 +50,7 @@ Con_Obj *_Con_Builtins_Module_Class_new_object(Con_Obj *);
 
 Con_Obj *_Con_Builtins_Module_Class_to_str_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Module_Class_get_defn_func(Con_Obj *);
+Con_Obj *_Con_Builtins_Module_Class_set_defn_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Module_Class_get_slot_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Module_Class_iter_defns_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Module_Class_path_func(Con_Obj *);
@@ -79,6 +80,7 @@ void Con_Builtins_Module_Class_bootstrap(Con_Obj *thread)
 	CON_SET_FIELD(module_class, "to_str", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Module_Class_to_str_func, "to_str", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), module_class));
 	CON_SET_FIELD(module_class, "iter_defns", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Module_Class_iter_defns_func, "iter_defns", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), module_class));
 	CON_SET_FIELD(module_class, "get_defn", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Module_Class_get_defn_func, "get_defn", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), module_class));
+	CON_SET_FIELD(module_class, "set_defn", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Module_Class_set_defn_func, "set_defn", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), module_class));
 	CON_SET_FIELD(module_class, "get_slot", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Module_Class_get_slot_func, "get_slot", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), module_class));
 	CON_SET_FIELD(module_class, "path", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Module_Class_path_func, "path", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), module_class));
 	CON_SET_FIELD(module_class, "src_offset_to_line_column", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Module_Class_src_offset_to_line_column_func, "src_offset_to_line_column", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), module_class));
@@ -188,6 +190,24 @@ Con_Obj *_Con_Builtins_Module_Class_get_defn_func(Con_Obj *thread)
 	Con_Builtins_String_Atom *name_string_atom = CON_GET_ATOM(name_obj, CON_BUILTIN(CON_BUILTIN_STRING_ATOM_DEF_OBJECT));
 	
 	return Con_Builtins_Module_Atom_get_defn(thread, self, name_string_atom->str, name_string_atom->size);
+}
+
+
+
+//
+// 'set_defn(name, val)' sets the value of 'name' to 'val' in this module.
+//
+
+Con_Obj *_Con_Builtins_Module_Class_set_defn_func(Con_Obj *thread)
+{
+	Con_Obj *name_obj, *self, *val;
+	CON_UNPACK_ARGS("MSO", &self, &name_obj, &val);
+
+	Con_Builtins_String_Atom *name_string_atom = CON_GET_ATOM(name_obj, CON_BUILTIN(CON_BUILTIN_STRING_ATOM_DEF_OBJECT));
+	
+	Con_Builtins_Module_Atom_set_defn(thread, self, name_string_atom->str, name_string_atom->size, val);
+	
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }
 
 

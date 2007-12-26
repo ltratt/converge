@@ -56,15 +56,17 @@ class Eval_Compiler:
 		
 		body := []
 		
-		compiler_var_name := Core::fresh_name()
-		compiler_var := ITree::IVar.new(compiler_var_name, [])
-		peek_compiler := ITree::IModule_Lookup.new([ITree::IMod_Id_Import.new(Core.mod_id, Core.src_path, []), ITree::IVar.new("peek_compiler", [])], [])
-		body.append(ITree::IAssignment.new(ITree::STD_ASSIGN, [compiler_var], ITree::IApplication.new(peek_compiler, [], []), []))
+		src_infos := [[self.mod_id, 0]]
 		
-		vars_val := ITree::ISlot_Lookup.new(compiler_var, "vars", [])
+		compiler_var_name := Core::fresh_name()
+		compiler_var := ITree::IVar.new(compiler_var_name, src_infos)
+		peek_compiler := ITree::IModule_Lookup.new([ITree::IMod_Id_Import.new(Core.mod_id, Core.src_path, src_infos), ITree::IVar.new("peek_compiler", src_infos)], src_infos)
+		body.append(ITree::IAssignment.new(ITree::STD_ASSIGN, [compiler_var], ITree::IApplication.new(peek_compiler, [], src_infos), src_infos))
+		
+		vars_val := ITree::ISlot_Lookup.new(compiler_var, "vars", src_infos)
 		for var_name, _ := self.vars.iter():
-			var_val := ITree::IApplication.new(ITree::ISlot_Lookup.new(vars_val, "get", []), [ITree::IString.new(var_name, [])], [])
-			body.append(ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(var_name, [])], var_val, []))
+			var_val := ITree::IApplication.new(ITree::ISlot_Lookup.new(vars_val, "get", src_infos), [ITree::IString.new(var_name, src_infos)], src_infos)
+			body.append(ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(var_name, src_infos)], var_val, src_infos))
 
 		expr_seq := IMod_Gen::IMod_Gen.new().gen_expr_seq(parse_tree)
 		if expr_seq.exprs.len() == 0:
@@ -76,8 +78,8 @@ class Eval_Compiler:
 
 		dict_vals := []
 		for var_name, var_val := self.vars.iter():
-			dict_vals.append([ITree::IString.new(var_name, []), ITree::IVar.new(var_name, [])])
-		rtn_dict := ITree::IDict.new(dict_vals, [])
+			dict_vals.append([ITree::IString.new(var_name, src_infos), ITree::IVar.new(var_name, src_infos)])
+		rtn_dict := ITree::IDict.new(dict_vals, src_infos)
 
 		vars_assign := []
 		vars_assign_names := Set{}
@@ -85,24 +87,24 @@ class Eval_Compiler:
 			vars_assign_names.add(var_name)
 		vars_assign_names.extend(expr.bound_vars)
 		for var_name := vars_assign_names.iter():
-			var_val := ITree::IApplication.new(ITree::ISlot_Lookup.new(vars_val, "set", []), [ITree::IString.new(var_name, []), ITree::IVar.new(var_name, [])], [])
+			var_val := ITree::IApplication.new(ITree::ISlot_Lookup.new(vars_val, "set", src_infos), [ITree::IString.new(var_name, src_infos), ITree::IVar.new(var_name, src_infos)], src_infos)
 			vars_assign.append(var_val)
 
-		rtn_ivar := ITree::IVar.new(Core::fresh_name(), [])
-		icond := ITree::IAssignment.new(ITree::STD_ASSIGN, [rtn_ivar], expr, [])
-		iclause_body := ITree::IExpr_Seq.new([vars_assign, ITree::IReturn.new(rtn_ivar, [])].flattened(), [])
-		iclause := ITree::IClause.new(icond, iclause_body, [])
-		ielse_body := ITree::IExpr_Seq.new([vars_assign, ITree::IFail.new([])].flattened(), [])
-		iif := ITree::IIf.new([iclause], ielse_body, [])
+		rtn_ivar := ITree::IVar.new(Core::fresh_name(), src_infos)
+		icond := ITree::IAssignment.new(ITree::STD_ASSIGN, [rtn_ivar], expr, src_infos)
+		iclause_body := ITree::IExpr_Seq.new([vars_assign, ITree::IReturn.new(rtn_ivar, src_infos)].flattened(), src_infos)
+		iclause := ITree::IClause.new(icond, iclause_body, src_infos)
+		ielse_body := ITree::IExpr_Seq.new([vars_assign, ITree::IFail.new(src_infos)].flattened(), src_infos)
+		iif := ITree::IIf.new([iclause], ielse_body, src_infos)
 		body.append(iif)
 		
-		body := ITree::IExpr_Seq.new(body, [])
-		block := ITree::IBlock.new([], [], body, [])
+		body := ITree::IExpr_Seq.new(body, src_infos)
+		block := ITree::IBlock.new([], [], body, src_infos)
 
 		eval_name := Core::fresh_name()		
-		dummy_func := ITree::IFunc_Defn.new(0, ITree::IVar.new(eval_name, []), [], null, block, [])
-		dummy_defns := [ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(eval_name, [])], dummy_func, [])]
-		dummy_imodule := ITree::IModule.new(eval_name, dummy_defns, [])
+		dummy_func := ITree::IFunc_Defn.new(0, ITree::IVar.new(eval_name, src_infos), [], null, block, src_infos)
+		dummy_defns := [ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(eval_name, src_infos)], dummy_func, src_infos)]
+		dummy_imodule := ITree::IModule.new(eval_name, dummy_defns, src_infos)
 		
 		bc_mod := _Eval_Code_Gen.new().generate(dummy_imodule, self.target)
 		

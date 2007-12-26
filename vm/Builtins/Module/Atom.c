@@ -497,7 +497,7 @@ void Con_Builtins_Module_Atom_set_defn(Con_Obj *thread, Con_Obj *module, const u
 	Con_Builtins_Module_Atom *module_atom = CON_FIND_ATOM(module, CON_BUILTIN(CON_BUILTIN_MODULE_ATOM_DEF_OBJECT));
 	
 	if (module_atom == NULL) {
-		Con_Obj *msg = CON_NEW_STRING("Trying to lookup a definition in a non-module.");
+		Con_Obj *msg = CON_NEW_STRING("Trying to set a definition in a non-module.");
 		CON_RAISE_EXCEPTION("VM_Exception", msg);
 	}
 
@@ -507,17 +507,18 @@ void Con_Builtins_Module_Atom_set_defn(Con_Obj *thread, Con_Obj *module, const u
 	if (closure == NULL) {
 		// Builtin module.
 		CON_MUTEX_UNLOCK(&module->mutex);
-#		ifndef NDEBUG
 		Con_Obj *dummy;
-		Con_Slots_get_slot(thread, &module_atom->top_level_vars, defn_name, defn_name_size, &dummy);
-#		endif
+		if (!Con_Slots_get_slot(thread, &module_atom->top_level_vars, defn_name, defn_name_size, &dummy)) {
+			CON_RAISE_EXCEPTION("Mod_Defn_Exception", Con_Builtins_String_Atom_new_copy(thread, defn_name, defn_name_size, CON_STR_UTF_8), module);
+		}
 		Con_Slots_set_slot(thread, &module->mutex, &module_atom->top_level_vars, defn_name, defn_name_size, val);
 	}
 	else { 
 		// User module.
 		Con_Obj *slot_val;
-		if (!Con_Slots_get_slot(thread, &module_atom->top_level_vars, defn_name, defn_name_size, &slot_val))
-			CON_XXX;
+		if (!Con_Slots_get_slot(thread, &module_atom->top_level_vars, defn_name, defn_name_size, &slot_val)) {
+			CON_RAISE_EXCEPTION("Mod_Defn_Exception", Con_Builtins_String_Atom_new_copy(thread, defn_name, defn_name_size, CON_STR_UTF_8), module);
+		}
 		CON_MUTEX_UNLOCK(&module->mutex);
 		Con_Builtins_Closure_Atom_set_var(thread, closure, 0, Con_Numbers_Number_to_Con_Int(thread, slot_val), val);
 	}

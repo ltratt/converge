@@ -26,8 +26,8 @@ Successively generates each (field name, field value) pair for the class (note t
 
 <function name="set_field">
 <argument name="name" type="String" />
-<argument name="o" type="Object" />
-Sets the value of field <code>name</code> to <code>o</code>, creating <code>name</code> if it did not previously exist.
+<argument name="val" type="Object" />
+Sets the value of field <code>name</code> to <code>val</code>, creating <code>name</code> if it did not previously exist.
 </function>
 
 <function name="get_supers">
@@ -171,8 +171,8 @@ Successively generates, in reverse order, each value in the list.
 
 <function name="set">
 <argument name="i" type="Number" />
-<argument name="o" type="Object" />
-Sets the value at position <code>i</code> to <code>o</code>. Raises an exception if <code>i</code> is out of bounds.
+<argument name="val" type="Object" />
+Sets the value at position <code>i</code> to <code>val</code>. Raises an exception if <code>i</code> is out of bounds.
 </function>
 
 <function name="set_slice">
@@ -202,6 +202,12 @@ Successively generates each definition name in the module.
 <function name="get_defn">
 <argument name="name" type="String" />
 Returns the definition named <code>name</code> in this module.
+</function>
+
+<function name="set_defn">
+<argument name="name" type="String" />
+<argument name="val" />
+Sets the value of the definition named <code>name</code> in this module to <code>val</code>.
 </function>
 
 <function name="iter_defns">
@@ -240,8 +246,8 @@ Successively generates each (slot name, slot value) pair for the object.
 
 <function name="set_slot">
 <argument name="name" type="String" />
-<argument name="o" type="Object" />
-Sets the value of slot <code>name</code> to <code>o</code>, creating <code>name</code> if it did not previously exist.
+<argument name="val" type="Object" />
+Sets the value of slot <code>name</code> to <code>val</code>, creating <code>name</code> if it did not previously exist.
 </function>
 </class>
 

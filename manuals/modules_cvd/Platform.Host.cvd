@@ -1,0 +1,7 @@
+<module name="Platform::Host">
+This module provides platform dependent functions about the host computer. Exactly what constitutes a host may be platform dependent.
+
+<function name="get_hostname">
+Returns the hostname of the current host.
+</function>
+</module>

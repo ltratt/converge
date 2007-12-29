@@ -472,21 +472,28 @@ Con_Obj *_Con_Builtins_String_Class_len_func(Con_Obj *thread)
 
 
 //
-// 'prefixed_by(o)' returns null if 'self' starts with the string 's', or fails otherwise.
+// 'prefixed_by(o, i := self.len())' succeeds if the string starting at position 'i' matches 's' in
+// its entirety.
 //
 
 Con_Obj *_Con_Builtins_String_Class_prefixed_by_func(Con_Obj *thread)
 {
-	Con_Obj *o_obj, *self_obj;
-	CON_UNPACK_ARGS("SS", &self_obj, &o_obj);
+	Con_Obj *i_obj, *o_obj, *self_obj;
+	CON_UNPACK_ARGS("SS;N", &self_obj, &o_obj, &i_obj);
 	
 	Con_Builtins_String_Atom *self_string_atom = CON_GET_ATOM(self_obj, CON_BUILTIN(CON_BUILTIN_STRING_ATOM_DEF_OBJECT));
 	Con_Builtins_String_Atom *o_string_atom = CON_GET_ATOM(o_obj, CON_BUILTIN(CON_BUILTIN_STRING_ATOM_DEF_OBJECT));
 	
+	Con_Int i;
+	if (i_obj == NULL)
+		i = 0;
+	else
+		i = Con_Misc_translate_index(thread, NULL, Con_Numbers_Number_to_Con_Int(thread, i_obj), self_string_atom->size);
+	
 	if (self_string_atom->encoding != CON_STR_UTF_8 || o_string_atom->encoding != CON_STR_UTF_8)
 		CON_XXX;
 	
-	if (self_string_atom->size >= o_string_atom->size && memcmp(self_string_atom->str, o_string_atom->str, o_string_atom->size) == 0)
+	if (self_string_atom->size - i >= o_string_atom->size && memcmp(self_string_atom->str + i, o_string_atom->str, o_string_atom->size) == 0)
 		return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 	else
 		return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
@@ -630,21 +637,28 @@ Con_Obj *_Con_Builtins_String_Class_stripped_func(Con_Obj *thread)
 
 
 //
-// 'suffixed_by(o)' returns null if 'self' ends with the string 's', or fails otherwise.
+// 'suffixed_by(o, i := self.len())' succeeds if the string ending at position 'i' matches 's' in its
+// entirety.
 //
 
 Con_Obj *_Con_Builtins_String_Class_suffixed_by_func(Con_Obj *thread)
 {
-	Con_Obj *o_obj, *self_obj;
-	CON_UNPACK_ARGS("SS", &self_obj, &o_obj);
+	Con_Obj *i_obj, *o_obj, *self_obj;
+	CON_UNPACK_ARGS("SS;N", &self_obj, &o_obj, &i_obj);
 	
 	Con_Builtins_String_Atom *self_string_atom = CON_GET_ATOM(self_obj, CON_BUILTIN(CON_BUILTIN_STRING_ATOM_DEF_OBJECT));
 	Con_Builtins_String_Atom *o_string_atom = CON_GET_ATOM(o_obj, CON_BUILTIN(CON_BUILTIN_STRING_ATOM_DEF_OBJECT));
+
+	Con_Int i;
+	if (i_obj == NULL)
+		i = self_string_atom->size;
+	else
+		i = Con_Misc_translate_index(thread, NULL, Con_Numbers_Number_to_Con_Int(thread, i_obj), self_string_atom->size);
 	
 	if (self_string_atom->encoding != CON_STR_UTF_8 || o_string_atom->encoding != CON_STR_UTF_8)
 		CON_XXX;
 	
-	if (self_string_atom->size >= o_string_atom->size && memcmp(self_string_atom->str + self_string_atom->size - o_string_atom->size, o_string_atom->str, o_string_atom->size) == 0)
+	if (i >= o_string_atom->size && memcmp(self_string_atom->str + i - o_string_atom->size, o_string_atom->str, o_string_atom->size) == 0)
 		return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 	else
 		return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);

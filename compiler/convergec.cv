@@ -85,9 +85,8 @@ class Compiler:
 					file := File::open(main, "r")
 					bc := file.read()
 					file.close()
-					if not BC_Exec.is_bc_exec(bc):
+					if not BC_Exec::is_bc_exec(bc):
 						self._usage_callback(Strings::format("-o can not be left out as '%s' can not be overwritten as it does not appear to be a Converge executeable.", main))
-					file.close()
 				self.output_path := main
 			else:
 				self._usage_callback("-o option must be specified.")

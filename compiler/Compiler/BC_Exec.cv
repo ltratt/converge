@@ -88,7 +88,13 @@ func deserialize(target, exec_str):
 
 func is_bc_exec(bc):
 
-	if bc.prefixed_by(EXEC_INIT_STR):
+	i := 0
+	if bc.prefixed_by("#!"):
+		i += bc.find_index("\n")
+		while i < bc.len() & bc[i] == "\n":
+			i += 1
+
+	if bc.prefixed_by(EXEC_INIT_STR, i):
 		return 1
 
 	fail

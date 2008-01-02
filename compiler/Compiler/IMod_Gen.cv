@@ -290,31 +290,14 @@ class IMod_Gen:
 			// defn ::= splice
 			defn := self._eval_splice(node[1], extra_src_infos)
 			if Builtins::List.conformed_by(defn):
-				tmp_defns := []
 				for d := defn.iter():
 					ITree_WF::wf_expr(d, "splice result", extra_src_infos + node[1][1][1].src_infos)
-					if node[1][1][0] == "expr_splice":
-						// expr_splice  ::= "$" splice_type "<" expr ">"
-
-						// With normal splices, we augment the src infos with the position of the
-						// splice (as well as the src infos that the returned itree has as standard).
-
-						tmp_defns.append(d.extended_src_infos(node[1][1][1].src_infos))
-					else:
-						tmp_defns.append(d)
-				return tmp_defns
+				return defn
 			elif not ITree::IPass.instantiated(defn):
 				// Note that we only execute this clause if the expression returned wasn't a
 				// "pass" statement; if it was, we let it sail on harmlessly by.
 
 				ITree_WF::wf_expr(defn, "splice result", extra_src_infos + node[1][1][1].src_infos)
-				if node[1][1][0] == "expr_splice":
-					// expr_splice  ::= "$" splice_type "<" expr ">"
-
-					// With normal splices, we augment the src infos with the position of the
-					// splice (as well as the src infos that the returned itree has as standard).
-
-					defn := defn.extended_src_infos(node[1][1][1].src_infos)
 
 				return [defn]
 		elif node[1][0] == "insert":
@@ -1287,31 +1270,13 @@ class IMod_Gen:
 					tmp_exprs := []
 					for e := expr.iter():
 						ITree_WF::wf_expr(e, "splice result", extra_src_infos + node[i][1][1][1].src_infos)
-						if node[i][1][1][0] == "expr_splice":
-							// expr_splice  ::= "$" splice_type "<" expr ">"
-
-							// With normal splices, we augment the src infos with the position of the
-							// splice (as well as the src infos that the returned itree has as
-							// standard).
-
-							tmp_exprs.append(e.extended_src_infos(node[i][1][1][1].src_infos))
-						else:
-							tmp_exprs.append(e)
 					exprs.extend(tmp_exprs)
 				elif not ITree::IPass.instantiated(expr):
 					// Note that we only execute this clause if the expression returned wasn't a
 					// "pass" statement; if it was, we let it sail on harmlessly by.
 
 					ITree_WF::wf_expr(expr, "splice result", extra_src_infos + node[i][1][1][1].src_infos)
-					if node[i][1][1][0] == "expr_splice":
-						// expr_splice  ::= "$" splice_type "<" expr ">"
-
-						// With normal splices, we augment the src infos with the position of the
-						// splice (as well as the src infos that the returned itree has as standard).
-
-						exprs.append(expr.extended_src_infos(node[i][1][1][1].src_infos))
-					else:
-						exprs.append(expr)
+					exprs.append(expr)
 			elif node[i][1][0] == "import":
 				exprs.extend(self._t_import(node[i][1], extra_src_infos))
 			else:

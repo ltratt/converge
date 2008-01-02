@@ -124,7 +124,7 @@ class IMod_Gen:
 			if defn_i := already_bound_vars.find(free_var):
 				defns_to_include.add(defn_i)
 		if lookups := expr.mod_id_lookups.find(self._mod_id):
-			for lookup := expr.free_vars.iter():
+			for lookup := lookups.iter():
 				if defn_i := already_bound_vars.find(lookup):
 					defns_to_include.add(defn_i)
 

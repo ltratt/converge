@@ -51,6 +51,7 @@ Con_Obj *_Con_Builtins_Set_Class_eq_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Set_Class_to_str_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Set_Class_add_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Set_Class_complement_func(Con_Obj *);
+Con_Obj *_Con_Builtins_Set_Class_del_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Set_Class_extend_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Set_Class_find_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Set_Class_intersect_func(Con_Obj *);
@@ -85,6 +86,7 @@ void Con_Builtins_Set_Class_bootstrap(Con_Obj *thread)
 	CON_SET_FIELD(set_class, "to_str", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Set_Class_to_str_func, "to_str", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), set_class));
 	CON_SET_FIELD(set_class, "add", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Set_Class_add_func, "add", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), set_class));
 	CON_SET_FIELD(set_class, "complement", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Set_Class_complement_func, "complement", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), set_class));
+	CON_SET_FIELD(set_class, "del", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Set_Class_del_func, "del", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), set_class));
 	CON_SET_FIELD(set_class, "extend", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Set_Class_extend_func, "extend", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), set_class));
 	CON_SET_FIELD(set_class, "find", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Set_Class_find_func, "find", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), set_class));
 	CON_SET_FIELD(set_class, "intersect", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Set_Class_intersect_func, "intersect", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), set_class));
@@ -369,6 +371,44 @@ Con_Obj *_Con_Builtins_Set_Class_complement_func(Con_Obj *thread)
 	}
 
 	CON_RAISE_EXCEPTION("Type_Exception", CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_SET_CLASS), "path"), o_obj);
+}
+
+
+
+//
+// 'del(o)' removes 'o' from this set.
+//
+
+Con_Obj *_Con_Builtins_Set_Class_del_func(Con_Obj *thread)
+{
+	Con_Obj *key, *self;
+	CON_UNPACK_ARGS("WO", &self, &key);
+
+	Con_Builtins_Set_Atom *set_atom = CON_GET_ATOM(self, CON_BUILTIN(CON_BUILTIN_SET_ATOM_DEF_OBJECT));
+
+	Con_Hash hash = Con_Hash_get(thread, key);
+	CON_MUTEX_LOCK(&self->mutex);
+	Con_Int i = Con_Builtins_Set_Atom_find_entry(thread, &self->mutex, set_atom->entries, set_atom->num_entries_allocated, key, hash);
+	if (set_atom->entries[i].obj == NULL)
+		CON_RAISE_EXCEPTION("Key_Exception", key);
+
+	Con_Int j = i;
+	while (1) {
+		j = (j + 1) % set_atom->num_entries_allocated;
+		if (set_atom->entries[j].obj == NULL)
+			break;
+
+		Con_Int real_i = set_atom->entries[j].hash % set_atom->num_entries_allocated;
+		if ((j > i && (real_i <= i || real_i > j)) || (j < i && real_i <= i && real_i > j)) {
+			set_atom->entries[i] = set_atom->entries[j];
+			i = j;
+		}
+	}
+	set_atom->entries[i].obj = NULL;
+	set_atom->num_entries -= 1;
+	CON_MUTEX_UNLOCK(&self->mutex);
+
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }
 
 

@@ -42,7 +42,7 @@ The standard class <code>Dict</code>.
 
 <function name="del">
 <argument name="o" type="Object" />
-Deletes the entry <code>key</code>. If 'key' is not found an exception is raised.
+Deletes the entry <code>o</code>. If 'o' is not found an exception is raised.
 </function>
 
 <function name="extend">
@@ -264,6 +264,11 @@ Adds <code>o</code> to the set, overwriting the previous object which compared e
 <function name="complement">
 <argument name="s" />
 Returns a new set which contains every element of <code>self</code> which is not in <code>o</code>.
+</function>
+
+<function name="del">
+<argument name="o" type="Object" />
+Removes the entry <code>o</code>. If 'o' is not found an exception is raised.
 </function>
 
 <function name="extend">

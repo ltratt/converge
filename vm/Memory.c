@@ -125,7 +125,8 @@ void *Con_Memory_malloc(Con_Obj *thread, size_t size, Con_Memory_Chunk_Type type
 	
 	if (chunk == NULL) {
 		Con_Memory_gc_force(thread);
-		CON_XXX;
+		if ((chunk = malloc(sizeof(Con_Memory_Chunk) + size)) == NULL)
+			CON_XXX;
 	}
 	
 	if (type == CON_MEMORY_CHUNK_CONSERVATIVE)

@@ -128,8 +128,19 @@ class ITree_WF:
 		if not node.var_arg is null:
 			if not ITree::IVar.instantiated(node.var_arg):
 				self._type_error(node, "var_arg", node.var_arg, "IVar")
+
+		if not Builtins::List.conformed_by(node.nonlocals):
+			self._type_error(node, "nonlocals", node.nonlocals, "List")
+		for i := 0.iter_to(node.nonlocals.len()):
+			nonlocal_ := node.nonlocals[i]
+			if not ITree::IVar.instantiated(nonlocal_):
+				self._type_error(node, Strings::format("nonlocal[%s]", i), nonlocal_, "IVar")
+
+		if not Builtins::List.conformed_by(node.renames):
+			self._type_error(node, "renames", node.renames, "List")
+		for self._preorder(node.renames.iter())
 		
-		self._preorder(node.block)
+		self._preorder(node.body)
 
 
 
@@ -380,10 +391,10 @@ class ITree_WF:
 		if not Builtins::List.conformed_by(node.targets):
 			self._type_error(node, "targets", node.exprs, "List")
 		for target := node.targets.iter():
-			if ITree::IVar.instantiated(target) | ITree::IGet.instantiated(target) | ITree::ISlot_Lookup.instantiated(target) | ITree::IInsert.instantiated(target) | ITree::ISlice.instantiated(target):
+			if ITree::IVar.instantiated(target) | ITree::IGet.instantiated(target) | ITree::ISlot_Lookup.instantiated(target) | ITree::IModule_Lookup.instantiated(target) | ITree::IInsert.instantiated(target) | ITree::ISlice.instantiated(target):
 				self._preorder(target)
 			else:
-				self._type_error(node, "target", target, "[IVar, IGet, ISlot_Lookup, IInsert, ISlice]")
+				self._type_error(node, "target", target, "[IVar, IGet, ISlot_Lookup, IModule_Lookup, IInsert, ISlice]")
 		
 		self._check_expr(node, "expr", node.expr)
 
@@ -429,7 +440,7 @@ class ITree_WF:
 	
 	func _t_iquasi_quotes(self, node):
 	
-		self._preorder(node.block)
+		self._preorder(node.body)
 		
 		if not node.extra_src_infos is null:
 			self._check_expr(node, "extra_src_infos", node.extra_src_infos)
@@ -445,24 +456,6 @@ class ITree_WF:
 			self._type_error(node, "src_path", node.src_path, "String")
 	
 	
-	
-	func _t_iblock(self, node):
-
-		if not Builtins::List.conformed_by(node.nonlocals):
-			self._type_error(node, "nonlocals", node.nonlocals, "List")
-		for i := 0.iter_to(node.nonlocals.len()):
-			nonlocal_ := node.nonlocals[i]
-			if not ITree::IVar.instantiated(nonlocal_):
-				self._type_error(node, Strings::format("nonlocal[%s]", i), nonlocal_, "IVar")
-
-		if not Builtins::List.conformed_by(node.renames):
-			self._type_error(node, "renames", node.renames, "List")
-		for i := 0.iter_to(node.renames.len()):
-			raise "XXX"
-
-		self._preorder(node.body)
-	
-
 	
 	func _t_iexpr_seq(self, node):
 
@@ -483,6 +476,22 @@ class ITree_WF:
 		
 		if not node.default is null:
 			self._check_expr(node, "default", node.default)
+
+
+
+	func _t_irename(self, node):
+	
+		rename_from := node.from
+		if ITree::IVar.instantiated(rename_from) | ITree::IModule_Lookup.instantiated(rename_from) | ITree::IInsert.instantiated(rename_from):
+			self._preorder(rename_from)
+		else:
+			self._type_error(node, "from", node.var, "[IVar, IModule_Lookup, IInsert]")
+
+		rename_as := node.as_
+		if ITree::IVar.instantiated(rename_as) | ITree::IInsert.instantiated(rename_as):
+			self._preorder(rename_as)
+		else:
+			self._type_error(node, "as_", node.var, "[IVar, IInsert]")
 
 
 

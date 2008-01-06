@@ -80,9 +80,16 @@ Returns a version of <code>itree</code> which is made hygienic except for variab
 
 <h4>Pretty printing</h4>
 
-<function name="itree_format">
+<function name="itree_pp">
 <argument name="itree" />
 Returns a string representing the pretty-printed ITree <code>itree</code>.
+</function>
+
+
+<function name="itree_elided_pp">
+<argument name="itree" />
+<argument name="self_mod_id">null</argument>
+Returns an elided string representing the pretty-printed ITree <code>itree</code>. This function will try to elide extraneous, cluttering, details from the pretty-printed ITree, but in so doing can return misleading and incorrect representations. Chiefly it tries to pretty print module lookups in a <q>human readable</q> fashion; if <code>self_mod_id</code> is non-<code>null</code> any module lookup within a module of that Id will be elided still further. Both these mechanisms can cause problems in certain situations. It is recommended that users always use <ref name="itree_pp" /> initially, falling back on this elided representation only when the output from the former is untelligible.
 </function>
 
 
@@ -388,6 +395,14 @@ Returns an IExpr_Seq of the non-empty list of IExpr's <code>exprs</code>.
 <argument name="default" />
 <argument name="src_infos" />
 Returns an IParam whose name is defined by the IVar <code>name</code>, and whose default value is specified by the IExpr <code>default</code> or <code>null</code> if there is no default value.
+</function>
+
+
+<function name="irename">
+<argument name="from" />
+<argument name="as_" />
+<argument name="src_infos" />
+Returns an IReturn from the IVar <code>from</code> to the IVar <code>as_</code>.
 </function>
 
 

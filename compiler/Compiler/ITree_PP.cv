@@ -35,9 +35,11 @@ _NEST_FUNC := 1
 
 class ITree_PP:
 
-	func pp(self, itree):
+	func pp(self, itree, elide, self_mod_id := null):
 	
 		self._indent_level := 0
+		self._elide := elide
+		self._self_mod_id := self_mod_id
 
 		// We need to track when we're dealing with class fields or not so that we can be intelligent
 		// about printing "bound_func", "unbounc_func" or - hopefully! - just "func".
@@ -112,7 +114,7 @@ class ITree_PP:
 		pp.append("):")
 		
 		nonlocals := []
-		for nonlocal_ := node.block.nonlocals.iter():
+		for nonlocal_ := node.nonlocals.iter():
 			nonlocals.append(self._preorder(nonlocal_))
 		if nonlocals.len() > 0:
 			pp.append("\n")
@@ -120,12 +122,21 @@ class ITree_PP:
 			pp.append("nonlocal ")
 			pp.append(Strings::join(nonlocals, ", "))
 
-		if node.block.renames.len() != 0:
-			raise "XXX"
+		renames := []
+		for rename_ := node.renames.iter():
+			pp_rename_from := self._preorder(rename_.from)
+			pp_rename_as := self._preorder(rename_.as_)
+			rename_pp := Strings::format("%s as %s", pp_rename_from, pp_rename_as)
+			renames.append(rename_pp)
+		if renames.len() > 0:
+			pp.append("\n")
+			pp.append(_INDENT_STRING * (self._indent_level + 1))
+			pp.append("rename ")
+			pp.append(Strings::join(renames, ", "))
 		
 		self._indent_level += 1
 		self._nesting.append(_NEST_FUNC)
-		body := self._preorder(node.block.body)
+		body := self._preorder(node.body)
 		self._nesting.pop()
 		self._indent_level -= 1
 
@@ -302,7 +313,11 @@ class ITree_PP:
 
 	func _t_istring(self, node):
 	
-		return Strings::format("\"%s\"", node.val)
+		str := node.val
+		str := str.replaced("\\", "\\\\")
+		str := str.replaced("\n", "\\n")
+		
+		return Strings::format("\"%s\"", str)
 
 
 
@@ -314,7 +329,16 @@ class ITree_PP:
 
 	func _t_imodule_lookup(self, node):
 
-		return Strings::join(Functional::map(self._preorder, node.names), "::")
+		fst := node.names[0]
+		if self._elide == 1 & ITree::IMod_Id_Import.instantiated(fst):
+			if fst.mod_id == self._self_mod_id:
+				return Strings::join(Functional::map(self._preorder, node.names[1 : ]), "::")
+			else:
+				pp_fst := File::split_ext(File::split_leaf(fst.src_path)[1])[0]
+				pp_rest := Strings::join(Functional::map(self._preorder, node.names[1 : ]), "::")
+				return Strings::format("%s::%s", pp_fst, pp_rest)
+		else:
+			return Strings::join(Functional::map(self._preorder, node.names), "::")
 
 
 
@@ -396,7 +420,7 @@ class ITree_PP:
 
 	func _t_iconjunction(self, node):
 	
-		return Strings::join(Functional::map(self._preorder, node.exprs), " & ")
+		return "(" + Strings::join(Functional::map(self._preorder, node.exprs), " & ") + ")"
 
 
 
@@ -456,6 +480,34 @@ class ITree_PP:
 
 
 
+	func _t_iinsert(self, node):
+	
+		ndif node.type == ITree::INSERT_DEFAULT:
+			return Strings::format("${%s}", self._preorder(node.expr))
+		elif node.type == ITree::INSERT_CAPTURING:
+			return Strings::format("$c{%s}", self._preorder(node.expr))
+
+
+
+	func _t_iquasi_quotes(self, node):
+	
+		if not node.extra_src_infos is null:
+			raise "XXX"
+		else:
+			pp := ["[|"]
+		
+		pp.append("\n")
+		pp.append(_INDENT_STRING * (self._indent_level + 1))
+		body := self._preorder(node.body)
+		pp.append(body)
+		pp.append("\n")
+		pp.append(_INDENT_STRING * self._indent_level)
+		pp.append("|]")
+		
+		return Strings::join(pp, "")
+
+
+
 	func _t_ibinary(self, node):
 
 		if node.type == ITree::BINARY_ADD:
@@ -501,4 +553,10 @@ class ITree_PP:
 
 func pp(itree):
 
-	return ITree_PP.new().pp(itree)
+	return ITree_PP.new().pp(itree, 0)
+
+
+
+func elided_pp(itree, self_mod_id := null):
+
+	return ITree_PP.new().pp(itree, 1, self_mod_id)

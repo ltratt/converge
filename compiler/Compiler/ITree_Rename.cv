@@ -91,9 +91,10 @@ class _Renamer:
 		i := self._closures.len() - 1
 		srch_name := name
 		while i >= 0:
-			if self._closures[i][CLOSURE_VARS].find(srch_name):
+			closure := self._closures[i]
+			if closure[CLOSURE_VARS].find(srch_name):
 				break
-			if rename_as := self._closures[i][CLOSURE_RENAMES].find(srch_name):
+			if rename_as := closure[CLOSURE_RENAMES].find(srch_name):
 				srch_name := rename_as
 			i -= 1
 		exhausted:
@@ -158,16 +159,22 @@ class _Renamer:
 			elif ITree::IInsert.instantiated(node.func_name):
 				raise "XXX"
 
-		nonlocals := []
-		for nonlocal_ := node.block.nonlocals.iter():
+		rn_nonlocals := []
+		for nonlocal_ := node.nonlocals.iter():
 			raise "XXX"
 
-		renames := []
-		for rename_ := node.block.renames.iter():
-			raise "XXX"
+		rn_renames := []
+		renames := Dict{}
+		for rename_ := node.renames.iter():
+			rn_rename_from := self._preorder(rename_.from)
+			rn_rename_as := self._preorder(rename_.as_)
+			if not ITree::IInsert.instantiated(rename_.as_):
+				renames[rename_.as_.name] := rn_rename_from
+			
+			rn_renames.append(ITree::IRename.new(rn_rename_from, rn_rename_as, rename_.src_infos))
 
 		self._nesting.append(_NEST_FUNC)
-		self._add_vars(node.block.body.bound_vars, renames)
+		self._add_vars(node.body.bound_vars, renames)
 		
 		params := []
 		for params.append(self._preorder(node.params.iter()))
@@ -177,13 +184,12 @@ class _Renamer:
 		else:
 			raise "XXX"
 		
-		body := self._preorder(node.block.body)
-		block := ITree::IBlock.new(nonlocals, renames, body, node.block.src_infos)
+		body := self._preorder(node.body)
 		
 		self._nesting.pop()
 		self._pop_vars()
 		
-		return ITree::IFunc_Defn.new(is_bound, func_name, params, var_arg, block, node.src_infos)
+		return ITree::IFunc_Defn.new(is_bound, func_name, params, var_arg, rn_nonlocals, rn_renames, body, node.src_infos)
 
 
 

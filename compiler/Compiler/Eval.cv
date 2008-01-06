@@ -99,10 +99,9 @@ class Eval_Compiler:
 		body.append(iif)
 		
 		body := ITree::IExpr_Seq.new(body, src_infos)
-		block := ITree::IBlock.new([], [], body, src_infos)
 
 		eval_name := Core::fresh_name()		
-		dummy_func := ITree::IFunc_Defn.new(0, ITree::IVar.new(eval_name, src_infos), [], null, block, src_infos)
+		dummy_func := ITree::IFunc_Defn.new(0, ITree::IVar.new(eval_name, src_infos), [], null, [], [], body, src_infos)
 		dummy_defns := [ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(eval_name, src_infos)], dummy_func, src_infos)]
 		dummy_imodule := ITree::IModule.new(eval_name, dummy_defns, src_infos)
 		

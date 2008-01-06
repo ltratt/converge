@@ -62,6 +62,12 @@ func itree_pp(itree):
 
 
 
+func itree_elided_pp(itree, self_mod_id := null):
+
+	return ITree_PP::elided_pp(itree, self_mod_id)
+
+
+
 func mk_hygienic(itree, vars := Set{}):
 
 	return ITree_Rename::rename_except(itree, vars)

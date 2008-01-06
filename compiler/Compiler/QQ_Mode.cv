@@ -34,7 +34,7 @@ _NEST_FUNC := 1
 class QQ_Mode:
 
 	func generate(self, parent_mode, node):
-	
+
 		self.parent_mode := parent_mode
 		
 		// 'closures' is exactly as in Code_Gen; see that file for descriptions of
@@ -79,8 +79,6 @@ class QQ_Mode:
 		else:
 			self._extra_src_infos_var := null
 
-		self._add_vars(node.qq_bound_vars, [])
-
 		// We now do the $$qq$x$$ := CEI::fresh_name("x") constrution.
 		//
 		// Note that it might seem unsafe to do things in this fashion, since two consecutive
@@ -97,23 +95,25 @@ class QQ_Mode:
 		// variable above as an optimisation (although that is perhaps making a virtue out of
 		// a very convenient necessity).
 
-		for var_name := node.qq_bound_vars.iter():
+		for var_name, qq_var_name := node.qq_bound_vars_map.iter():
 			if not node.extra_src_infos is null & var_name == node.extra_src_infos_var_name:
 				continue
 
-			qq_bound_var := ITree::IVar.new(var_name, node.src_infos)
+			qq_bound_var := ITree::IVar.new(qq_var_name, node.src_infos)
 			fresh_name_func := self._get_module_defn_at_qq("Core", "fresh_name", node.src_infos)
 			fresh_name := ITree::IApplication.new(fresh_name_func, [ITree::IString.new(var_name, node.src_infos)], node.src_infos)
-			return_exprs.append(ITree::IAssignment.new(ITree::STD_ASSIGN, [qq_bound_var], fresh_name, node.src_infos))
+			asgn := ITree::IAssignment.new(ITree::STD_ASSIGN, [qq_bound_var], fresh_name, node.src_infos)
+			return_exprs.append(asgn)
 
-		e := self._lift_func_call(_expr_block_magic, [self._eval_expr_block(node.block.body)], node.src_infos)
-		ITree_WF::wf(e)
-		return_exprs.append(e)
-
-		// We don't strictly need to pop the last lot of variables, but do so for completeness.
-
+		self._qq_bound_vars_map := node.qq_bound_vars_map
+		self._add_vars(node.bound_vars, [])
+		qq_body := self._eval_expr_block(node.body)
 		self._pop_vars()
 
+		e := self._lift_func_call(_expr_block_magic, [qq_body], node.src_infos)
+		ITree_WF::wf(e)
+		return_exprs.append(e)
+		
 		return ITree::IConjunction.new(return_exprs, node.src_infos)
 
 
@@ -135,8 +135,8 @@ class QQ_Mode:
 
 
 	func _qq_bound_var_name(self, var_name):
-	
-		return Strings::format(Core::QUASI_QUOTES_NAME, var_name)
+
+		return self._qq_bound_vars_map[var_name]
 	
 	
 	
@@ -158,25 +158,24 @@ class QQ_Mode:
 	func _get_var_offset(self, var_name, src_infos):
 
 		mode := self
+		search_var_name := var_name
 		while not mode is null:
 			i := mode.closures.len() - 1
-			search_var_name := var_name
 			while i >= 0:
-				if mode.closures[i][Core::CLOSURE_VARS].find(search_var_name):
-					break
-				if rename_as := mode.closures[i][Core::CLOSURE_RENAMES].find(search_var_name):
-					search_var_name := rename_as
+				closure := mode.closures[i]
+				if closure[Core::CLOSURE_VARS].find(search_var_name):
+					return [search_var_name, mode, i]
+				if rename_from := closure[Core::CLOSURE_RENAMES].find(search_var_name):
+					search_var_name := rename_from
 				i -= 1
-			broken:
-				return [search_var_name, mode, i]
 			
 			mode := mode.parent_mode
-		exhausted:
-			self._compiler.error(Strings::format("Unknown variable '%s'.", var_name), src_infos)
+
+		self._compiler.error(Strings::format("Unknown variable '%s'.", var_name), src_infos)
 
 
 
-	func _process_lookup_var(self, var_name, node_src_infos):
+	func _process_var(self, var_name, node_src_infos):
 
 		renamed_var_name, mode, i := self._get_var_offset(var_name, node_src_infos)
 		
@@ -202,21 +201,13 @@ class QQ_Mode:
 
 		renamed_var_name, mode, i := self._get_var_offset(var_name, node_src_infos)
 		
-		if not mode is self:
-			raise "XXX"
-
+		assert mode == self
 		assert var_name == renamed_var_name
 		
 		if self._nesting.len() > 0 & self._nesting[-1] == _NEST_CLASS:
 			return ITree::IVar.new(var_name, node_src_infos)
 		else:
 			return ITree::IVar.new(self._qq_bound_var_name(var_name), node_src_infos)
-
-
-
-	func _process_assign_var(self, var_name, node_src_infos):
-
-		return self._qq("IVar", [self._process_assign_name(var_name, node_src_infos)], node_src_infos)
 
 
 
@@ -352,13 +343,42 @@ class QQ_Mode:
 					// Functions which are class fields are not alpha-renamed.
 					func_name := self._qq("IVar", [ITree::IString.new(node.func_name.name, node.func_name.src_infos)], node.func_name.src_infos)
 				else:
-					func_name := self._process_assign_var(node.func_name.name, node.func_name.src_infos)
+					func_name := self._process_var(node.func_name.name, node.func_name.src_infos)
+
+		qq_nonlocals := []
+		for nonlocal_ := node.nonlocals.iter():
+			if ITree::IVar.instantiated(nonlocal_):
+				pass
+			else:
+				raise "XXX"
+		
+		renames := Dict{}
+		qq_renames := []
+		for rename_ := node.renames.iter():
+			rename_from := rename_.from
+			rename_as := rename_.as_
+			if ITree::IVar.instantiated(rename_.from) & ITree::IVar.instantiated(rename_.as_):
+				renames[rename_.as_.name] := rename_.from.name
+			else:
+				if ITree::IVar.instantiated(rename_.from):
+					qq_rename_from := self._preorder(rename_.from)
+				else:
+					qq_rename_from := self._process_insert(rename_.from, _pi_rename_var)
+
+				ndif ITree::IVar.instantiated(rename_.as_):
+					rename_.as__name := ITree::IString.new(rename_.as_.name, rename_.src_infos)
+					qq_rename_as_ := self._qq("IVar", [rename_.as__name], rename_.src_infos)
+				elif ITree::IInsert.instantiated(rename_.as_):
+					qq_rename_as_ := self._process_insert(rename_.as_, _pi_rename_var)
+			
+				qq_rename := self._qq("IRename", [qq_rename_from, qq_rename_as_], rename_.src_infos)
+				qq_renames.append(qq_rename)
 
 		// Note that we consider ourselves nested within a function even when processing parameters.
 
 		self._nesting.append(_NEST_FUNC)
 
-		self._add_vars(node.internal_bound_vars, [])
+		self._add_vars(node.internal_bound_vars, renames)
 
 		params_list := []
 		for param := node.params.iter():
@@ -379,23 +399,14 @@ class QQ_Mode:
 		elif ITree::IInsert.instantiated(node.var_arg):
 			var_arg := self._process_insert(node.var_arg, _pi_var_arg)
 		else:
-			var_arg := self._process_assign_var(node.var_arg.name, node.src_infos)
+			var_arg := self._process_var(node.var_arg.name, node.src_infos)
 		
-		nonlocals := []
-		for nonlocal_ := node.block.nonlocals.iter():
-			raise "XXX"
-		
-		renames := []
-		for rename_ := node.block.renames.iter():
-			raise "XXX"
-		
-		body := self._preorder(node.block.body)
-		block := self._qq("IBlock", [ITree::IList.new(nonlocals, node.src_infos), ITree::IList.new(renames, node.src_infos), body], node.block.src_infos)
+		body := self._preorder(node.body)
 
 		self._pop_vars()
 		self._nesting.pop()
 		
-		return self._qq("IFunc_Defn", [is_bound, func_name, params, var_arg, block], node.src_infos)
+		return self._qq("IFunc_Defn", [is_bound, func_name, params, var_arg, ITree::IList.new(qq_nonlocals, node.src_infos), ITree::IList.new(qq_renames, node.src_infos), body], node.src_infos)
 
 
 
@@ -450,7 +461,7 @@ class QQ_Mode:
 
 	func _t_ivar(self, node):
 
-		return self._process_lookup_var(node.name, node.src_infos)
+		return self._process_var(node.name, node.src_infos)
 
 
 
@@ -661,7 +672,7 @@ class QQ_Mode:
 				if self._nesting.len() > 0 & self._nesting[-1] == _NEST_CLASS:
 					targets.append(self._qq("IVar", [ITree::IString.new(target.name, node.src_infos)], node.src_infos))
 				else:
-					targets.append(self._process_assign_var(target.name, target.src_infos))
+					targets.append(self._process_var(target.name, target.src_infos))
 			else:
 				targets.append(self._preorder(target))
 
@@ -695,7 +706,7 @@ class QQ_Mode:
 
 	func _t_iimport(self, node):
 	
-		as_var := self._process_assign_var(node.var_name, node.src_infos)
+		as_var := self._process_var(node.var_name, node.src_infos)
 		as_name := ITree::ISlot_Lookup.new(as_var, "var_name", node.src_infos)
 	
 		return self._qq("IImport", [ITree::IString.new(node.mod_path, node.src_infos), as_name], node.src_infos)
@@ -764,7 +775,7 @@ class QQ_Mode:
 		if node.var is null:
 			var := ITree::IVar.new("null", node.src_infos)
 		else:
-			var := self._process_assign_var(node.var.name, node.var.src_infos)
+			var := self._process_var(node.var.name, node.var.src_infos)
 		body := self._preorder(node.body)
 		
 		return self._qq("ICatch", [expr, var, body], node.src_infos)
@@ -943,8 +954,21 @@ func _pi_initial_mod_lookup(lookup, src_infos):
 //
 
 func _pi_subsequent_mod_lookup(lookup, src_infos):
-
+ 
 	if ITree::IVar.instantiated(lookup):
 		return lookup.extended_src_infos(src_infos)
 	
 	ITree_WF::type_error("IMod_Lookup", "first elements", lookup, "IVar", src_infos)
+
+
+
+//
+// Check that 'var' is valid for a rename.
+//
+
+func _pi_rename_var(var, src_infos):
+
+	if not ITree::IVar.instantiated(var):
+		ITree_WF::type_error("IBlock", "rename", var, "IVar", src_infos)
+
+	return var.extended_src_infos(src_infos)

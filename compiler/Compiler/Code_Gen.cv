@@ -288,20 +288,31 @@ class Code_Gen:
 
 
 
+	//
+	// Locates 'var_name' in the closures stack. If 'var_name' is a var within the module being
+	// compiled then [<renamed var name>, <closures offset>, <var name>] is returned, where
+	// <var name> is a string that reflects the original name of 'var_name'.
+	//
+	// If 'var_name' was (at some point) a renamed module lookup, then [<IModule_Lookup instance>,
+	// -1, -1] is returned.
+	//
+
 	func _get_var_offsets(self, var_name, src_infos):
 
 		i := self.closures.len() - 1
 		search_var_name := var_name
 		while i >= 0:
-			if self.closures[i][Core::CLOSURE_VARS].find(search_var_name):
-				break
-			if rename_as := self.closures[i][Core::CLOSURE_RENAMES].find(search_var_name):
-				search_var_name := rename_as
+			closure := self.closures[i]
+			if closure[Core::CLOSURE_VARS].find(search_var_name):
+				return [search_var_name, (self.closures.len() - i) - 1, closure[Core::CLOSURE_VARS][search_var_name]]
+			if rename_from := closure[Core::CLOSURE_RENAMES].find(search_var_name):
+				ndif ITree::IVar.instantiated(rename_from):
+					search_var_name := rename_from.name
+				elif ITree::IModule_Lookup.instantiated(rename_from):
+					return [rename_from, -1, -1]
 			i -= 1
-		exhausted:
-			self._compiler.error(Strings::format("Unknown variable '%s'.", var_name), src_infos)
-		
-		return [(self.closures.len() - i) - 1, self.closures[i][Core::CLOSURE_VARS][search_var_name]]
+
+		self._compiler.error(Strings::format("Unknown variable '%s'.", var_name), src_infos)
 
 
 
@@ -313,30 +324,53 @@ class Code_Gen:
 
 	func _add_assign_to_var(self, var_name, src_infos, imp_mod_id := null):
 	
-		closures_offset, var_num := self._get_var_offsets(var_name, src_infos)
+		renamed_var_name, closures_offset, var_num := self._get_var_offsets(var_name, src_infos)
 
-		// What we do now is to see if this assignment overwrites a 'protected' import variable.
-		
-		reversed_closures_offset := self.closures.len() - closures_offset - 1
-		if existing_imp_mod_id := self.closures[reversed_closures_offset][Core::CLOSURE_IMPORTS].find(var_name):
-			// OK, this does refer to an import. If it's a normal variable assignment (i.e.
-			// 'imp_mod_id' wasn't specified), or if it's an import that's already been assigned
-			// then we raise an error.
-			if imp_mod_id is null | not existing_imp_mod_id is null:
-				self._compiler.error(Strings::format("Can not assign to '%s' variable in more than one place.", var_name), src_infos)
-				
-			// Update our idea of what the import variable refers to.
-			self.closures[reversed_closures_offset][Core::CLOSURE_IMPORTS][var_name] := imp_mod_id
-		
-		self._instructions.append(self._target.Instr_Assign_Var.new(src_infos, closures_offset, var_num))
+		if ITree::IModule_Lookup.instantiated(renamed_var_name):
+			// XXX at the moment we don't detect overwriting the protected import variables of
+			// another module; indeed, such functionality would need to exist in the linker, as we
+			// don't have enough knowledge about other modules to do this here.
+
+			fst := renamed_var_name.names[0]
+			if ITree::IMod_Id_Import.instantiated(fst):
+				self.preorder(fst)
+			else:
+				self._prc_mod_lookup(renamed_var_name)
+				self.preorder(fst)
+
+			for name := renamed_var_name.names.iter(1, -1):
+				self._instructions.append(self._target.Instr_Module_Lookup.new(name.src_infos, name.name))
+
+			self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(renamed_var_name.src_infos, "set_defn"))
+			var := renamed_var_name.names[-1]
+			self._instructions.append(self._target.Instr_String.new(var.src_infos, var.name))
+			self._instructions.append(self._target.Instr_Pull.new(renamed_var_name.src_infos, 2))
+			self._instructions.append(self._target.Instr_Apply.new(renamed_var_name.src_infos, 2))
+		else:
+			// What we do now is to see if this assignment overwrites a 'protected' import variable.
+			reversed_closures_offset := self.closures.len() - closures_offset - 1
+			if existing_imp_mod_id := self.closures[reversed_closures_offset][Core::CLOSURE_IMPORTS].find(var_name):
+				// OK, this does refer to an import. If it's a normal variable assignment (i.e.
+				// 'imp_mod_id' wasn't specified), or if it's an import that's already been assigned
+				// then we raise an error.
+				if imp_mod_id is null | not existing_imp_mod_id is null:
+					self._compiler.error(Strings::format("Can not assign to '%s' variable in more than one place.", var_name), src_infos)
+
+				// Update our idea of what the import variable refers to.
+				self.closures[reversed_closures_offset][Core::CLOSURE_IMPORTS][var_name] := imp_mod_id
+
+			self._instructions.append(self._target.Instr_Assign_Var.new(src_infos, closures_offset, var_num))
 
 
 
 	func _add_lookup_var(self, var_name, src_infos):
 	
-		closures_offset, var_num := self._get_var_offsets(var_name, src_infos)
+		renamed_var_name, closures_offset, var_num := self._get_var_offsets(var_name, src_infos)
 		
-		self._instructions.append(self._target.Instr_Lookup_Var.new(src_infos, closures_offset, var_num))
+		if ITree::IModule_Lookup.instantiated(renamed_var_name):
+			self.preorder(renamed_var_name)
+		else:
+			self._instructions.append(self._target.Instr_Lookup_Var.new(src_infos, closures_offset, var_num))
 
 
 
@@ -366,7 +400,10 @@ class Code_Gen:
 
 	func _prc_mod_lookup(self, mod_lookup):
 
-		closures_offset, var_num := self._get_var_offsets(mod_lookup.names[0].name, mod_lookup.names[0].src_infos)
+		renamed_var_name, closures_offset, var_num := self._get_var_offsets(mod_lookup.names[0].name, mod_lookup.names[0].src_infos)
+		
+		if ITree::IModule_Lookup.instantiated(renamed_var_name):
+			raise "XXX"
 
 		reversed_closures_offset := self.closures.len() - closures_offset - 1
 		if mod_id := self.closures[reversed_closures_offset][Core::CLOSURE_IMPORTS].find(mod_lookup.names[0].name):
@@ -517,8 +554,8 @@ class Code_Gen:
 		bound_vars := node.internal_bound_vars
 		
 		renames := Dict{}
-		for rename_ := node.block.renames.iter():
-			raise "XXX"
+		for rename_ := node.renames.iter():
+			renames[rename_.as_.name] := rename_.from
 		
 		self._add_vars(bound_vars, renames, node.internal_import_vars)
 		
@@ -536,7 +573,7 @@ class Code_Gen:
 		
 		params_info := []
 		for param := node.params.iter():
-			closures_offset, var_num := self._get_var_offsets(param.var.name, param.var.src_infos)
+			renamed_var_name, closures_offset, var_num := self._get_var_offsets(param.var.name, param.var.src_infos)
 			assert closures_offset == 0
 			if param.default is null:
 				params_info.append([var_num, 0])
@@ -546,7 +583,7 @@ class Code_Gen:
 		if node.var_arg is null:
 			self._instructions.append(self._target.Instr_Unpack_Args.new(node.src_infos, params_info, 0))
 		else:
-			closures_offset, var_num := self._get_var_offsets(node.var_arg.name, node.var_arg.src_infos)
+			renamed_var_name, closures_offset, var_num := self._get_var_offsets(node.var_arg.name, node.var_arg.src_infos)
 			assert closures_offset == 0
 			params_info.append([var_num, 0])
 			self._instructions.append(self._target.Instr_Unpack_Args.new(node.src_infos, params_info, 1))
@@ -556,7 +593,8 @@ class Code_Gen:
 				continue
 			next_param_label := self._create_label()
 			self._nesting.append([NEST_NORMAL])
-			closures_offset, var_num := self._get_var_offsets(param.var.name, param.var.src_infos)
+			renamed_var_name, closures_offset, var_num := self._get_var_offsets(param.var.name, param.var.src_infos)
+			assert not ITree::IModule_Lookup.instantiated(renamed_var_name)
 			self._instructions.append(self._target.Instr_Is_Assigned.new(node.src_infos, closures_offset, var_num, next_param_label))
 			self._instructions.append(self._target.Instr_Add_Failure_Frame.new(node.src_infos, next_param_label))
 			self.preorder(param.default)
@@ -565,7 +603,7 @@ class Code_Gen:
 			self._nesting.del(-1)
 			self._set_label(next_param_label)
 
-		self.preorder(node.block.body)
+		self.preorder(node.body)
 		self._pop_vars()
 		self._nesting.del(-1)
 
@@ -1114,14 +1152,14 @@ class Code_Gen:
 	
 		if node.type != ITree::STD_ASSIGN:
 			for target := node.targets.iter():
-				if ITree::IVar.instantiated(target):
+				ndif ITree::IVar.instantiated(target):
 					self._add_lookup_var(target.name, target.src_infos)
 				elif ITree::ISlot_Lookup.instantiated(target):
 					self.preorder(target)
 				elif ITree::IGet.instantiated(target):
 					self.preorder(target)
-				else:
-					raise "XXX"
+				elif ITree::IModule_Lookup.instantiated(target):
+					self.preorder(target)
 	
 		self.preorder(node.expr)
 		
@@ -1134,7 +1172,7 @@ class Code_Gen:
 			elif node.type == ITree::SUB_ASSIGN:
 				self._instructions.append(self._target.Instr_Sub.new(node.src_infos))
 
-			if ITree::IVar.instantiated(target):
+			ndif ITree::IVar.instantiated(target):
 				self._add_assign_to_var(target.name, target.src_infos)
 			elif ITree::ISlot_Lookup.instantiated(target):
 				self.preorder(target.target)
@@ -1143,6 +1181,22 @@ class Code_Gen:
 				self.preorder(target.target)
 				self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(target.src_infos, "set"))
 				self.preorder(target.index)
+				self._instructions.append(self._target.Instr_Pull.new(target.src_infos, 2))
+				self._instructions.append(self._target.Instr_Apply.new(target.src_infos, 2))
+			elif ITree::IModule_Lookup.instantiated(target):
+				fst := target.names[0]
+				if ITree::IMod_Id_Import.instantiated(fst):
+					self.preorder(fst)
+				else:
+					self._prc_mod_lookup(target)
+					self.preorder(fst)
+
+				for name := target.names.iter(1, -1):
+					self._instructions.append(self._target.Instr_Module_Lookup.new(name.src_infos, name.name))
+				
+				self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(target.src_infos, "set_defn"))
+				var := target.names[-1]
+				self._instructions.append(self._target.Instr_String.new(var.src_infos, var.name))
 				self._instructions.append(self._target.Instr_Pull.new(target.src_infos, 2))
 				self._instructions.append(self._target.Instr_Apply.new(target.src_infos, 2))
 			elif ITree::ISlice.instantiated(target):
@@ -1161,8 +1215,6 @@ class Code_Gen:
 
 				self._instructions.append(self._target.Instr_Pull.new(target.src_infos, 3))
 				self._instructions.append(self._target.Instr_Apply.new(target.src_infos, 3))
-			else:
-				raise "XXX"
 
 			if node.targets.len() > 1:
 				self._instructions.append(self._target.Instr_Pop.new(node.src_infos))

@@ -141,54 +141,86 @@ class IClass_Defn:
 
 class IFunc_Defn:
 
-	func init(self, is_bound, func_name, params, var_arg, block, src_infos):
+	func init(self, is_bound, func_name, params, var_arg, nonlocals, renames, body, src_infos):
 
 		self.is_bound := is_bound
 		self.func_name := func_name
 		self.params := params
 		self.var_arg := var_arg
-		self.block := block
+		self.nonlocals := nonlocals
+		self.renames := renames
+		self.body := body
 		self.src_infos := src_infos
 
 		if IVar.instantiated(func_name):
-			self.bound_vars := Set{func_name.name}
+			all_bound_vars := Set{func_name.name}
 			self.qq_bound_vars := Set{func_name.name}
 		else:
-			self.bound_vars := Set{}
+			all_bound_vars := Set{}
 			self.qq_bound_vars := Set{}
 		self.import_vars := Set{}
 		self.mod_id_lookups := Dict{}
 		self.internal_import_vars := Set{}
 
-		self.internal_bound_vars := Set{}
+		all_free_vars := Set{}
+		all_internal_bound_vars := Set{}
 
 		for param := params.iter():
-			self.internal_bound_vars.extend(param.bound_vars)
+			all_internal_bound_vars.extend(param.bound_vars)
+			all_free_vars.extend(param.free_vars)
 			self.qq_bound_vars.extend(param.qq_bound_vars)
 			_merge_mod_id_lookups(self.mod_id_lookups, param.mod_id_lookups)
 			self.internal_import_vars.extend(param.import_vars)
 			
 		if not var_arg is null:
 			if IInsert.instantiated(var_arg):
-				self.internal_bound_vars.extend(var_arg.bound_vars)
+				all_internal_bound_vars.extend(var_arg.bound_vars)
 				self.qq_bound_vars.extend(var_arg.qq_bound_vars)
 				_merge_mod_id_lookups(self.mod_id_lookups, var_arg.mod_id_lookups)
 			else:
-				self.internal_bound_vars.add(var_arg.name)
+				all_internal_bound_vars.add(var_arg.name)
 				self.qq_bound_vars.add(var_arg.name)
 				_merge_mod_id_lookups(self.mod_id_lookups, var_arg.mod_id_lookups)
 
-		self.internal_bound_vars.extend(block.bound_vars)
-		self.qq_bound_vars.extend(block.qq_bound_vars)
-		_merge_mod_id_lookups(self.mod_id_lookups, block.mod_id_lookups)
-		self.internal_import_vars.extend(block.import_vars)
-		
-		all_free_vars := Set{}
-		for param := params.iter():
-			all_free_vars.extend(param.free_vars)
-		all_free_vars.extend(block.free_vars)
-		self.free_vars := all_free_vars.complement(self.internal_bound_vars)
+		all_free_vars.extend(body.free_vars)
+		all_internal_bound_vars.extend(body.bound_vars)
+		self.qq_bound_vars.extend(body.qq_bound_vars)
+		_merge_mod_id_lookups(self.mod_id_lookups, body.mod_id_lookups)
+		self.internal_import_vars.extend(body.import_vars)
 
+		nl_vars := Set{}
+		for nonlocal_ := nonlocals.iter():
+			if IVar.instantiated(nonlocal_):
+				nl_vars.add(nonlocal_.name)
+			else:
+				raise "XXX"
+
+		for rename_ := renames.iter():
+			if not IVar.instantiated(rename_.from):
+				all_bound_vars.extend(rename_.from.bound_vars)
+				self.import_vars.extend(rename_.from.import_vars)
+				self.qq_bound_vars.extend(rename_.from.qq_bound_vars)
+				all_free_vars.extend(rename_.from.free_vars)
+				_merge_mod_id_lookups(self.mod_id_lookups, rename_.from.mod_id_lookups)
+
+			if IVar.instantiated(rename_.as_):
+				nl_vars.add(rename_.as_.name)
+				self.qq_bound_vars.add(rename_.as_.name)
+			else:
+				all_bound_vars.extend(rename_.as_.bound_vars)
+				self.import_vars.extend(rename_.as_.import_vars)
+				self.qq_bound_vars.extend(rename_.as_.qq_bound_vars)
+				all_free_vars.extend(rename_.as_.free_vars)
+				_merge_mod_id_lookups(self.mod_id_lookups, rename_.as_.mod_id_lookups)
+
+		self.bound_vars := all_bound_vars.complement(nl_vars)
+		self.internal_bound_vars := all_internal_bound_vars.complement(nl_vars)
+		self.free_vars := all_free_vars.complement(self.internal_bound_vars)
+		
+		for rename_ := renames.iter():
+			if IVar.instantiated(rename_.from):
+				self.free_vars.add(rename_.from.name)
+		
 
 
 	func extended_src_infos(self, extra_src_infos):
@@ -199,9 +231,11 @@ class IFunc_Defn:
 			func_name := self.func_name.extended_src_infos(extra_src_infos)
 		params := _extended_collection_src_infos(self.params, extra_src_infos)
 		var_arg := _extended_obj_src_infos(self.var_arg, extra_src_infos)
-		block := self.block.extended_src_infos(extra_src_infos)
+		nonlocals := _extended_collection_src_infos(self.nonlocals, extra_src_infos)
+		renames := _extended_collection_src_infos(self.renames, extra_src_infos)
+		body := self.body.extended_src_infos(extra_src_infos)
 		
-		return IFunc_Defn.new(self.is_bound, func_name, params, var_arg, block, self.src_infos + extra_src_infos)
+		return IFunc_Defn.new(self.is_bound, func_name, params, var_arg, nonlocals, renames, body, self.src_infos + extra_src_infos)
 
 
 
@@ -1047,6 +1081,8 @@ class IAssignment:
 			if IVar.instantiated(target):
 				self.bound_vars.add(target.name)
 				self.qq_bound_vars.add(target.name)
+				if type != STD_ASSIGN:
+					self.free_vars.add(target.name)
 			else:
 				self.bound_vars.extend(target.bound_vars)
 				self.import_vars.extend(target.import_vars)
@@ -1199,40 +1235,43 @@ class IInsert:
 
 class IQuasi_Quotes:
 
-	func init(self, block, extra_src_infos, src_infos):
+	func init(self, body, extra_src_infos, src_infos):
 	
-		self.block := block
+		self.body := body
 		self.extra_src_infos := extra_src_infos
 		self.src_infos := src_infos
 		
 		self.bound_vars := Set{}
 		self.import_vars := Set{}
 		self.qq_bound_vars := Set{}
-		self.free_vars := block.free_vars.scopy()
-		self.mod_id_lookups := block.mod_id_lookups.scopy()
-		for var := block.qq_bound_vars.iter():
-			self.qq_bound_vars.add(Strings::format(Core::QUASI_QUOTES_NAME, var))
-			self.bound_vars.add(Strings::format(Core::QUASI_QUOTES_NAME, var))
+		self.free_vars := body.free_vars.scopy()
+		self.mod_id_lookups := body.mod_id_lookups.scopy()
 		
 		if not extra_src_infos is null:
 			self.extra_src_infos_var_name := Core::fresh_name()
 			self.bound_vars.add(self.extra_src_infos_var_name)
-			self.qq_bound_vars.add(self.extra_src_infos_var_name)
-			
+
 			self.bound_vars.extend(extra_src_infos.bound_vars)
 			self.import_vars.extend(extra_src_infos.import_vars)
 			self.qq_bound_vars.extend(extra_src_infos.qq_bound_vars)
 			self.free_vars.extend(extra_src_infos.free_vars)
 			_merge_mod_id_lookups(self.mod_id_lookups, extra_src_infos.mod_id_lookups)
 
+		self.qq_bound_vars_map := Dict{}
+		for var_name := self.body.qq_bound_vars.iter():
+			qq_var_name := Core::fresh_name()
+			self.qq_bound_vars_map[var_name] := qq_var_name
+			self.bound_vars.add(qq_var_name)
+			self.qq_bound_vars.add(qq_var_name)
+
 
 
 	func extended_src_infos(self, extra_src_infos):
 	
-		block := self.block.extended_src_infos(extra_src_infos)
+		body := self.body.extended_src_infos(extra_src_infos)
 		esi := _extended_obj_src_infos(self.extra_src_infos, extra_src_infos)
 	
-		return IQuasi_Quotes.new(block, esi, self.src_infos + extra_src_infos)
+		return IQuasi_Quotes.new(body, esi, self.src_infos + extra_src_infos)
 
 
 
@@ -1264,45 +1303,6 @@ class IMod_Id_Import:
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // "Virtual" elements
 //
-
-class IBlock:
-
-	func init(self, nonlocals, renames, body, src_infos):
-	
-		self.nonlocals := nonlocals
-		self.renames := renames
-		self.body := body
-		self.src_infos := src_infos
-		
-		nl_vars := Set{}
-		for nonlocal_ := nonlocals.iter():
-			if IVar.instantiated(nonlocal_):
-				nl_vars.add(nonlocal_.name)
-		
-		for rename_from, rename_as := renames.iter():
-			if IVar.instantiated(rename_from):
-				nl_vars.add(rename_from.name)
-		
-		self.bound_vars := body.bound_vars.complement(nl_vars)
-		self.import_vars := body.import_vars
-		self.qq_bound_vars := body.qq_bound_vars
-		self.free_vars := body.free_vars
-		self.mod_id_lookups := body.mod_id_lookups
-
-
-
-	func extended_src_infos(self, extra_src_infos):
-	
-		nonlocals := _extended_collection_src_infos(self.nonlocals, extra_src_infos)
-		renames := []
-		for rename_from, rename_as := self.renames.iter():
-			renames.append([rename_from.extended_src_infos(extra_src_infos), rename_as.extended_src_infos(extra_src_infos)])
-		body := self.body.extended_src_infos(extra_src_infos)
-		
-		return IBlock.new(nonlocals, renames, body, self.src_infos + extra_src_infos)
-		
-
-
 
 class IExpr_Seq:
 
@@ -1367,6 +1367,26 @@ class IParam:
 		default := _extended_obj_src_infos(self.default, extra_src_infos)
 	
 		return IParam.new(var, default, self.src_infos + extra_src_infos)
+
+
+
+
+class IRename:
+
+	func init(self, from, as_, src_infos):
+	
+		self.from := from
+		self.as_ := as_
+		self.src_infos := src_infos
+
+
+
+	func extended_src_infos(self, extra_src_infos):
+	
+		ext_from := self.from.extended_src_infos(extra_src_infos)
+		ext_as := self.as_.extended_src_infos(extra_src_infos)
+		
+		return IRename.new(ext_from, ext_as, self.src_infos + extra_src_infos)
 			
 
 

@@ -50,7 +50,7 @@ import_as   ::= "AS" "ID"
             ::=
 
 
-class_defn       ::= "CLASS" class_name class_supers class_metaclass ":" "INDENT" class_fields "DEDENT"
+class_defn      ::= "CLASS" class_name class_supers class_metaclass ":" "INDENT" class_fields "DEDENT"
 class_name      ::= "ID"
                 ::= splice
 				::= insert
@@ -67,40 +67,43 @@ class_field     ::= class_defn
 				::= insert
                 ::= "PASS"
 
-func_defn           ::= func_type func_name "(" func_params ")" ":" "INDENT" func_decls expr_seq "DEDENT"
-                    ::= func_type func_name "(" func_params ")" "{" "INDENT" func_decls expr_seq "DEDENT" "NEWLINE" "}"
-                    ::= func_type func_name "(" func_params ")" "{" expr "}"
-func_type           ::= "FUNC"
-                    ::= "BOUND_FUNC"
-                    ::= "UNBOUND_FUNC"
-func_name           ::= name
-                    ::= "+"
-                    ::= "-"
-                    ::= "/"
-                    ::= "*"
-                    ::= "<"
-                    ::= ">"
-                    ::= "=="
-                    ::= "!="
-                    ::= ">="
-                    ::= "<="
-                    ::=
-func_params         ::= func_params_elems "," func_varargs
-                    ::= func_params_elems
-                    ::= func_varargs
-                    ::=
-func_params_elems   ::= name func_param_default ( "," name func_param_default )*
-func_param_default  ::= ":=" expr
-                    ::=
-func_varargs        ::= "*" name
-                    ::= "*" splice
-					::= "*" insert
-func_decls          ::= func_decl ( "NEWLINE" func_decl )*
-                    ::=
-func_decl           ::= func_decl_nonlocals
-                    ::= func_decl_rename
-func_decl_nonlocals ::= "NONLOCAL" name ( "," name )* "NEWLINE"
-func_decl_rename    ::= "RENAME" name "AS" name ( "," name "AS" name )* "NEWLINE"
+func_defn             ::= func_type func_name "(" func_params ")" ":" "INDENT" func_decls expr_seq "DEDENT"
+                      ::= func_type func_name "(" func_params ")" "{" "INDENT" func_decls expr_seq "DEDENT" "NEWLINE" "}"
+                      ::= func_type func_name "(" func_params ")" "{" expr "}"
+func_type             ::= "FUNC"
+                      ::= "BOUND_FUNC"
+                      ::= "UNBOUND_FUNC"
+func_name             ::= name
+                      ::= "+"
+                      ::= "-"
+                      ::= "/"
+                      ::= "*"
+                      ::= "<"
+                      ::= ">"
+                      ::= "=="
+                      ::= "!="
+                      ::= ">="
+                      ::= "<="
+                      ::=
+func_params           ::= func_params_elems "," func_varargs
+                      ::= func_params_elems
+                      ::= func_varargs
+                      ::=
+func_params_elems     ::= name func_param_default ( "," name func_param_default )*
+func_param_default    ::= ":=" expr
+                      ::=
+func_varargs          ::= "*" name
+                      ::= "*" splice
+					  ::= "*" insert
+func_decls            ::= func_decl ( "NEWLINE" func_decl )*
+                      ::=
+func_decl             ::= func_decl_nonlocals
+                      ::= func_decl_rename
+func_decl_nonlocals   ::= "NONLOCAL" name ( "," name )* "NEWLINE"
+func_decl_rename      ::= "RENAME" func_decl_rename_elem ( "," func_decl_rename_elem )* "NEWLINE"
+func_decl_rename_elem ::= name "AS" name
+                      ::= splice
+					  ::= insert
 
 
 expr_seq ::= expr ( "NEWLINE" expr )*

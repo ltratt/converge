@@ -196,28 +196,38 @@ class IFunc_Defn:
 				raise "XXX"
 
 		for rename_ := renames.iter():
-			if not IVar.instantiated(rename_.from):
-				all_bound_vars.extend(rename_.from.bound_vars)
-				self.import_vars.extend(rename_.from.import_vars)
-				self.qq_bound_vars.extend(rename_.from.qq_bound_vars)
-				all_free_vars.extend(rename_.from.free_vars)
-				_merge_mod_id_lookups(self.mod_id_lookups, rename_.from.mod_id_lookups)
-
-			if IVar.instantiated(rename_.as_):
-				nl_vars.add(rename_.as_.name)
-				self.qq_bound_vars.add(rename_.as_.name)
+			if IInsert.instantiated(rename_):
+				all_internal_bound_vars.extend(rename_.bound_vars)
+				all_free_vars.extend(rename_.free_vars)
+				self.qq_bound_vars.extend(rename_.qq_bound_vars)
+				_merge_mod_id_lookups(self.mod_id_lookups, rename_.mod_id_lookups)
+				self.internal_import_vars.extend(rename_.import_vars)
 			else:
-				all_bound_vars.extend(rename_.as_.bound_vars)
-				self.import_vars.extend(rename_.as_.import_vars)
-				self.qq_bound_vars.extend(rename_.as_.qq_bound_vars)
-				all_free_vars.extend(rename_.as_.free_vars)
-				_merge_mod_id_lookups(self.mod_id_lookups, rename_.as_.mod_id_lookups)
+				if not IVar.instantiated(rename_.from):
+					all_bound_vars.extend(rename_.from.bound_vars)
+					self.import_vars.extend(rename_.from.import_vars)
+					self.qq_bound_vars.extend(rename_.from.qq_bound_vars)
+					all_free_vars.extend(rename_.from.free_vars)
+					_merge_mod_id_lookups(self.mod_id_lookups, rename_.from.mod_id_lookups)
+
+				if IVar.instantiated(rename_.as_):
+					nl_vars.add(rename_.as_.name)
+					self.qq_bound_vars.add(rename_.as_.name)
+				else:
+					all_bound_vars.extend(rename_.as_.bound_vars)
+					self.import_vars.extend(rename_.as_.import_vars)
+					self.qq_bound_vars.extend(rename_.as_.qq_bound_vars)
+					all_free_vars.extend(rename_.as_.free_vars)
+					_merge_mod_id_lookups(self.mod_id_lookups, rename_.as_.mod_id_lookups)
 
 		self.bound_vars := all_bound_vars.complement(nl_vars)
 		self.internal_bound_vars := all_internal_bound_vars.complement(nl_vars)
 		self.free_vars := all_free_vars.complement(self.internal_bound_vars)
 		
 		for rename_ := renames.iter():
+			if IInsert.instantiated(rename_):
+				continue
+
 			if IVar.instantiated(rename_.from):
 				self.free_vars.add(rename_.from.name)
 		

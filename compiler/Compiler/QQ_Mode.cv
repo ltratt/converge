@@ -353,26 +353,31 @@ class QQ_Mode:
 				raise "XXX"
 		
 		renames := Dict{}
-		qq_renames := []
+		renames_list := []
 		for rename_ := node.renames.iter():
-			rename_from := rename_.from
-			rename_as := rename_.as_
-			if ITree::IVar.instantiated(rename_.from) & ITree::IVar.instantiated(rename_.as_):
-				renames[rename_.as_.name] := rename_.from.name
-			else:
-				if ITree::IVar.instantiated(rename_.from):
-					qq_rename_from := self._preorder(rename_.from)
+			if ITree::IRename.instantiated(rename_):
+				rename_from := rename_.from
+				rename_as := rename_.as_
+				if ITree::IVar.instantiated(rename_.from) & ITree::IVar.instantiated(rename_.as_):
+					renames[rename_.as_.name] := rename_.from.name
 				else:
-					qq_rename_from := self._process_insert(rename_.from, _pi_rename_var)
+					if ITree::IVar.instantiated(rename_.from):
+						qq_rename_from := self._preorder(rename_.from)
+					else:
+						qq_rename_from := self._process_insert(rename_.from, _pi_rename_var)
 
-				ndif ITree::IVar.instantiated(rename_.as_):
-					rename_.as__name := ITree::IString.new(rename_.as_.name, rename_.src_infos)
-					qq_rename_as_ := self._qq("IVar", [rename_.as__name], rename_.src_infos)
-				elif ITree::IInsert.instantiated(rename_.as_):
-					qq_rename_as_ := self._process_insert(rename_.as_, _pi_rename_var)
-			
-				qq_rename := self._qq("IRename", [qq_rename_from, qq_rename_as_], rename_.src_infos)
-				qq_renames.append(qq_rename)
+					ndif ITree::IVar.instantiated(rename_.as_):
+						rename_.as__name := ITree::IString.new(rename_.as_.name, rename_.src_infos)
+						qq_rename_as_ := self._qq("IVar", [rename_.as__name], rename_.src_infos)
+					elif ITree::IInsert.instantiated(rename_.as_):
+						qq_rename_as_ := self._process_insert(rename_.as_, _pi_rename_var)
+
+					qq_rename := self._qq("IRename", [qq_rename_from, qq_rename_as_], rename_.src_infos)
+					renames_list.append(qq_rename)
+			else:
+				renames_list.append(self._process_insert(rename_, _pi_renames))
+
+		qq_renames := ITree::IApplication.new(ITree::ISlot_Lookup.new(ITree::IList.new(renames_list, node.src_infos), "flattened", node.src_infos), [], node.src_infos)
 
 		// Note that we consider ourselves nested within a function even when processing parameters.
 
@@ -392,7 +397,7 @@ class QQ_Mode:
 			else:
 				params_list.append(self._process_insert(param, _pi_params))
 		
-		params := ITree::IApplication.new(ITree::ISlot_Lookup.new(ITree::IList.new(params_list, node.src_infos), "flattened", node.src_infos), [], node.src_infos)
+		qq_params := ITree::IApplication.new(ITree::ISlot_Lookup.new(ITree::IList.new(params_list, node.src_infos), "flattened", node.src_infos), [], node.src_infos)
 		
 		if node.var_arg is null:
 			var_arg := ITree::IVar.new("null", node.src_infos)
@@ -406,7 +411,7 @@ class QQ_Mode:
 		self._pop_vars()
 		self._nesting.pop()
 		
-		return self._qq("IFunc_Defn", [is_bound, func_name, params, var_arg, ITree::IList.new(qq_nonlocals, node.src_infos), ITree::IList.new(qq_renames, node.src_infos), body], node.src_infos)
+		return self._qq("IFunc_Defn", [is_bound, func_name, qq_params, var_arg, ITree::IList.new(qq_nonlocals, node.src_infos), qq_renames, body], node.src_infos)
 
 
 
@@ -959,6 +964,32 @@ func _pi_subsequent_mod_lookup(lookup, src_infos):
 		return lookup.extended_src_infos(src_infos)
 	
 	ITree_WF::type_error("IMod_Lookup", "first elements", lookup, "IVar", src_infos)
+
+
+
+//
+// Check that rename_ is a valid rename, or list of valid renames.
+//
+
+func _pi_renames(rename_, src_infos):
+
+	if Builtins::List.instantiated(rename_):
+		renames := rename_
+	else:
+		renames := [rename_]
+
+	post := []
+	for p := renames.iter():
+		if not ITree::IRename.instantiated(p):
+			ITree_WF::type_error("Func_Defn", "rename", p, "[List, IRename]", src_infos)
+		
+		post.append(p.extended_src_infos(src_infos))
+	
+	if Builtins::List.instantiated(rename_):
+		return post
+	else:
+		assert post.len() == 1
+		return post[0]
 
 
 

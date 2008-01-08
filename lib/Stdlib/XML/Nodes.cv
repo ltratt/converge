@@ -11,136 +11,136 @@ XML_Exception := libXML2::XML_Exception
 
 class Doc(Builtins::List):
 
-	func get_root_elem(self):
-	
-		for elem := self.iter():
-			if Elem.instantiated(elem):
-				return elem
-		
-		raise "XXX"
+    func get_root_elem(self):
+    
+        for elem := self.iter():
+            if Elem.instantiated(elem):
+                return elem
+        
+        raise "XXX"
 
 
 
 
 class Attr:
 
-	func init(self, name, val, prefix := "", namespace := ""):
-	
-		if (prefix == "" & namespace != "") | (prefix != "" & namespace == ""):
-			raise "XXX"
-	
-		self.name := name
-		self.val := val
-		self.prefix := prefix
-		self.namespace := namespace
-	
-	
-	
-	func hash(self):
-	
-		return Strings::format("%s:%s", self.prefix, self.name).hash()
+    func init(self, name, val, prefix := "", namespace := ""):
+    
+        if (prefix == "" & namespace != "") | (prefix != "" & namespace == ""):
+            raise "XXX"
+    
+        self.name := name
+        self.val := val
+        self.prefix := prefix
+        self.namespace := namespace
+    
+    
+    
+    func hash(self):
+    
+        return Strings::format("%s:%s", self.prefix, self.name).hash()
 
 
 
 
 class Elem(Builtins::List):
 
-	func init(self, name, attrs, prefix := "", namespace := ""):
-	
-		self.name := name
-		self._attr_namespaces := Dict{}
-		for attr := attrs.iter():
-			if not (namespace := self._attr_namespaces.find(attr.namespace)):
-				self._attr_namespaces[attr.namespace] := attr_namespace := Dict{}
-			attr_namespace[attr.name] := attr
-		self.prefix := prefix
-		self.namespace := namespace
+    func init(self, name, attrs, prefix := "", namespace := ""):
+    
+        self.name := name
+        self._attr_namespaces := Dict{}
+        for attr := attrs.iter():
+            if not (namespace := self._attr_namespaces.find(attr.namespace)):
+                self._attr_namespaces[attr.namespace] := attr_namespace := Dict{}
+            attr_namespace[attr.name] := attr
+        self.prefix := prefix
+        self.namespace := namespace
 
 
 
-	func to_xml(self):
-	
-		pp_attrs := []
-		for namespace, attrs := self._attr_namespaces.iter():
-			for attr := attrs.iter_vals():
-				if namespace == "":
-					pp_attrs.append(Strings::format("%s=\"%s\"", attr.name, attr.val))
-				else:
-					raise "XXX"
-		pp_attrs := Strings::join(pp_attrs, " ")
+    func to_xml(self):
+    
+        pp_attrs := []
+        for namespace, attrs := self._attr_namespaces.iter():
+            for attr := attrs.iter_vals():
+                if namespace == "":
+                    pp_attrs.append(Strings::format("%s=\"%s\"", attr.name, attr.val))
+                else:
+                    raise "XXX"
+        pp_attrs := Strings::join(pp_attrs, " ")
 
-		pp_body := []
-		for node := self.iter():
-			if Builtins::String.instantiated(node):
-				pp_body.append(node)
-			else:
-				pp_body.append(node.to_xml())
-		pp_body := Strings::join(pp_body, "")
-	
-		if pp_attrs.len() == 0:
-			if self.len() == 0:
-				return Strings::format("<%s />", self.name)
-			else:
-				return Strings::format("<%s>%s</%s>", self.name, pp_body, self.name)
-		else:
-			if self.len() == 0:
-				return Strings::format("<%s %s/>", self.name, pp_attrs)
-			else:
-				return Strings::format("<%s %s>%s</%s>", self.name, pp_attrs, pp_body, self.name)
-
-
-
-	func find_attr(self, name, namespace := ""):
-	
-		if not (namespace := self._attr_namespaces.find(namespace)):
-			fail
-		else:
-			return namespace.find(name)
+        pp_body := []
+        for node := self.iter():
+            if Builtins::String.instantiated(node):
+                pp_body.append(node)
+            else:
+                pp_body.append(node.to_xml())
+        pp_body := Strings::join(pp_body, "")
+    
+        if pp_attrs.len() == 0:
+            if self.len() == 0:
+                return Strings::format("<%s />", self.name)
+            else:
+                return Strings::format("<%s>%s</%s>", self.name, pp_body, self.name)
+        else:
+            if self.len() == 0:
+                return Strings::format("<%s %s/>", self.name, pp_attrs)
+            else:
+                return Strings::format("<%s %s>%s</%s>", self.name, pp_attrs, pp_body, self.name)
 
 
 
-	func get_attr(self, name, namespace := ""):
-	
-		return self._attr_namespaces[namespace][name]
+    func find_attr(self, name, namespace := ""):
+    
+        if not (namespace := self._attr_namespaces.find(namespace)):
+            fail
+        else:
+            return namespace.find(name)
 
 
 
-	func iter_attrs(self):
-	
-		for x, attrs := self._attr_namespaces.iter():
-			for name, attr := attrs.iter():
-				yield attr
-			
-		fail
+    func get_attr(self, name, namespace := ""):
+    
+        return self._attr_namespaces[namespace][name]
 
 
 
-	func iter_elems(self):
+    func iter_attrs(self):
+    
+        for x, attrs := self._attr_namespaces.iter():
+            for name, attr := attrs.iter():
+                yield attr
+            
+        fail
 
-		for node := self.iter():
-			if Elem.instantiated(node):
-				yield node
 
-		fail
-	
-	
-	
-	func get_elem(self, name, namespace := ""):
 
-		lc_name := name.lower_cased()
-		for node := self.iter():
-			if Elem.instantiated(node) & node.name.lower_cased() == lc_name & node.namespace == namespace:
-				return node
+    func iter_elems(self):
 
-		raise XML_Exception.new(Strings::format("No such element '%s'.", name))
-	
-	
-	
-	func iter_elem(self, name, namespace := ""):
+        for node := self.iter():
+            if Elem.instantiated(node):
+                yield node
 
-		lc_name := name.lower_cased()
-		for node := self.iter():
-			if Elem.instantiated(node) & node.name.lower_cased() == lc_name & node.namespace == namespace:
-				yield node
+        fail
+    
+    
+    
+    func get_elem(self, name, namespace := ""):
 
-		fail
+        lc_name := name.lower_cased()
+        for node := self.iter():
+            if Elem.instantiated(node) & node.name.lower_cased() == lc_name & node.namespace == namespace:
+                return node
+
+        raise XML_Exception.new(Strings::format("No such element '%s'.", name))
+    
+    
+    
+    func iter_elem(self, name, namespace := ""):
+
+        lc_name := name.lower_cased()
+        for node := self.iter():
+            if Elem.instantiated(node) & node.name.lower_cased() == lc_name & node.namespace == namespace:
+                yield node
+
+        fail

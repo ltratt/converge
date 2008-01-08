@@ -39,7 +39,7 @@ File := POSIX_File::File
 
 func open(path, mode):
 
-	return File.new(path, mode)
+    return File.new(path, mode)
 
 
 
@@ -72,57 +72,57 @@ rm := POSIX_File::rm
 
 func split_leaf(path):
 
-	if i := path.rfind_index(DIR_SEP):
-		return [path[ : i], path[i + 1 : ]]
-	else:
-		return ["", path]
+    if i := path.rfind_index(DIR_SEP):
+        return [path[ : i], path[i + 1 : ]]
+    else:
+        return ["", path]
 
 
 
 func split_ext(path):
 
-	if i := path.rfind_index(EXT_SEP):
-		// We only want to split the extension if either the path isn't preceeded by a directory
-		// separator, or if the extension separator comes *after* the final directory separator.
-		if not (j := path.rfind_index(DIR_SEP)) | i > j:
-			return [path[ : i], path[i + 1 : ]]
+    if i := path.rfind_index(EXT_SEP):
+        // We only want to split the extension if either the path isn't preceeded by a directory
+        // separator, or if the extension separator comes *after* the final directory separator.
+        if not (j := path.rfind_index(DIR_SEP)) | i > j:
+            return [path[ : i], path[i + 1 : ]]
 
-	return [path, ""]
-	
+    return [path, ""]
+    
 
 
 func split_names(path):
 
-	return Strings::split(path, DIR_SEP)
+    return Strings::split(path, DIR_SEP)
 
 
 
 func join_names(*names):
 
-	flattened := []
-	i := 0
-	for name := names.iter():
-		// When joining names together, we try to avoid unnecessary directory separator characters.
-		// The rules are simple: we always strip directory seperators from the end of each name, and
-		// we strip directory separators off the beginning of all but the first name. This last
-		// condition is important since we need to allow names such as /home/blah where the initial
-		// directory separator is significant.
-		if i == 1:
-			while name.prefixed_by(DIR_SEP):
-				name := name[DIR_SEP.len() : ]
-		else:
-			i := 1
-		while name.suffixed_by(DIR_SEP):
-			name := name[ : name.len() - DIR_SEP.len()]
-		flattened.append(name)
+    flattened := []
+    i := 0
+    for name := names.iter():
+        // When joining names together, we try to avoid unnecessary directory separator characters.
+        // The rules are simple: we always strip directory seperators from the end of each name, and
+        // we strip directory separators off the beginning of all but the first name. This last
+        // condition is important since we need to allow names such as /home/blah where the initial
+        // directory separator is significant.
+        if i == 1:
+            while name.prefixed_by(DIR_SEP):
+                name := name[DIR_SEP.len() : ]
+        else:
+            i := 1
+        while name.suffixed_by(DIR_SEP):
+            name := name[ : name.len() - DIR_SEP.len()]
+        flattened.append(name)
 
-	return Strings::join(flattened, DIR_SEP)
+    return Strings::join(flattened, DIR_SEP)
 
 
 
 func join_ext(path, ext):
 
-	return path + EXT_SEP + ext
+    return path + EXT_SEP + ext
 
 
 
@@ -137,16 +137,16 @@ canon_path := POSIX_File::canon_path
 
 func is_entry_in_dir(dir_path, path):
 
-	if not path.prefixed_by(dir_path):
-		fail
-	
-	i := dir_path.len()
-	while i < path.len() & path[i] == DIR_SEP:
-		i += 1
-	if path[i : ].find(DIR_SEP):
-		fail
-	
-	return 1
+    if not path.prefixed_by(dir_path):
+        fail
+    
+    i := dir_path.len()
+    while i < path.len() & path[i] == DIR_SEP:
+        i += 1
+    if path[i : ].find(DIR_SEP):
+        fail
+    
+    return 1
 
 
 

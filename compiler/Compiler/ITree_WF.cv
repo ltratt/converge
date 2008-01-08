@@ -32,485 +32,485 @@ _EXPRS := [ITree::IClass_Defn, ITree::IFunc_Defn, ITree::IIf, ITree::INDIf, ITre
 
 class ITree_WF:
 
-	func wf(self, itree):
-	
-		self._indent_level := 0
-		
-		return self._preorder(itree)
-
-
-
-	func _type_error(self, parent_node, part, node, should_be):
-	
-		type_error(parent_node.instance_of.name, part, node, should_be, parent_node.src_infos)
+    func wf(self, itree):
+    
+        self._indent_level := 0
+        
+        return self._preorder(itree)
+
+
+
+    func _type_error(self, parent_node, part, node, should_be):
+    
+        type_error(parent_node.instance_of.name, part, node, should_be, parent_node.src_infos)
 
 
 
-	func _check_expr(self, parent_node, part, node):
-	
-		for elem_class := _EXPRS.iter():
-			if elem_class.instantiated(node):
-				break
-		exhausted:
-			self._type_error(parent_node, part, node, "IExpr")
-		
-		self._preorder(node)
-
+    func _check_expr(self, parent_node, part, node):
+    
+        for elem_class := _EXPRS.iter():
+            if elem_class.instantiated(node):
+                break
+        exhausted:
+            self._type_error(parent_node, part, node, "IExpr")
+        
+        self._preorder(node)
+
 
 
-	////////////////////////////////////////////////////////////////////////////////////////////////
-	// Traversal
-	//
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    // Traversal
+    //
 
 
-	func _preorder(self, node):
-	
-		return self.get_slot("_t_" + node.instance_of.name.lower_cased())(node)
+    func _preorder(self, node):
+    
+        return self.get_slot("_t_" + node.instance_of.name.lower_cased())(node)
 
 
 
-	func _t_imodule(self, node):
+    func _t_imodule(self, node):
 
-		if not Builtins::String.instantiated(node.module_name):
-			self._type_error(node, "module_name", node.module_name, "String")
+        if not Builtins::String.instantiated(node.module_name):
+            self._type_error(node, "module_name", node.module_name, "String")
 
-		if not Builtins::List.conformed_by(node.defns):
-			self._type_error(node, "defns", node.defns, "List")
-		
-		for defn := node.defns.iter():
-			self._preorder(defn)
+        if not Builtins::List.conformed_by(node.defns):
+            self._type_error(node, "defns", node.defns, "List")
+        
+        for defn := node.defns.iter():
+            self._preorder(defn)
 
 
 
-	func _t_iclass_defn(self, node):
+    func _t_iclass_defn(self, node):
 
-		if not (Builtins::String.instantiated(node.class_name) | ITree::IInsert.instantiated(node.class_name)):
-			self._type_error(node, "class_name", node.class_name, "String")
+        if not (Builtins::String.instantiated(node.class_name) | ITree::IInsert.instantiated(node.class_name)):
+            self._type_error(node, "class_name", node.class_name, "String")
 
-		if not Builtins::List.conformed_by(node.supers):
-			self._type_error(node, "supers", node.supers, "List")
-		for i := 0.iter_to(node.supers.len()):
-			self._check_expr(node, Strings::format("supers[%d]", i), node.supers[i])
-		
-		if not node.metaclass_ is null:
-			self._check_expr(node, "metaclass", node.metaclass_)
+        if not Builtins::List.conformed_by(node.supers):
+            self._type_error(node, "supers", node.supers, "List")
+        for i := 0.iter_to(node.supers.len()):
+            self._check_expr(node, Strings::format("supers[%d]", i), node.supers[i])
+        
+        if not node.metaclass_ is null:
+            self._check_expr(node, "metaclass", node.metaclass_)
 
-		if not Builtins::List.conformed_by(node.fields):
-			self._type_error(node, "fields", node.fields, "List")
-		for i := 0.iter_to(node.fields.len()):
-			field := node.fields[i]
-			if not (ITree::IAssignment.instantiated(field) | ITree::IFunc_Defn.instantiated(field) | ITree::IClass_Defn.instantiated(field)):
-				self._type_error(node, Strings::format("fields[%d]", i), field, "[IAssignment, IFunc_Defn, IClass_Defn]")
-			self._preorder(field)
+        if not Builtins::List.conformed_by(node.fields):
+            self._type_error(node, "fields", node.fields, "List")
+        for i := 0.iter_to(node.fields.len()):
+            field := node.fields[i]
+            if not (ITree::IAssignment.instantiated(field) | ITree::IFunc_Defn.instantiated(field) | ITree::IClass_Defn.instantiated(field)):
+                self._type_error(node, Strings::format("fields[%d]", i), field, "[IAssignment, IFunc_Defn, IClass_Defn]")
+            self._preorder(field)
 
 
-	
-	func _t_ifunc_defn(self, node):
-	
-		if not (node.is_bound == 0 | node.is_bound == 1):
-			raise "XXX"
-		
-		if not (node.func_name is null | ITree::IVar.instantiated(node.func_name) | ITree::IInsert.instantiated(node.func_name)):
-			self._type_error(node, "func_name", node.func_name, "[IVar, IInsert]")
-		
-		if not Builtins::List.conformed_by(node.params):
-			self._type_error(node, "params", node.params, "List")
-		for i := 0.iter_to(node.params.len()):
-			param := node.params[i]
-			if not (ITree::IParam.instantiated(param) | ITree::IInsert.instantiated(param)):
-				self._type_error(node, Strings::format("param[%d]", i), param, "[IParam, IInsert]")
-			if ITree::IParam.instantiated(param):
-				if not ITree::IVar.instantiated(param.var):
-					self._type_error(node, Strings::format("param[%d].var", i), param, "[IVar]")
-				if not param.default is null:
-					self._check_expr(node, Strings::format("param[%d].default", i), param.default)
-			
-		if not node.var_arg is null:
-			if not ITree::IVar.instantiated(node.var_arg):
-				self._type_error(node, "var_arg", node.var_arg, "IVar")
+    
+    func _t_ifunc_defn(self, node):
+    
+        if not (node.is_bound == 0 | node.is_bound == 1):
+            raise "XXX"
+        
+        if not (node.func_name is null | ITree::IVar.instantiated(node.func_name) | ITree::IInsert.instantiated(node.func_name)):
+            self._type_error(node, "func_name", node.func_name, "[IVar, IInsert]")
+        
+        if not Builtins::List.conformed_by(node.params):
+            self._type_error(node, "params", node.params, "List")
+        for i := 0.iter_to(node.params.len()):
+            param := node.params[i]
+            if not (ITree::IParam.instantiated(param) | ITree::IInsert.instantiated(param)):
+                self._type_error(node, Strings::format("param[%d]", i), param, "[IParam, IInsert]")
+            if ITree::IParam.instantiated(param):
+                if not ITree::IVar.instantiated(param.var):
+                    self._type_error(node, Strings::format("param[%d].var", i), param, "[IVar]")
+                if not param.default is null:
+                    self._check_expr(node, Strings::format("param[%d].default", i), param.default)
+            
+        if not node.var_arg is null:
+            if not ITree::IVar.instantiated(node.var_arg):
+                self._type_error(node, "var_arg", node.var_arg, "IVar")
 
-		if not Builtins::List.conformed_by(node.nonlocals):
-			self._type_error(node, "nonlocals", node.nonlocals, "List")
-		for i := 0.iter_to(node.nonlocals.len()):
-			nonlocal_ := node.nonlocals[i]
-			if not ITree::IVar.instantiated(nonlocal_):
-				self._type_error(node, Strings::format("nonlocal[%s]", i), nonlocal_, "IVar")
+        if not Builtins::List.conformed_by(node.nonlocals):
+            self._type_error(node, "nonlocals", node.nonlocals, "List")
+        for i := 0.iter_to(node.nonlocals.len()):
+            nonlocal_ := node.nonlocals[i]
+            if not ITree::IVar.instantiated(nonlocal_):
+                self._type_error(node, Strings::format("nonlocal[%s]", i), nonlocal_, "IVar")
 
-		if not Builtins::List.conformed_by(node.renames):
-			self._type_error(node, "renames", node.renames, "List")
-		for self._preorder(node.renames.iter())
-		
-		self._preorder(node.body)
+        if not Builtins::List.conformed_by(node.renames):
+            self._type_error(node, "renames", node.renames, "List")
+        for self._preorder(node.renames.iter())
+        
+        self._preorder(node.body)
 
 
 
-	func _t_iif(self, node):
+    func _t_iif(self, node):
 
-		for i := 0.iter_to(node.clauses.len()):
-			clause := node.clauses[i]
-			if not ITree::IClause.instantiated(clause):
-				self._type_error(node, "clause", clause, "IClause")
-			self._check_expr(node, Strings::format("clause[%d].condition", i), clause.condition)
-			self._preorder(clause.body)
-		
-		if not node.else_body is null:
-			self._preorder(node.else_body)
+        for i := 0.iter_to(node.clauses.len()):
+            clause := node.clauses[i]
+            if not ITree::IClause.instantiated(clause):
+                self._type_error(node, "clause", clause, "IClause")
+            self._check_expr(node, Strings::format("clause[%d].condition", i), clause.condition)
+            self._preorder(clause.body)
+        
+        if not node.else_body is null:
+            self._preorder(node.else_body)
 
 
 
-	func _t_indif(self, node):
+    func _t_indif(self, node):
 
-		for i := 0.iter_to(node.clauses.len()):
-			clause := node.clauses[i]
-			if not ITree::IClause.instantiated(clause):
-				self._type_error(node, "clause", clause, "IClause")
-			self._check_expr(node, Strings::format("clause[%d].condition", i), clause.condition)
-			self._preorder(clause.body)
+        for i := 0.iter_to(node.clauses.len()):
+            clause := node.clauses[i]
+            if not ITree::IClause.instantiated(clause):
+                self._type_error(node, "clause", clause, "IClause")
+            self._check_expr(node, Strings::format("clause[%d].condition", i), clause.condition)
+            self._preorder(clause.body)
 
 
 
-	func _t_ivar(self, node):
-	
-		pass
+    func _t_ivar(self, node):
+    
+        pass
 
 
 
-	func _t_iimport(self, node):
-	
-		if not Builtins::String.instantiated(node.mod_path):
-			self._type_error(node, "mod_path", node.mod_path, "String")
+    func _t_iimport(self, node):
+    
+        if not Builtins::String.instantiated(node.mod_path):
+            self._type_error(node, "mod_path", node.mod_path, "String")
 
 
 
-	func _t_iwhile(self, node):
-	
-		self._check_expr(node, "condition", node.condition)
-		if not node.body is null:
-			self._preorder(node.body)
-		if not node.exhausted_body is null:
-			self._preorder(node.exhausted_body)
-		if not node.broken_body is null:
-			self._preorder(node.broken_body)
+    func _t_iwhile(self, node):
+    
+        self._check_expr(node, "condition", node.condition)
+        if not node.body is null:
+            self._preorder(node.body)
+        if not node.exhausted_body is null:
+            self._preorder(node.exhausted_body)
+        if not node.broken_body is null:
+            self._preorder(node.broken_body)
 
 
 
-	func _t_ifor(self, node):
-	
-		self._check_expr(node, "condition", node.condition)
-		if not node.body is null:
-			self._preorder(node.body)
-		if not node.exhausted_body is null:
-			self._preorder(node.exhausted_body)
-		if not node.broken_body is null:
-			self._preorder(node.broken_body)
+    func _t_ifor(self, node):
+    
+        self._check_expr(node, "condition", node.condition)
+        if not node.body is null:
+            self._preorder(node.body)
+        if not node.exhausted_body is null:
+            self._preorder(node.exhausted_body)
+        if not node.broken_body is null:
+            self._preorder(node.broken_body)
 
 
 
-	func _t_itry(self, node):
+    func _t_itry(self, node):
 
-		self._preorder(node.body)
-		for catch_ := node.catches.iter():
-			self._preorder(catch_)
+        self._preorder(node.body)
+        for catch_ := node.catches.iter():
+            self._preorder(catch_)
 
 
 
-	func _t_iint(self, node):
+    func _t_iint(self, node):
 
-		if not Builtins::Int.instantiated(node.val):
-			self._type_error(node, "value", node.val, "Int")
+        if not Builtins::Int.instantiated(node.val):
+            self._type_error(node, "value", node.val, "Int")
 
 
 
-	func _t_ifloat(self, node):
+    func _t_ifloat(self, node):
 
-		if not Builtins::Float.instantiated(node.val):
-			self._type_error(node, "value", node.val, "Float")
+        if not Builtins::Float.instantiated(node.val):
+            self._type_error(node, "value", node.val, "Float")
 
 
 
-	func _t_istring(self, node):
+    func _t_istring(self, node):
 
-		if not Builtins::String.instantiated(node.val):
-			self._type_error(node, "value", node.val, "String")
+        if not Builtins::String.instantiated(node.val):
+            self._type_error(node, "value", node.val, "String")
 
 
 
-	func _t_islot_lookup(self, node):
-	
-		self._check_expr(node, "target", node.target)
-		
-		if not Builtins::String.instantiated(node.slot_name):
-			self._type_error(node, "slot_name", node.slot_name, "String")
+    func _t_islot_lookup(self, node):
+    
+        self._check_expr(node, "target", node.target)
+        
+        if not Builtins::String.instantiated(node.slot_name):
+            self._type_error(node, "slot_name", node.slot_name, "String")
 
 
 
-	func _t_imodule_lookup(self, node):
-	
-		name := node.names[0]
-		if not (ITree::IVar.instantiated(name) | ITree::IMod_Id_Import.instantiated(name) | ITree::IInsert.instantiated(name)):
-			self._type_error(node, "initial name", name, "[IVar, IMod_Id_Import, IInsert]")
+    func _t_imodule_lookup(self, node):
+    
+        name := node.names[0]
+        if not (ITree::IVar.instantiated(name) | ITree::IMod_Id_Import.instantiated(name) | ITree::IInsert.instantiated(name)):
+            self._type_error(node, "initial name", name, "[IVar, IMod_Id_Import, IInsert]")
 
-		for name := node.names.iter(1):
-			if not (ITree::IVar.instantiated(name) | ITree::IInsert.instantiated(name)):
-				self._type_error(node, "second or later name", name, "[IVar, IInsert]")
+        for name := node.names.iter(1):
+            if not (ITree::IVar.instantiated(name) | ITree::IInsert.instantiated(name)):
+                self._type_error(node, "second or later name", name, "[IVar, IInsert]")
 
 
 
-	func _t_ilist(self, node):
-	
-		if not Builtins::List.conformed_by(node.elems):
-			self._type_error(node, "elems", node.elems, "List")
-		for i := 0.iter_to(node.elems.len()):
-			elem := node.elems[i]
-			self._check_expr(node, Strings::format("elem[%d]", i), elem)
+    func _t_ilist(self, node):
+    
+        if not Builtins::List.conformed_by(node.elems):
+            self._type_error(node, "elems", node.elems, "List")
+        for i := 0.iter_to(node.elems.len()):
+            elem := node.elems[i]
+            self._check_expr(node, Strings::format("elem[%d]", i), elem)
 
 
 
-	func _t_idict(self, node):
-	
-		if not Builtins::List.conformed_by(node.elems):
-			self._type_error(node, "elems", node.elems, "List")
-		for i := 0.iter_to(node.elems.len()):
-			key, val := node.elems[i]
-			self._check_expr(node, Strings::format("element[%d] key", i), key)
-			self._check_expr(node, Strings::format("element[%d] val", i), val)
+    func _t_idict(self, node):
+    
+        if not Builtins::List.conformed_by(node.elems):
+            self._type_error(node, "elems", node.elems, "List")
+        for i := 0.iter_to(node.elems.len()):
+            key, val := node.elems[i]
+            self._check_expr(node, Strings::format("element[%d] key", i), key)
+            self._check_expr(node, Strings::format("element[%d] val", i), val)
 
 
 
-	func _t_iset(self, node):
-	
-		if not Builtins::List.conformed_by(node.elems):
-			self._type_error(node, "elems", node.elems, "List")
-		for i := 0.iter_to(node.elems.len()):
-			elem := node.elems[i]
-			self._check_expr(node, Strings::format("elem[%d]", i), elem)
+    func _t_iset(self, node):
+    
+        if not Builtins::List.conformed_by(node.elems):
+            self._type_error(node, "elems", node.elems, "List")
+        for i := 0.iter_to(node.elems.len()):
+            elem := node.elems[i]
+            self._check_expr(node, Strings::format("elem[%d]", i), elem)
 
 
 
-	func _t_iapplication(self, node):
-	
-		self._check_expr(node, "target", node.target)
+    func _t_iapplication(self, node):
+    
+        self._check_expr(node, "target", node.target)
 
-		if not Builtins::List.conformed_by(node.args):
-			self._type_error(node, "args", node.args, "List")
-		for arg := node.args.iter():
-			self._check_expr(node, "arg", arg)
+        if not Builtins::List.conformed_by(node.args):
+            self._type_error(node, "args", node.args, "List")
+        for arg := node.args.iter():
+            self._check_expr(node, "arg", arg)
 
 
 
-	func _t_iget(self, node):
-	
-		self._check_expr(node, "target", node.target)
-		self._check_expr(node, "index", node.index)
+    func _t_iget(self, node):
+    
+        self._check_expr(node, "target", node.target)
+        self._check_expr(node, "index", node.index)
 
 
 
-	func _t_islice(self, node):
-	
-		self._check_expr(node, "target", node.target)
-		
-		if not node.lower_bound is null:
-			self._check_expr(node, "lower_bound", node.lower_bound)
-			
-		if not node.upper_bound is null:
-			self._check_expr(node, "upper_bound", node.upper_bound)
+    func _t_islice(self, node):
+    
+        self._check_expr(node, "target", node.target)
+        
+        if not node.lower_bound is null:
+            self._check_expr(node, "lower_bound", node.lower_bound)
+            
+        if not node.upper_bound is null:
+            self._check_expr(node, "upper_bound", node.upper_bound)
 
 
 
-	func _t_iexbi(self, node):
+    func _t_iexbi(self, node):
 
-		self._check_expr(node, "target", node.target)
+        self._check_expr(node, "target", node.target)
 
-		if not Builtins::String.instantiated(node.field_name):
-			self._type_error(node, "field_name", node.slot_name, "String")
+        if not Builtins::String.instantiated(node.field_name):
+            self._type_error(node, "field_name", node.slot_name, "String")
 
 
 
-	func _t_ireturn(self, node):
-	
-		if not node.expr is null:
-			self._check_expr(node, "expr", node.expr)
+    func _t_ireturn(self, node):
+    
+        if not node.expr is null:
+            self._check_expr(node, "expr", node.expr)
 
 
 
-	func _t_iyield(self, node):
-	
-		self._check_expr(node, "expr", node.expr)
+    func _t_iyield(self, node):
+    
+        self._check_expr(node, "expr", node.expr)
 
 
 
-	func _t_ifail(self, node):
-	
-		pass
+    func _t_ifail(self, node):
+    
+        pass
 
 
 
-	func _t_iraise(self, node):
-	
-		self._check_expr(node, "expr", node.expr)
+    func _t_iraise(self, node):
+    
+        self._check_expr(node, "expr", node.expr)
 
 
 
-	func _t_iassert(self, node):
-	
-		self._check_expr(node, "expr", node.expr)
+    func _t_iassert(self, node):
+    
+        self._check_expr(node, "expr", node.expr)
 
 
 
-	func _t_ibreak(self, node):
-	
-		pass
+    func _t_ibreak(self, node):
+    
+        pass
 
 
 
-	func _t_icontinue(self, node):
-	
-		pass
+    func _t_icontinue(self, node):
+    
+        pass
 
 
 
-	func _t_iconjunction(self, node):
-	
-		for expr := node.exprs.iter():
-			self._check_expr(node, "expr", expr)
+    func _t_iconjunction(self, node):
+    
+        for expr := node.exprs.iter():
+            self._check_expr(node, "expr", expr)
 
 
 
-	func _t_ialternation(self, node):
-	
-		for expr := node.exprs.iter():
-			self._check_expr(node, "expr", expr)
+    func _t_ialternation(self, node):
+    
+        for expr := node.exprs.iter():
+            self._check_expr(node, "expr", expr)
 
 
 
-	func _t_iassignment(self, node):
-	
-		if not ITree::ALL_ASSIGNMENTS.find(node.type):
-			raise "XXX"
+    func _t_iassignment(self, node):
+    
+        if not ITree::ALL_ASSIGNMENTS.find(node.type):
+            raise "XXX"
 
-		if not Builtins::List.conformed_by(node.targets):
-			self._type_error(node, "targets", node.exprs, "List")
-		for target := node.targets.iter():
-			if ITree::IVar.instantiated(target) | ITree::IGet.instantiated(target) | ITree::ISlot_Lookup.instantiated(target) | ITree::IModule_Lookup.instantiated(target) | ITree::IInsert.instantiated(target) | ITree::ISlice.instantiated(target):
-				self._preorder(target)
-			else:
-				self._type_error(node, "target", target, "[IVar, IGet, ISlot_Lookup, IModule_Lookup, IInsert, ISlice]")
-		
-		self._check_expr(node, "expr", node.expr)
+        if not Builtins::List.conformed_by(node.targets):
+            self._type_error(node, "targets", node.exprs, "List")
+        for target := node.targets.iter():
+            if ITree::IVar.instantiated(target) | ITree::IGet.instantiated(target) | ITree::ISlot_Lookup.instantiated(target) | ITree::IModule_Lookup.instantiated(target) | ITree::IInsert.instantiated(target) | ITree::ISlice.instantiated(target):
+                self._preorder(target)
+            else:
+                self._type_error(node, "target", target, "[IVar, IGet, ISlot_Lookup, IModule_Lookup, IInsert, ISlice]")
+        
+        self._check_expr(node, "expr", node.expr)
 
 
 
-	func _t_inot(self, node):
+    func _t_inot(self, node):
 
-		self._check_expr(node, "expr", node.expr)
+        self._check_expr(node, "expr", node.expr)
 
 
 
-	func _t_ibinary(self, node):
-	
-		if not ITree::ALL_BINARIES.find(node.type):
-			raise "XXX"
-		
-		self._check_expr(node, "lhs", node.lhs)
-		self._check_expr(node, "rhs", node.rhs)
+    func _t_ibinary(self, node):
+    
+        if not ITree::ALL_BINARIES.find(node.type):
+            raise "XXX"
+        
+        self._check_expr(node, "lhs", node.lhs)
+        self._check_expr(node, "rhs", node.rhs)
 
 
 
-	func _t_icomparison(self, node):
-	
-		if not ITree::ALL_COMPARISONS.find(node.type):
-			raise "XXX"
-		
-		self._check_expr(node, "lhs", node.lhs)
-		self._check_expr(node, "rhs", node.rhs)
+    func _t_icomparison(self, node):
+    
+        if not ITree::ALL_COMPARISONS.find(node.type):
+            raise "XXX"
+        
+        self._check_expr(node, "lhs", node.lhs)
+        self._check_expr(node, "rhs", node.rhs)
 
 
 
-	func _t_ipass(self, node):
-	
-		pass
+    func _t_ipass(self, node):
+    
+        pass
 
 
 
-	func _t_iinsert(self, node):
-	
-		self._check_expr(node, "expr", node.expr)
-	
-	
-	
-	func _t_iquasi_quotes(self, node):
-	
-		self._preorder(node.body)
-		
-		if not node.extra_src_infos is null:
-			self._check_expr(node, "extra_src_infos", node.extra_src_infos)
+    func _t_iinsert(self, node):
+    
+        self._check_expr(node, "expr", node.expr)
+    
+    
+    
+    func _t_iquasi_quotes(self, node):
+    
+        self._preorder(node.body)
+        
+        if not node.extra_src_infos is null:
+            self._check_expr(node, "extra_src_infos", node.extra_src_infos)
 
 
 
-	func _t_imod_id_import(self, node):
-	
-		if not Builtins::String.instantiated(node.mod_id):
-			self._type_error(node, "mod_id", node.mod_id, "String")
+    func _t_imod_id_import(self, node):
+    
+        if not Builtins::String.instantiated(node.mod_id):
+            self._type_error(node, "mod_id", node.mod_id, "String")
 
-		if not Builtins::String.instantiated(node.src_path):
-			self._type_error(node, "src_path", node.src_path, "String")
-	
-	
-	
-	func _t_iexpr_seq(self, node):
+        if not Builtins::String.instantiated(node.src_path):
+            self._type_error(node, "src_path", node.src_path, "String")
+    
+    
+    
+    func _t_iexpr_seq(self, node):
 
-		if not Builtins::List.conformed_by(node.exprs):
-			self._type_error(node, "exprs", node.exprs, "List")
+        if not Builtins::List.conformed_by(node.exprs):
+            self._type_error(node, "exprs", node.exprs, "List")
 
-		for expr := node.exprs.iter():
-			if ITree::IPass.instantiated(expr):
-				continue
-			self._check_expr(node, "expr", expr)
+        for expr := node.exprs.iter():
+            if ITree::IPass.instantiated(expr):
+                continue
+            self._check_expr(node, "expr", expr)
 
 
 
-	func _t_iparam(self, node):
-	
-		if not ITree::IVar.instantiated(node.var):
-			self._type_error(node, "var", node.var, "IVar")
-		
-		if not node.default is null:
-			self._check_expr(node, "default", node.default)
+    func _t_iparam(self, node):
+    
+        if not ITree::IVar.instantiated(node.var):
+            self._type_error(node, "var", node.var, "IVar")
+        
+        if not node.default is null:
+            self._check_expr(node, "default", node.default)
 
 
 
-	func _t_irename(self, node):
-	
-		rename_from := node.from
-		if ITree::IVar.instantiated(rename_from) | ITree::IModule_Lookup.instantiated(rename_from) | ITree::IInsert.instantiated(rename_from):
-			self._preorder(rename_from)
-		else:
-			self._type_error(node, "from", node.var, "[IVar, IModule_Lookup, IInsert]")
+    func _t_irename(self, node):
+    
+        rename_from := node.from
+        if ITree::IVar.instantiated(rename_from) | ITree::IModule_Lookup.instantiated(rename_from) | ITree::IInsert.instantiated(rename_from):
+            self._preorder(rename_from)
+        else:
+            self._type_error(node, "from", node.var, "[IVar, IModule_Lookup, IInsert]")
 
-		rename_as := node.as_
-		if ITree::IVar.instantiated(rename_as) | ITree::IInsert.instantiated(rename_as):
-			self._preorder(rename_as)
-		else:
-			self._type_error(node, "as_", node.var, "[IVar, IInsert]")
+        rename_as := node.as_
+        if ITree::IVar.instantiated(rename_as) | ITree::IInsert.instantiated(rename_as):
+            self._preorder(rename_as)
+        else:
+            self._type_error(node, "as_", node.var, "[IVar, IInsert]")
 
 
 
-	func _t_iclause(self, node):
-	
-		self._check_expr(node, "condition", node.condition)
-		self._preorder(node.body)
+    func _t_iclause(self, node):
+    
+        self._check_expr(node, "condition", node.condition)
+        self._preorder(node.body)
 
 
 
-	func _t_icatch(self, node):
+    func _t_icatch(self, node):
 
-		self._check_expr(node, "expr", node.expr)
-		if not node.var is null:
-			if ITree::IVar.instantiated(node.var) | ITree::IInsert.instantiated(node.var):
-				self._preorder(node.var)
-			else:
-				self._type_error(node, "var", node.var, "[IVar, IInsert]")
-		self._preorder(node.body)
+        self._check_expr(node, "expr", node.expr)
+        if not node.var is null:
+            if ITree::IVar.instantiated(node.var) | ITree::IInsert.instantiated(node.var):
+                self._preorder(node.var)
+            else:
+                self._type_error(node, "var", node.var, "[IVar, IInsert]")
+        self._preorder(node.body)
 
 
 
@@ -521,7 +521,7 @@ class ITree_WF:
 
 func wf(itree):
 
-	return ITree_WF.new().wf(itree)
+    return ITree_WF.new().wf(itree)
 
 
 
@@ -531,16 +531,16 @@ func wf(itree):
 
 func wf_expr(itree, msg, src_infos):
 
-	for elem_class := _EXPRS.iter():
-		if elem_class.instantiated(itree):
-			break
-	exhausted:
-		Core::peek_compiler().error(Strings::format("Node %s is of type %s instead of IExpr.", msg, itree.instance_of.name), src_infos)
+    for elem_class := _EXPRS.iter():
+        if elem_class.instantiated(itree):
+            break
+    exhausted:
+        Core::peek_compiler().error(Strings::format("Node %s is of type %s instead of IExpr.", msg, itree.instance_of.name), src_infos)
 
-	return ITree_WF.new().wf(itree)
+    return ITree_WF.new().wf(itree)
 
 
 
 func type_error(parent_node_name, part, node, should_be, src_infos):
 
-	Core::peek_compiler().error(Strings::format("In %s node, got %s type for %s instead of %s.", parent_node_name, node.instance_of.name, part, should_be), src_infos)
+    Core::peek_compiler().error(Strings::format("In %s node, got %s type for %s instead of %s.", parent_node_name, node.instance_of.name, part, should_be), src_infos)

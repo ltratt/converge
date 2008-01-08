@@ -25,7 +25,7 @@ import Core, ITree
 
 
 
-_INDENT_STRING := "\t"
+_INDENT_STRING := "    "
 
 _NEST_CLASS := 0
 _NEST_FUNC := 1
@@ -35,528 +35,528 @@ _NEST_FUNC := 1
 
 class ITree_PP:
 
-	func pp(self, itree, elide, self_mod_id := null):
-	
-		self._indent_level := 0
-		self._elide := elide
-		self._self_mod_id := self_mod_id
+    func pp(self, itree, elide, self_mod_id := null):
+    
+        self._indent_level := 0
+        self._elide := elide
+        self._self_mod_id := self_mod_id
 
-		// We need to track when we're dealing with class fields or not so that we can be intelligent
-		// about printing "bound_func", "unbounc_func" or - hopefully! - just "func".
+        // We need to track when we're dealing with class fields or not so that we can be intelligent
+        // about printing "bound_func", "unbounc_func" or - hopefully! - just "func".
 
-		self._nesting := []
-		
-		return self._preorder(itree)
-
-
-
-	func _preorder(self, node):
-	
-		return self.get_slot("_t_" + node.instance_of.name.lower_cased())(node)
+        self._nesting := []
+        
+        return self._preorder(itree)
 
 
 
-	func _t_imodule(self, node):
-	
-		return Strings::join(Functional::map(func (x) { return self._preorder(x) }, node.defns), "\n")
+    func _preorder(self, node):
+    
+        return self.get_slot("_t_" + node.instance_of.name.lower_cased())(node)
 
 
 
-	func _t_iclass_defn(self, node):
+    func _t_imodule(self, node):
+    
+        return Strings::join(Functional::map(func (x) { return self._preorder(x) }, node.defns), "\n")
 
-		supers := Strings::join(Functional::map(func (x) { return self._preorder(x) }, node.supers), ", ")
-		if node.metaclass_ is null:
-			metaclass_ := "Class"
-		else:
-			metaclass_ := self._preorder(node.metaclass_)
 
-		self._indent_level += 1
-		self._nesting.append(_NEST_CLASS)
-		fields := []
-		for field := node.fields.iter():
-			fields.append(self._preorder(field))
-		self._nesting.pop()
-		self._indent_level -= 1
 
-		indent := _INDENT_STRING * (self._indent_level + 1)
+    func _t_iclass_defn(self, node):
 
-		return Strings::format("""class %s(%s) metaclass %s:
+        supers := Strings::join(Functional::map(func (x) { return self._preorder(x) }, node.supers), ", ")
+        if node.metaclass_ is null:
+            metaclass_ := "Class"
+        else:
+            metaclass_ := self._preorder(node.metaclass_)
+
+        self._indent_level += 1
+        self._nesting.append(_NEST_CLASS)
+        fields := []
+        for field := node.fields.iter():
+            fields.append(self._preorder(field))
+        self._nesting.pop()
+        self._indent_level -= 1
+
+        indent := _INDENT_STRING * (self._indent_level + 1)
+
+        return Strings::format("""class %s(%s) metaclass %s:
 
 %s%s""", node.class_name, supers, metaclass_, indent, Strings::join(fields, "\n" + indent))
 
 
 
-	func _t_ifunc_defn(self, node):
-
-		pp := []
-
-		if self._nesting.len() == 0 | self._nesting[-1] == _NEST_FUNC:
-			if node.is_bound == 0:
-				pp.append("func ")
-			else:
-				pp.append("bound_func ")
-		else:
-			if node.is_bound == 1:
-				pp.append("func ")
-			else:
-				pp.append("unbound_func ")
-
-		if not node.func_name is null:
-			pp.append(self._preorder(node.func_name))
-
-		pp.append("(")
-		pp.append(Strings::join(Functional::map(self._preorder, node.params), ", "))
-		if not node.var_arg is null:
-			if node.params.len() > 0:
-				pp.append(", ")
-			pp.append("*")
-			pp.append(self._preorder(node.var_arg))
-		pp.append("):")
-		
-		nonlocals := []
-		for nonlocal_ := node.nonlocals.iter():
-			nonlocals.append(self._preorder(nonlocal_))
-		if nonlocals.len() > 0:
-			pp.append("\n")
-			pp.append(_INDENT_STRING * (self._indent_level + 1))
-			pp.append("nonlocal ")
-			pp.append(Strings::join(nonlocals, ", "))
-
-		renames := []
-		for rename_ := node.renames.iter():
-			pp_rename_from := self._preorder(rename_.from)
-			pp_rename_as := self._preorder(rename_.as_)
-			rename_pp := Strings::format("%s as %s", pp_rename_from, pp_rename_as)
-			renames.append(rename_pp)
-		if renames.len() > 0:
-			pp.append("\n")
-			pp.append(_INDENT_STRING * (self._indent_level + 1))
-			pp.append("rename ")
-			pp.append(Strings::join(renames, ", "))
-		
-		self._indent_level += 1
-		self._nesting.append(_NEST_FUNC)
-		body := self._preorder(node.body)
-		self._nesting.pop()
-		self._indent_level -= 1
-
-		pp.append("\n")
-		pp.append(_INDENT_STRING * (self._indent_level + 1))
-		pp.append(body)
-		
-		return Strings::join(pp, "")
-
-
-
-	func _t_iif(self, node):
-	
-		pp := []
-		for i := 0.iter_to(node.clauses.len()):
-			if i == 0:
-				pp.append("if ")
-			else:
-				pp.append(Strings::format("\n%selif ", _INDENT_STRING * self._indent_level))
-			self._indent_level += 1
-			pp.append(Strings::format("%s:", self._preorder(node.clauses[i].condition)))
-			pp.append("\n" + (_INDENT_STRING * self._indent_level))
-			pp.append(self._preorder(node.clauses[i].body))
-			self._indent_level -= 1
-		if not node.else_body is null:
-			pp.append(Strings::format("\n%selse:\n%s", _INDENT_STRING * self._indent_level, _INDENT_STRING * (self._indent_level + 1)))
-			self._indent_level += 1
-			pp.append(self._preorder(node.else_body))
-			self._indent_level -= 1
-		
-		return Strings::join(pp, "")
-
-
-
-	func _t_indif(self, node):
-
-		pp := []
-		for i := 0.iter_to(node.clauses.len()):
-			if i == 0:
-				pp.append("ndif ")
-			else:
-				pp.append(Strings::format("\n%selif ", _INDENT_STRING * self._indent_level))
-			self._indent_level += 1
-			pp.append(Strings::format("%s:", self._preorder(node.clauses[i].condition)))
-			pp.append("\n" + (_INDENT_STRING * self._indent_level))
-			pp.append(self._preorder(node.clauses[i].body))
-			self._indent_level -= 1
-
-		return Strings::join(pp, "")
-	
+    func _t_ifunc_defn(self, node):
+
+        pp := []
+
+        if self._nesting.len() == 0 | self._nesting[-1] == _NEST_FUNC:
+            if node.is_bound == 0:
+                pp.append("func ")
+            else:
+                pp.append("bound_func ")
+        else:
+            if node.is_bound == 1:
+                pp.append("func ")
+            else:
+                pp.append("unbound_func ")
+
+        if not node.func_name is null:
+            pp.append(self._preorder(node.func_name))
+
+        pp.append("(")
+        pp.append(Strings::join(Functional::map(self._preorder, node.params), ", "))
+        if not node.var_arg is null:
+            if node.params.len() > 0:
+                pp.append(", ")
+            pp.append("*")
+            pp.append(self._preorder(node.var_arg))
+        pp.append("):")
+        
+        nonlocals := []
+        for nonlocal_ := node.nonlocals.iter():
+            nonlocals.append(self._preorder(nonlocal_))
+        if nonlocals.len() > 0:
+            pp.append("\n")
+            pp.append(_INDENT_STRING * (self._indent_level + 1))
+            pp.append("nonlocal ")
+            pp.append(Strings::join(nonlocals, ", "))
+
+        renames := []
+        for rename_ := node.renames.iter():
+            pp_rename_from := self._preorder(rename_.from)
+            pp_rename_as := self._preorder(rename_.as_)
+            rename_pp := Strings::format("%s as %s", pp_rename_from, pp_rename_as)
+            renames.append(rename_pp)
+        if renames.len() > 0:
+            pp.append("\n")
+            pp.append(_INDENT_STRING * (self._indent_level + 1))
+            pp.append("rename ")
+            pp.append(Strings::join(renames, ", "))
+        
+        self._indent_level += 1
+        self._nesting.append(_NEST_FUNC)
+        body := self._preorder(node.body)
+        self._nesting.pop()
+        self._indent_level -= 1
+
+        pp.append("\n")
+        pp.append(_INDENT_STRING * (self._indent_level + 1))
+        pp.append(body)
+        
+        return Strings::join(pp, "")
+
+
+
+    func _t_iif(self, node):
+    
+        pp := []
+        for i := 0.iter_to(node.clauses.len()):
+            if i == 0:
+                pp.append("if ")
+            else:
+                pp.append(Strings::format("\n%selif ", _INDENT_STRING * self._indent_level))
+            self._indent_level += 1
+            pp.append(Strings::format("%s:", self._preorder(node.clauses[i].condition)))
+            pp.append("\n" + (_INDENT_STRING * self._indent_level))
+            pp.append(self._preorder(node.clauses[i].body))
+            self._indent_level -= 1
+        if not node.else_body is null:
+            pp.append(Strings::format("\n%selse:\n%s", _INDENT_STRING * self._indent_level, _INDENT_STRING * (self._indent_level + 1)))
+            self._indent_level += 1
+            pp.append(self._preorder(node.else_body))
+            self._indent_level -= 1
+        
+        return Strings::join(pp, "")
+
+
+
+    func _t_indif(self, node):
+
+        pp := []
+        for i := 0.iter_to(node.clauses.len()):
+            if i == 0:
+                pp.append("ndif ")
+            else:
+                pp.append(Strings::format("\n%selif ", _INDENT_STRING * self._indent_level))
+            self._indent_level += 1
+            pp.append(Strings::format("%s:", self._preorder(node.clauses[i].condition)))
+            pp.append("\n" + (_INDENT_STRING * self._indent_level))
+            pp.append(self._preorder(node.clauses[i].body))
+            self._indent_level -= 1
+
+        return Strings::join(pp, "")
+    
 
 
-	func _t_iimport(self, node):
-	
-		mod_path := Strings::split(node.mod_path, "::")
-		
-		if node.var_name != mod_path[0]:
-			return Strings::format("import %s as %s", node.mod_path, node.var_name)
-		else:
-			return Strings::format("import %s", node.mod_path)
+    func _t_iimport(self, node):
+    
+        mod_path := Strings::split(node.mod_path, "::")
+        
+        if node.var_name != mod_path[0]:
+            return Strings::format("import %s as %s", node.mod_path, node.var_name)
+        else:
+            return Strings::format("import %s", node.mod_path)
 
 
 
-	func _t_ivar(self, node):
-	
-		return node.name
+    func _t_ivar(self, node):
+    
+        return node.name
 
 
 
-	func _t_iwhile(self, node):
+    func _t_iwhile(self, node):
 
-		pp := ["while ", self._preorder(node.condition)]
+        pp := ["while ", self._preorder(node.condition)]
 
-		if not node.body is null:
-			self._indent_level += 1
-			pp.append(":\n" + (_INDENT_STRING * self._indent_level))
-			pp.append(self._preorder(node.body))
-			self._indent_level -= 1
+        if not node.body is null:
+            self._indent_level += 1
+            pp.append(":\n" + (_INDENT_STRING * self._indent_level))
+            pp.append(self._preorder(node.body))
+            self._indent_level -= 1
 
-			if not node.exhausted_body is null:
-				pp.append(Strings::format("\n%sexhausted:\n%s", _INDENT_STRING * self._indent_level, _INDENT_STRING * (self._indent_level + 1)))
-				self._indent_level += 1
-				pp.append(self._preorder(node.exhausted_body))
-				self._indent_level -= 1
+            if not node.exhausted_body is null:
+                pp.append(Strings::format("\n%sexhausted:\n%s", _INDENT_STRING * self._indent_level, _INDENT_STRING * (self._indent_level + 1)))
+                self._indent_level += 1
+                pp.append(self._preorder(node.exhausted_body))
+                self._indent_level -= 1
 
-			if not node.broken_body is null:
-				pp.append(Strings::format("\n%sbroken:\n%s", _INDENT_STRING * self._indent_level, _INDENT_STRING * (self._indent_level + 1)))
-				self._indent_level += 1
-				pp.append(self._preorder(node.broken_body))
-				self._indent_level -= 1
+            if not node.broken_body is null:
+                pp.append(Strings::format("\n%sbroken:\n%s", _INDENT_STRING * self._indent_level, _INDENT_STRING * (self._indent_level + 1)))
+                self._indent_level += 1
+                pp.append(self._preorder(node.broken_body))
+                self._indent_level -= 1
 
-		return Strings::join(pp, "")
+        return Strings::join(pp, "")
 
 
 
-	func _t_ifor(self, node):
+    func _t_ifor(self, node):
 
-		pp := ["for ", self._preorder(node.condition)]
+        pp := ["for ", self._preorder(node.condition)]
 
-		if not node.body is null:
-			self._indent_level += 1
-			pp.append(":\n" + (_INDENT_STRING * self._indent_level))
-			pp.append(self._preorder(node.body))
-			self._indent_level -= 1
+        if not node.body is null:
+            self._indent_level += 1
+            pp.append(":\n" + (_INDENT_STRING * self._indent_level))
+            pp.append(self._preorder(node.body))
+            self._indent_level -= 1
 
-			if not node.exhausted_body is null:
-				pp.append(Strings::format("\n%sexhausted:\n%s", _INDENT_STRING * self._indent_level, _INDENT_STRING * (self._indent_level + 1)))
-				self._indent_level += 1
-				pp.append(self._preorder(node.exhausted_body))
-				self._indent_level -= 1
+            if not node.exhausted_body is null:
+                pp.append(Strings::format("\n%sexhausted:\n%s", _INDENT_STRING * self._indent_level, _INDENT_STRING * (self._indent_level + 1)))
+                self._indent_level += 1
+                pp.append(self._preorder(node.exhausted_body))
+                self._indent_level -= 1
 
-			if not node.broken_body is null:
-				pp.append(Strings::format("\n%sbroken:\n%s", _INDENT_STRING * self._indent_level, _INDENT_STRING * (self._indent_level + 1)))
-				self._indent_level += 1
-				pp.append(self._preorder(node.broken_body))
-				self._indent_level -= 1
+            if not node.broken_body is null:
+                pp.append(Strings::format("\n%sbroken:\n%s", _INDENT_STRING * self._indent_level, _INDENT_STRING * (self._indent_level + 1)))
+                self._indent_level += 1
+                pp.append(self._preorder(node.broken_body))
+                self._indent_level -= 1
 
-		return Strings::join(pp, "")
+        return Strings::join(pp, "")
 
 
 
-	func _t_itry(self, node):
+    func _t_itry(self, node):
 
-		pp := ["try:\n"]
-		
-		self._indent_level += 1
-		pp.append(_INDENT_STRING * self._indent_level)
-		pp.append(self._preorder(node.body))
-		self._indent_level -= 1
-		
-		for catch_ := node.catches.iter():
-			pp.append("\n")
-			pp.append(_INDENT_STRING * self._indent_level)
-			pp.append("catch ")
-			pp.append(self._preorder(catch_.expr))
-			if not catch_.var is null:
-				pp.append(" into ")
-				pp.append(self._preorder(catch_.var))
-			pp.append(":\n")
-			self._indent_level += 1
-			pp.append(_INDENT_STRING * self._indent_level)
-			pp.append(self._preorder(catch_.body))
-			self._indent_level -= 1
+        pp := ["try:\n"]
+        
+        self._indent_level += 1
+        pp.append(_INDENT_STRING * self._indent_level)
+        pp.append(self._preorder(node.body))
+        self._indent_level -= 1
+        
+        for catch_ := node.catches.iter():
+            pp.append("\n")
+            pp.append(_INDENT_STRING * self._indent_level)
+            pp.append("catch ")
+            pp.append(self._preorder(catch_.expr))
+            if not catch_.var is null:
+                pp.append(" into ")
+                pp.append(self._preorder(catch_.var))
+            pp.append(":\n")
+            self._indent_level += 1
+            pp.append(_INDENT_STRING * self._indent_level)
+            pp.append(self._preorder(catch_.body))
+            self._indent_level -= 1
 
-		return Strings::join(pp, "")
+        return Strings::join(pp, "")
 
 
 
-	func _t_iint(self, node):
-	
-		return Strings::format("%d", node.val)
+    func _t_iint(self, node):
+    
+        return Strings::format("%d", node.val)
 
 
 
-	func _t_ilist(self, node):
+    func _t_ilist(self, node):
 
-		return Strings::format("[%s]", Strings::join(Functional::map(self._preorder, node.elems), ", "))
+        return Strings::format("[%s]", Strings::join(Functional::map(self._preorder, node.elems), ", "))
 
 
 
-	func _t_idict(self, node):
+    func _t_idict(self, node):
 
-		elems := Functional::map(func (e) { return Strings::format("%s : %s", self._preorder(e[0]), self._preorder(e[1])) }, node.elems)
+        elems := Functional::map(func (e) { return Strings::format("%s : %s", self._preorder(e[0]), self._preorder(e[1])) }, node.elems)
 
-		return Strings::format("Dict{%s}", Strings::join(elems, ", "))
+        return Strings::format("Dict{%s}", Strings::join(elems, ", "))
 
 
 
-	func _t_iset(self, node):
+    func _t_iset(self, node):
 
-		return Strings::format("Set{%s}", Strings::join(Functional::map(self._preorder, node.elems), ", "))
+        return Strings::format("Set{%s}", Strings::join(Functional::map(self._preorder, node.elems), ", "))
 
 
 
-	func _t_istring(self, node):
-	
-		str := node.val
-		str := str.replaced("\\", "\\\\")
-		str := str.replaced("\n", "\\n")
-		
-		return Strings::format("\"%s\"", str)
+    func _t_istring(self, node):
+    
+        str := node.val
+        str := str.replaced("\\", "\\\\")
+        str := str.replaced("\n", "\\n")
+        
+        return Strings::format("\"%s\"", str)
 
 
 
-	func _t_islot_lookup(self, node):
+    func _t_islot_lookup(self, node):
 
-		return Strings::format("%s.%s", self._preorder(node.target), node.slot_name)
+        return Strings::format("%s.%s", self._preorder(node.target), node.slot_name)
 
 
 
-	func _t_imodule_lookup(self, node):
+    func _t_imodule_lookup(self, node):
 
-		fst := node.names[0]
-		if self._elide == 1 & ITree::IMod_Id_Import.instantiated(fst):
-			if fst.mod_id == self._self_mod_id:
-				return Strings::join(Functional::map(self._preorder, node.names[1 : ]), "::")
-			else:
-				pp_fst := File::split_ext(File::split_leaf(fst.src_path)[1])[0]
-				pp_rest := Strings::join(Functional::map(self._preorder, node.names[1 : ]), "::")
-				return Strings::format("%s::%s", pp_fst, pp_rest)
-		else:
-			return Strings::join(Functional::map(self._preorder, node.names), "::")
+        fst := node.names[0]
+        if self._elide == 1 & ITree::IMod_Id_Import.instantiated(fst):
+            if fst.mod_id == self._self_mod_id:
+                return Strings::join(Functional::map(self._preorder, node.names[1 : ]), "::")
+            else:
+                pp_fst := File::split_ext(File::split_leaf(fst.src_path)[1])[0]
+                pp_rest := Strings::join(Functional::map(self._preorder, node.names[1 : ]), "::")
+                return Strings::format("%s::%s", pp_fst, pp_rest)
+        else:
+            return Strings::join(Functional::map(self._preorder, node.names), "::")
 
 
 
-	func _t_ilist(self, node):
-	
-		return Strings::format("[%s]", Strings::join(Functional::map(self._preorder, node.elems), ", "))
+    func _t_ilist(self, node):
+    
+        return Strings::format("[%s]", Strings::join(Functional::map(self._preorder, node.elems), ", "))
 
 
 
-	func _t_iapplication(self, node):
-	
-		return Strings::format("%s(%s)", self._preorder(node.target), Strings::join(Functional::map(self._preorder, node.args), ", "))
+    func _t_iapplication(self, node):
+    
+        return Strings::format("%s(%s)", self._preorder(node.target), Strings::join(Functional::map(self._preorder, node.args), ", "))
 
 
 
-	func _t_iget(self, node):
+    func _t_iget(self, node):
 
-		return Strings::format("%s[%s]", self._preorder(node.target), self._preorder(node.index))
+        return Strings::format("%s[%s]", self._preorder(node.target), self._preorder(node.index))
 
 
 
-	func _t_islice(self, node):
+    func _t_islice(self, node):
 
-		if node.lower_bound is null & node.upper_bound is null:
-			return Strings::format("%s[ : ]", self._preorder(node.target))
-		elif node.lower_bound is null:
-			return Strings::format("%s[ : %s]", self._preorder(node.target), self._preorder(node.upper_bound))
-		elif node.upper_bound is null:
-			return Strings::format("%s[%s : ]", self._preorder(node.target), self._preorder(node.lower_bound))
-		else:
-			return Strings::format("%s[%s : %s]", self._preorder(node.target), self._preorder(node.lower_bound), self._preorder(node.upper_bound))
+        if node.lower_bound is null & node.upper_bound is null:
+            return Strings::format("%s[ : ]", self._preorder(node.target))
+        elif node.lower_bound is null:
+            return Strings::format("%s[ : %s]", self._preorder(node.target), self._preorder(node.upper_bound))
+        elif node.upper_bound is null:
+            return Strings::format("%s[%s : ]", self._preorder(node.target), self._preorder(node.lower_bound))
+        else:
+            return Strings::format("%s[%s : %s]", self._preorder(node.target), self._preorder(node.lower_bound), self._preorder(node.upper_bound))
 
 
 
-	func _t_ireturn(self, node):
-	
-		if node.expr is null:
-			return "return"
-		else:
-			return Strings::format("return %s", self._preorder(node.expr))
+    func _t_ireturn(self, node):
+    
+        if node.expr is null:
+            return "return"
+        else:
+            return Strings::format("return %s", self._preorder(node.expr))
 
 
 
-	func _t_iyield(self, node):
+    func _t_iyield(self, node):
 
-		return Strings::format("yield %s", self._preorder(node.expr))
+        return Strings::format("yield %s", self._preorder(node.expr))
 
 
 
-	func _t_iraise(self, node):
+    func _t_iraise(self, node):
 
-		return Strings::format("raise %s", self._preorder(node.expr))
+        return Strings::format("raise %s", self._preorder(node.expr))
 
 
 
-	func _t_ifail(self, node):
+    func _t_ifail(self, node):
 
-		return "fail"
+        return "fail"
 
 
 
-	func _t_iassert(self, node):
+    func _t_iassert(self, node):
 
-		return Strings::format("assert %s", self._preorder(node.expr))
+        return Strings::format("assert %s", self._preorder(node.expr))
 
 
 
-	func _t_ibreak(self, node):
+    func _t_ibreak(self, node):
 
-		return "break"
+        return "break"
 
 
 
-	func _t_icontinue(self, node):
+    func _t_icontinue(self, node):
 
-		return "continue"
+        return "continue"
 
 
 
-	func _t_iconjunction(self, node):
-	
-		return "(" + Strings::join(Functional::map(self._preorder, node.exprs), " & ") + ")"
+    func _t_iconjunction(self, node):
+    
+        return "(" + Strings::join(Functional::map(self._preorder, node.exprs), " & ") + ")"
 
 
 
-	func _t_ialternation(self, node):
-	
-		return Strings::join(Functional::map(self._preorder, node.exprs), " | ")
+    func _t_ialternation(self, node):
+    
+        return Strings::join(Functional::map(self._preorder, node.exprs), " | ")
 
 
 
-	func _t_inot(self, node):
+    func _t_inot(self, node):
 
-		return Strings::format("not %s", self._preorder(node.expr))
+        return Strings::format("not %s", self._preorder(node.expr))
 
 
 
-	func _t_iassignment(self, node):
-	
-		if node.type == ITree::STD_ASSIGN:
-			op := ":="
-		elif node.type == ITree::ADD_ASSIGN:
-			op := "+="
-		elif node.type == ITree::SUB_ASSIGN:
-			op := "-="
-		elif node.type == ITree::MUL_ASSIGN:
-			op := "*="
-		elif node.type == ITree::DIV_ASSIGN:
-			op := "/="
-		
-		return Strings::format("%s %s %s", Strings::join(Functional::map(self._preorder, node.targets), ", "), op, self._preorder(node.expr))
+    func _t_iassignment(self, node):
+    
+        if node.type == ITree::STD_ASSIGN:
+            op := ":="
+        elif node.type == ITree::ADD_ASSIGN:
+            op := "+="
+        elif node.type == ITree::SUB_ASSIGN:
+            op := "-="
+        elif node.type == ITree::MUL_ASSIGN:
+            op := "*="
+        elif node.type == ITree::DIV_ASSIGN:
+            op := "/="
+        
+        return Strings::format("%s %s %s", Strings::join(Functional::map(self._preorder, node.targets), ", "), op, self._preorder(node.expr))
 
 
 
-	func _t_icomparison(self, node):
-	
-		if node.type == ITree::IS_COMPARISON:
-			op := "is"
-		elif node.type == ITree::EQ_COMPARISON:
-			op := "=="
-		elif node.type == ITree::NEQ_COMPARISON:
-			op := "!="
-		elif node.type == ITree::LEQ_COMPARISON:
-			op := "<="
-		elif node.type == ITree::GEQ_COMPARISON:
-			op := ">="
-		elif node.type == ITree::LE_COMPARISON:
-			op := "<"
-		elif node.type == ITree::GE_COMPARISON:
-			op := ">"
-	
-		return Strings::format("%s %s %s", self._preorder(node.lhs), op, self._preorder(node.rhs))
+    func _t_icomparison(self, node):
+    
+        if node.type == ITree::IS_COMPARISON:
+            op := "is"
+        elif node.type == ITree::EQ_COMPARISON:
+            op := "=="
+        elif node.type == ITree::NEQ_COMPARISON:
+            op := "!="
+        elif node.type == ITree::LEQ_COMPARISON:
+            op := "<="
+        elif node.type == ITree::GEQ_COMPARISON:
+            op := ">="
+        elif node.type == ITree::LE_COMPARISON:
+            op := "<"
+        elif node.type == ITree::GE_COMPARISON:
+            op := ">"
+    
+        return Strings::format("%s %s %s", self._preorder(node.lhs), op, self._preorder(node.rhs))
 
 
 
-	func _t_ipass(self, node):
+    func _t_ipass(self, node):
 
-		return "pass"
+        return "pass"
 
 
 
-	func _t_iinsert(self, node):
-	
-		ndif node.type == ITree::INSERT_DEFAULT:
-			return Strings::format("${%s}", self._preorder(node.expr))
-		elif node.type == ITree::INSERT_CAPTURING:
-			return Strings::format("$c{%s}", self._preorder(node.expr))
+    func _t_iinsert(self, node):
+    
+        ndif node.type == ITree::INSERT_DEFAULT:
+            return Strings::format("${%s}", self._preorder(node.expr))
+        elif node.type == ITree::INSERT_CAPTURING:
+            return Strings::format("$c{%s}", self._preorder(node.expr))
 
 
 
-	func _t_iquasi_quotes(self, node):
-	
-		if not node.extra_src_infos is null:
-			raise "XXX"
-		else:
-			pp := ["[|"]
-		
-		pp.append("\n")
-		pp.append(_INDENT_STRING * (self._indent_level + 1))
-		body := self._preorder(node.body)
-		pp.append(body)
-		pp.append("\n")
-		pp.append(_INDENT_STRING * self._indent_level)
-		pp.append("|]")
-		
-		return Strings::join(pp, "")
+    func _t_iquasi_quotes(self, node):
+    
+        if not node.extra_src_infos is null:
+            raise "XXX"
+        else:
+            pp := ["[|"]
+        
+        pp.append("\n")
+        pp.append(_INDENT_STRING * (self._indent_level + 1))
+        body := self._preorder(node.body)
+        pp.append(body)
+        pp.append("\n")
+        pp.append(_INDENT_STRING * self._indent_level)
+        pp.append("|]")
+        
+        return Strings::join(pp, "")
 
 
 
-	func _t_ibinary(self, node):
+    func _t_ibinary(self, node):
 
-		if node.type == ITree::BINARY_ADD:
-			op := "+"
-		elif node.type == ITree::BINARY_SUB:
-			op := "-"
-		elif node.type == ITree::BINARY_MUL:
-			op := "*"
-		elif node.type == ITree::BINARY_DIV:
-			op := "/"
-		elif node.type == ITree::BINARY_MOD:
-			op := "%"
-	
-		return Strings::format("%s %s %s", self._preorder(node.lhs), op, self._preorder(node.rhs))
+        if node.type == ITree::BINARY_ADD:
+            op := "+"
+        elif node.type == ITree::BINARY_SUB:
+            op := "-"
+        elif node.type == ITree::BINARY_MUL:
+            op := "*"
+        elif node.type == ITree::BINARY_DIV:
+            op := "/"
+        elif node.type == ITree::BINARY_MOD:
+            op := "%"
+    
+        return Strings::format("%s %s %s", self._preorder(node.lhs), op, self._preorder(node.rhs))
 
 
 
-	func _t_imod_id_import(self, node):
-	
-		return Strings::format("$<CEI::imod_id_import(\"%s\", \"%s\")>", node.mod_id, node.src_path)
+    func _t_imod_id_import(self, node):
+    
+        return Strings::format("$<CEI::imod_id_import(\"%s\", \"%s\")>", node.mod_id, node.src_path)
 
 
 
-	func _t_iexpr_seq(self, node):
+    func _t_iexpr_seq(self, node):
 
-		pp := []
-		for expr := node.exprs.iter():
-			pp.append(self._preorder(expr))
-		
-		return Strings::join(pp, "\n" + (_INDENT_STRING * self._indent_level))
+        pp := []
+        for expr := node.exprs.iter():
+            pp.append(self._preorder(expr))
+        
+        return Strings::join(pp, "\n" + (_INDENT_STRING * self._indent_level))
 
-		
-		
-	func _t_iparam(self, node):
-	
-		if not node.default is null:
-			return Strings::format("%s := %s", self._preorder(node.var), self._preorder(node.default))
-		else:
-			return self._preorder(node.var)
+        
+        
+    func _t_iparam(self, node):
+    
+        if not node.default is null:
+            return Strings::format("%s := %s", self._preorder(node.var), self._preorder(node.default))
+        else:
+            return self._preorder(node.var)
 
 
 
 
 func pp(itree):
 
-	return ITree_PP.new().pp(itree, 0)
+    return ITree_PP.new().pp(itree, 0)
 
 
 
 func elided_pp(itree, self_mod_id := null):
 
-	return ITree_PP.new().pp(itree, 1, self_mod_id)
+    return ITree_PP.new().pp(itree, 1, self_mod_id)

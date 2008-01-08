@@ -32,24 +32,24 @@ import CEI, Sys
 
 func expand_power(n, x):
 
-	if n == 0:
-		return [| 1 |]
-	else:
-		return [| $c{x} * $c{expand_power(n - 1, x)} |]
+    if n == 0:
+        return [| 1 |]
+    else:
+        return [| $c{x} * $c{expand_power(n - 1, x)} |]
 
 
 
 func mk_power(n):
 
-	it := [|
-		func (&x):
-			return $c{expand_power(n, [| &x |])}
-	|]
-	
-	Sys::println("mk_power(", n, ") generated:\n")
-	Sys::println(CEI::itree_pp(it))
-	
-	return it
+    it := [|
+        func (&x):
+            return $c{expand_power(n, [| &x |])}
+    |]
+    
+    Sys::println("mk_power(", n, ") generated:\n")
+    Sys::println(CEI::itree_pp(it))
+    
+    return it
 
 
 
@@ -59,4 +59,4 @@ power3 := $<mk_power(3)>
 
 func main():
 
-	Sys::println("3^3 = ", power3(3))
+    Sys::println("3^3 = ", power3(3))

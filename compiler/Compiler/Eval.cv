@@ -27,203 +27,203 @@ import Builtins, Code_Gen, Core, BC_Lib, BC_Mod, Parser, BC_Pkg, File, Functiona
 
 class Eval_Compiler:
 
-	func init(self, str, vars, includes):
-	
-		self._str := str
-		self.vars := vars
-		
-		self.includes := includes
-		self.mod_id := Strings::format(Core::UNIQUE_EVAL_NAME_TEMPLATE, Core::fresh_name())
-		self.src_path := self.mod_id
-		self.internal_target := self.target := Available::TARGETS[Strings::format("%dbit", Properties::word_bits)].new()
+    func init(self, str, vars, includes):
+    
+        self._str := str
+        self.vars := vars
+        
+        self.includes := includes
+        self.mod_id := Strings::format(Core::UNIQUE_EVAL_NAME_TEMPLATE, Core::fresh_name())
+        self.src_path := self.mod_id
+        self.internal_target := self.target := Available::TARGETS[Strings::format("%dbit", Properties::word_bits)].new()
 
-		self._cached_mods := Dict{}
-		for lib_path := Core::get_std_libraries().iter():
-			bc_lib := BC_Lib::BC_Lib.new(self.target)
-			lib_file := File::open(lib_path, "r")
-			lib_bc := lib_file.read()
-			lib_file.close()
-			for bc_mod := bc_lib.deserialize(lib_bc).iter():
-				self._cached_mods[bc_mod.get_mod_id()] := [bc_mod.get_src_path(), bc_mod]
-
-
-
-	func eval(self):
-		
-		self.tokenizer := Tokenizer::Tokenizer.new()
-		parse_tree := Parser::parse_expr_seq(self._str)
-		self.newlines := self.tokenizer.newlines
-		
-		body := []
-		
-		src_infos := [[self.mod_id, 0]]
-		
-		compiler_var_name := Core::fresh_name()
-		compiler_var := ITree::IVar.new(compiler_var_name, src_infos)
-		peek_compiler := ITree::IModule_Lookup.new([ITree::IMod_Id_Import.new(Core.mod_id, Core.src_path, src_infos), ITree::IVar.new("peek_compiler", src_infos)], src_infos)
-		body.append(ITree::IAssignment.new(ITree::STD_ASSIGN, [compiler_var], ITree::IApplication.new(peek_compiler, [], src_infos), src_infos))
-		
-		vars_val := ITree::ISlot_Lookup.new(compiler_var, "vars", src_infos)
-		for var_name, _ := self.vars.iter():
-			var_val := ITree::IApplication.new(ITree::ISlot_Lookup.new(vars_val, "get", src_infos), [ITree::IString.new(var_name, src_infos)], src_infos)
-			body.append(ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(var_name, src_infos)], var_val, src_infos))
-
-		expr_seq := IMod_Gen::IMod_Gen.new().gen_expr_seq(parse_tree)
-		if expr_seq.exprs.len() == 0:
-			fail
-		elif expr_seq.exprs.len() > 1:
-			raise "XXX"
-			
-		expr := expr_seq.exprs[0]
-
-		dict_vals := []
-		for var_name, var_val := self.vars.iter():
-			dict_vals.append([ITree::IString.new(var_name, src_infos), ITree::IVar.new(var_name, src_infos)])
-		rtn_dict := ITree::IDict.new(dict_vals, src_infos)
-
-		vars_assign := []
-		vars_assign_names := Set{}
-		for var_name, _ := self.vars.iter():
-			vars_assign_names.add(var_name)
-		vars_assign_names.extend(expr.bound_vars)
-		for var_name := vars_assign_names.iter():
-			var_val := ITree::IApplication.new(ITree::ISlot_Lookup.new(vars_val, "set", src_infos), [ITree::IString.new(var_name, src_infos), ITree::IVar.new(var_name, src_infos)], src_infos)
-			vars_assign.append(var_val)
-
-		rtn_ivar := ITree::IVar.new(Core::fresh_name(), src_infos)
-		icond := ITree::IAssignment.new(ITree::STD_ASSIGN, [rtn_ivar], expr, src_infos)
-		iclause_body := ITree::IExpr_Seq.new([vars_assign, ITree::IReturn.new(rtn_ivar, src_infos)].flattened(), src_infos)
-		iclause := ITree::IClause.new(icond, iclause_body, src_infos)
-		ielse_body := ITree::IExpr_Seq.new([vars_assign, ITree::IFail.new(src_infos)].flattened(), src_infos)
-		iif := ITree::IIf.new([iclause], ielse_body, src_infos)
-		body.append(iif)
-		
-		body := ITree::IExpr_Seq.new(body, src_infos)
-
-		eval_name := Core::fresh_name()		
-		dummy_func := ITree::IFunc_Defn.new(0, ITree::IVar.new(eval_name, src_infos), [], null, [], [], body, src_infos)
-		dummy_defns := [ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(eval_name, src_infos)], dummy_func, src_infos)]
-		dummy_imodule := ITree::IModule.new(eval_name, dummy_defns, src_infos)
-		
-		bc_mod := _Eval_Code_Gen.new().generate(dummy_imodule, self.target)
-		
-		bc_mods := [bc_mod]
-		for cached_mod_id, cached_bc_mod := self._cached_mods.iter_vals():
-			bc_mods.append(cached_bc_mod)
-		
-		linked_bc_mods := Link::link_max_pkgs(bc_mods, Core::peek_compiler(), self.target)
-		
-		// We always make sure that the first bc mod is linked in, as it's the "main" module, and
-		// might already have had a partial version of itself included in the VM if the user used
-		// CTMP in an eval expression.
-		
-		main_mod := Builtins::Module.new(linked_bc_mods[0].serialize())
-		mods := [main_mod]
-		for linked_bc_mod := linked_bc_mods.iter(1):
-			if not VM::find_module(linked_bc_mod.get_mod_id()):
-				mods.append(Builtins::Module.new(linked_bc_mod.serialize()))
-		
-		VM::add_modules(mods)
-		for mod := mods.iter():
-			VM::import_module(mod)
-		
-		return main_mod.get_defn(eval_name)()
+        self._cached_mods := Dict{}
+        for lib_path := Core::get_std_libraries().iter():
+            bc_lib := BC_Lib::BC_Lib.new(self.target)
+            lib_file := File::open(lib_path, "r")
+            lib_bc := lib_file.read()
+            lib_file.close()
+            for bc_mod := bc_lib.deserialize(lib_bc).iter():
+                self._cached_mods[bc_mod.get_mod_id()] := [bc_mod.get_src_path(), bc_mod]
 
 
 
-	func find_import_location(self, import_name_list):
+    func eval(self):
+        
+        self.tokenizer := Tokenizer::Tokenizer.new()
+        parse_tree := Parser::parse_expr_seq(self._str)
+        self.newlines := self.tokenizer.newlines
+        
+        body := []
+        
+        src_infos := [[self.mod_id, 0]]
+        
+        compiler_var_name := Core::fresh_name()
+        compiler_var := ITree::IVar.new(compiler_var_name, src_infos)
+        peek_compiler := ITree::IModule_Lookup.new([ITree::IMod_Id_Import.new(Core.mod_id, Core.src_path, src_infos), ITree::IVar.new("peek_compiler", src_infos)], src_infos)
+        body.append(ITree::IAssignment.new(ITree::STD_ASSIGN, [compiler_var], ITree::IApplication.new(peek_compiler, [], src_infos), src_infos))
+        
+        vars_val := ITree::ISlot_Lookup.new(compiler_var, "vars", src_infos)
+        for var_name, _ := self.vars.iter():
+            var_val := ITree::IApplication.new(ITree::ISlot_Lookup.new(vars_val, "get", src_infos), [ITree::IString.new(var_name, src_infos)], src_infos)
+            body.append(ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(var_name, src_infos)], var_val, src_infos))
 
-		func match_path(i, dir):
-		
-			cnd_path := File::join_names(dir, import_name_list[i])
+        expr_seq := IMod_Gen::IMod_Gen.new().gen_expr_seq(parse_tree)
+        if expr_seq.exprs.len() == 0:
+            fail
+        elif expr_seq.exprs.len() > 1:
+            raise "XXX"
+            
+        expr := expr_seq.exprs[0]
 
-			if File::exists(cnd_path) & File::is_dir(cnd_path):
-				if i + 1 == import_name_list.len():
-					return [cnd_path, i]
-				else:
-					return match_path(i + 1, cnd_path)
+        dict_vals := []
+        for var_name, var_val := self.vars.iter():
+            dict_vals.append([ITree::IString.new(var_name, src_infos), ITree::IVar.new(var_name, src_infos)])
+        rtn_dict := ITree::IDict.new(dict_vals, src_infos)
 
-			cnd_file_path := File::join_ext(cnd_path, Core::SRC_EXT)
-			if File::exists(cnd_file_path) & File::is_file(cnd_file_path):
-				return [cnd_file_path, i]
-			
-			fail
-			
-	
-		for include_dir := self.includes.iter():
-			if matched_path, extra_pos := match_path(0, include_dir):
-				src_path := File::canon_path(matched_path)
-				if cvb_path := Core::get_cache_path(src_path) & File::exists(cvb_path):
-					f := File::open(cvb_path, "r")
-					bc := f.read()
-					ndif BC_Mod::is_bc_mod(bc):
-						bc_mod := BC_Mod::BC_Mod.new(self.internal_target)
-					elif BC_Pkg::is_bc_pkg(bc):
-						bc_mod := BC_Pkg::BC_Pkg.new(self.internal_target)
-					bc_mod.deserialize_str(bc)
-					f.close()
-					mod_id := bc_mod.get_mod_id()
-				else:
-					mod_id := Core::mk_mod_id(src_path)
-				import_extras := import_name_list[extra_pos + 1 : ]
-				break
-		exhausted:
-			// If the first part of the import references a builtin, then looking up that module ID
-			// will succeed.
-			if VM::find_module(import_name_list[0]):
-				mod_id := src_path := import_name_list[0]
-				import_extras := import_name_list[1 : ]
-			else:
-				fail
-		
-		return [mod_id, src_path, import_extras]
+        vars_assign := []
+        vars_assign_names := Set{}
+        for var_name, _ := self.vars.iter():
+            vars_assign_names.add(var_name)
+        vars_assign_names.extend(expr.bound_vars)
+        for var_name := vars_assign_names.iter():
+            var_val := ITree::IApplication.new(ITree::ISlot_Lookup.new(vars_val, "set", src_infos), [ITree::IString.new(var_name, src_infos), ITree::IVar.new(var_name, src_infos)], src_infos)
+            vars_assign.append(var_val)
+
+        rtn_ivar := ITree::IVar.new(Core::fresh_name(), src_infos)
+        icond := ITree::IAssignment.new(ITree::STD_ASSIGN, [rtn_ivar], expr, src_infos)
+        iclause_body := ITree::IExpr_Seq.new([vars_assign, ITree::IReturn.new(rtn_ivar, src_infos)].flattened(), src_infos)
+        iclause := ITree::IClause.new(icond, iclause_body, src_infos)
+        ielse_body := ITree::IExpr_Seq.new([vars_assign, ITree::IFail.new(src_infos)].flattened(), src_infos)
+        iif := ITree::IIf.new([iclause], ielse_body, src_infos)
+        body.append(iif)
+        
+        body := ITree::IExpr_Seq.new(body, src_infos)
+
+        eval_name := Core::fresh_name()		
+        dummy_func := ITree::IFunc_Defn.new(0, ITree::IVar.new(eval_name, src_infos), [], null, [], [], body, src_infos)
+        dummy_defns := [ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(eval_name, src_infos)], dummy_func, src_infos)]
+        dummy_imodule := ITree::IModule.new(eval_name, dummy_defns, src_infos)
+        
+        bc_mod := _Eval_Code_Gen.new().generate(dummy_imodule, self.target)
+        
+        bc_mods := [bc_mod]
+        for cached_mod_id, cached_bc_mod := self._cached_mods.iter_vals():
+            bc_mods.append(cached_bc_mod)
+        
+        linked_bc_mods := Link::link_max_pkgs(bc_mods, Core::peek_compiler(), self.target)
+        
+        // We always make sure that the first bc mod is linked in, as it's the "main" module, and
+        // might already have had a partial version of itself included in the VM if the user used
+        // CTMP in an eval expression.
+        
+        main_mod := Builtins::Module.new(linked_bc_mods[0].serialize())
+        mods := [main_mod]
+        for linked_bc_mod := linked_bc_mods.iter(1):
+            if not VM::find_module(linked_bc_mod.get_mod_id()):
+                mods.append(Builtins::Module.new(linked_bc_mod.serialize()))
+        
+        VM::add_modules(mods)
+        for mod := mods.iter():
+            VM::import_module(mod)
+        
+        return main_mod.get_defn(eval_name)()
 
 
 
-	func get_bc_mod(self, mod_id, src_path, src_infos):
+    func find_import_location(self, import_name_list):
 
-		if cache_src_path, cache_bc_mod := self._cached_mods.find(mod_id):
-			return cache_bc_mod
+        func match_path(i, dir):
+        
+            cnd_path := File::join_names(dir, import_name_list[i])
 
-		cvb_path := Core::get_cache_path(src_path)
-		if File::exists(cvb_path):
-			cvb_file := File::open(cvb_path, "r")
-			bc := cvb_file.read()
-			cvb_file.close()
-			if BC_Mod::is_bc_mod(bc):
-				mod := BC_Mod::BC_Mod.new(self.target)
-				mod.deserialize_str(bc)
-				return mod
-		
-		self.error(Strings::format("Unable to import '%s'.", src_path), src_infos)
+            if File::exists(cnd_path) & File::is_dir(cnd_path):
+                if i + 1 == import_name_list.len():
+                    return [cnd_path, i]
+                else:
+                    return match_path(i + 1, cnd_path)
+
+            cnd_file_path := File::join_ext(cnd_path, Core::SRC_EXT)
+            if File::exists(cnd_file_path) & File::is_file(cnd_file_path):
+                return [cnd_file_path, i]
+            
+            fail
+            
+    
+        for include_dir := self.includes.iter():
+            if matched_path, extra_pos := match_path(0, include_dir):
+                src_path := File::canon_path(matched_path)
+                if cvb_path := Core::get_cache_path(src_path) & File::exists(cvb_path):
+                    f := File::open(cvb_path, "r")
+                    bc := f.read()
+                    ndif BC_Mod::is_bc_mod(bc):
+                        bc_mod := BC_Mod::BC_Mod.new(self.internal_target)
+                    elif BC_Pkg::is_bc_pkg(bc):
+                        bc_mod := BC_Pkg::BC_Pkg.new(self.internal_target)
+                    bc_mod.deserialize_str(bc)
+                    f.close()
+                    mod_id := bc_mod.get_mod_id()
+                else:
+                    mod_id := Core::mk_mod_id(src_path)
+                import_extras := import_name_list[extra_pos + 1 : ]
+                break
+        exhausted:
+            // If the first part of the import references a builtin, then looking up that module ID
+            // will succeed.
+            if VM::find_module(import_name_list[0]):
+                mod_id := src_path := import_name_list[0]
+                import_extras := import_name_list[1 : ]
+            else:
+                fail
+        
+        return [mod_id, src_path, import_extras]
+
+
+
+    func get_bc_mod(self, mod_id, src_path, src_infos):
+
+        if cache_src_path, cache_bc_mod := self._cached_mods.find(mod_id):
+            return cache_bc_mod
+
+        cvb_path := Core::get_cache_path(src_path)
+        if File::exists(cvb_path):
+            cvb_file := File::open(cvb_path, "r")
+            bc := cvb_file.read()
+            cvb_file.close()
+            if BC_Mod::is_bc_mod(bc):
+                mod := BC_Mod::BC_Mod.new(self.target)
+                mod.deserialize_str(bc)
+                return mod
+        
+        self.error(Strings::format("Unable to import '%s'.", src_path), src_infos)
 
 
 
 
 class _Eval_Code_Gen(Code_Gen::Code_Gen):
 
-	func _prc_mod_lookup(self, mod_lookup):
+    func _prc_mod_lookup(self, mod_lookup):
 
-		assert _Eval_Compiler.instantiated(self._compiler)
+        assert _Eval_Compiler.instantiated(self._compiler)
 
-		if not (val := self._compiler.vars.find(mod_lookup.names[0].name)):
-			// Since this doesn't even refer to a valid variable, a "variable not found" error will
-			// be raised elsewhere, so we don't bother dealing with it here.
-			return
+        if not (val := self._compiler.vars.find(mod_lookup.names[0].name)):
+            // Since this doesn't even refer to a valid variable, a "variable not found" error will
+            // be raised elsewhere, so we don't bother dealing with it here.
+            return
 
-		if not Builtins::Module.instantiated(val):
-			self._compiler.warning("Unable to determine module referenced in lookup (use a plain variable lookup instead)", mod_lookup.names[0].src_infos)
+        if not Builtins::Module.instantiated(val):
+            self._compiler.warning("Unable to determine module referenced in lookup (use a plain variable lookup instead)", mod_lookup.names[0].src_infos)
 
 
 
 
 func eval(str, vars := Dict{}, includes := []):
 
-	compiler := Eval_Compiler.new(str, vars, includes)
-	Core::push_compiler(compiler)
-	if not (result := compiler.eval()):
-		Core::pop_compiler()
-		fail
-	else:
-		Core::pop_compiler()
-		return result
+    compiler := Eval_Compiler.new(str, vars, includes)
+    Core::push_compiler(compiler)
+    if not (result := compiler.eval()):
+        Core::pop_compiler()
+        fail
+    else:
+        Core::pop_compiler()
+        return result

@@ -35,13 +35,13 @@ ELEMS := ["a", "abbr", "access", "action", "address", "blockcode", "blockquote",
 
 func escape_str(s):
 
-	s := s.replaced("&", "&amp;")
-	s := s.replaced("<", "&lt;")
-	s := s.replaced(">", "&gt;")
-	s := s.replaced("'", "&apos;")
-	s := s.replaced("\"", "&quot;")
+    s := s.replaced("&", "&amp;")
+    s := s.replaced("<", "&lt;")
+    s := s.replaced(">", "&gt;")
+    s := s.replaced("'", "&apos;")
+    s := s.replaced("\"", "&quot;")
 
-	return s
+    return s
 
 
 
@@ -51,12 +51,12 @@ func escape_str(s):
 
 func _conv_attrs(attrs):
 
-	xml_attrs := []
+    xml_attrs := []
 
-	for name, val := attrs.iter():
-		xml_attrs.append(Nodes::Attr.new(name, val))
-	
-	return xml_attrs
+    for name, val := attrs.iter():
+        xml_attrs.append(Nodes::Attr.new(name, val))
+    
+    return xml_attrs
 
 
 
@@ -66,17 +66,17 @@ func _conv_attrs(attrs):
 
 $c<func (){
 
-	funcs := []
-	for elem := ELEMS.iter():
-		func_ := [|
-			func $c{CEI::ivar(elem)}(children := [], attrs := Dict{}):
+    funcs := []
+    for elem := ELEMS.iter():
+        func_ := [|
+            func $c{CEI::ivar(elem)}(children := [], attrs := Dict{}):
 
-				elem := Nodes::Elem.new(${CEI::istring(elem)}, _conv_attrs(attrs))
-				elem.extend(children)
+                elem := Nodes::Elem.new(${CEI::istring(elem)}, _conv_attrs(attrs))
+                elem.extend(children)
 
-				return elem
-		|]
-		funcs.append(func_)
-	
-	return funcs
+                return elem
+        |]
+        funcs.append(func_)
+    
+    return funcs
 }()>

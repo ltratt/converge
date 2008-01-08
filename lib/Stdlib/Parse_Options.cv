@@ -38,91 +38,91 @@ FREQUENCY_ZERO_OR_MORE := 2
 
 class Option_Spec:
 
-	func init(self, name, short_option, optionality := NONE, type := TYPE_ANY, frequency := FREQUENCY_ZERO_OR_ONE):
-	
-		self.name := name
-		self.short_option := short_option
-		self.optionality := optionality
-		self.type := type
-		self.frequency := frequency
+    func init(self, name, short_option, optionality := NONE, type := TYPE_ANY, frequency := FREQUENCY_ZERO_OR_ONE):
+    
+        self.name := name
+        self.short_option := short_option
+        self.optionality := optionality
+        self.type := type
+        self.frequency := frequency
 
 
 
 
 class Options:
 
-	func init(self, usage_callback):
-	
-		self._usage_callback := usage_callback
-		self._option_specs := []
+    func init(self, usage_callback):
+    
+        self._usage_callback := usage_callback
+        self._option_specs := []
 
 
 
-	func add(self, option_spec):
-	
-		if self._option_specs.find(option_spec.name):
-			raise Exceptions::User_Exception.new(Strings::format("Option '%s' has already been specified.", option_spec.name))
-			
-		self._option_specs.append(option_spec)
+    func add(self, option_spec):
+    
+        if self._option_specs.find(option_spec.name):
+            raise Exceptions::User_Exception.new(Strings::format("Option '%s' has already been specified.", option_spec.name))
+            
+        self._option_specs.append(option_spec)
 
 
 
-	func parse(self):
-	
-		options := Dict{}
-		
-		i := 0
-		while i < Sys::argv.len():
-			arg := Sys::argv[i]
-			if arg == "--":
-				i += 1
-				break
-			elif arg.len() > 0 & arg[0] == "-":
-				option_spec := null
-				
-				if arg.len() == 2:
-					for option_spec := self._option_specs.iter():
-						if option_spec.short_option == arg[1 : ]:
-							break
-				elif arg.len() > 2 & arg[0 : 2] == "--":
-					for option_spec := self._option_specs.iter():
-						if option_spec.name == arg[2 : ]:
-							break
+    func parse(self):
+    
+        options := Dict{}
+        
+        i := 0
+        while i < Sys::argv.len():
+            arg := Sys::argv[i]
+            if arg == "--":
+                i += 1
+                break
+            elif arg.len() > 0 & arg[0] == "-":
+                option_spec := null
+                
+                if arg.len() == 2:
+                    for option_spec := self._option_specs.iter():
+                        if option_spec.short_option == arg[1 : ]:
+                            break
+                elif arg.len() > 2 & arg[0 : 2] == "--":
+                    for option_spec := self._option_specs.iter():
+                        if option_spec.name == arg[2 : ]:
+                            break
 
-				if option_spec is null:
-					self._usage_callback(Strings::format("Unknown option '%s'.", arg))
-				
-				if option_spec.optionality == NONE:
-					val := null
-					i += 1
-				elif option_spec.optionality == OPTIONAL:
-					if i + 1 < Sys::argv.len() & (Sys::argv[i + 1].len() == 0 | Sys::argv[i + 1][0] != "-"):
-						val := Sys::argv[i + 1]
-						i += 2
-					else:
-						val := null
-						i += 1
-				else:
-					// By definition: option_spec.optionality == MANDATORY
-					
-					if i + 1 == Sys::argv.len():
-						self._usage_callback(Strings::format("'-%s' requires a value.", option_spec.short_option))
-					val := Sys::argv[i + 1]
-					i += 2
+                if option_spec is null:
+                    self._usage_callback(Strings::format("Unknown option '%s'.", arg))
+                
+                if option_spec.optionality == NONE:
+                    val := null
+                    i += 1
+                elif option_spec.optionality == OPTIONAL:
+                    if i + 1 < Sys::argv.len() & (Sys::argv[i + 1].len() == 0 | Sys::argv[i + 1][0] != "-"):
+                        val := Sys::argv[i + 1]
+                        i += 2
+                    else:
+                        val := null
+                        i += 1
+                else:
+                    // By definition: option_spec.optionality == MANDATORY
+                    
+                    if i + 1 == Sys::argv.len():
+                        self._usage_callback(Strings::format("'-%s' requires a value.", option_spec.short_option))
+                    val := Sys::argv[i + 1]
+                    i += 2
 
-				if option_spec.frequency == FREQUENCY_ONE | option_spec.frequency == FREQUENCY_ZERO_OR_ONE:
-					if options.find(option_spec.name):
-						self._usage_callback(Strings::format("'%s' option may be specified a maximum of once.", option_spec.short_option))
-					options[option_spec.name] := val
-				elif option_spec.frequency == FREQUENCY_ZERO_OR_MORE:
-					if not options.find(option_spec.name):
-						options[option_spec.name] := []
-					options[option_spec.name].append(val)
-			else:
-				break
+                if option_spec.frequency == FREQUENCY_ONE | option_spec.frequency == FREQUENCY_ZERO_OR_ONE:
+                    if options.find(option_spec.name):
+                        self._usage_callback(Strings::format("'%s' option may be specified a maximum of once.", option_spec.short_option))
+                    options[option_spec.name] := val
+                elif option_spec.frequency == FREQUENCY_ZERO_OR_MORE:
+                    if not options.find(option_spec.name):
+                        options[option_spec.name] := []
+                    options[option_spec.name].append(val)
+            else:
+                break
 
-		for option_spec := self._option_specs.iter():
-			if option_spec.frequency == FREQUENCY_ONE & not options.find(option_spec.name):
-				self._usage_callback(Strings::format("'%s' option must be specified.", option_spec.short_option))
+        for option_spec := self._option_specs.iter():
+            if option_spec.frequency == FREQUENCY_ONE & not options.find(option_spec.name):
+                self._usage_callback(Strings::format("'%s' option must be specified.", option_spec.short_option))
 
-		return [options, Sys::argv[i : ]]
+        return [options, Sys::argv[i : ]]

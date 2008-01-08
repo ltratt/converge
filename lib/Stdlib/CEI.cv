@@ -28,68 +28,68 @@ import Compiler::Core, Compiler::Parser, Compiler::Eval, Compiler::ITree, Compil
 
 func compiler():
 
-	return Core::peek_compiler()
+    return Core::peek_compiler()
 
 
 
 func error(msg, src_infos := null):
 
-	Core::peek_compiler().error(msg, src_infos)
+    Core::peek_compiler().error(msg, src_infos)
 
 
 
 func warning(msg, src_infos := null):
 
-	Core::peek_compiler().warning(msg, src_infos)
+    Core::peek_compiler().warning(msg, src_infos)
 
 
 
 func eval(str, vars := Dict{}, includes := []):
 
-	return Eval::eval(str, vars, includes)
+    return Eval::eval(str, vars, includes)
 
 
 
 func fresh_name(name := null):
 
-	return Core::fresh_name(name)
+    return Core::fresh_name(name)
 
 
 
 func itree_pp(itree):
 
-	return ITree_PP::pp(itree)
+    return ITree_PP::pp(itree)
 
 
 
 func itree_elided_pp(itree, self_mod_id := null):
 
-	return ITree_PP::elided_pp(itree, self_mod_id)
+    return ITree_PP::elided_pp(itree, self_mod_id)
 
 
 
 func mk_hygienic(itree, vars := Set{}):
 
-	return ITree_Rename::rename_except(itree, vars)
+    return ITree_Rename::rename_except(itree, vars)
 
 
 
 func lift(obj, src_infos := null):
 
-	return Lift::lift(obj, src_infos)
+    return Lift::lift(obj, src_infos)
 
 
 
 func dsl_parse(dsl_block, src_infos, extra_keywords, extra_symbols, grammar, start_rule):
 
-	tokenizer := Tokenizer::Tokenizer.new()
-	tokenizer.tokenize(dsl_block, src_infos, extra_keywords, extra_symbols)
-	
-	tokens_map := Tokenizer::tokens_map(extra_symbols, extra_keywords)
-	grammar, rule_names := Grammar::compile(grammar, start_rule, tokens_map)
-	parser := Parser::Parser.new()
-	
-	return parser.parse(grammar, rule_names, tokens_map, tokenizer.tokens)
+    tokenizer := Tokenizer::Tokenizer.new()
+    tokenizer.tokenize(dsl_block, src_infos, extra_keywords, extra_symbols)
+    
+    tokens_map := Tokenizer::tokens_map(extra_symbols, extra_keywords)
+    grammar, rule_names := Grammar::compile(grammar, start_rule, tokens_map)
+    parser := Parser::Parser.new()
+    
+    return parser.parse(grammar, rule_names, tokens_map, tokenizer.tokens)
 
 
 
@@ -99,30 +99,30 @@ func dsl_parse(dsl_block, src_infos, extra_keywords, extra_symbols, grammar, sta
 
 func _ibuilder():
 
-	builders := []
-	for name, defn := ITree.iter_defns():
-		if name[0] != "I" | not Builtins::Class.instantiated(defn):
-			continue
-		num_params := ITree::IInt.new(defn.get_field("init").num_params, __SRC_INFO__)
-		builders.append([|
-			func $c{ITree::IVar.new(name.lower_cased(), __SRC_INFO__)}(*args):
-			
-				// Add src info from the calling function.
+    builders := []
+    for name, defn := ITree.iter_defns():
+        if name[0] != "I" | not Builtins::Class.instantiated(defn):
+            continue
+        num_params := ITree::IInt.new(defn.get_field("init").num_params, __SRC_INFO__)
+        builders.append([|
+            func $c{ITree::IVar.new(name.lower_cased(), __SRC_INFO__)}(*args):
+            
+                // Add src info from the calling function.
 
-				if args.len() == ${num_params} - 1:
-					args := args[ : -1] + [(args[-1] + Thread::get_continuation_src_infos(2))]
-				else:
-					args := args + [Thread::get_continuation_src_infos(2)]
+                if args.len() == ${num_params} - 1:
+                    args := args[ : -1] + [(args[-1] + Thread::get_continuation_src_infos(2))]
+                else:
+                    args := args + [Thread::get_continuation_src_infos(2)]
 
-				// Create the element and immediately type check it.
+                // Create the element and immediately type check it.
 
-				elem := ITree::$c{ITree::IVar.new(name, __SRC_INFO__)}.new.apply(args)
-				ITree_WF::wf(elem)
-				
-				return elem
-		|])
-	
-	return builders
+                elem := ITree::$c{ITree::IVar.new(name, __SRC_INFO__)}.new.apply(args)
+                ITree_WF::wf(elem)
+                
+                return elem
+        |])
+    
+    return builders
 
 
 $c<_ibuilder()>

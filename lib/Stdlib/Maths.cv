@@ -26,49 +26,49 @@ import Builtins, Exceptions
 
 func max(*objs):
 
-	if objs.len() < 1:
-		raise Exceptions::Parameter_Exception("Maximum value can only be computed when passed one or more objects")
-		
-	current_max := objs[0]
-	for i := 1.iter_to(objs.len()):
-		if objs[i] > current_max:
-			current_max := objs[i]
+    if objs.len() < 1:
+        raise Exceptions::Parameter_Exception("Maximum value can only be computed when passed one or more objects")
+        
+    current_max := objs[0]
+    for i := 1.iter_to(objs.len()):
+        if objs[i] > current_max:
+            current_max := objs[i]
 
-	return current_max
+    return current_max
 
 
 
 func min(*objs):
 
-	if objs.len() < 1:
-		raise Exceptions::Parameter_Exception("Minimum value can only be computed when passed one or more objects")
-		
-	current_min := objs[0]
-	for i := 1.iter_to(objs.len()):
-		if objs[i] < current_min:
-			current_min := objs[i]
+    if objs.len() < 1:
+        raise Exceptions::Parameter_Exception("Minimum value can only be computed when passed one or more objects")
+        
+    current_min := objs[0]
+    for i := 1.iter_to(objs.len()):
+        if objs[i] < current_min:
+            current_min := objs[i]
 
-	return current_min
+    return current_min
 
 
 
 func powerset(s):
 
-	array := [0] * s.len()
-	sl := Builtins::List.new(s)
-	while 1:
-		ss := Set{} // Subset
-		
-		for i := 0.iter_to(s.len()):
-			if array[i] == 1:
-				ss.add(sl[i])
-		yield ss
+    array := [0] * s.len()
+    sl := Builtins::List.new(s)
+    while 1:
+        ss := Set{} // Subset
+        
+        for i := 0.iter_to(s.len()):
+            if array[i] == 1:
+                ss.add(sl[i])
+        yield ss
 
-		for i := (s.len() - 1).iter_to(-1, -1):
-			if array[i] == 0:
-				array[i] := 1
-				break
-			else:
-				array[i] := 0
-		exhausted:
-			fail
+        for i := (s.len() - 1).iter_to(-1, -1):
+            if array[i] == 0:
+                array[i] := 1
+                break
+            else:
+                array[i] := 0
+        exhausted:
+            fail

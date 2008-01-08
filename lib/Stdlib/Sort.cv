@@ -26,7 +26,7 @@
 
 func sort(list, comparison := func (x, y) { return x < y }):
 
-	heapsort(list, comparison)
+    heapsort(list, comparison)
 
 
 
@@ -36,34 +36,34 @@ func sort(list, comparison := func (x, y) { return x < y }):
 
 func heapsort(list, comparison := func (x, y) { return x < y }):
 
-	// This implementation of heapsort is as described at:
-	//
-	//   http://en.wikipedia.org/wiki/Heapsort
+    // This implementation of heapsort is as described at:
+    //
+    //   http://en.wikipedia.org/wiki/Heapsort
 
-	start := list.len().idiv(2) - 1
-	while start >= 0:
-		_heapsort_sift(list, comparison, start, list.len())
-		start := start - 1
+    start := list.len().idiv(2) - 1
+    while start >= 0:
+        _heapsort_sift(list, comparison, start, list.len())
+        start := start - 1
 
-	end := list.len() - 1
-	while end > 0:
-		t := list[0]
-		list[0] := list[end]
-		list[end] := t
-		_heapsort_sift(list, comparison, 0, end)
-		end := end - 1
+    end := list.len() - 1
+    while end > 0:
+        t := list[0]
+        list[0] := list[end]
+        list[end] := t
+        _heapsort_sift(list, comparison, 0, end)
+        end := end - 1
 
 
 
 func _heapsort_sift(list, comparison, start, count):
 
-	while (child := start * 2 + 1) < count:
-		if child < count - 1 & comparison(list[child], list[child + 1]):
-			child += 1
-		if comparison(list[start], list[child]):
-			t := list[start]
-			list[start] := list[child]
-			list[child] := t
-			start := child
-		else:
-			return
+    while (child := start * 2 + 1) < count:
+        if child < count - 1 & comparison(list[child], list[child + 1]):
+            child += 1
+        if comparison(list[start], list[child]):
+            t := list[start]
+            list[start] := list[child]
+            list[child] := t
+            start := child
+        else:
+            return

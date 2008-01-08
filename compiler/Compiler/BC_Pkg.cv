@@ -34,156 +34,156 @@ PKG_VERSION := 0
 
 class BC_Pkg:
 
-	func init(self, target):
-	
-		self._target := target
-		
+    func init(self, target):
+    
+        self._target := target
+        
 
 
-	func deserialize_str(self, pkg_str):
-	
-		self.deserialize_array(Array::Array.new(self._target.ARRAY_TYPE, pkg_str))
-	
-	
-	
-	func deserialize_array(self, pkg):
-	
-		self._name := self._decode_string(pkg, pkg[self._target.PKG_BYTECODE_NAME], pkg[self._target.PKG_BYTECODE_NAME_SIZE])
+    func deserialize_str(self, pkg_str):
+    
+        self.deserialize_array(Array::Array.new(self._target.ARRAY_TYPE, pkg_str))
+    
+    
+    
+    func deserialize_array(self, pkg):
+    
+        self._name := self._decode_string(pkg, pkg[self._target.PKG_BYTECODE_NAME], pkg[self._target.PKG_BYTECODE_NAME_SIZE])
 
-		self._mod_id := self._decode_string(pkg, pkg[self._target.PKG_BYTECODE_ID], pkg[self._target.PKG_BYTECODE_ID_SIZE])
+        self._mod_id := self._decode_string(pkg, pkg[self._target.PKG_BYTECODE_ID], pkg[self._target.PKG_BYTECODE_ID_SIZE])
 
-		self._src_path := self._decode_string(pkg, pkg[self._target.PKG_BYTECODE_SRC_PATH], pkg[self._target.PKG_BYTECODE_SRC_PATH_SIZE])
-		
-		self._entries := pkg[pkg[self._target.PKG_BYTECODE_ENTRIES] / self._target.WORDSIZE : (pkg[self._target.PKG_BYTECODE_ENTRIES] + pkg[self._target.PKG_BYTECODE_ENTRIES_SIZE]) / self._target.WORDSIZE]
-		self._num_entries := pkg[self._target.PKG_BYTECODE_NUM_ENTRIES]
-
-
-
-	func get_name(self):
-	
-		return self._name
+        self._src_path := self._decode_string(pkg, pkg[self._target.PKG_BYTECODE_SRC_PATH], pkg[self._target.PKG_BYTECODE_SRC_PATH_SIZE])
+        
+        self._entries := pkg[pkg[self._target.PKG_BYTECODE_ENTRIES] / self._target.WORDSIZE : (pkg[self._target.PKG_BYTECODE_ENTRIES] + pkg[self._target.PKG_BYTECODE_ENTRIES_SIZE]) / self._target.WORDSIZE]
+        self._num_entries := pkg[self._target.PKG_BYTECODE_NUM_ENTRIES]
 
 
 
-	func set_name(self, name):
-	
-		return self._name := name
+    func get_name(self):
+    
+        return self._name
 
 
 
-	func get_mod_id(self):
-	
-		return self._mod_id
+    func set_name(self, name):
+    
+        return self._name := name
 
 
 
-	func set_mod_id(self, identifier):
-	
-		self._mod_id := identifier
+    func get_mod_id(self):
+    
+        return self._mod_id
 
 
 
-	func get_src_path(self):
-	
-		return self._src_path
+    func set_mod_id(self, identifier):
+    
+        self._mod_id := identifier
 
 
 
-	func set_src_path(self, src_path):
-	
-		self._src_path := src_path
+    func get_src_path(self):
+    
+        return self._src_path
 
 
 
-	func get_entries(self):
-	
-		entries := Dict{}
-		entries_pos := 0
-		for i := 0.iter_to(self._num_entries):
-			defn_name_size := self._entries[entries_pos / self._target.WORDSIZE]
-			defn_name := self._decode_string(self._entries, entries_pos + self._target.WORDSIZE, defn_name_size)
-			entries_pos += self._target.align(self._target.WORDSIZE + defn_name_size)
-
-			mod_id_size := self._entries[entries_pos / self._target.WORDSIZE]
-			mod_id := self._decode_string(self._entries, entries_pos + self._target.WORDSIZE, mod_id_size)
-			entries_pos += self._target.align(self._target.WORDSIZE + mod_id_size)
-
-			src_path_size := self._entries[entries_pos / self._target.WORDSIZE]
-			src_path := self._decode_string(self._entries, entries_pos + self._target.WORDSIZE, src_path_size)
-			entries_pos += self._target.align(self._target.WORDSIZE + src_path_size)
-			
-			entries[defn_name] := [mod_id, src_path]
-		
-		return entries
+    func set_src_path(self, src_path):
+    
+        self._src_path := src_path
 
 
 
-	func set_entries(self, entries):
+    func get_entries(self):
+    
+        entries := Dict{}
+        entries_pos := 0
+        for i := 0.iter_to(self._num_entries):
+            defn_name_size := self._entries[entries_pos / self._target.WORDSIZE]
+            defn_name := self._decode_string(self._entries, entries_pos + self._target.WORDSIZE, defn_name_size)
+            entries_pos += self._target.align(self._target.WORDSIZE + defn_name_size)
 
-		self._entries := Array::Array.new(self._target.ARRAY_TYPE)
-		for defn_name, t := entries.iter():
-			mod_id, src_path := t
-			self._entries.append(defn_name.len())
-			self._entries.extend(self._target.b_aligned_string(defn_name))
-			self._entries.append(mod_id.len())
-			self._entries.extend(self._target.b_aligned_string(mod_id))
-			self._entries.append(src_path.len())
-			self._entries.extend(self._target.b_aligned_string(src_path))
-		self._num_entries := entries.len()
+            mod_id_size := self._entries[entries_pos / self._target.WORDSIZE]
+            mod_id := self._decode_string(self._entries, entries_pos + self._target.WORDSIZE, mod_id_size)
+            entries_pos += self._target.align(self._target.WORDSIZE + mod_id_size)
 
-
-
-	func serialize(self):
-	
-		pkg := Array::Array.new(self._target.ARRAY_TYPE)
-		pkg.extend_from_string(PKG_INIT_STR)
-		pkg.append(PKG_VERSION)
-
-		pkg.append(-1) // Absolute position of pkg name (in bytes)
-		pkg.append(-1) // Size of pkg name (in bytes)
-		pkg.append(-1) // Absolute position of mod id (in bytes)
-		pkg.append(-1) // Size of mod id (in bytes)
-		pkg.append(-1) // Absolute position of src path (in bytes)
-		pkg.append(-1) // Size of src path (in bytes)
-		pkg.append(-1) // Absolute position of entries (in bytes)
-		pkg.append(-1) // Size of entries (in bytes)
-		pkg.append(-1) // Number entries
-		pkg.append(-1) // Size of all of the bytecode (in bytes)
-
-		// Package name
-		
-		pkg[self._target.PKG_BYTECODE_NAME] := pkg.len_bytes()
-		pkg.extend(self._target.b_aligned_string(self._name))
-		pkg[self._target.PKG_BYTECODE_NAME_SIZE] := self._name.len()
-		
-		// Identifier
-		
-		pkg[self._target.PKG_BYTECODE_ID] := pkg.len_bytes()
-		pkg.extend(self._target.b_aligned_string(self._mod_id))
-		pkg[self._target.PKG_BYTECODE_ID_SIZE] := self._mod_id.len()
-
-		// Src path
-		
-		pkg[self._target.PKG_BYTECODE_SRC_PATH] := pkg.len_bytes()
-		pkg.extend(self._target.b_aligned_string(self._src_path))
-		pkg[self._target.PKG_BYTECODE_SRC_PATH_SIZE] := self._src_path.len()
-
-		// Entries
-		
-		pkg[self._target.PKG_BYTECODE_ENTRIES] := pkg.len_bytes()
-		pkg.extend(self._entries)
-		pkg[self._target.PKG_BYTECODE_ENTRIES_SIZE] := pkg.len_bytes() - pkg[self._target.PKG_BYTECODE_ENTRIES]
-		pkg[self._target.PKG_BYTECODE_NUM_ENTRIES] := self._num_entries
-		
-		pkg[self._target.PKG_BYTECODE_SIZE] := pkg.len_bytes()
-
-		return pkg.to_str()
+            src_path_size := self._entries[entries_pos / self._target.WORDSIZE]
+            src_path := self._decode_string(self._entries, entries_pos + self._target.WORDSIZE, src_path_size)
+            entries_pos += self._target.align(self._target.WORDSIZE + src_path_size)
+            
+            entries[defn_name] := [mod_id, src_path]
+        
+        return entries
 
 
 
-	func _decode_string(self, pkg, start, size):
+    func set_entries(self, entries):
 
-		return pkg[start / self._target.WORDSIZE : start / self._target.WORDSIZE + self._target.align(size) / self._target.WORDSIZE].to_str()[ : size]
+        self._entries := Array::Array.new(self._target.ARRAY_TYPE)
+        for defn_name, t := entries.iter():
+            mod_id, src_path := t
+            self._entries.append(defn_name.len())
+            self._entries.extend(self._target.b_aligned_string(defn_name))
+            self._entries.append(mod_id.len())
+            self._entries.extend(self._target.b_aligned_string(mod_id))
+            self._entries.append(src_path.len())
+            self._entries.extend(self._target.b_aligned_string(src_path))
+        self._num_entries := entries.len()
+
+
+
+    func serialize(self):
+    
+        pkg := Array::Array.new(self._target.ARRAY_TYPE)
+        pkg.extend_from_string(PKG_INIT_STR)
+        pkg.append(PKG_VERSION)
+
+        pkg.append(-1) // Absolute position of pkg name (in bytes)
+        pkg.append(-1) // Size of pkg name (in bytes)
+        pkg.append(-1) // Absolute position of mod id (in bytes)
+        pkg.append(-1) // Size of mod id (in bytes)
+        pkg.append(-1) // Absolute position of src path (in bytes)
+        pkg.append(-1) // Size of src path (in bytes)
+        pkg.append(-1) // Absolute position of entries (in bytes)
+        pkg.append(-1) // Size of entries (in bytes)
+        pkg.append(-1) // Number entries
+        pkg.append(-1) // Size of all of the bytecode (in bytes)
+
+        // Package name
+        
+        pkg[self._target.PKG_BYTECODE_NAME] := pkg.len_bytes()
+        pkg.extend(self._target.b_aligned_string(self._name))
+        pkg[self._target.PKG_BYTECODE_NAME_SIZE] := self._name.len()
+        
+        // Identifier
+        
+        pkg[self._target.PKG_BYTECODE_ID] := pkg.len_bytes()
+        pkg.extend(self._target.b_aligned_string(self._mod_id))
+        pkg[self._target.PKG_BYTECODE_ID_SIZE] := self._mod_id.len()
+
+        // Src path
+        
+        pkg[self._target.PKG_BYTECODE_SRC_PATH] := pkg.len_bytes()
+        pkg.extend(self._target.b_aligned_string(self._src_path))
+        pkg[self._target.PKG_BYTECODE_SRC_PATH_SIZE] := self._src_path.len()
+
+        // Entries
+        
+        pkg[self._target.PKG_BYTECODE_ENTRIES] := pkg.len_bytes()
+        pkg.extend(self._entries)
+        pkg[self._target.PKG_BYTECODE_ENTRIES_SIZE] := pkg.len_bytes() - pkg[self._target.PKG_BYTECODE_ENTRIES]
+        pkg[self._target.PKG_BYTECODE_NUM_ENTRIES] := self._num_entries
+        
+        pkg[self._target.PKG_BYTECODE_SIZE] := pkg.len_bytes()
+
+        return pkg.to_str()
+
+
+
+    func _decode_string(self, pkg, start, size):
+
+        return pkg[start / self._target.WORDSIZE : start / self._target.WORDSIZE + self._target.align(size) / self._target.WORDSIZE].to_str()[ : size]
 
 
 
@@ -194,7 +194,7 @@ class BC_Pkg:
 
 func is_bc_pkg(bc):
 
-	if bc.prefixed_by(PKG_INIT_STR):
-		return 1
+    if bc.prefixed_by(PKG_INIT_STR):
+        return 1
 
-	fail
+    fail

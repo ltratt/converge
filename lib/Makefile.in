@@ -6,43 +6,25 @@ libdir = @libdir@
 conlibdir = ${libdir}/converge-@CONVERGE_VERSION@
 INSTALL = @INSTALL@
 
-PKG_OBJS = Stdlib.cvb
 
-ALL_OBJS = ${PKG_OBJS}
-
-
-%.cvb: %
-	${CONVERGE_VM} ${CONVERGEC} -o $@ $<
-
-
-all: ${PKG_OBJS}
-	cd Stdlib && ${MAKE} ${MFLAGS}
+all:
+	${MAKE} -f Makefile.Stdlib ${MFLAGS}
 
 minimal:
-	cd Stdlib && ${MAKE} ${MFLAGS} minimal
+	${MAKE} -f Makefile.Stdlib ${MFLAGS} minimal
 
 install: all
-	cd Stdlib && ${MAKE} ${MFLAGS} install
-	${foreach obj,${ALL_OBJS},${INSTALL} -c -m 444 ${obj} ${DESTDIR}${conlibdir};}
+	${MAKE} -f Makefile.Stdlib ${MFLAGS} ${MFLAGS} install
 
-ifdef TARGET
-CROSS_OBJS = ${ALL_OBJS:.cvb=.${TARGET}.cvb}
-
-%.${TARGET}.cvb: %
-	${CONVERGE_VM} ${CONVERGEC} -T ${TARGET} -o $@ $<
-
-cross: ${CROSS_OBJS}
-	cd Stdlib && ${MAKE} ${MFLAGS} cross
+cross: all
+	${MAKE} -f Makefile.Stdlib ${MFLAGS} ${MFLAGS} cross
 
 cross-clean:
-	rm -f ${CROSS_OBJS}
-	cd Stdlib && ${MAKE} ${MFLAGS} cross-clean
-endif
+	${MAKE} -f Makefile.Stdlib ${MFLAGS} ${MFLAGS} cross-clean
 
 clean:	
-	rm -f ${ALL_OBJS}
-	cd Stdlib && ${MAKE} ${MFLAGS} clean
+	${MAKE} -f Makefile.Stdlib ${MFLAGS} clean
 
 distclean: clean
-	cd Stdlib && ${MAKE} ${MFLAGS} distclean
+	${MAKE} -f Makefile.Stdlib ${MFLAGS} distclean
 	rm -f Makefile

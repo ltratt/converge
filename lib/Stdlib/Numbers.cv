@@ -26,6 +26,6 @@ import Builtins
 
 func parse(num):
 
-	// XXX
-	
-	return Builtins::Int.new(num)
+    // XXX
+    
+    return Builtins::Int.new(num)

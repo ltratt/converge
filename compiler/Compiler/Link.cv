@@ -27,165 +27,165 @@ import Code_Gen, Core, BC_Exec, BC_Pkg, ITree
 
 class _Link:
 
-	func link(self, mods, linker, target, max_pkgs):
+    func link(self, mods, linker, target, max_pkgs):
 
-		self._mods := mods
-		self._linker := linker
-		self._target := target
-		
-		self._mods_map := Dict{}
-		for mod := mods.iter():
-			self._mods_map[mod.get_mod_id()] := mod
-		
-		self._done_mods := [] // List of BC_Mod instances
-		self._done_mod_ids := Set{} // Set of module IDs
-		self._pkgs := Dict{} // Map package mod ids to sets of definition names to be included
+        self._mods := mods
+        self._linker := linker
+        self._target := target
+        
+        self._mods_map := Dict{}
+        for mod := mods.iter():
+            self._mods_map[mod.get_mod_id()] := mod
+        
+        self._done_mods := [] // List of BC_Mod instances
+        self._done_mod_ids := Set{} // Set of module IDs
+        self._pkgs := Dict{} // Map package mod ids to sets of definition names to be included
 
-		self._scan(max_pkgs)
-		self._mk_pkgs()
+        self._scan(max_pkgs)
+        self._mk_pkgs()
 
-		for mod := self._done_mods.iter():
-			for import_mod_id, imp_src_path := mod.get_imports().iter():
-				if not Core::BUILTIN_MODULES.find(import_mod_id) & not self._done_mod_ids.find(import_mod_id):
-					linker.error(Strings::format("Module '%s' referenced in '%s' not found in input files.", import_mod_id, mod.get_mod_id()))
+        for mod := self._done_mods.iter():
+            for import_mod_id, imp_src_path := mod.get_imports().iter():
+                if not Core::BUILTIN_MODULES.find(import_mod_id) & not self._done_mod_ids.find(import_mod_id):
+                    linker.error(Strings::format("Module '%s' referenced in '%s' not found in input files.", import_mod_id, mod.get_mod_id()))
 
-		return self._done_mods
-
-
-
-	func _scan(self, max_pkgs):
-
-		// Using the first module on the command line as a "seed", we now scan through and try and
-		// pluck out all the imports that it refers to (directly and indirectly through other
-		// modules).
-
-		todo := [self._mods[0].get_mod_id()] // List of module IDs
-		while todo.len() > 0:
-			mod_id := todo[0]
-			todo.del(0)
-			mod := self._mods_map[mod_id]
-			
-			if BC_Pkg::BC_Pkg.instantiated(mod):
-				if not self._pkgs.find(mod_id):
-					self._pkgs[mod_id] := Set{}
-				
-				if max_pkgs == 1:
-					// In max_pkgs mode, we deliberately force every entry of a package to be linked
-					// in.
-					for defn_name, t := mod.get_entries().iter():
-						entry_mod_id, entry_src_path := t
-						if not (self._done_mod_ids.find(entry_mod_id) | todo.find(entry_mod_id)):
-							todo.append(entry_mod_id)
-						self._add_to_pkg(mod_id, defn_name)
-
-				// Packages at this point are BC_Pkg instances, so we don't scan through them as we
-				// do normal modules.
-
-				continue
-
-			self._done_mod_ids.add(mod_id)
-			self._done_mods.append(mod)
-
-			for imp_mod_id, imp_src_path := mod.get_imports().iter():
-				if not Core::BUILTIN_MODULES.find(imp_mod_id):
-					if not (self._done_mod_ids.find(imp_mod_id) | todo.find(imp_mod_id)):
-						todo.append(imp_mod_id)
-
-			for mod_num, defn_names, src_infos := mod.get_mod_lookups().iter():	
-				lookedup_mod_id := mod.get_imports()[mod_num][0]
-				j := 1
-				while j < defn_names.len():
-					defn_name := defn_names[j]
-					if lookedup_mod := self._mods_map.find(lookedup_mod_id):
-						if BC_Pkg::BC_Pkg.instantiated(lookedup_mod):
-							if not entry_mod_id, entry_src_path := lookedup_mod.get_entries().find(defn_name):
-								// The requested definition definitely doesn't exist in the looked-up
-								// module, so raise an error.
-								self._linker.error(Strings::format("Can't find definition '%s' in '%s'.", defn_name, Strings::join(defn_names[ : j], "::")), _tn_src_infos(src_infos, self._mods_map[mod_id]))
-							
-							self._add_to_pkg(lookedup_mod_id, defn_name)
-							
-							lookedup_mod_id := entry_mod_id
-						else:
-							if not (defn_num := lookedup_mod.get_top_level_vars_map().find(defn_name)):
-								// The requested definition definitely doesn't exist in the looked-up
-								// module, so raise an error.
-								self._linker.error(Strings::format("Can't find definition '%s' in '%s'.", defn_name, Strings::join(defn_names[ : j], "::")), _tn_src_infos(src_infos, self._mods_map[mod_id]))
-
-							if lookedup_mod_num := lookedup_mod.get_import_defns().find(defn_num):
-								lookedup_mod_id := lookedup_mod.get_imports()[lookedup_mod_num][0]
-							else:
-								if j + 1 < defn_names.len():
-									// We can't trace the next definition in the current known
-									// module; it might exist at run-time, it might not. Print
-									// a warning, and give up further processing of this lookup,
-									// but do not halt the linking process.
-									msg := Strings::format("Unable to trace definition '%s' in '%s'.", defn_names[j + 1], Strings::join(defn_names[ : j + 1], "::"))
-									self._linker.warning(msg, _tn_src_infos(src_infos, self._mods_map[mod_id]))
-									break
-						
-						if not (self._done_mod_ids.find(lookedup_mod_id) | todo.find(lookedup_mod_id)):
-							todo.append(lookedup_mod_id)
-					elif Core::BUILTIN_MODULES.find(lookedup_mod_id):
-						// XXX we don't trace builtins yet
-						break
-					else:
-						self._linker.error(Strings::format("Module '%s' referenced in '%s' not found.", lookedup_mod_id, mod_id), _tn_src_infos(src_infos, self._mods_map[mod_id]))
-
-					j += 1
+        return self._done_mods
 
 
 
-	func _add_to_pkg(self, pkg_id, defn_name):
-	
-		if not pkg := self._pkgs.find(pkg_id):
-			self._pkgs[pkg_id] := pkg := Set{}
-		
-		pkg.add(defn_name)
+    func _scan(self, max_pkgs):
+
+        // Using the first module on the command line as a "seed", we now scan through and try and
+        // pluck out all the imports that it refers to (directly and indirectly through other
+        // modules).
+
+        todo := [self._mods[0].get_mod_id()] // List of module IDs
+        while todo.len() > 0:
+            mod_id := todo[0]
+            todo.del(0)
+            mod := self._mods_map[mod_id]
+            
+            if BC_Pkg::BC_Pkg.instantiated(mod):
+                if not self._pkgs.find(mod_id):
+                    self._pkgs[mod_id] := Set{}
+                
+                if max_pkgs == 1:
+                    // In max_pkgs mode, we deliberately force every entry of a package to be linked
+                    // in.
+                    for defn_name, t := mod.get_entries().iter():
+                        entry_mod_id, entry_src_path := t
+                        if not (self._done_mod_ids.find(entry_mod_id) | todo.find(entry_mod_id)):
+                            todo.append(entry_mod_id)
+                        self._add_to_pkg(mod_id, defn_name)
+
+                // Packages at this point are BC_Pkg instances, so we don't scan through them as we
+                // do normal modules.
+
+                continue
+
+            self._done_mod_ids.add(mod_id)
+            self._done_mods.append(mod)
+
+            for imp_mod_id, imp_src_path := mod.get_imports().iter():
+                if not Core::BUILTIN_MODULES.find(imp_mod_id):
+                    if not (self._done_mod_ids.find(imp_mod_id) | todo.find(imp_mod_id)):
+                        todo.append(imp_mod_id)
+
+            for mod_num, defn_names, src_infos := mod.get_mod_lookups().iter():	
+                lookedup_mod_id := mod.get_imports()[mod_num][0]
+                j := 1
+                while j < defn_names.len():
+                    defn_name := defn_names[j]
+                    if lookedup_mod := self._mods_map.find(lookedup_mod_id):
+                        if BC_Pkg::BC_Pkg.instantiated(lookedup_mod):
+                            if not entry_mod_id, entry_src_path := lookedup_mod.get_entries().find(defn_name):
+                                // The requested definition definitely doesn't exist in the looked-up
+                                // module, so raise an error.
+                                self._linker.error(Strings::format("Can't find definition '%s' in '%s'.", defn_name, Strings::join(defn_names[ : j], "::")), _tn_src_infos(src_infos, self._mods_map[mod_id]))
+                            
+                            self._add_to_pkg(lookedup_mod_id, defn_name)
+                            
+                            lookedup_mod_id := entry_mod_id
+                        else:
+                            if not (defn_num := lookedup_mod.get_top_level_vars_map().find(defn_name)):
+                                // The requested definition definitely doesn't exist in the looked-up
+                                // module, so raise an error.
+                                self._linker.error(Strings::format("Can't find definition '%s' in '%s'.", defn_name, Strings::join(defn_names[ : j], "::")), _tn_src_infos(src_infos, self._mods_map[mod_id]))
+
+                            if lookedup_mod_num := lookedup_mod.get_import_defns().find(defn_num):
+                                lookedup_mod_id := lookedup_mod.get_imports()[lookedup_mod_num][0]
+                            else:
+                                if j + 1 < defn_names.len():
+                                    // We can't trace the next definition in the current known
+                                    // module; it might exist at run-time, it might not. Print
+                                    // a warning, and give up further processing of this lookup,
+                                    // but do not halt the linking process.
+                                    msg := Strings::format("Unable to trace definition '%s' in '%s'.", defn_names[j + 1], Strings::join(defn_names[ : j + 1], "::"))
+                                    self._linker.warning(msg, _tn_src_infos(src_infos, self._mods_map[mod_id]))
+                                    break
+                        
+                        if not (self._done_mod_ids.find(lookedup_mod_id) | todo.find(lookedup_mod_id)):
+                            todo.append(lookedup_mod_id)
+                    elif Core::BUILTIN_MODULES.find(lookedup_mod_id):
+                        // XXX we don't trace builtins yet
+                        break
+                    else:
+                        self._linker.error(Strings::format("Module '%s' referenced in '%s' not found.", lookedup_mod_id, mod_id), _tn_src_infos(src_infos, self._mods_map[mod_id]))
+
+                    j += 1
 
 
 
-	func _mk_pkgs(self):
+    func _add_to_pkg(self, pkg_id, defn_name):
+    
+        if not pkg := self._pkgs.find(pkg_id):
+            self._pkgs[pkg_id] := pkg := Set{}
+        
+        pkg.add(defn_name)
 
-		for pkg_id, defn_names := self._pkgs.iter():
-			// XXX: It's not entirely clear what reasonable src infos for the ITree module are.
 
-			bc_pkg := self._mods_map[pkg_id]
-			entries := bc_pkg.get_entries()
 
-			idefns := []
-			for defn_name := defn_names.iter():
-				entry_mod_id, entry_src_path := entries[defn_name]
-				mod_import := ITree::IMod_Id_Import.new(entry_mod_id, entry_src_path, [])
-				var_name := ITree::IVar.new(defn_name, [])
-				asgn := ITree::IAssignment.new(ITree::STD_ASSIGN, [var_name], mod_import, [])
-				idefns.append(asgn)
-			imod := ITree::IModule.new(bc_pkg.get_name(), idefns, [])
+    func _mk_pkgs(self):
 
-			// We now setup a minimal compiler and compile the ITree into a BC_Mod.
+        for pkg_id, defn_names := self._pkgs.iter():
+            // XXX: It's not entirely clear what reasonable src infos for the ITree module are.
 
-			self.mod_id := pkg_id
-			self.src_path := bc_pkg.get_src_path()
-			self.newlines := []
-			Core::push_compiler(self)
-			pkg_as_mod := Code_Gen::Code_Gen.new().generate(imod, self._target)
-			Core::pop_compiler()
-			
-			self._done_mods.append(pkg_as_mod)
-			self._done_mod_ids.add(pkg_id)
+            bc_pkg := self._mods_map[pkg_id]
+            entries := bc_pkg.get_entries()
+
+            idefns := []
+            for defn_name := defn_names.iter():
+                entry_mod_id, entry_src_path := entries[defn_name]
+                mod_import := ITree::IMod_Id_Import.new(entry_mod_id, entry_src_path, [])
+                var_name := ITree::IVar.new(defn_name, [])
+                asgn := ITree::IAssignment.new(ITree::STD_ASSIGN, [var_name], mod_import, [])
+                idefns.append(asgn)
+            imod := ITree::IModule.new(bc_pkg.get_name(), idefns, [])
+
+            // We now setup a minimal compiler and compile the ITree into a BC_Mod.
+
+            self.mod_id := pkg_id
+            self.src_path := bc_pkg.get_src_path()
+            self.newlines := []
+            Core::push_compiler(self)
+            pkg_as_mod := Code_Gen::Code_Gen.new().generate(imod, self._target)
+            Core::pop_compiler()
+            
+            self._done_mods.append(pkg_as_mod)
+            self._done_mod_ids.add(pkg_id)
 
 
 
 
 func link_min_pkgs(mods, linker, target):
 
-	return _Link.new().link(mods, linker, target, 0)
+    return _Link.new().link(mods, linker, target, 0)
 
 
 
 func link_max_pkgs(mods, linker, target):
 
-	return _Link.new().link(mods, linker, target, 1)
+    return _Link.new().link(mods, linker, target, 1)
 
 
 
@@ -196,11 +196,11 @@ func link_max_pkgs(mods, linker, target):
 
 func _tn_src_infos(src_infos, mod):
 
-	new_src_infos := []
-	for mod_num, offset := src_infos.iter():
-		if mod_num == -1:
-			new_src_infos.append([mod.get_mod_id(), offset])
-		else:
-			new_src_infos.append([mod.get_imports()[mod_num][0], offset])
+    new_src_infos := []
+    for mod_num, offset := src_infos.iter():
+        if mod_num == -1:
+            new_src_infos.append([mod.get_mod_id(), offset])
+        else:
+            new_src_infos.append([mod.get_imports()[mod_num][0], offset])
 
-	return new_src_infos
+    return new_src_infos

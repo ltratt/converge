@@ -53,7 +53,7 @@ RE_ID := PCRE::compile("[a-zA-Z_][a-zA-Z_0-9]*")
 RE_INT := PCRE::compile("-?(?:(?:0x[0-9A-Fa-f]+)|(?:\\d+))")
 RE_FLOAT := PCRE::compile("-?\\d+\\.\\d+")
 RE_COMMENT := PCRE::compile("//.*?$")
-RE_INDENT := PCRE::compile("\t*")
+RE_INDENT := PCRE::compile(" *")
 RE_INDENT_PLUS_CONTENTS := PCRE::compile(".*?$")
 RE_CHARS_NOT_TO_ESCAPE := PCRE::compile("[a-zA-Z]")
 RE_DSL_PHRASE_END := PCRE::compile("(?:>>|$)")
@@ -63,459 +63,459 @@ RE_DSL_PHRASE_END := PCRE::compile("(?:>>|$)")
 
 class Tokenizer:
 
-	//
-	// tokenize the string str from src_path. str can be pinpointed as starting src_offset characters
-	// into the file, at an offset of line_offset lines into it.
-	//
-	// Extra keywords and symbols above those normally tokenized by Converge as such can be specified
-	// via the extra_keywords and extra_symbols paramters respectively.
-	//
+    //
+    // tokenize the string str from src_path. str can be pinpointed as starting src_offset characters
+    // into the file, at an offset of line_offset lines into it.
+    //
+    // Extra keywords and symbols above those normally tokenized by Converge as such can be specified
+    // via the extra_keywords and extra_symbols paramters respectively.
+    //
 
-	func tokenize(self, str, src_infos, extra_keywords, extra_symbols):
+    func tokenize(self, str, src_infos, extra_keywords, extra_symbols):
 
-		self._str := str
-		if src_infos.len() != 1:
-			raise "XXX"
-		self._src_path := src_infos[0][0]
-		self._src_offset := src_infos[0][1]
-		self._re_keywords := PCRE::compile(Strings::format("(?:%s)\\b", Strings::join(KEYWORDS + extra_keywords, "|")))
-		escaped_symbols := []
-		nonescaped_symbols := SYMBOLS + extra_symbols
-		for nonescaped_symbol := nonescaped_symbols.iter():
-			escaped_symbol := ""
-			for char := nonescaped_symbol.iter():
-				if RE_CHARS_NOT_TO_ESCAPE.match(char):
-					escaped_symbol += char
-				else:
-					escaped_symbol += "\\" + char
-			escaped_symbols.append(escaped_symbol)
-		self._re_symbols := PCRE::compile(Strings::format("(?:%s)", Strings::join(escaped_symbols, "|")))
+        self._str := str
+        if src_infos.len() != 1:
+            raise "XXX"
+        self._src_path := src_infos[0][0]
+        self._src_offset := src_infos[0][1]
+        self._re_keywords := PCRE::compile(Strings::format("(?:%s)\\b", Strings::join(KEYWORDS + extra_keywords, "|")))
+        escaped_symbols := []
+        nonescaped_symbols := SYMBOLS + extra_symbols
+        for nonescaped_symbol := nonescaped_symbols.iter():
+            escaped_symbol := ""
+            for char := nonescaped_symbol.iter():
+                if RE_CHARS_NOT_TO_ESCAPE.match(char):
+                    escaped_symbol += char
+                else:
+                    escaped_symbol += "\\" + char
+            escaped_symbols.append(escaped_symbol)
+        self._re_symbols := PCRE::compile(Strings::format("(?:%s)", Strings::join(escaped_symbols, "|")))
 
-		//
-		// This code is a lot more complex than it first looks. Be careful that any modifications you
-		// make to it are thoroughly tested on a large body of input.
-		//
-		// The basic strategy is this. Each line in a source code file is tokenized in order. Each
-		// lines' indentation is considered; indenting and dedenting is performed as necessary. Blank
-		// lines are ignored (lines containing only comments are defined to be blank lines).
-		//
-		// The main difficulty in this is ensuring that indenting and dedenting are calculated
-		// correctly; the rules on them are complex, particularly in the face of comments.
-		//
+        //
+        // This code is a lot more complex than it first looks. Be careful that any modifications you
+        // make to it are thoroughly tested on a large body of input.
+        //
+        // The basic strategy is this. Each line in a source code file is tokenized in order. Each
+        // lines' indentation is considered; indenting and dedenting is performed as necessary. Blank
+        // lines are ignored (lines containing only comments are defined to be blank lines).
+        //
+        // The main difficulty in this is ensuring that indenting and dedenting are calculated
+        // correctly; the rules on them are complex, particularly in the face of comments.
+        //
 
-		// i is the counter of where we are in the string. Note that because of the behaviour of
-		// _skip_newlines (see later), i should be a monotonically increasing value.
-		
-		i := 0
+        // i is the counter of where we are in the string. Note that because of the behaviour of
+        // _skip_newlines (see later), i should be a monotonically increasing value.
+        
+        i := 0
 
-		// self.tokens holds tokens as they are parsed.
+        // self.tokens holds tokens as they are parsed.
 
-		self.tokens := []
-		
-		// self.newlines is an array holding the character offset of each new line in the file being
-		// tokenized.
-		
-		self.newlines := [self._src_offset]
-		
-		// self._indents is a (left to right) stack, representing the current level of indentation.
-		// The indentation level is represented by an integer representing the number of tab
-		// characters of the current indentation level. Note that while the following is strictly
-		// true:
-		// 
-		//   self._indents[x + 1].len() > self._indents[x].len()
-		//
-		// the following may not always be true:
-		//
-		//   self._indents[x + 1].len() == self._indents[x].len() + 1
-		//
-		// since Converge allows indentation levels to consist of one or more tabs.
-		
-		self._indents := []
+        self.tokens := []
+        
+        // self.newlines is an array holding the character offset of each new line in the file being
+        // tokenized.
+        
+        self.newlines := [self._src_offset]
+        
+        // self._indents is a (left to right) stack, representing the current level of indentation.
+        // The indentation level is represented by an integer representing the number of tab
+        // characters of the current indentation level. Note that while the following is strictly
+        // true:
+        // 
+        //   self._indents[x + 1].len() > self._indents[x].len()
+        //
+        // the following may not always be true:
+        //
+        //   self._indents[x + 1].len() == self._indents[x].len() + 1
+        //
+        // since Converge allows indentation levels to consist of one or more tabs.
+        
+        self._indents := []
 
-		// Since it is possible for base level of indentation in a Converge file to be > 0, we first
-		// of all need to find the first line containing something other than whitespace (note this
-		// is not restricted to searching for a non-blank line: if we encounter a line with a comment
-		// that counts) to determine the base level of indentation.
+        // Since it is possible for base level of indentation in a Converge file to be > 0, we first
+        // of all need to find the first line containing something other than whitespace (note this
+        // is not restricted to searching for a non-blank line: if we encounter a line with a comment
+        // that counts) to determine the base level of indentation.
 
-		i := self._skip_newlines(i)
-		
-		if i < self._str.len():
-			self._indents.append(RE_INDENT.match(self._str, i)[0].len())
-				
-		while i < self._str.len():
-			// Every iteration of this while loop brings us to the start of a new line. Note that
-			// several lines may have been passed over during a single iteration of the loop, but
-			// that we always start at the beginning of a new line.
-		
-			// First of all, we skip blank lines.
-		
-			if i := self._skip_newlines(i):
-				continue
-				
-			// Now we work out what to do with the indentation of the line.
-		
-			m := RE_INDENT.match(self._str, i)
-			
-			if m[0].len() > self._indents[-1]:
-				// Indents are easy: they always result in a single INDENT token being added.
-				
-				self.tokens.append(Token.new("INDENT", null, [[self._src_path, self._src_offset + i]]))
-				self._indents.append(m[0].len())
-				i += m[0].len()
-				
-				// If the indent is followed by a comment, we need to skip every blank line which has
-				// is not indented further than the line the comment is on.
-				
-				while n := RE_COMMENT.match(self._str, i):
-					i := self._skip_newlines(i + n[0].len())
-					if not i < self._str.len():
-						break
-					o := RE_INDENT.match(self._str, i)
-					if o[0].len() > m[0].len():
-						// We have to enforce here that consecutive lines of comments can't increase
-						// the indentation level.
-						self.error("Can't increase indentation on the line after a comment", i + o[0].len())
-					if o[0].len() != m[0].len():
-						break
-					i += o[0].len()
-				broken:
-					continue
-			elif m[0].len() < self._indents[-1]:
-				// Dedents are trickier since this is legal:
-				//
-				//   object C:
-				//     func f():
-				//       func g():
-				//         pass
-				//         // comment in g
-				//       // comment in f
-				//     // comment in C
-				//
-				// i.e. comments on multiple lines may consecutively dedent.
-				//
-				// In order to get this to work we continually skip over blank lines, allowing the
-				// indentation level to decrease at each point.
-				
-				while n := RE_COMMENT.match(self._str, i + m[0].len()):
-					i += m[0].len() + n[0].len()
-					i := self._skip_newlines(i)
-					if not i < self._str.len():
-						break
-					o := RE_INDENT.match(self._str, i)
-					if o[0].len() < self._indents[0]:
-						// Try and catch over-DEDENT'ing as soon as it happens; if it was left to
-						// the check below, it would pinpoint the last line of comments at the
-						// lowest level of dedenting as being a culprit. Catching the error here
-						// means the first comment line which drops below the base level is
-						// pinpointed as the source of the problem.
-						self.error("Indentation can not fall below base level", i)
-					elif o[0].len() > m[0].len():
-						// We have to enforce here that consecutive lines of comments can't increase
-						// the indentation level.
-						self.error("Can't increase indentation on the line after a comment", i + o[0].len())
-					if o[0].len() < m[0].len() & p := RE_COMMENT.match(self._str, i + o[0].len()):
-						m := o
-					else:
-						break
-				
-				if m[0].len() < self._indents[0]:
-					// Catch the indentation level falling below the base level.
-					self.error("Indentation can not fall below base level", i)
-				
-				while m[0].len() < self._indents[-1]:
-					// For however many levels of indentation we have decreased by, a DEDENT token is
-					// generated.
-					self.tokens.append(Token.new("DEDENT", null, [[self._src_path, self._src_offset + i]]))
-					self._indents.del(-1)
-				continue
-			elif m[0].len() == self._indents[-1] & self.tokens.len() > 0:
-				// If the indentation level hasn't changed, we really want to generate a NEWLINE
-				// token, but we have to be careful. First of all, if no tokens have yet been
-				// generated then a NEWLINE doesn't make sense, so one isn't generated (without
-				// this rule every token stream that starts with a comment would begin with a
-				// NEWLINE). Secondly if this line contains a comment, then we iterate over all
-				// blank lines with the same indentation level, but do not generate a NEWLINE token.
-				
-				if n := RE_COMMENT.match(self._str, i + m[0].len()):
-					while 1:
-						i += m[0].len() + n[0].len()
-						i := self._skip_newlines(i)
-						if not i < self._str.len():
-							break
-						o := RE_INDENT.match(self._str, i)
-						if o[0].len() > m[0].len():
-							// We have to enforce here that consecutive lines of comments can't
-							// increase the indentation level.
-							self.error("Can't increase indentation on the line after a comment", i + o[0].len())
-						if o[0].len() == m[0].len() & p := RE_COMMENT.match(self._str, i + o[0].len()):
-							m := o
-						else:
-							break
-						n := RE_COMMENT.match(self._str, i + m[0].len())
-					continue
-				else:
-					self.tokens.append(Token.new("NEWLINE", null, [[self._src_path, self._src_offset + i]]))
-			
-			while i < self._str.len():
-				// This inner while loop is the part that tokenizes actual characters. It always
-				// starts with a position somewhere after a lines indentation, and on each iteration
-				// will move further through the line.
-				//
-				// In general, at any point that a character(s) is tokenized, this loop will be
-				// continue'd.
-			
-				if i := self._skip_newlines(i):
-					// If we've reached the end of the line, then the inner while loop is finished.
-					break
-				
-				if self._str[i] == ESCAPE:
-					// An ESCAPE char at the end of a physical line (white space excepted) unites
-					// this physical line with the next as a logical line.
-					//
-					// A restriction on this is that the next non-blank line must begin with at least
-					// the same level of indentation as the current physical line.
-					
-					j := i + 1
-					if m := RE_INNER_LINE_WHITESPACE.match(self._str, i + 1):
-						j += m[0].len()
-					if j < self._str.len() & NEWLINES.find(self._str[j]):
-						if not i := self._skip_newlines(j):
-							i := j + 1
-						m := RE_INDENT.match(self._str, i)
-						if m[0].len() < self._indents[-1]:
-							self.error("Can't decrease indentation level after a line continuation", i)
-						i += m[0].len()
-						continue
-			
-				if m := RE_INNER_LINE_WHITESPACE.match(self._str, i):
-					// Whitespace is uncerimoniously munched.
-					i += m[0].len()
-					continue
+        i := self._skip_newlines(i)
+        
+        if i < self._str.len():
+            self._indents.append(RE_INDENT.match(self._str, i)[0].len())
+                
+        while i < self._str.len():
+            // Every iteration of this while loop brings us to the start of a new line. Note that
+            // several lines may have been passed over during a single iteration of the loop, but
+            // that we always start at the beginning of a new line.
+        
+            // First of all, we skip blank lines.
+        
+            if i := self._skip_newlines(i):
+                continue
+                
+            // Now we work out what to do with the indentation of the line.
+        
+            m := RE_INDENT.match(self._str, i)
+            
+            if m[0].len() > self._indents[-1]:
+                // Indents are easy: they always result in a single INDENT token being added.
+                
+                self.tokens.append(Token.new("INDENT", null, [[self._src_path, self._src_offset + i]]))
+                self._indents.append(m[0].len())
+                i += m[0].len()
+                
+                // If the indent is followed by a comment, we need to skip every blank line which has
+                // is not indented further than the line the comment is on.
+                
+                while n := RE_COMMENT.match(self._str, i):
+                    i := self._skip_newlines(i + n[0].len())
+                    if not i < self._str.len():
+                        break
+                    o := RE_INDENT.match(self._str, i)
+                    if o[0].len() > m[0].len():
+                        // We have to enforce here that consecutive lines of comments can't increase
+                        // the indentation level.
+                        self.error("Can't increase indentation on the line after a comment", i + o[0].len())
+                    if o[0].len() != m[0].len():
+                        break
+                    i += o[0].len()
+                broken:
+                    continue
+            elif m[0].len() < self._indents[-1]:
+                // Dedents are trickier since this is legal:
+                //
+                //   object C:
+                //     func f():
+                //       func g():
+                //         pass
+                //         // comment in g
+                //       // comment in f
+                //     // comment in C
+                //
+                // i.e. comments on multiple lines may consecutively dedent.
+                //
+                // In order to get this to work we continually skip over blank lines, allowing the
+                // indentation level to decrease at each point.
+                
+                while n := RE_COMMENT.match(self._str, i + m[0].len()):
+                    i += m[0].len() + n[0].len()
+                    i := self._skip_newlines(i)
+                    if not i < self._str.len():
+                        break
+                    o := RE_INDENT.match(self._str, i)
+                    if o[0].len() < self._indents[0]:
+                        // Try and catch over-DEDENT'ing as soon as it happens; if it was left to
+                        // the check below, it would pinpoint the last line of comments at the
+                        // lowest level of dedenting as being a culprit. Catching the error here
+                        // means the first comment line which drops below the base level is
+                        // pinpointed as the source of the problem.
+                        self.error("Indentation can not fall below base level", i)
+                    elif o[0].len() > m[0].len():
+                        // We have to enforce here that consecutive lines of comments can't increase
+                        // the indentation level.
+                        self.error("Can't increase indentation on the line after a comment", i + o[0].len())
+                    if o[0].len() < m[0].len() & p := RE_COMMENT.match(self._str, i + o[0].len()):
+                        m := o
+                    else:
+                        break
+                
+                if m[0].len() < self._indents[0]:
+                    // Catch the indentation level falling below the base level.
+                    self.error("Indentation can not fall below base level", i)
+                
+                while m[0].len() < self._indents[-1]:
+                    // For however many levels of indentation we have decreased by, a DEDENT token is
+                    // generated.
+                    self.tokens.append(Token.new("DEDENT", null, [[self._src_path, self._src_offset + i]]))
+                    self._indents.del(-1)
+                continue
+            elif m[0].len() == self._indents[-1] & self.tokens.len() > 0:
+                // If the indentation level hasn't changed, we really want to generate a NEWLINE
+                // token, but we have to be careful. First of all, if no tokens have yet been
+                // generated then a NEWLINE doesn't make sense, so one isn't generated (without
+                // this rule every token stream that starts with a comment would begin with a
+                // NEWLINE). Secondly if this line contains a comment, then we iterate over all
+                // blank lines with the same indentation level, but do not generate a NEWLINE token.
+                
+                if n := RE_COMMENT.match(self._str, i + m[0].len()):
+                    while 1:
+                        i += m[0].len() + n[0].len()
+                        i := self._skip_newlines(i)
+                        if not i < self._str.len():
+                            break
+                        o := RE_INDENT.match(self._str, i)
+                        if o[0].len() > m[0].len():
+                            // We have to enforce here that consecutive lines of comments can't
+                            // increase the indentation level.
+                            self.error("Can't increase indentation on the line after a comment", i + o[0].len())
+                        if o[0].len() == m[0].len() & p := RE_COMMENT.match(self._str, i + o[0].len()):
+                            m := o
+                        else:
+                            break
+                        n := RE_COMMENT.match(self._str, i + m[0].len())
+                    continue
+                else:
+                    self.tokens.append(Token.new("NEWLINE", null, [[self._src_path, self._src_offset + i]]))
+            
+            while i < self._str.len():
+                // This inner while loop is the part that tokenizes actual characters. It always
+                // starts with a position somewhere after a lines indentation, and on each iteration
+                // will move further through the line.
+                //
+                // In general, at any point that a character(s) is tokenized, this loop will be
+                // continue'd.
+            
+                if i := self._skip_newlines(i):
+                    // If we've reached the end of the line, then the inner while loop is finished.
+                    break
+                
+                if self._str[i] == ESCAPE:
+                    // An ESCAPE char at the end of a physical line (white space excepted) unites
+                    // this physical line with the next as a logical line.
+                    //
+                    // A restriction on this is that the next non-blank line must begin with at least
+                    // the same level of indentation as the current physical line.
+                    
+                    j := i + 1
+                    if m := RE_INNER_LINE_WHITESPACE.match(self._str, i + 1):
+                        j += m[0].len()
+                    if j < self._str.len() & NEWLINES.find(self._str[j]):
+                        if not i := self._skip_newlines(j):
+                            i := j + 1
+                        m := RE_INDENT.match(self._str, i)
+                        if m[0].len() < self._indents[-1]:
+                            self.error("Can't decrease indentation level after a line continuation", i)
+                        i += m[0].len()
+                        continue
+            
+                if m := RE_INNER_LINE_WHITESPACE.match(self._str, i):
+                    // Whitespace is uncerimoniously munched.
+                    i += m[0].len()
+                    continue
 
-				if m := RE_COMMENT.match(self._str, i):
-					// Skip a comment. It would be possible to break the loop here, but it's easier
-					// to know that either the loops condition, or the "break line" clause will be
-					// executed uniformly above.
-					i += m[0].len()
-					continue
+                if m := RE_COMMENT.match(self._str, i):
+                    // Skip a comment. It would be possible to break the loop here, but it's easier
+                    // to know that either the loops condition, or the "break line" clause will be
+                    // executed uniformly above.
+                    i += m[0].len()
+                    continue
 
-				// Numbers must be matched before other tokens, as otherwise "-2" would be tokenized
-				// as <SYMBOL -> AND <INTEGER 2> rather than <INTEGER -2>.
+                // Numbers must be matched before other tokens, as otherwise "-2" would be tokenized
+                // as <SYMBOL -> AND <INTEGER 2> rather than <INTEGER -2>.
 
-				if m := RE_FLOAT.match(self._str, i):
-					self.tokens.append(Token.new("FLOAT", m[0], [[self._src_path, self._src_offset + i]]))
-					i += m[0].len()
-					continue
+                if m := RE_FLOAT.match(self._str, i):
+                    self.tokens.append(Token.new("FLOAT", m[0], [[self._src_path, self._src_offset + i]]))
+                    i += m[0].len()
+                    continue
 
-				if m := RE_INT.match(self._str, i):
-					self.tokens.append(Token.new("INT", m[0], [[self._src_path, self._src_offset + i]]))
-					i += m[0].len()
-					continue
+                if m := RE_INT.match(self._str, i):
+                    self.tokens.append(Token.new("INT", m[0], [[self._src_path, self._src_offset + i]]))
+                    i += m[0].len()
+                    continue
 
-				// Symbols are parsed before identifiers because some symbols (e.g. "Set{") might
-				// otherwise be incorrectly tokenized as an identifier and a different symbol.
+                // Symbols are parsed before identifiers because some symbols (e.g. "Set{") might
+                // otherwise be incorrectly tokenized as an identifier and a different symbol.
 
-				if m := self._re_symbols.match(self._str, i):
-					self.tokens.append(Token.new(m[0].upper_cased(), null, [[self._src_path, self._src_offset + i]]))
-					i += m[0].len()
-					if m[0] == ":" & self.tokens.len() > 2 & self.tokens[-2].type == ">>":
-						// We have just matched the beginning of a DSL block (when tokens
-						// <SYMBOL >>> <SYMBOL :> are found after each other). The following stream
-						// of text in the next indentation level is slurped in as raw text (with the
-						// leading indentation removed on each line) and put in a single DSL_BLOCK
-						// token.
-						//
-						// A DSL block is considered to run from the start of the line after the
-						// <SYMBOL :> token until the final non-blank line with the same level of
-						// indentation as the first non-blank line after the <SYMBOL :> line.
-						
-						j := i
-						if m := RE_INNER_LINE_WHITESPACE.match(self._str, i):
-							j += m[0].len()
-						if i := self._skip_newlines(j):
-							dsl_block_start := i
-							dsl_block_end := i
-							dsl_block := []
-							// dsl_indent is set to be the minimum level of indent that the DSL block
-							// must be at.
-							dsl_indent := self._indents[-1] + 1
-							while i < self._str.len():
-								m := RE_INDENT.match(self._str, i)
-								if m[0].len() < dsl_indent:
-									if i := self._skip_newlines(i + m[0].len()):
-										// If this line has too low a level of indentation, but is
-										// blank then it will be considered part of the DSL block
-										// only if there is a non-blank line with a correct level
-										// of indentation later. So don't increment dsl_block_end
-										// yet.
-										continue
-									else:
-										// If this line has too low a level of indentation, but is
-										// not blank then we have hit the end of the DSL block.
-										break
-								else:
-									// This line has sufficient indentation, and is non-blank.
-									i += RE_INDENT_PLUS_CONTENTS.match(self._str, i)[0].len()
-									dsl_block_end := i
-							self.tokens.append(Token.new("DSL_BLOCK", self._str[dsl_block_start : dsl_block_end], [[self._src_path, self._src_offset + dsl_block_start]]))
-							// Since a DSL block implictly finishes at the end of a line, we need
-							// to break the outer while loop too.
-							break
-					elif m[0] == "<<" & self.tokens.len() > 2 & self.tokens[-2].type == ">>":
-						// We have just matched the beginning of a DSL phrase (when tokens
-						// <SYMBOL >>> <SYMBOL <<> are found after each other). The following stream
-						// of text until the next << is is found constitute a DSL_BLOCK token token.
-						
-						m := RE_DSL_PHRASE_END.search(self._str, i)
-						if m[0] != ">>":
-							self.error("DSL fragments must begin and end on the same line", i)
-						else:
-							self.tokens.append(Token.new("DSL_BLOCK", self._str[i : m.get_indexes(0)[0]], [[self._src_path, self._src_offset + i]]))
-							self.tokens.append(Token.new(">>", null, [[self._src_path, m.get_indexes(0)[0]]]))
-							i := m.get_indexes(0)[1]
-					continue
+                if m := self._re_symbols.match(self._str, i):
+                    self.tokens.append(Token.new(m[0].upper_cased(), null, [[self._src_path, self._src_offset + i]]))
+                    i += m[0].len()
+                    if m[0] == ":" & self.tokens.len() > 2 & self.tokens[-2].type == ">>":
+                        // We have just matched the beginning of a DSL block (when tokens
+                        // <SYMBOL >>> <SYMBOL :> are found after each other). The following stream
+                        // of text in the next indentation level is slurped in as raw text (with the
+                        // leading indentation removed on each line) and put in a single DSL_BLOCK
+                        // token.
+                        //
+                        // A DSL block is considered to run from the start of the line after the
+                        // <SYMBOL :> token until the final non-blank line with the same level of
+                        // indentation as the first non-blank line after the <SYMBOL :> line.
+                        
+                        j := i
+                        if m := RE_INNER_LINE_WHITESPACE.match(self._str, i):
+                            j += m[0].len()
+                        if i := self._skip_newlines(j):
+                            dsl_block_start := i
+                            dsl_block_end := i
+                            dsl_block := []
+                            // dsl_indent is set to be the minimum level of indent that the DSL block
+                            // must be at.
+                            dsl_indent := self._indents[-1] + 1
+                            while i < self._str.len():
+                                m := RE_INDENT.match(self._str, i)
+                                if m[0].len() < dsl_indent:
+                                    if i := self._skip_newlines(i + m[0].len()):
+                                        // If this line has too low a level of indentation, but is
+                                        // blank then it will be considered part of the DSL block
+                                        // only if there is a non-blank line with a correct level
+                                        // of indentation later. So don't increment dsl_block_end
+                                        // yet.
+                                        continue
+                                    else:
+                                        // If this line has too low a level of indentation, but is
+                                        // not blank then we have hit the end of the DSL block.
+                                        break
+                                else:
+                                    // This line has sufficient indentation, and is non-blank.
+                                    i += RE_INDENT_PLUS_CONTENTS.match(self._str, i)[0].len()
+                                    dsl_block_end := i
+                            self.tokens.append(Token.new("DSL_BLOCK", self._str[dsl_block_start : dsl_block_end], [[self._src_path, self._src_offset + dsl_block_start]]))
+                            // Since a DSL block implictly finishes at the end of a line, we need
+                            // to break the outer while loop too.
+                            break
+                    elif m[0] == "<<" & self.tokens.len() > 2 & self.tokens[-2].type == ">>":
+                        // We have just matched the beginning of a DSL phrase (when tokens
+                        // <SYMBOL >>> <SYMBOL <<> are found after each other). The following stream
+                        // of text until the next << is is found constitute a DSL_BLOCK token token.
+                        
+                        m := RE_DSL_PHRASE_END.search(self._str, i)
+                        if m[0] != ">>":
+                            self.error("DSL fragments must begin and end on the same line", i)
+                        else:
+                            self.tokens.append(Token.new("DSL_BLOCK", self._str[i : m.get_indexes(0)[0]], [[self._src_path, self._src_offset + i]]))
+                            self.tokens.append(Token.new(">>", null, [[self._src_path, m.get_indexes(0)[0]]]))
+                            i := m.get_indexes(0)[1]
+                    continue
 
-				if m := self._re_keywords.match(self._str, i):
-					// Keywords are automatically capitalized for their type.
-					self.tokens.append(Token.new(m[0].upper_cased(), m[0], [[self._src_path, self._src_offset + i]]))
-					i += m[0].len()
-					continue
+                if m := self._re_keywords.match(self._str, i):
+                    // Keywords are automatically capitalized for their type.
+                    self.tokens.append(Token.new(m[0].upper_cased(), m[0], [[self._src_path, self._src_offset + i]]))
+                    i += m[0].len()
+                    continue
 
-				if m := RE_ID.match(self._str, i):
-					// Identifiers are matched after keywords for obvious reasons.
-					self.tokens.append(Token.new("ID", m[0], [[self._src_path, self._src_offset + i]]))
-					i += m[0].len()
-					continue
-				
-				// Parsing strings is slightly fun. First of all we must determine which (if any) of
-				// the valid QUOTES the string has been started with. That same quote type is the
-				// only one which can terminate the string.
-				
-				for quote_char := QUOTES.iter():
-					if i + quote_char.len() < self._str.len() & self._str[i : i + quote_char.len()] == quote_char:
-						break
-				broken:
-					string_start := i
-					string := []
-					i := i + quote_char.len()
-					while i < self._str.len():
-						if i + quote_char.len() <= self._str.len() & self._str[i : i + quote_char.len()] == quote_char:
-							if quote_char == "\"\"\"" & i + 4 <= self._str.len() & self._str[i + 3] == "\"":
-								// In triple quotes, """" (indeed, 4 or more consecutive quote marks)
-								// are not counted as being the end of the quote. Only when we reach
-								// a triple quotes that has no quotes after it are we finished.
-								string.append("\"")
-								i += 1
-								continue
+                if m := RE_ID.match(self._str, i):
+                    // Identifiers are matched after keywords for obvious reasons.
+                    self.tokens.append(Token.new("ID", m[0], [[self._src_path, self._src_offset + i]]))
+                    i += m[0].len()
+                    continue
+                
+                // Parsing strings is slightly fun. First of all we must determine which (if any) of
+                // the valid QUOTES the string has been started with. That same quote type is the
+                // only one which can terminate the string.
+                
+                for quote_char := QUOTES.iter():
+                    if i + quote_char.len() < self._str.len() & self._str[i : i + quote_char.len()] == quote_char:
+                        break
+                broken:
+                    string_start := i
+                    string := []
+                    i := i + quote_char.len()
+                    while i < self._str.len():
+                        if i + quote_char.len() <= self._str.len() & self._str[i : i + quote_char.len()] == quote_char:
+                            if quote_char == "\"\"\"" & i + 4 <= self._str.len() & self._str[i + 3] == "\"":
+                                // In triple quotes, """" (indeed, 4 or more consecutive quote marks)
+                                // are not counted as being the end of the quote. Only when we reach
+                                // a triple quotes that has no quotes after it are we finished.
+                                string.append("\"")
+                                i += 1
+                                continue
 
-							// We've found the closing quote.
-							i += quote_char.len()
-							break
+                            // We've found the closing quote.
+                            i += quote_char.len()
+                            break
 
-						if i + 1 < self._str.len() & self._str[i] == ESCAPE:
-							if self._str[i + 1] == "n":
-								string.append("\n")
-							elif self._str[i + 1] == "t":
-								string.append("\t")
-							elif self._str[i + 1] == "r":
-								string.append("\r")
-							elif self._str[i + 1] == "0":
-								string.append("\0")
-							else:
-								string.append(self._str[i + 1])
-							i += 2
-						elif NEWLINES.find(self._str[i]):
-							if quote_char != "\"\"\"":
-								// Only strings quoted by triple quotes """ can contain newlines.
-								self.error(Strings::format("String quoted by '%s' can not contain a newline", quote_char), i)
-							else:
-								string.append(self._str[i])
-								i := self._skip_newlines(i)
-						else:
-							string.append(self._str[i])
-							i += 1
-					exhausted:
-						self.error(Strings::format("Unterminated string"), string_start)
-					
-					self.tokens.append(Token.new("STRING", Strings::join(string, ""), [[self._src_path, self._src_offset + i]]))
-					
-					continue
-				
-				// If we've got this far, we've got an unknown character(s) that can't be tokenized.
-				
-				self.error(Strings::format("Unknown char '%s'", self._str[i]), i)
-		
-		while self._indents.len() > 1:
-			self.tokens.append(Token.new("DEDENT", null, [[self._src_path, self._src_offset + i]]))
-			self._indents.del(-1)
-				
-						
+                        if i + 1 < self._str.len() & self._str[i] == ESCAPE:
+                            if self._str[i + 1] == "n":
+                                string.append("\n")
+                            elif self._str[i + 1] == "t":
+                                string.append("\t")
+                            elif self._str[i + 1] == "r":
+                                string.append("\r")
+                            elif self._str[i + 1] == "0":
+                                string.append("\0")
+                            else:
+                                string.append(self._str[i + 1])
+                            i += 2
+                        elif NEWLINES.find(self._str[i]):
+                            if quote_char != "\"\"\"":
+                                // Only strings quoted by triple quotes """ can contain newlines.
+                                self.error(Strings::format("String quoted by '%s' can not contain a newline", quote_char), i)
+                            else:
+                                string.append(self._str[i])
+                                i := self._skip_newlines(i)
+                        else:
+                            string.append(self._str[i])
+                            i += 1
+                    exhausted:
+                        self.error(Strings::format("Unterminated string"), string_start)
+                    
+                    self.tokens.append(Token.new("STRING", Strings::join(string, ""), [[self._src_path, self._src_offset + i]]))
+                    
+                    continue
+                
+                // If we've got this far, we've got an unknown character(s) that can't be tokenized.
+                
+                self.error(Strings::format("Unknown char '%s'", self._str[i]), i)
+        
+        while self._indents.len() > 1:
+            self.tokens.append(Token.new("DEDENT", null, [[self._src_path, self._src_offset + i]]))
+            self._indents.del(-1)
+                
+                        
 
-	//
-	// _skip_newlines starts at position i in self._str and (ignoring whitespace) attempts to skip
-	// over any newline characters and subsequent blank lines. If it does not skip over anything
-	// it fails. If it succeeds it returns the position it has skipped to AND it also adds entries to
-	// self.newlines.
-	//
-	// Note that this means that if _skip_newlines succeeds, you can not easily discard its
-	// result since it has updated self.newlines. Be careful.
-	//
+    //
+    // _skip_newlines starts at position i in self._str and (ignoring whitespace) attempts to skip
+    // over any newline characters and subsequent blank lines. If it does not skip over anything
+    // it fails. If it succeeds it returns the position it has skipped to AND it also adds entries to
+    // self.newlines.
+    //
+    // Note that this means that if _skip_newlines succeeds, you can not easily discard its
+    // result since it has updated self.newlines. Be careful.
+    //
 
-	func _skip_newlines(self, i):
-	
-		skipped_any := 0
-		while i < self._str.len():
-			j := i
-			if m := RE_INNER_LINE_WHITESPACE.match(self._str, j):
-				j += m[0].len()
-			if j < self._str.len() & not NEWLINES.find(self._str[j]):
-				if skipped_any == 0:
-					fail
-				return i
-			skipped_any := 1
-			i := j + 1
-			self.newlines.append(self._src_offset + i)
-		
-		if skipped_any == 0:
-			fail
-		
-		return i
+    func _skip_newlines(self, i):
+    
+        skipped_any := 0
+        while i < self._str.len():
+            j := i
+            if m := RE_INNER_LINE_WHITESPACE.match(self._str, j):
+                j += m[0].len()
+            if j < self._str.len() & not NEWLINES.find(self._str[j]):
+                if skipped_any == 0:
+                    fail
+                return i
+            skipped_any := 1
+            i := j + 1
+            self.newlines.append(self._src_offset + i)
+        
+        if skipped_any == 0:
+            fail
+        
+        return i
 
 
 
-	//
-	// Print out an error message, which will be pinpointed as occurring at src_pos. Note that
-	// src_pos should be relative to 0 (i.e. not relative to self._src_offset).
-	//
+    //
+    // Print out an error message, which will be pinpointed as occurring at src_pos. Note that
+    // src_pos should be relative to 0 (i.e. not relative to self._src_offset).
+    //
 
-	func error(self, msg, src_pos):
-	
-		Core::peek_compiler().error(msg, [[self._src_path, src_pos]])
-					
+    func error(self, msg, src_pos):
+    
+        Core::peek_compiler().error(msg, [[self._src_path, src_pos]])
+                    
 
 
 func tokenize(str, src_path, src_offset := 0, line_offset := 0, extra_keywords := [], extra_symbols := []):
 
-	tokenizer := Tokenizer.new()
-	tokenizer.tokenize(str, src_path, src_offset, line_offset, extra_keywords, extra_symbols)
-	
-	return [tokenizer.tokens, tokenizer.newlines]
+    tokenizer := Tokenizer.new()
+    tokenizer.tokenize(str, src_path, src_offset, line_offset, extra_keywords, extra_symbols)
+    
+    return [tokenizer.tokens, tokenizer.newlines]
 
 
 
 func tokens_map(extra_symbols, extra_keywords):
 
-	tokens := ["NEWLINE", "INDENT", "DEDENT", "ID", "INT", "FLOAT", "STRING", "DSL_BLOCK"]
-	for keyword := (KEYWORDS + extra_keywords + SYMBOLS + extra_symbols).iter():
-		tokens.append(keyword.upper_cased())
+    tokens := ["NEWLINE", "INDENT", "DEDENT", "ID", "INT", "FLOAT", "STRING", "DSL_BLOCK"]
+    for keyword := (KEYWORDS + extra_keywords + SYMBOLS + extra_symbols).iter():
+        tokens.append(keyword.upper_cased())
 
-	return Tokens::tokens_map(tokens)
+    return Tokens::tokens_map(tokens)
 
 
 
 func main():
 
-	for file_name := Sys::argv.iter():
-		file := File::open(file_name, "r")
-		Sys::println(tokenize(file.read(), file_name)[0])
+    for file_name := Sys::argv.iter():
+        file := File::open(file_name, "r")
+        Sys::println(tokenize(file.read(), file_name)[0])
 

@@ -27,569 +27,569 @@ import Compiler::Code_Gen, Compiler::Core, Compiler::BC_Exec, Compiler::BC_Lib, 
 
 class Compiler:
 
-	////////////////////////////////////////////////////////////////////////////////////////////////
-	// Compiler start up
-	//
-
-	func from_cmd_line(self):
-	
-		start_includes := []
-	
-		options := Parse_Options::Options.new(self._usage_callback)
-		options.add(Parse_Options::Option_Spec.new("output", "o", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_ONE))
-		options.add(Parse_Options::Option_Spec.new("includes", "I", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_MORE))
-		options.add(Parse_Options::Option_Spec.new("make", "m", Parse_Options::NONE, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_ONE))
-		options.add(Parse_Options::Option_Spec.new("fresh", "f", Parse_Options::NONE, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_ONE))
-		options.add(Parse_Options::Option_Spec.new("optimise", "O", Parse_Options::NONE))
-		options.add(Parse_Options::Option_Spec.new("target", "T", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_ONE))
-		options.add(Parse_Options::Option_Spec.new("verbose", "v", Parse_Options::NONE, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_MORE))
-		
-		self.mk_mode := 0
-		self.mk_fresh := 0
-		self.output_path := null
-		self.start_includes := []
-		self.verbosity := 0
-		target_name := Strings::format("%dbit", Properties::word_bits)
-		internal_target_name := Strings::format("%dbit", Properties::word_bits)
-		parsed, extra := options.parse()
-		for option_name, option_val := parsed.iter():
-			ndif option_name == "output":
-				self.output_path := option_val
-			elif option_name == "includes":
-				self.start_includes.extend(option_val)
-			elif option_name == "make":
-				self.mk_mode := 1
-			elif option_name == "fresh":
-				self.mk_fresh := 1
-			elif option_name == "target":
-				target_name := option_val
-			elif option_name == "verbose":
-				self.verbosity += 1
-
-		if extra.len() == 0:
-			self._usage_callback("Not enough arguments.")
-		elif extra.len() > 1:
-			self._usage_callback("Too many arguments.")
-		
-		if self.mk_fresh == 1 & self.mk_mode == 0:
-			self._usage_callback("-f makes no sense without -m.")
-
-		if self.output_path is null:
-			if self.mk_mode == 1:
-				main, ext := File::split_ext(extra[0])
-				if ext != Core::SRC_EXT:
-					self._usage_callback(Strings::format("-o can not be left out if input file does not end in '.%s'.", Core::SRC_EXT))
-				if File::exists(main):
-					// If there already exists a file with the name we want to write to, check that
-					// it really is a Converge executeable. If it isn't, we refuse to carry on.
-					file := File::open(main, "r")
-					bc := file.read()
-					file.close()
-					if not BC_Exec::is_bc_exec(bc):
-						self._usage_callback(Strings::format("-o can not be left out as '%s' can not be overwritten as it does not appear to be a Converge executeable.", main))
-				self.output_path := main
-			else:
-				self._usage_callback("-o option must be specified.")
-
-		self.target := self._target_name_to_target(target_name)
-		self.internal_target := self._target_name_to_target(internal_target_name)
-
-		if self.mk_mode == 1:
-			self._make(extra[0])
-		else:
-			bc_mod := self._compile_path(extra[0])
-			output_file := File::File.new(self.output_path, "w")
-			output_file.write(bc_mod.serialize())
-			output_file.close()
-
-
-
-	func from_mk_mode(self, mod_id, src_path, start_includes, verbosity, target, internal_target, mk_done_bc_mods, mk_mtime_map):
-
-		self.mk_mode := 1
-		self.output_path := null
-		self.start_includes := start_includes
-		self.verbosity := verbosity
-		self.target := target
-		self.internal_target := internal_target
-		
-		self.mk_done_bc_mods := mk_done_bc_mods
-
-		bc_mod := self._compile_path(src_path)
-		self._write_cache_cvb(src_path, bc_mod.serialize())
-
-		mk_done_bc_mods[mod_id] := [src_path, bc_mod]
-		mk_mtime_map[mod_id] := Time::current()
-		
-		return bc_mod
-
-
-
-	////////////////////////////////////////////////////////////////////////////////////////////////
-	// "Public" functions
-	//
-
-
-	func error(self, msg, src_infos := null):
-	
-		self._print_msg("Error", msg, src_infos)
-		Sys::exit(1)
-
-
-
-	func warning(self, msg, src_infos := null):
-	
-		// Some consoles (e.g. Windows) are very bad about flushing output, and messages between
-		// stdout and stderr can get horribly confused with each other. By flushing stdout then
-		// printing our message, then flushing stderr, we make a decent attempt at making sure
-		// that messages are both ordered correctly and printed fairly promptly.
-	
-		Sys::stdout.flush()
-		self._print_msg("Warning", msg, src_infos)
-		Sys::stderr.flush()
-
-
-
-	func info(self, msg):
-
-		// Some consoles (e.g. Windows) are very bad about flushing output, and messages between
-		// stdout and stderr can get horribly confused with each other. By flushing stdout then
-		// printing our message, then flushing stderr, we make a decent attempt at making sure
-		// that messages are both ordered correctly and printed fairly promptly.
-	
-		Sys::stdout.flush()
-		Sys::stderr.writeln(Strings::format("===> %s%s", " " * ((Core::num_compilers() - 1) * 2), msg))
-		Sys::stderr.flush()
-
-
-
-	func get_bc_mod(self, mod_id, src_path, src_infos := null):
-	
-		if self.mk_mode == 1:
-			if src_path, bc_mod := self.mk_done_bc_mods.find(mod_id):
-				return bc_mod
-	
-		if not(self.mk_mode == 1 & self.mk_fresh == 1):
-			if bc_mod, mtime := self._read_cache_cvb(src_path):
-				return bc_mod
-
-		if self.mk_mode == 0:
-			self.error(Strings::format("Can not find compiled version of '%s'.", src_path), src_infos)
-		
-		compiler := Compiler.new()
-		Core::push_compiler(compiler)
-		bc_mod := compiler.from_mk_mode(mod_id, src_path, self.start_includes, self.verbosity, self.target, self.internal_target, self.mk_done_bc_mods, self.mk_mtime_map)
-		Core::pop_compiler()
-		
-		if self.verbosity > 0:
-			self.info(Strings::format("Returning to compile of %s...", self.src_path))
-
-		return bc_mod
-
-
-
-	func find_import_location(self, import_name_list):
-
-		func match_path(i, dir):
-		
-			cnd_path := File::join_names(dir, import_name_list[i])
-
-			if File::exists(cnd_path) & File::is_dir(cnd_path):
-				if i + 1 == import_name_list.len():
-					return [cnd_path, i]
-				else:
-					return match_path(i + 1, cnd_path)
-
-			cnd_file_path := File::join_ext(cnd_path, Core::SRC_EXT)
-			if File::exists(cnd_file_path) & File::is_file(cnd_file_path):
-				return [cnd_file_path, i]
-			
-			fail
-			
-	
-		for include_dir := self.includes.iter():
-			if matched_path, extra_pos := match_path(0, include_dir):
-				src_path := File::canon_path(matched_path)
-				if cvb_path := Core::get_cache_path(src_path) & File::exists(cvb_path):
-					f := File::open(cvb_path, "r")
-					bc := f.read()
-					if BC_Mod::is_bc_mod(bc):
-						bc_mod := BC_Mod::BC_Mod.new(self.internal_target)
-					else:
-						bc_mod := BC_Pkg::BC_Pkg.new(self.internal_target)
-					bc_mod.deserialize_str(bc)
-					f.close()
-					mod_id := bc_mod.get_mod_id()
-				else:
-					mod_id := Core::mk_mod_id(src_path)
-				import_extras := import_name_list[extra_pos + 1 : ]
-				break
-		exhausted:
-			// If the first part of the import references a builtin, then looking up that module ID
-			// will succeed.
-			if VM::find_module(import_name_list[0]):
-				mod_id := src_path := import_name_list[0]
-				import_extras := import_name_list[1 : ]
-			else:
-				fail
-		
-		return [mod_id, src_path, import_extras]
-
-
-
-	////////////////////////////////////////////////////////////////////////////////////////////////
-	// Internal functions
-	//
-
-
-	func _compile_path(self, src_path):
-
-		if not File::exists(src_path):
-			self.error(Strings::format("Source file '%s' not found.", src_path))
-		
-		if File::is_dir(src_path):
-			return self._compile_pkg(src_path)
-		else:
-			return self._compile_mod(src_path)
-
-
-
-	func _compile_pkg(self, src_path):
-
-		if self.verbosity > 0:
-			self.info(Strings::format("Compiling %s...", src_path))
-		
-		pkg_entries := Dict{}
-		for leaf := File::iter_dir_entries(src_path):
-			defn_name, ext := File::split_ext(leaf)
-			if not (ext == "" | ext == Core::SRC_EXT):
-				continue
-		
-			entry_path := File::canon_path(File::join_names(src_path, leaf))
-			entry_mod_id := Core::mk_mod_id(entry_path)
-			pkg_entries[defn_name] := [entry_mod_id, entry_path]
-
-		bc_pkg := BC_Pkg::BC_Pkg.new(self.target)
-		bc_pkg.set_name(File::split_leaf(src_path)[1])
-		bc_pkg.set_mod_id(Core::mk_mod_id(File::canon_path(src_path)))
-		bc_pkg.set_src_path(src_path)
-		bc_pkg.set_entries(pkg_entries)
-
-		if self.verbosity > 0:
-			self.info(Strings::format("Finished compiling %s.", src_path))
-		
-		return bc_pkg
-
-
-
-	func _compile_mod(self, src_path):
-
-		self.includes := self.start_includes
-
-		if self.verbosity > 0:
-			self.info(Strings::format("Compiling %s...", src_path))
-
-		self.src_path := File::canon_path(src_path)
-		self.mod_id := Core::mk_mod_id(self.src_path)
-
-		if (input_file_dir := File::split_leaf(self.src_path)[0]) == "":
-			self.includes.insert(0, ".")
-		else:
-			self.includes.insert(0, input_file_dir)
-
-		// For the moment, we assume the compiled module name is simply the leaf name (minus its
-		// extension). On platforms with non-case preserving filesystems, perhaps there is a need
-		// for a more sophisticated mechanism?
-
-		self.src_module_name := File::split_ext(File::split_leaf(self.src_path)[1])[0]
-
-		self.includes.extend(Core::find_std_includes())
-
-		src_file := File::open(self.src_path, "r")
-		src_data := src_file.read()
-		src_file.close()
-
-		self.tokenizer := Tokenizer::Tokenizer.new()
-		parse_tree := Parser::parse(src_data)
-		self.newlines := self.tokenizer.newlines
-
-		imodule := IMod_Gen::IMod_Gen.new().gen(parse_tree)
-		
-		bc := Code_Gen::Code_Gen.new().generate(imodule, self.target)
-		
-		if self.verbosity > 0:
-			self.info(Strings::format("Finished compiling %s.", src_path))
-		
-		return bc
-
-
-
-	//
-	// Compile 'src_path', and its dependencies, in a make-like fashion.
-	//
-
-	func _make(self, src_path):
-
-		// This function has more to it than it might first appear. The basic strategy is this: we
-		// compile the given module and all its obvious imports. Life becomes trickier because of
-		// CTMP. This means that when we're half way through compiling x.cv, we realise we need
-		// to compile y.cv in order that x.cv can execute CTMP. This means that we have to start
-		// up sub-compiler(s).
-
-		if File::exists(self.output_path):
-			if File::mtime(self.output_path) < File::mtime(src_path):
-				do_link := 1
-			else:
-				do_link := 0
-		else:
-			do_link := 1
-
-		main_mod_id := Core::mk_mod_id(File::canon_path(src_path))
-		self.mk_done_bc_mods := Dict{main_mod_id : [File::canon_path(src_path), null]} // module id : BC_Mod instances map.
-
-		// We want to ensure that we never try to compile any of the stuff in the builtin libraries,
-		// so read these in to make sure this doesn't happen.
-		
-		lib_mods := []
-		lib_mod_ids := Set{}
-		for lib_path := Core::get_std_libraries().iter():
-			bc_lib := BC_Lib::BC_Lib.new(self.target)
-			lib_file := File::open(lib_path, "r")
-			lib_bc := lib_file.read()
-			lib_file.close()
-			for bc_mod := bc_lib.deserialize(lib_bc).iter():
-				lib_mods.append(bc_mod)
-				lib_mod_ids.add(bc_mod.get_mod_id())
-				self.mk_done_bc_mods[bc_mod.get_mod_id()] := [bc_mod.get_src_path(), bc_mod]
-
-		// The main loop. Basically we keep on going around this, reading in cached files or
-		// compiling new files; and updating any modules who are older than their import
-		// dependencies to ensure that any CTMP works on the latest version of the module available.
-		// Assuming there are no circular imports this will eventually hit a fixed point (possibly
-		// having compiled the same module multiple times), and the loop is finished. Although this
-		// is not as efficient as a customised Makefile with static dependencies could be, it is
-		// easier to use and is (hopefully) guaranteed to make sure everything is upto date.
-
-		main_mod := null
-		self.mk_mtime_map := Dict{} // module id : mtime
-
-		while 1:
-			again := 0 // Set to 1 to force another round of the loop.
-			for mod_id, t := self.mk_done_bc_mods.iter():
-				mod_src_path, bc_mod := t
-
-				if lib_mod_ids.find(mod_id):
-					continue
-				
-				compile := 0
-				if bc_mod is null:
-					if self.mk_fresh == 1:
-						compile := 1
-					else:
-						// We haven't previously encountered this module, so try seeing if we can
-						// read in a cached version.
-						if bc_mod, mtime := self._read_cache_cvb(mod_src_path):
-							mod_id := bc_mod.get_mod_id()
-							self.mk_done_bc_mods[mod_id] := [bc_mod.get_src_path(), bc_mod]
-							self.mk_mtime_map[mod_id] := mtime
-						else:
-							compile := 1
-				
-				if not bc_mod is null:
-					mtime := self.mk_mtime_map[mod_id]
-					ndif BC_Mod::BC_Mod.instantiated(bc_mod):
-						// We check to see whether this module is "stale" i.e. is older than any of its
-						// import dependencies.
-						for imp_mod_id, imp_src_path := bc_mod.get_imports().iter():
-							if Core::BUILTIN_MODULES.find(imp_mod_id):
-								continue
-
-							if not self.mk_done_bc_mods.find(imp_mod_id):
-								self.mk_done_bc_mods[imp_mod_id] := [imp_src_path, null]
-								again := 1
-							elif mtime < self.mk_mtime_map.find(imp_mod_id):
-								compile := 1
-					elif BC_Pkg::BC_Pkg.instantiated(bc_mod):
-						// We check to see whether this package is "stale" i.e. is older than any of its
-						// entries.
-						for defn_name, t := bc_mod.get_entries().iter():
-							entry_mod_id, entry_src_path := t
-							if not self.mk_done_bc_mods.find(entry_mod_id):
-								self.mk_done_bc_mods[entry_mod_id] := [entry_src_path, null]
-								again := 1
-							elif mtime < self.mk_mtime_map.find(entry_mod_id):
-								compile := 1
-				
-				if compile == 1:
-					// Compilation has been forced.
-					bc_mod := self._compile_path(mod_src_path)
-					self._write_cache_cvb(mod_src_path, bc_mod.serialize())
-					self.mk_done_bc_mods[mod_id][1] := bc_mod
-					self.mk_mtime_map[mod_id] := Time::current()
-					again := 1
-					do_link := 1
-					
-				if mod_id == main_mod_id:
-					main_mod := bc_mod
-
-			if again == 0:
-				break
-		
-		// Everything is compiled. If anything has been updated, then we need to link things.
-		
-		if do_link == 1 | self.mk_fresh == 1:
-			// Create the list of modules to link, including all library modules.
-			bc_mods := [main_mod]
-			for src_path, mod := self.mk_done_bc_mods.iter_vals():
-				if not mod is main_mod:
-					bc_mods.append(mod)
-			bc_mods.extend(lib_mods)
-			
-			if self.verbosity > 0:
-				self.info("Linking.")
-
-			self.mod_id := bc_mods[0].get_mod_id()
-			self.src_path := bc_mods[0].get_src_path()
-			linked_bc_mods := Linker.new().link(bc_mods, self.target)
-
-			ser := BC_Exec::serialize(self.target, linked_bc_mods)
-			output_file := File::File.new(self.output_path, "w")
-			output_file.write(ser)
-			output_file.close()
-			try:
-				File::chmod(self.output_path, 493)
-			catch Exceptions::File_Exception:
-				pass
-
-
-
-	func _usage_callback(self, msg):
-	
-		if not msg is null:
-			Sys::stderr.writeln(Strings::format("Error: %s", msg))
-		Sys::stderr.writeln("Usage: convergec [-bm] [-I <include> [-I <include> ...]] [-O] [-T <target bit size>] -o <output> <input>")
-		if not msg is null:
-			Sys::exit(1)
-
-
-
-	func _print_msg(self, pre_msg, msg, src_infos := null):
-	
-		if not src_infos is null:
-			assert src_infos.len() > 0
-
-			// If any of the src infos reference a file other than the one being specified, then
-			// other_files will be set to 1. This then changes the way we format error messages.
-
-			other_files := 0
-			for src_info := src_infos.iter():
-				if src_info[0] != self.mod_id:
-					other_files := 1
-					break
-
-			if src_infos.len() == 1 & other_files == 0:
-				Sys::stderr.write(Strings::format("%s: ", pre_msg))
-			else:
-				Sys::stderr.writeln(Strings::format("%s:", pre_msg))
-
-			for src_info := src_infos.iter():
-				if src_info[0] == self.mod_id:
-					src_offset := src_info[1]
-					newlines := self.tokenizer.newlines
-					line := 0
-					while line < newlines.len():
-						if src_offset < newlines[line]:
-							break
-						line += 1
-					col := src_offset - newlines[line - 1]
-				else:
-					if not mod := VM::find_module(src_info[0]):
-						raise "XXX"
-					line, col := mod.src_offset_to_line_column(src_info[1])
-				
-				if src_infos.len() == 1 & other_files == 0:
-					Sys::stderr.write(Strings::format("Line %d, column %d: ", line, col))
-				else:
-					if other_files == 0:
-						Sys::stderr.writeln(Strings::format("  Line %d, column %d", line, col))
-					else:
-						Sys::stderr.writeln(Strings::format("  %s, line %d, column %d", src_info[0], line, col))
-
-			Sys::stderr.writeln(msg)
-		else:
-			Sys::stderr.writeln(Strings::format("%s: %s", pre_msg, msg))
-					
-
-
-	func _target_name_to_target(self, target_name):
-
-		if not Targets::Available::TARGETS.find(target_name):
-			self.error(Strings::format("No support yet for target '%s'.", target_name))
-
-		return Targets::Available::TARGETS[target_name].new()
-
-
-
-	//
-	// Attempt to read the bytecode file matching 'src_path' if it exists. If nothing can be read,
-	// this method fails.
-	//
-
-	func _read_cache_cvb(self, src_path):
-
-		if (cvb_path := Core::get_cache_path(src_path)) & File::exists(cvb_path):
-			cvb_mtime := File::mtime(cvb_path)
-			if cvb_mtime > File::mtime(src_path):
-				cvb_file := File::open(cvb_path, "r")
-				bc := cvb_file.read()
-				cvb_file.close()
-				if BC_Mod::is_bc_mod(bc):
-					mod := BC_Mod::BC_Mod.new(self.internal_target)
-					mod.deserialize_str(bc)
-					return [mod, cvb_mtime]
-		
-		fail
-
-
-
-	//
-	// Attempt to write the bytecode 'bc' to the correct cached location for the src file 'src_path'.
-	// No exception is raised if it is unable to do so.
-	//
-
-	func _write_cache_cvb(self, src_path, bc):
-
-		if cvb_path := Core::get_cache_path(src_path):
-			can_write := 1
-			if File::exists(cvb_path):
-				cvb_file := File::open(cvb_path, "r")
-				bc := cvb_file.read()
-				cvb_file.close()
-				if not (BC_Mod::is_bc_mod(bc) | BC_Pkg::is_bc_pkg(bc)):
-					can_write := 0
-
-			if can_write == 1:
-				try:
-					cvb_file := File::open(cvb_path, "w")
-					cvb_file.write(bc)
-					cvb_file.close()
-				catch Exceptions::File_Exception:
-					// Whatever the file exception was, we intentionally ignore it.
-					pass
-
-
-
-	func _locate_cv_files(self, path):
-	
-		cv_files := []
-		for leaf := File::iter_dir_entries(path):
-			entry_path := File::join_names(path, leaf)
-			if File::is_file(entry_path) & File::split_ext(leaf)[1] == Core::SRC_EXT:
-				cv_files.append(entry_path)
-			elif File::is_dir(entry_path):
-				cv_files.extend(self._locate_cv_files(entry_path))
-		
-		return cv_files
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    // Compiler start up
+    //
+
+    func from_cmd_line(self):
+    
+        start_includes := []
+    
+        options := Parse_Options::Options.new(self._usage_callback)
+        options.add(Parse_Options::Option_Spec.new("output", "o", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_ONE))
+        options.add(Parse_Options::Option_Spec.new("includes", "I", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_MORE))
+        options.add(Parse_Options::Option_Spec.new("make", "m", Parse_Options::NONE, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_ONE))
+        options.add(Parse_Options::Option_Spec.new("fresh", "f", Parse_Options::NONE, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_ONE))
+        options.add(Parse_Options::Option_Spec.new("optimise", "O", Parse_Options::NONE))
+        options.add(Parse_Options::Option_Spec.new("target", "T", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_ONE))
+        options.add(Parse_Options::Option_Spec.new("verbose", "v", Parse_Options::NONE, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_MORE))
+        
+        self.mk_mode := 0
+        self.mk_fresh := 0
+        self.output_path := null
+        self.start_includes := []
+        self.verbosity := 0
+        target_name := Strings::format("%dbit", Properties::word_bits)
+        internal_target_name := Strings::format("%dbit", Properties::word_bits)
+        parsed, extra := options.parse()
+        for option_name, option_val := parsed.iter():
+            ndif option_name == "output":
+                self.output_path := option_val
+            elif option_name == "includes":
+                self.start_includes.extend(option_val)
+            elif option_name == "make":
+                self.mk_mode := 1
+            elif option_name == "fresh":
+                self.mk_fresh := 1
+            elif option_name == "target":
+                target_name := option_val
+            elif option_name == "verbose":
+                self.verbosity += 1
+
+        if extra.len() == 0:
+            self._usage_callback("Not enough arguments.")
+        elif extra.len() > 1:
+            self._usage_callback("Too many arguments.")
+        
+        if self.mk_fresh == 1 & self.mk_mode == 0:
+            self._usage_callback("-f makes no sense without -m.")
+
+        if self.output_path is null:
+            if self.mk_mode == 1:
+                main, ext := File::split_ext(extra[0])
+                if ext != Core::SRC_EXT:
+                    self._usage_callback(Strings::format("-o can not be left out if input file does not end in '.%s'.", Core::SRC_EXT))
+                if File::exists(main):
+                    // If there already exists a file with the name we want to write to, check that
+                    // it really is a Converge executeable. If it isn't, we refuse to carry on.
+                    file := File::open(main, "r")
+                    bc := file.read()
+                    file.close()
+                    if not BC_Exec::is_bc_exec(bc):
+                        self._usage_callback(Strings::format("-o can not be left out as '%s' can not be overwritten as it does not appear to be a Converge executeable.", main))
+                self.output_path := main
+            else:
+                self._usage_callback("-o option must be specified.")
+
+        self.target := self._target_name_to_target(target_name)
+        self.internal_target := self._target_name_to_target(internal_target_name)
+
+        if self.mk_mode == 1:
+            self._make(extra[0])
+        else:
+            bc_mod := self._compile_path(extra[0])
+            output_file := File::File.new(self.output_path, "w")
+            output_file.write(bc_mod.serialize())
+            output_file.close()
+
+
+
+    func from_mk_mode(self, mod_id, src_path, start_includes, verbosity, target, internal_target, mk_done_bc_mods, mk_mtime_map):
+
+        self.mk_mode := 1
+        self.output_path := null
+        self.start_includes := start_includes
+        self.verbosity := verbosity
+        self.target := target
+        self.internal_target := internal_target
+        
+        self.mk_done_bc_mods := mk_done_bc_mods
+
+        bc_mod := self._compile_path(src_path)
+        self._write_cache_cvb(src_path, bc_mod.serialize())
+
+        mk_done_bc_mods[mod_id] := [src_path, bc_mod]
+        mk_mtime_map[mod_id] := Time::current()
+        
+        return bc_mod
+
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    // "Public" functions
+    //
+
+
+    func error(self, msg, src_infos := null):
+    
+        self._print_msg("Error", msg, src_infos)
+        Sys::exit(1)
+
+
+
+    func warning(self, msg, src_infos := null):
+    
+        // Some consoles (e.g. Windows) are very bad about flushing output, and messages between
+        // stdout and stderr can get horribly confused with each other. By flushing stdout then
+        // printing our message, then flushing stderr, we make a decent attempt at making sure
+        // that messages are both ordered correctly and printed fairly promptly.
+    
+        Sys::stdout.flush()
+        self._print_msg("Warning", msg, src_infos)
+        Sys::stderr.flush()
+
+
+
+    func info(self, msg):
+
+        // Some consoles (e.g. Windows) are very bad about flushing output, and messages between
+        // stdout and stderr can get horribly confused with each other. By flushing stdout then
+        // printing our message, then flushing stderr, we make a decent attempt at making sure
+        // that messages are both ordered correctly and printed fairly promptly.
+    
+        Sys::stdout.flush()
+        Sys::stderr.writeln(Strings::format("===> %s%s", " " * ((Core::num_compilers() - 1) * 2), msg))
+        Sys::stderr.flush()
+
+
+
+    func get_bc_mod(self, mod_id, src_path, src_infos := null):
+    
+        if self.mk_mode == 1:
+            if src_path, bc_mod := self.mk_done_bc_mods.find(mod_id):
+                return bc_mod
+    
+        if not(self.mk_mode == 1 & self.mk_fresh == 1):
+            if bc_mod, mtime := self._read_cache_cvb(src_path):
+                return bc_mod
+
+        if self.mk_mode == 0:
+            self.error(Strings::format("Can not find compiled version of '%s'.", src_path), src_infos)
+        
+        compiler := Compiler.new()
+        Core::push_compiler(compiler)
+        bc_mod := compiler.from_mk_mode(mod_id, src_path, self.start_includes, self.verbosity, self.target, self.internal_target, self.mk_done_bc_mods, self.mk_mtime_map)
+        Core::pop_compiler()
+        
+        if self.verbosity > 0:
+            self.info(Strings::format("Returning to compile of %s...", self.src_path))
+
+        return bc_mod
+
+
+
+    func find_import_location(self, import_name_list):
+
+        func match_path(i, dir):
+        
+            cnd_path := File::join_names(dir, import_name_list[i])
+
+            if File::exists(cnd_path) & File::is_dir(cnd_path):
+                if i + 1 == import_name_list.len():
+                    return [cnd_path, i]
+                else:
+                    return match_path(i + 1, cnd_path)
+
+            cnd_file_path := File::join_ext(cnd_path, Core::SRC_EXT)
+            if File::exists(cnd_file_path) & File::is_file(cnd_file_path):
+                return [cnd_file_path, i]
+            
+            fail
+            
+    
+        for include_dir := self.includes.iter():
+            if matched_path, extra_pos := match_path(0, include_dir):
+                src_path := File::canon_path(matched_path)
+                if cvb_path := Core::get_cache_path(src_path) & File::exists(cvb_path):
+                    f := File::open(cvb_path, "r")
+                    bc := f.read()
+                    if BC_Mod::is_bc_mod(bc):
+                        bc_mod := BC_Mod::BC_Mod.new(self.internal_target)
+                    else:
+                        bc_mod := BC_Pkg::BC_Pkg.new(self.internal_target)
+                    bc_mod.deserialize_str(bc)
+                    f.close()
+                    mod_id := bc_mod.get_mod_id()
+                else:
+                    mod_id := Core::mk_mod_id(src_path)
+                import_extras := import_name_list[extra_pos + 1 : ]
+                break
+        exhausted:
+            // If the first part of the import references a builtin, then looking up that module ID
+            // will succeed.
+            if VM::find_module(import_name_list[0]):
+                mod_id := src_path := import_name_list[0]
+                import_extras := import_name_list[1 : ]
+            else:
+                fail
+        
+        return [mod_id, src_path, import_extras]
+
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    // Internal functions
+    //
+
+
+    func _compile_path(self, src_path):
+
+        if not File::exists(src_path):
+            self.error(Strings::format("Source file '%s' not found.", src_path))
+        
+        if File::is_dir(src_path):
+            return self._compile_pkg(src_path)
+        else:
+            return self._compile_mod(src_path)
+
+
+
+    func _compile_pkg(self, src_path):
+
+        if self.verbosity > 0:
+            self.info(Strings::format("Compiling %s...", src_path))
+        
+        pkg_entries := Dict{}
+        for leaf := File::iter_dir_entries(src_path):
+            defn_name, ext := File::split_ext(leaf)
+            if not (ext == "" | ext == Core::SRC_EXT):
+                continue
+        
+            entry_path := File::canon_path(File::join_names(src_path, leaf))
+            entry_mod_id := Core::mk_mod_id(entry_path)
+            pkg_entries[defn_name] := [entry_mod_id, entry_path]
+
+        bc_pkg := BC_Pkg::BC_Pkg.new(self.target)
+        bc_pkg.set_name(File::split_leaf(src_path)[1])
+        bc_pkg.set_mod_id(Core::mk_mod_id(File::canon_path(src_path)))
+        bc_pkg.set_src_path(src_path)
+        bc_pkg.set_entries(pkg_entries)
+
+        if self.verbosity > 0:
+            self.info(Strings::format("Finished compiling %s.", src_path))
+        
+        return bc_pkg
+
+
+
+    func _compile_mod(self, src_path):
+
+        self.includes := self.start_includes
+
+        if self.verbosity > 0:
+            self.info(Strings::format("Compiling %s...", src_path))
+
+        self.src_path := File::canon_path(src_path)
+        self.mod_id := Core::mk_mod_id(self.src_path)
+
+        if (input_file_dir := File::split_leaf(self.src_path)[0]) == "":
+            self.includes.insert(0, ".")
+        else:
+            self.includes.insert(0, input_file_dir)
+
+        // For the moment, we assume the compiled module name is simply the leaf name (minus its
+        // extension). On platforms with non-case preserving filesystems, perhaps there is a need
+        // for a more sophisticated mechanism?
+
+        self.src_module_name := File::split_ext(File::split_leaf(self.src_path)[1])[0]
+
+        self.includes.extend(Core::find_std_includes())
+
+        src_file := File::open(self.src_path, "r")
+        src_data := src_file.read()
+        src_file.close()
+
+        self.tokenizer := Tokenizer::Tokenizer.new()
+        parse_tree := Parser::parse(src_data)
+        self.newlines := self.tokenizer.newlines
+
+        imodule := IMod_Gen::IMod_Gen.new().gen(parse_tree)
+        
+        bc := Code_Gen::Code_Gen.new().generate(imodule, self.target)
+        
+        if self.verbosity > 0:
+            self.info(Strings::format("Finished compiling %s.", src_path))
+        
+        return bc
+
+
+
+    //
+    // Compile 'src_path', and its dependencies, in a make-like fashion.
+    //
+
+    func _make(self, src_path):
+
+        // This function has more to it than it might first appear. The basic strategy is this: we
+        // compile the given module and all its obvious imports. Life becomes trickier because of
+        // CTMP. This means that when we're half way through compiling x.cv, we realise we need
+        // to compile y.cv in order that x.cv can execute CTMP. This means that we have to start
+        // up sub-compiler(s).
+
+        if File::exists(self.output_path):
+            if File::mtime(self.output_path) < File::mtime(src_path):
+                do_link := 1
+            else:
+                do_link := 0
+        else:
+            do_link := 1
+
+        main_mod_id := Core::mk_mod_id(File::canon_path(src_path))
+        self.mk_done_bc_mods := Dict{main_mod_id : [File::canon_path(src_path), null]} // module id : BC_Mod instances map.
+
+        // We want to ensure that we never try to compile any of the stuff in the builtin libraries,
+        // so read these in to make sure this doesn't happen.
+        
+        lib_mods := []
+        lib_mod_ids := Set{}
+        for lib_path := Core::get_std_libraries().iter():
+            bc_lib := BC_Lib::BC_Lib.new(self.target)
+            lib_file := File::open(lib_path, "r")
+            lib_bc := lib_file.read()
+            lib_file.close()
+            for bc_mod := bc_lib.deserialize(lib_bc).iter():
+                lib_mods.append(bc_mod)
+                lib_mod_ids.add(bc_mod.get_mod_id())
+                self.mk_done_bc_mods[bc_mod.get_mod_id()] := [bc_mod.get_src_path(), bc_mod]
+
+        // The main loop. Basically we keep on going around this, reading in cached files or
+        // compiling new files; and updating any modules who are older than their import
+        // dependencies to ensure that any CTMP works on the latest version of the module available.
+        // Assuming there are no circular imports this will eventually hit a fixed point (possibly
+        // having compiled the same module multiple times), and the loop is finished. Although this
+        // is not as efficient as a customised Makefile with static dependencies could be, it is
+        // easier to use and is (hopefully) guaranteed to make sure everything is upto date.
+
+        main_mod := null
+        self.mk_mtime_map := Dict{} // module id : mtime
+
+        while 1:
+            again := 0 // Set to 1 to force another round of the loop.
+            for mod_id, t := self.mk_done_bc_mods.iter():
+                mod_src_path, bc_mod := t
+
+                if lib_mod_ids.find(mod_id):
+                    continue
+                
+                compile := 0
+                if bc_mod is null:
+                    if self.mk_fresh == 1:
+                        compile := 1
+                    else:
+                        // We haven't previously encountered this module, so try seeing if we can
+                        // read in a cached version.
+                        if bc_mod, mtime := self._read_cache_cvb(mod_src_path):
+                            mod_id := bc_mod.get_mod_id()
+                            self.mk_done_bc_mods[mod_id] := [bc_mod.get_src_path(), bc_mod]
+                            self.mk_mtime_map[mod_id] := mtime
+                        else:
+                            compile := 1
+                
+                if not bc_mod is null:
+                    mtime := self.mk_mtime_map[mod_id]
+                    ndif BC_Mod::BC_Mod.instantiated(bc_mod):
+                        // We check to see whether this module is "stale" i.e. is older than any of its
+                        // import dependencies.
+                        for imp_mod_id, imp_src_path := bc_mod.get_imports().iter():
+                            if Core::BUILTIN_MODULES.find(imp_mod_id):
+                                continue
+
+                            if not self.mk_done_bc_mods.find(imp_mod_id):
+                                self.mk_done_bc_mods[imp_mod_id] := [imp_src_path, null]
+                                again := 1
+                            elif mtime < self.mk_mtime_map.find(imp_mod_id):
+                                compile := 1
+                    elif BC_Pkg::BC_Pkg.instantiated(bc_mod):
+                        // We check to see whether this package is "stale" i.e. is older than any of its
+                        // entries.
+                        for defn_name, t := bc_mod.get_entries().iter():
+                            entry_mod_id, entry_src_path := t
+                            if not self.mk_done_bc_mods.find(entry_mod_id):
+                                self.mk_done_bc_mods[entry_mod_id] := [entry_src_path, null]
+                                again := 1
+                            elif mtime < self.mk_mtime_map.find(entry_mod_id):
+                                compile := 1
+                
+                if compile == 1:
+                    // Compilation has been forced.
+                    bc_mod := self._compile_path(mod_src_path)
+                    self._write_cache_cvb(mod_src_path, bc_mod.serialize())
+                    self.mk_done_bc_mods[mod_id][1] := bc_mod
+                    self.mk_mtime_map[mod_id] := Time::current()
+                    again := 1
+                    do_link := 1
+                    
+                if mod_id == main_mod_id:
+                    main_mod := bc_mod
+
+            if again == 0:
+                break
+        
+        // Everything is compiled. If anything has been updated, then we need to link things.
+        
+        if do_link == 1 | self.mk_fresh == 1:
+            // Create the list of modules to link, including all library modules.
+            bc_mods := [main_mod]
+            for src_path, mod := self.mk_done_bc_mods.iter_vals():
+                if not mod is main_mod:
+                    bc_mods.append(mod)
+            bc_mods.extend(lib_mods)
+            
+            if self.verbosity > 0:
+                self.info("Linking.")
+
+            self.mod_id := bc_mods[0].get_mod_id()
+            self.src_path := bc_mods[0].get_src_path()
+            linked_bc_mods := Linker.new().link(bc_mods, self.target)
+
+            ser := BC_Exec::serialize(self.target, linked_bc_mods)
+            output_file := File::File.new(self.output_path, "w")
+            output_file.write(ser)
+            output_file.close()
+            try:
+                File::chmod(self.output_path, 493)
+            catch Exceptions::File_Exception:
+                pass
+
+
+
+    func _usage_callback(self, msg):
+    
+        if not msg is null:
+            Sys::stderr.writeln(Strings::format("Error: %s", msg))
+        Sys::stderr.writeln("Usage: convergec [-bm] [-I <include> [-I <include> ...]] [-O] [-T <target bit size>] -o <output> <input>")
+        if not msg is null:
+            Sys::exit(1)
+
+
+
+    func _print_msg(self, pre_msg, msg, src_infos := null):
+    
+        if not src_infos is null:
+            assert src_infos.len() > 0
+
+            // If any of the src infos reference a file other than the one being specified, then
+            // other_files will be set to 1. This then changes the way we format error messages.
+
+            other_files := 0
+            for src_info := src_infos.iter():
+                if src_info[0] != self.mod_id:
+                    other_files := 1
+                    break
+
+            if src_infos.len() == 1 & other_files == 0:
+                Sys::stderr.write(Strings::format("%s: ", pre_msg))
+            else:
+                Sys::stderr.writeln(Strings::format("%s:", pre_msg))
+
+            for src_info := src_infos.iter():
+                if src_info[0] == self.mod_id:
+                    src_offset := src_info[1]
+                    newlines := self.tokenizer.newlines
+                    line := 0
+                    while line < newlines.len():
+                        if src_offset < newlines[line]:
+                            break
+                        line += 1
+                    col := src_offset - newlines[line - 1]
+                else:
+                    if not mod := VM::find_module(src_info[0]):
+                        raise "XXX"
+                    line, col := mod.src_offset_to_line_column(src_info[1])
+                
+                if src_infos.len() == 1 & other_files == 0:
+                    Sys::stderr.write(Strings::format("Line %d, column %d: ", line, col))
+                else:
+                    if other_files == 0:
+                        Sys::stderr.writeln(Strings::format("  Line %d, column %d", line, col))
+                    else:
+                        Sys::stderr.writeln(Strings::format("  %s, line %d, column %d", src_info[0], line, col))
+
+            Sys::stderr.writeln(msg)
+        else:
+            Sys::stderr.writeln(Strings::format("%s: %s", pre_msg, msg))
+                    
+
+
+    func _target_name_to_target(self, target_name):
+
+        if not Targets::Available::TARGETS.find(target_name):
+            self.error(Strings::format("No support yet for target '%s'.", target_name))
+
+        return Targets::Available::TARGETS[target_name].new()
+
+
+
+    //
+    // Attempt to read the bytecode file matching 'src_path' if it exists. If nothing can be read,
+    // this method fails.
+    //
+
+    func _read_cache_cvb(self, src_path):
+
+        if (cvb_path := Core::get_cache_path(src_path)) & File::exists(cvb_path):
+            cvb_mtime := File::mtime(cvb_path)
+            if cvb_mtime > File::mtime(src_path):
+                cvb_file := File::open(cvb_path, "r")
+                bc := cvb_file.read()
+                cvb_file.close()
+                if BC_Mod::is_bc_mod(bc):
+                    mod := BC_Mod::BC_Mod.new(self.internal_target)
+                    mod.deserialize_str(bc)
+                    return [mod, cvb_mtime]
+        
+        fail
+
+
+
+    //
+    // Attempt to write the bytecode 'bc' to the correct cached location for the src file 'src_path'.
+    // No exception is raised if it is unable to do so.
+    //
+
+    func _write_cache_cvb(self, src_path, bc):
+
+        if cvb_path := Core::get_cache_path(src_path):
+            can_write := 1
+            if File::exists(cvb_path):
+                cvb_file := File::open(cvb_path, "r")
+                bc := cvb_file.read()
+                cvb_file.close()
+                if not (BC_Mod::is_bc_mod(bc) | BC_Pkg::is_bc_pkg(bc)):
+                    can_write := 0
+
+            if can_write == 1:
+                try:
+                    cvb_file := File::open(cvb_path, "w")
+                    cvb_file.write(bc)
+                    cvb_file.close()
+                catch Exceptions::File_Exception:
+                    // Whatever the file exception was, we intentionally ignore it.
+                    pass
+
+
+
+    func _locate_cv_files(self, path):
+    
+        cv_files := []
+        for leaf := File::iter_dir_entries(path):
+            entry_path := File::join_names(path, leaf)
+            if File::is_file(entry_path) & File::split_ext(leaf)[1] == Core::SRC_EXT:
+                cv_files.append(entry_path)
+            elif File::is_dir(entry_path):
+                cv_files.extend(self._locate_cv_files(entry_path))
+        
+        return cv_files
 
 
 
@@ -600,52 +600,52 @@ class Compiler:
 
 class Linker:
 
-	func link(self, mods, target):
+    func link(self, mods, target):
 
-		self.mods := mods
+        self.mods := mods
 
-		return Link::link_min_pkgs(mods, self, target)
-
-
-
-	func error(self, msg, src_infos := null):
-
-		self.print_msg("Error", msg, src_infos)
-		Sys::exit(1)
+        return Link::link_min_pkgs(mods, self, target)
 
 
 
-	func warning(self, msg, src_infos := null):
+    func error(self, msg, src_infos := null):
 
-		self.print_msg("Warning", msg, src_infos)
+        self.print_msg("Error", msg, src_infos)
+        Sys::exit(1)
 
 
 
-	func print_msg(self, pre_msg, msg, src_infos := null):
+    func warning(self, msg, src_infos := null):
 
-		if not src_infos is null:
-			Sys::stderr.writeln(Strings::format("%s:", pre_msg))
-			for src_info := src_infos.iter():
-				for bc_mod := self.mods.iter():
-					if bc_mod.get_mod_id() == src_info[0]:
-						break
-				exhausted:
-					raise "XXX"
-				mod := Builtins::Module.new(bc_mod.serialize())
-				line, col := mod.src_offset_to_line_column(src_info[1])
-				
-				Sys::stderr.writeln(Strings::format("  %s, line %d, column %d", src_info[0], line, col))
+        self.print_msg("Warning", msg, src_infos)
 
-			Sys::stderr.writeln(msg)
-		else:
-			Sys::stderr.writeln(Strings::format("%s: %s", pre_msg, msg))
+
+
+    func print_msg(self, pre_msg, msg, src_infos := null):
+
+        if not src_infos is null:
+            Sys::stderr.writeln(Strings::format("%s:", pre_msg))
+            for src_info := src_infos.iter():
+                for bc_mod := self.mods.iter():
+                    if bc_mod.get_mod_id() == src_info[0]:
+                        break
+                exhausted:
+                    raise "XXX"
+                mod := Builtins::Module.new(bc_mod.serialize())
+                line, col := mod.src_offset_to_line_column(src_info[1])
+                
+                Sys::stderr.writeln(Strings::format("  %s, line %d, column %d", src_info[0], line, col))
+
+            Sys::stderr.writeln(msg)
+        else:
+            Sys::stderr.writeln(Strings::format("%s: %s", pre_msg, msg))
 
 
 
 
 func main():
 
-	compiler := Compiler.new()
-	Core::push_compiler(compiler)
-	compiler.from_cmd_line()
-	Core::pop_compiler()
+    compiler := Compiler.new()
+    Core::push_compiler(compiler)
+    compiler.from_cmd_line()
+    Core::pop_compiler()

@@ -32,19 +32,19 @@ _INDENT := "  "
 
 func pp_tree(list, indent_level := 0):
 
-	output := [list[0]]
-	for elem := list.iter(1):
-		output.append("\n")
-		output.append(_INDENT * (indent_level + 1))
-		output.append("-> ")
-		if Builtins::List.conformed_by(elem):
-			output.append(pp_tree(elem, indent_level + 1))
-		else:
-			if elem.value is null:
-				//output.append(Strings::format("<%s>", elem.type))
-				output.extend(["<", elem.type, ">"])
-			else:
-				output.extend(["<", elem.type, " ", elem.value, ">"])
-				//output.append(Strings::format("<%s %s>", elem.type, elem.value))
-		
-	return Strings::join(output, "")
+    output := [list[0]]
+    for elem := list.iter(1):
+        output.append("\n")
+        output.append(_INDENT * (indent_level + 1))
+        output.append("-> ")
+        if Builtins::List.conformed_by(elem):
+            output.append(pp_tree(elem, indent_level + 1))
+        else:
+            if elem.value is null:
+                //output.append(Strings::format("<%s>", elem.type))
+                output.extend(["<", elem.type, ">"])
+            else:
+                output.extend(["<", elem.type, " ", elem.value, ">"])
+                //output.append(Strings::format("<%s %s>", elem.type, elem.value))
+        
+    return Strings::join(output, "")

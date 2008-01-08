@@ -27,64 +27,64 @@ import Compiler::Core, Compiler::Parser, Compiler::Tokenizer
 
 class Parser_Compiler:
 
-	func init(self, path):
+    func init(self, path):
 
-		file := File::File.new(path, "r")
+        file := File::File.new(path, "r")
 
-		Core::push_compiler(self)
+        Core::push_compiler(self)
 
-		self.tokenizer := Tokenizer::Tokenizer.new()
-		self.tokenizer.tokenize(file.read(), [[path, 0]], [], [])
-		tokens_map := Tokenizer::tokens_map([], [])
-		grammar, rule_names := Grammar::compile(Parser::GRAMMAR, "top_level", tokens_map)
+        self.tokenizer := Tokenizer::Tokenizer.new()
+        self.tokenizer.tokenize(file.read(), [[path, 0]], [], [])
+        tokens_map := Tokenizer::tokens_map([], [])
+        grammar, rule_names := Grammar::compile(Parser::GRAMMAR, "top_level", tokens_map)
 
-		parse_tree := Parser::Parser.new().parse(grammar, rule_names, tokens_map, self.tokenizer.tokens)
+        parse_tree := Parser::Parser.new().parse(grammar, rule_names, tokens_map, self.tokenizer.tokens)
 
-		Core::pop_compiler()
-		
-		Sys::println(Tree::pp_tree(parse_tree))
-
-
-
-	func error(self, msg, src_infos := null):
-	
-		self._print_msg("Error", msg, src_infos)
-		Sys::exit(1)
+        Core::pop_compiler()
+        
+        Sys::println(Tree::pp_tree(parse_tree))
 
 
 
-	func warning(self, msg, src_infos := null):
-	
-		self._print_msg("Warning", msg, src_infos)
-	
-	
-	
-	func _print_msg(self, pre_msg, msg, src_infos := null):
-	
-		if not src_infos is null:
-			assert src_infos.len() > 0
+    func error(self, msg, src_infos := null):
+    
+        self._print_msg("Error", msg, src_infos)
+        Sys::exit(1)
 
-			Sys::stderr.write(Strings::format("%s: ", pre_msg))
 
-			for src_info := src_infos.iter():
-				src_offset := src_info[1]
-				newlines := self.tokenizer.newlines
-				line := 0
-				while line < newlines.len():
-					if src_offset < newlines[line]:
-						break
-					line += 1
-				col := src_offset - newlines[line - 1]
-				
-				Sys::stderr.write(Strings::format("Line %d, column %d: ", line, col))
 
-			Sys::stderr.writeln(msg)
-		else:
-			Sys::stderr.writeln(Strings::format("%s: %s", pre_msg, msg))
+    func warning(self, msg, src_infos := null):
+    
+        self._print_msg("Warning", msg, src_infos)
+    
+    
+    
+    func _print_msg(self, pre_msg, msg, src_infos := null):
+    
+        if not src_infos is null:
+            assert src_infos.len() > 0
+
+            Sys::stderr.write(Strings::format("%s: ", pre_msg))
+
+            for src_info := src_infos.iter():
+                src_offset := src_info[1]
+                newlines := self.tokenizer.newlines
+                line := 0
+                while line < newlines.len():
+                    if src_offset < newlines[line]:
+                        break
+                    line += 1
+                col := src_offset - newlines[line - 1]
+                
+                Sys::stderr.write(Strings::format("Line %d, column %d: ", line, col))
+
+            Sys::stderr.writeln(msg)
+        else:
+            Sys::stderr.writeln(Strings::format("%s: %s", pre_msg, msg))
 
 
 
 func main():
 
-	for path := Sys::argv.iter():
-		Parser_Compiler.new(path)
+    for path := Sys::argv.iter():
+        Parser_Compiler.new(path)

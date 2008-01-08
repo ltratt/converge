@@ -27,29 +27,29 @@ result := []
 
 func run():
 
-	nonlocal result
+    nonlocal result
 
-	result.append(result.len())
-	
-	for x := result.iter():
-		pass
-	
-	for i := 0.iter_to(1000):
-		if i == result.len():
-			result.append(i)
-	
-	Sys::println(result.len())
+    result.append(result.len())
+    
+    for x := result.iter():
+        pass
+    
+    for i := 0.iter_to(1000):
+        if i == result.len():
+            result.append(i)
+    
+    Sys::println(result.len())
 
 
 func main():
 
-	threads := []
-	for i := 0.iter_to(100):
-		thread := PThreads::PThread.new(run)
-		threads.append(thread)
-		thread.start()
-	
-	for thread := threads.iter():
-		thread.join()
+    threads := []
+    for i := 0.iter_to(100):
+        thread := PThreads::PThread.new(run)
+        threads.append(thread)
+        thread.start()
+    
+    for thread := threads.iter():
+        thread.join()
 
-	Sys::println("Final: ", result)
+    Sys::println("Final: ", result)

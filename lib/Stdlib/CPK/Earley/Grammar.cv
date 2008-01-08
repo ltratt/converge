@@ -45,8 +45,8 @@ tokens ::= ( token_or_reference )*
 
 token_or_reference ::= "TOKEN"
                    ::= "ID"
-				   ::= "%LONG" "ID"
-				   ::= "%SHORT" "ID"
+                   ::= "%LONG" "ID"
+                   ::= "%SHORT" "ID"
 
 precedence ::= "%PRECEDENCE" "INT"
 """
@@ -68,469 +68,469 @@ _COMPILED_CLOSE_KLEENE_STAR_GROUP := 3
 _COMPILED_OPEN_OPTIONAL_GROUP := 4
 _COMPILED_CLOSE_OPTIONAL_GROUP := 5
 
-	
+    
 
 class Grammar:
 
 
-	func init(self, grammar, start_rule, tokens_map):
+    func init(self, grammar, start_rule, tokens_map):
 
-		self._grammar := grammar
-		self._start_rule := start_rule
-		self._tokens_map := tokens_map
+        self._grammar := grammar
+        self._start_rule := start_rule
+        self._tokens_map := tokens_map
 
-	
-	
-	func tokenize(self, grammar):
-	
-		// The naming of variables in this function is terrible.
-	
-		i := 0
-		tokens := []
-		newlines := []
-		while i < grammar.len():
-			if match := _RE_INNER_LINE_WHITESPACE.match(grammar, i):
-				i += match[0].len()
-			
-			if newline := _NEWLINES.find(grammar[i]):
-				while i < grammar.len():
-					newlines.append(i)
-					i += newline.len()
-					if i == grammar.len():
-						break
-					if match := _RE_INNER_LINE_WHITESPACE.match(grammar, i):
-						i += match[0].len()
-					if i == grammar.len():
-						break
-					if not newline := _NEWLINES.find(grammar[i]):
-						break
-				tokens.append(Token::Token.new("NEWLINE", null, [[null, i]]))
-				continue
-			
-			if match := _RE_ID.match(grammar, i):
-				tokens.append(Token::Token.new("ID", match[0], [[null, i]]))
-				i += match[0].len()
-				continue
-			
-			if match := _RE_TOKEN.match(grammar, i):
-				tokens.append(Token::Token.new("TOKEN", match[1], [[null, i]]))
-				i += match[0].len()
-				continue
-			
-			if match := _RE_SYMBOLS.match(grammar, i):
-				tokens.append(Token::Token.new(match[0].upper_cased(), match[0], [[null, i]]))
-				i += match[0].len()
-				continue
+    
+    
+    func tokenize(self, grammar):
+    
+        // The naming of variables in this function is terrible.
+    
+        i := 0
+        tokens := []
+        newlines := []
+        while i < grammar.len():
+            if match := _RE_INNER_LINE_WHITESPACE.match(grammar, i):
+                i += match[0].len()
+            
+            if newline := _NEWLINES.find(grammar[i]):
+                while i < grammar.len():
+                    newlines.append(i)
+                    i += newline.len()
+                    if i == grammar.len():
+                        break
+                    if match := _RE_INNER_LINE_WHITESPACE.match(grammar, i):
+                        i += match[0].len()
+                    if i == grammar.len():
+                        break
+                    if not newline := _NEWLINES.find(grammar[i]):
+                        break
+                tokens.append(Token::Token.new("NEWLINE", null, [[null, i]]))
+                continue
+            
+            if match := _RE_ID.match(grammar, i):
+                tokens.append(Token::Token.new("ID", match[0], [[null, i]]))
+                i += match[0].len()
+                continue
+            
+            if match := _RE_TOKEN.match(grammar, i):
+                tokens.append(Token::Token.new("TOKEN", match[1], [[null, i]]))
+                i += match[0].len()
+                continue
+            
+            if match := _RE_SYMBOLS.match(grammar, i):
+                tokens.append(Token::Token.new(match[0].upper_cased(), match[0], [[null, i]]))
+                i += match[0].len()
+                continue
 
-			if match := _RE_INT.match(grammar, i):
-				tokens.append(Token::Token.new("INT", match[0], [[null, i]]))
-				i += match[0].len()
-				continue
+            if match := _RE_INT.match(grammar, i):
+                tokens.append(Token::Token.new("INT", match[0], [[null, i]]))
+                i += match[0].len()
+                continue
 
-			Sys::println(i, grammar[i : ])		
-			raise "XXX"
-		
-		if tokens.len() > 0 & tokens[0].type == "NEWLINE":
-			tokens.del(0)
-		
-		if tokens.len() > 0 & tokens[-1].type == "NEWLINE":
-			tokens.del(-1)
-		
-		return [tokens, newlines]
-
-
-
-	func compile(self):
-	
-		tokens, newlines := self.tokenize(self._grammar)
-		
-		return self.bootstrap_compile(tokens, newlines)
-	
-	
-	
-	func bootstrap_compile(self, tokens, newlines):
-
-		// This method is a mess, but it's only temporary until the CPK is fully bootstrapped.
-
-		// Maps a rule name to an ordered list of alternatives.
-		rules := Dict{"__start__" : []}
-		// An ordered list of rule names.
-		rule_names := ["__start__"]
-		i := 0
-		while i < tokens.len():
-			token := tokens[i]
-			if token.type == "ID":
-				if not rules.find(token.value):
-					rules[token.value] := []
-					rule_names.append(token.value)
-				i += 1
-				continue
-			elif token.type == "::=":
-				i += 1
-				alternative := []
-				while i < tokens.len():
-					if tokens[i].type == "NEWLINE":
-						i += 1
-						break
-					alternative.append(tokens[i])
-					i += 1
-				rules[rule_names[-1]].append(alternative)
-			else:
-				raise "XXX"
-		
-		rules_count := 0
-		alternatives_map := Dict{}
-		for rule_name := rule_names.iter():
-			if rule_name == "__start__":
-				alternatives_map["__start__"] := [[0, 0, 2, _COMPILED_RULE_REF, self._start_rule]]
-				rules_count += 1
-				continue
-			
-			assert(not alternatives_map.find(rule_name))
-			alternatives_map[rule_name] := []
-			for alternative := rules[rule_name].iter():
-				semi_compiled_alternative := [0, 0, 0]
-				rules_count += 1
-				alternatives_map[rule_name].append(semi_compiled_alternative)
-				i := 0
-				while i < alternative.len():
-					token := alternative[i]
-					if token.type == "ID":
-						if not rules.find(token.value):
-							self._error(Strings::format("Unknown production reference '%s'.", token.value), token)
-						semi_compiled_alternative.extend([_COMPILED_RULE_REF, token.value])
-						i += 1
-					elif token.type == "TOKEN":
-						if not self._tokens_map.find(token.value):
-							self._error(Strings::format("Token '%s' not in token map.", token.value), token)
-						semi_compiled_alternative.extend([_COMPILED_TOKEN, self._tokens_map[token.value]])
-						i += 1
-					elif token.type == "(":
-						// By default, we assume that all open brackets are open kleene stars; if
-						// later we discover that this bracket opens an optional group, we come back
-						// and change the value from _COMPILED_OPEN_KLEENE_STAR_GROUP to
-						// _COMPILED_OPEN_OPTIONAL_GROUP.
-						
-						semi_compiled_alternative.extend([_COMPILED_OPEN_KLEENE_STAR_GROUP, -1])
-						i += 1
-						j := i
-						while j < alternative.len() & not (alternative[j].type == ")*" | alternative[j].type == ")?" | alternative[j].type == ")+"):
-							j += 1
-						if j == alternative.len():
-							self._error("Open group lacks corresponding close.", token)
-					elif token.type == ")*":
-						semi_compiled_alternative.extend([_COMPILED_CLOSE_KLEENE_STAR_GROUP, -1])
-						i += 1
-					elif token.type == ")?":
-						j := semi_compiled_alternative.len() - 2
-						count := 1
-						while count > 0:
-							if semi_compiled_alternative[j] == _COMPILED_OPEN_KLEENE_STAR_GROUP:
-								count -= 1
-							j -= 2
-						semi_compiled_alternative[j + 2] := _COMPILED_OPEN_OPTIONAL_GROUP
-						semi_compiled_alternative.extend([_COMPILED_CLOSE_OPTIONAL_GROUP, -1])
-						i += 1
-					elif token.type == ")+":
-						j := semi_compiled_alternative.len() - 2
-						count := 1
-						while count > 0:
-							if semi_compiled_alternative[j] == _COMPILED_OPEN_KLEENE_STAR_GROUP:
-								count -= 1
-							j -= 2
-						semi_compiled_alternative[j + 2 : j + 2] := semi_compiled_alternative[j + 4 : ]
-						semi_compiled_alternative.extend([_COMPILED_CLOSE_KLEENE_STAR_GROUP, -1])
-						i += 1
-					elif token.type == "%PRECEDENCE":
-						if i + 1 == alternative.len() | alternative[i + 1].type != "INT":
-							self._error("Precedence not followed by value.", token)
-						semi_compiled_alternative[_RULE_PRECEDENCE] := Numbers::parse(alternative[i + 1].value)
-						i += 2
-					else:
-						raise "XXX"
-				semi_compiled_alternative[_RULE_NUM_ENTRIES] += semi_compiled_alternative.len() - _RULE_ENTRIES
-		
-		// The nullable computation is loosely based on that found in John Aycock's SPARK.
-		
-		nullables := Set{}
-		tbd := Set{}
-		for rule_name := rule_names.iter():
-			for alternative := alternatives_map[rule_name].iter():
-				i := _RULE_ENTRIES
-				brackets_count := 0
-				while i < alternative.len():
-					if alternative[i] == _COMPILED_OPEN_KLEENE_STAR_GROUP | alternative[i] == _COMPILED_OPEN_OPTIONAL_GROUP:
-						brackets_count += 1
-						i += 2
-					elif alternative[i] == _COMPILED_CLOSE_KLEENE_STAR_GROUP | alternative[i] == _COMPILED_CLOSE_OPTIONAL_GROUP:
-						brackets_count -= 1
-						i += 2
-					elif alternative[i] == _COMPILED_RULE_REF:
-						if brackets_count == 0:
-							break
-						i += 2
-					elif alternative[i] == _COMPILED_TOKEN:
-						if brackets_count == 0:
-							break
-						i += 2
-					else:
-						Sys::println(i, " ", alternative[i])
-						raise "XXX"
-				exhausted:
-					nullables.add(rule_name)
-					break
-			exhausted:
-				tbd.add(rule_name)
-
-		while 1:
-			changes := 0
-			for rule_name := tbd.iter():
-				if not nullables.find(rule_name):
-					for alternative := alternatives_map[rule_name].iter():
-						i := _RULE_ENTRIES
-						brackets_count := 0
-						while i < alternative.len():
-							if alternative[i] == _COMPILED_OPEN_KLEENE_STAR_GROUP | alternative[i] == _COMPILED_OPEN_OPTIONAL_GROUP:
-								brackets_count += 1
-								i += 2
-							elif alternative[i] == _COMPILED_CLOSE_KLEENE_STAR_GROUP | alternative[i] == _COMPILED_CLOSE_OPTIONAL_GROUP:
-								brackets_count -= 1
-								i += 2
-							elif alternative[i] == _COMPILED_RULE_REF:
-								if brackets_count == 0 & not nullables.find(alternative[i + 1]):
-									break
-								i += 2
-							elif alternative[i] == _COMPILED_TOKEN:
-								if brackets_count == 0:
-									break
-								i += 2
-							else:
-								raise "XXX"
-						exhausted:
-							nullables.add(rule_name)
-							changes := 1
-							break
-			if changes == 0:
-				break
-		
-		// Compile
-		
-		// Map production names => int, noting that in Earley systems, grammar rule 0 is reserved
-		// for the algorithms use.
-		
-		rule_names_map := Dict{}
-		for rule_name := rule_names.iter():
-			rule_names_map[rule_name] := rule_names_map.len()
-		
-		compiled_alternatives := []
-		
-		for rule_name := rule_names.iter():
-			for alternative := alternatives_map[rule_name].iter():
-				compiled_rule := Array::Array.new("i")
-				compiled_rule.extend([alternative[_RULE_PRECEDENCE], rule_names_map[rule_name], alternative[_RULE_NUM_ENTRIES]])
-				i := _RULE_ENTRIES
-				while i < alternative.len():
-					if alternative[i] == _COMPILED_OPEN_KLEENE_STAR_GROUP:
-						compiled_rule.extend([_COMPILED_OPEN_KLEENE_STAR_GROUP, -1])
-						i += 2
-					elif alternative[i] == _COMPILED_CLOSE_KLEENE_STAR_GROUP:
-						compiled_rule.extend([_COMPILED_CLOSE_KLEENE_STAR_GROUP, -1])
-						i += 2
-					elif alternative[i] == _COMPILED_OPEN_OPTIONAL_GROUP:
-						compiled_rule.extend([_COMPILED_OPEN_OPTIONAL_GROUP, -1])
-						i += 2
-					elif alternative[i] == _COMPILED_CLOSE_OPTIONAL_GROUP:
-						compiled_rule.extend([_COMPILED_CLOSE_OPTIONAL_GROUP, -1])
-						i += 2
-					elif alternative[i] == _COMPILED_RULE_REF:
-						compiled_rule.append(_COMPILED_RULE_REF)
-						compiled_rule.append(rule_names_map[alternative[i + 1]])
-						i += 2
-					elif alternative[i] == _COMPILED_TOKEN:
-						compiled_rule.append(_COMPILED_TOKEN)
-						compiled_rule.append(alternative[i + 1])
-						i += 2
-					else:
-						raise "XXX"
-				assert(compiled_rule.len() == alternative.len())
-				compiled_alternatives.append([rule_names_map[rule_name], compiled_rule])
-		
-		recogniser_brackets_map := []
-		parser_brackets_map := []
-		for rule_name, compiled_alternative := compiled_alternatives.iter():
-			i := _RULE_ENTRIES
-			while i < compiled_alternative.len():
-				type := compiled_alternative[i]
-				if type == _COMPILED_OPEN_KLEENE_STAR_GROUP | type == _COMPILED_CLOSE_KLEENE_STAR_GROUP | type == _COMPILED_OPEN_OPTIONAL_GROUP | type == _COMPILED_CLOSE_OPTIONAL_GROUP:
-					compiled_alternative[i + 1] := recogniser_brackets_map.len()
-					recogniser_brackets_map.append(self._make_recogniser_brackets_map(compiled_alternative, i))
-					parser_brackets_map.append(self._make_parser_brackets_map(compiled_alternative, i))
-				
-				i += 2
-
-		compiled_grammar := Array::Array.new("i")
-		compiled_grammar.append(-1) // Offset of all rules
-		compiled_grammar.append(-1) // Offset of rules / alternatives
-		compiled_grammar.append(-1) // Offset of rule names
-		compiled_grammar.append(-1) // Offset of recogniser brackets maps
-		compiled_grammar.append(-1) // Offset of parser brackets maps
-
-		compiled_grammar[_COMPILED_GRAMMAR_RULES_OFFSET] := compiled_grammar.len_bytes()
-		compiled_grammar.append(compiled_alternatives.len() + 1)
-		compiled_alternatives_offsets_start := compiled_grammar.len()
-		compiled_grammar.extend([-1] * compiled_alternatives.len())
-		mapped_rule_names_to_compiled_alternatives_map := Dict{} // Maps rule_num => list of alternatives.
-		
-		for i := 0.iter_to(compiled_alternatives.len()):
-			compiled_grammar[compiled_alternatives_offsets_start + i] := compiled_grammar.len_bytes()
-			rule_name, compiled_rule := compiled_alternatives[i]
-			if not mapped_rule_names_to_compiled_alternatives_map.find(rule_name):
-				mapped_rule_names_to_compiled_alternatives_map[rule_name] := []
-			mapped_rule_names_to_compiled_alternatives_map[rule_name].append(i)
-			compiled_grammar.extend(compiled_rule)
-
-		compiled_grammar[_COMPILED_GRAMMAR_RULES_ALTERNATIVES] := compiled_grammar.len_bytes()
-		compiled_grammar.append(rule_names.len())
-		compiled_alternatives_map_start := compiled_grammar.len()
-		compiled_grammar.extend([-1] * rule_names.len())
-		for i := 0.iter_to(rule_names.len()):
-			compiled_grammar[compiled_alternatives_map_start + i] := compiled_grammar.len_bytes()
-			alternatives := mapped_rule_names_to_compiled_alternatives_map[i]
-			if nullables.find(rule_names[i]):
-				compiled_grammar.append(1)
-			else:
-				compiled_grammar.append(0)
-			compiled_grammar.append(alternatives.len())
-			compiled_grammar.extend(alternatives)
-
-		compiled_grammar[_COMPILED_GRAMMAR_RECOGNISER_BRACKETS_MAPS_OFFSETS] := compiled_grammar.len_bytes()
-		compiled_grammar.append(recogniser_brackets_map.len())
-		compiled_recogniser_brackets_map_start := compiled_grammar.len()
-		compiled_grammar.extend([-1] * recogniser_brackets_map.len())
-		for i := 0.iter_to(recogniser_brackets_map.len()):
-			compiled_grammar[compiled_recogniser_brackets_map_start + i] := compiled_grammar.len_bytes()
-			compiled_grammar.append(recogniser_brackets_map[i].len())
-			compiled_grammar.extend(recogniser_brackets_map[i])
-
-		compiled_grammar[_COMPILED_GRAMMAR_PARSER_BRACKETS_MAPS_OFFSETS] := compiled_grammar.len_bytes()
-		compiled_grammar.append(parser_brackets_map.len())
-		compiled_parser_brackets_map_start := compiled_grammar.len()
-		compiled_grammar.extend([-1] * parser_brackets_map.len())
-		for i := 0.iter_to(parser_brackets_map.len()):
-			compiled_grammar[compiled_parser_brackets_map_start + i] := compiled_grammar.len_bytes()
-			compiled_grammar.append(parser_brackets_map[i].len())
-			compiled_grammar.extend(parser_brackets_map[i])
-
-		return [compiled_grammar.serialize(), rule_names]
-	
-	
-	
-	func _error(self, msg, token):
-		
-		Sys::println(self._tokens_map)
-		Sys::println(Strings::format("%s: %s", token.src_infos.to_str(), msg))
-		raise "XXX"
+            Sys::println(i, grammar[i : ])		
+            raise "XXX"
+        
+        if tokens.len() > 0 & tokens[0].type == "NEWLINE":
+            tokens.del(0)
+        
+        if tokens.len() > 0 & tokens[-1].type == "NEWLINE":
+            tokens.del(-1)
+        
+        return [tokens, newlines]
 
 
 
-	func _make_recogniser_brackets_map(self, compiled_alternative, j):
-	
-		if j < compiled_alternative.len() & [_COMPILED_OPEN_KLEENE_STAR_GROUP, _COMPILED_CLOSE_KLEENE_STAR_GROUP, _COMPILED_OPEN_OPTIONAL_GROUP, _COMPILED_CLOSE_OPTIONAL_GROUP].find(compiled_alternative[j]):
-			bracket_map := self._make_recogniser_brackets_map(compiled_alternative, j + 2)
-			if compiled_alternative[j] == _COMPILED_OPEN_KLEENE_STAR_GROUP | compiled_alternative[j] == _COMPILED_OPEN_OPTIONAL_GROUP:
-				count := 1
-				j += 2
-				while count > 0:
-					if compiled_alternative[j] == _COMPILED_CLOSE_OPTIONAL_GROUP | compiled_alternative[j] == _COMPILED_CLOSE_KLEENE_STAR_GROUP:
-						count -= 1
-					j += 2
-			elif compiled_alternative[j] == _COMPILED_CLOSE_KLEENE_STAR_GROUP:
-				count := 1
-				j -= 2
-				while count > 0:
-					if compiled_alternative[j] == _COMPILED_OPEN_KLEENE_STAR_GROUP:
-						count -= 1
-					elif compiled_alternative[j] == _COMPILED_CLOSE_KLEENE_STAR_GROUP:
-						count += 1
-					j -= 2
-				j += 4
-			elif compiled_alternative[j] == _COMPILED_CLOSE_OPTIONAL_GROUP:
-				return bracket_map
-			else:
-				raise "XXX"
-			for new_j := self._make_recogniser_brackets_map(compiled_alternative, j).iter():
-				if not bracket_map.find(new_j):
-					bracket_map.append(new_j)
-			return bracket_map
-		else:
-			return [j - _RULE_ENTRIES]
+    func compile(self):
+    
+        tokens, newlines := self.tokenize(self._grammar)
+        
+        return self.bootstrap_compile(tokens, newlines)
+    
+    
+    
+    func bootstrap_compile(self, tokens, newlines):
+
+        // This method is a mess, but it's only temporary until the CPK is fully bootstrapped.
+
+        // Maps a rule name to an ordered list of alternatives.
+        rules := Dict{"__start__" : []}
+        // An ordered list of rule names.
+        rule_names := ["__start__"]
+        i := 0
+        while i < tokens.len():
+            token := tokens[i]
+            if token.type == "ID":
+                if not rules.find(token.value):
+                    rules[token.value] := []
+                    rule_names.append(token.value)
+                i += 1
+                continue
+            elif token.type == "::=":
+                i += 1
+                alternative := []
+                while i < tokens.len():
+                    if tokens[i].type == "NEWLINE":
+                        i += 1
+                        break
+                    alternative.append(tokens[i])
+                    i += 1
+                rules[rule_names[-1]].append(alternative)
+            else:
+                raise "XXX"
+        
+        rules_count := 0
+        alternatives_map := Dict{}
+        for rule_name := rule_names.iter():
+            if rule_name == "__start__":
+                alternatives_map["__start__"] := [[0, 0, 2, _COMPILED_RULE_REF, self._start_rule]]
+                rules_count += 1
+                continue
+            
+            assert(not alternatives_map.find(rule_name))
+            alternatives_map[rule_name] := []
+            for alternative := rules[rule_name].iter():
+                semi_compiled_alternative := [0, 0, 0]
+                rules_count += 1
+                alternatives_map[rule_name].append(semi_compiled_alternative)
+                i := 0
+                while i < alternative.len():
+                    token := alternative[i]
+                    if token.type == "ID":
+                        if not rules.find(token.value):
+                            self._error(Strings::format("Unknown production reference '%s'.", token.value), token)
+                        semi_compiled_alternative.extend([_COMPILED_RULE_REF, token.value])
+                        i += 1
+                    elif token.type == "TOKEN":
+                        if not self._tokens_map.find(token.value):
+                            self._error(Strings::format("Token '%s' not in token map.", token.value), token)
+                        semi_compiled_alternative.extend([_COMPILED_TOKEN, self._tokens_map[token.value]])
+                        i += 1
+                    elif token.type == "(":
+                        // By default, we assume that all open brackets are open kleene stars; if
+                        // later we discover that this bracket opens an optional group, we come back
+                        // and change the value from _COMPILED_OPEN_KLEENE_STAR_GROUP to
+                        // _COMPILED_OPEN_OPTIONAL_GROUP.
+                        
+                        semi_compiled_alternative.extend([_COMPILED_OPEN_KLEENE_STAR_GROUP, -1])
+                        i += 1
+                        j := i
+                        while j < alternative.len() & not (alternative[j].type == ")*" | alternative[j].type == ")?" | alternative[j].type == ")+"):
+                            j += 1
+                        if j == alternative.len():
+                            self._error("Open group lacks corresponding close.", token)
+                    elif token.type == ")*":
+                        semi_compiled_alternative.extend([_COMPILED_CLOSE_KLEENE_STAR_GROUP, -1])
+                        i += 1
+                    elif token.type == ")?":
+                        j := semi_compiled_alternative.len() - 2
+                        count := 1
+                        while count > 0:
+                            if semi_compiled_alternative[j] == _COMPILED_OPEN_KLEENE_STAR_GROUP:
+                                count -= 1
+                            j -= 2
+                        semi_compiled_alternative[j + 2] := _COMPILED_OPEN_OPTIONAL_GROUP
+                        semi_compiled_alternative.extend([_COMPILED_CLOSE_OPTIONAL_GROUP, -1])
+                        i += 1
+                    elif token.type == ")+":
+                        j := semi_compiled_alternative.len() - 2
+                        count := 1
+                        while count > 0:
+                            if semi_compiled_alternative[j] == _COMPILED_OPEN_KLEENE_STAR_GROUP:
+                                count -= 1
+                            j -= 2
+                        semi_compiled_alternative[j + 2 : j + 2] := semi_compiled_alternative[j + 4 : ]
+                        semi_compiled_alternative.extend([_COMPILED_CLOSE_KLEENE_STAR_GROUP, -1])
+                        i += 1
+                    elif token.type == "%PRECEDENCE":
+                        if i + 1 == alternative.len() | alternative[i + 1].type != "INT":
+                            self._error("Precedence not followed by value.", token)
+                        semi_compiled_alternative[_RULE_PRECEDENCE] := Numbers::parse(alternative[i + 1].value)
+                        i += 2
+                    else:
+                        raise "XXX"
+                semi_compiled_alternative[_RULE_NUM_ENTRIES] += semi_compiled_alternative.len() - _RULE_ENTRIES
+        
+        // The nullable computation is loosely based on that found in John Aycock's SPARK.
+        
+        nullables := Set{}
+        tbd := Set{}
+        for rule_name := rule_names.iter():
+            for alternative := alternatives_map[rule_name].iter():
+                i := _RULE_ENTRIES
+                brackets_count := 0
+                while i < alternative.len():
+                    if alternative[i] == _COMPILED_OPEN_KLEENE_STAR_GROUP | alternative[i] == _COMPILED_OPEN_OPTIONAL_GROUP:
+                        brackets_count += 1
+                        i += 2
+                    elif alternative[i] == _COMPILED_CLOSE_KLEENE_STAR_GROUP | alternative[i] == _COMPILED_CLOSE_OPTIONAL_GROUP:
+                        brackets_count -= 1
+                        i += 2
+                    elif alternative[i] == _COMPILED_RULE_REF:
+                        if brackets_count == 0:
+                            break
+                        i += 2
+                    elif alternative[i] == _COMPILED_TOKEN:
+                        if brackets_count == 0:
+                            break
+                        i += 2
+                    else:
+                        Sys::println(i, " ", alternative[i])
+                        raise "XXX"
+                exhausted:
+                    nullables.add(rule_name)
+                    break
+            exhausted:
+                tbd.add(rule_name)
+
+        while 1:
+            changes := 0
+            for rule_name := tbd.iter():
+                if not nullables.find(rule_name):
+                    for alternative := alternatives_map[rule_name].iter():
+                        i := _RULE_ENTRIES
+                        brackets_count := 0
+                        while i < alternative.len():
+                            if alternative[i] == _COMPILED_OPEN_KLEENE_STAR_GROUP | alternative[i] == _COMPILED_OPEN_OPTIONAL_GROUP:
+                                brackets_count += 1
+                                i += 2
+                            elif alternative[i] == _COMPILED_CLOSE_KLEENE_STAR_GROUP | alternative[i] == _COMPILED_CLOSE_OPTIONAL_GROUP:
+                                brackets_count -= 1
+                                i += 2
+                            elif alternative[i] == _COMPILED_RULE_REF:
+                                if brackets_count == 0 & not nullables.find(alternative[i + 1]):
+                                    break
+                                i += 2
+                            elif alternative[i] == _COMPILED_TOKEN:
+                                if brackets_count == 0:
+                                    break
+                                i += 2
+                            else:
+                                raise "XXX"
+                        exhausted:
+                            nullables.add(rule_name)
+                            changes := 1
+                            break
+            if changes == 0:
+                break
+        
+        // Compile
+        
+        // Map production names => int, noting that in Earley systems, grammar rule 0 is reserved
+        // for the algorithms use.
+        
+        rule_names_map := Dict{}
+        for rule_name := rule_names.iter():
+            rule_names_map[rule_name] := rule_names_map.len()
+        
+        compiled_alternatives := []
+        
+        for rule_name := rule_names.iter():
+            for alternative := alternatives_map[rule_name].iter():
+                compiled_rule := Array::Array.new("i")
+                compiled_rule.extend([alternative[_RULE_PRECEDENCE], rule_names_map[rule_name], alternative[_RULE_NUM_ENTRIES]])
+                i := _RULE_ENTRIES
+                while i < alternative.len():
+                    if alternative[i] == _COMPILED_OPEN_KLEENE_STAR_GROUP:
+                        compiled_rule.extend([_COMPILED_OPEN_KLEENE_STAR_GROUP, -1])
+                        i += 2
+                    elif alternative[i] == _COMPILED_CLOSE_KLEENE_STAR_GROUP:
+                        compiled_rule.extend([_COMPILED_CLOSE_KLEENE_STAR_GROUP, -1])
+                        i += 2
+                    elif alternative[i] == _COMPILED_OPEN_OPTIONAL_GROUP:
+                        compiled_rule.extend([_COMPILED_OPEN_OPTIONAL_GROUP, -1])
+                        i += 2
+                    elif alternative[i] == _COMPILED_CLOSE_OPTIONAL_GROUP:
+                        compiled_rule.extend([_COMPILED_CLOSE_OPTIONAL_GROUP, -1])
+                        i += 2
+                    elif alternative[i] == _COMPILED_RULE_REF:
+                        compiled_rule.append(_COMPILED_RULE_REF)
+                        compiled_rule.append(rule_names_map[alternative[i + 1]])
+                        i += 2
+                    elif alternative[i] == _COMPILED_TOKEN:
+                        compiled_rule.append(_COMPILED_TOKEN)
+                        compiled_rule.append(alternative[i + 1])
+                        i += 2
+                    else:
+                        raise "XXX"
+                assert(compiled_rule.len() == alternative.len())
+                compiled_alternatives.append([rule_names_map[rule_name], compiled_rule])
+        
+        recogniser_brackets_map := []
+        parser_brackets_map := []
+        for rule_name, compiled_alternative := compiled_alternatives.iter():
+            i := _RULE_ENTRIES
+            while i < compiled_alternative.len():
+                type := compiled_alternative[i]
+                if type == _COMPILED_OPEN_KLEENE_STAR_GROUP | type == _COMPILED_CLOSE_KLEENE_STAR_GROUP | type == _COMPILED_OPEN_OPTIONAL_GROUP | type == _COMPILED_CLOSE_OPTIONAL_GROUP:
+                    compiled_alternative[i + 1] := recogniser_brackets_map.len()
+                    recogniser_brackets_map.append(self._make_recogniser_brackets_map(compiled_alternative, i))
+                    parser_brackets_map.append(self._make_parser_brackets_map(compiled_alternative, i))
+                
+                i += 2
+
+        compiled_grammar := Array::Array.new("i")
+        compiled_grammar.append(-1) // Offset of all rules
+        compiled_grammar.append(-1) // Offset of rules / alternatives
+        compiled_grammar.append(-1) // Offset of rule names
+        compiled_grammar.append(-1) // Offset of recogniser brackets maps
+        compiled_grammar.append(-1) // Offset of parser brackets maps
+
+        compiled_grammar[_COMPILED_GRAMMAR_RULES_OFFSET] := compiled_grammar.len_bytes()
+        compiled_grammar.append(compiled_alternatives.len() + 1)
+        compiled_alternatives_offsets_start := compiled_grammar.len()
+        compiled_grammar.extend([-1] * compiled_alternatives.len())
+        mapped_rule_names_to_compiled_alternatives_map := Dict{} // Maps rule_num => list of alternatives.
+        
+        for i := 0.iter_to(compiled_alternatives.len()):
+            compiled_grammar[compiled_alternatives_offsets_start + i] := compiled_grammar.len_bytes()
+            rule_name, compiled_rule := compiled_alternatives[i]
+            if not mapped_rule_names_to_compiled_alternatives_map.find(rule_name):
+                mapped_rule_names_to_compiled_alternatives_map[rule_name] := []
+            mapped_rule_names_to_compiled_alternatives_map[rule_name].append(i)
+            compiled_grammar.extend(compiled_rule)
+
+        compiled_grammar[_COMPILED_GRAMMAR_RULES_ALTERNATIVES] := compiled_grammar.len_bytes()
+        compiled_grammar.append(rule_names.len())
+        compiled_alternatives_map_start := compiled_grammar.len()
+        compiled_grammar.extend([-1] * rule_names.len())
+        for i := 0.iter_to(rule_names.len()):
+            compiled_grammar[compiled_alternatives_map_start + i] := compiled_grammar.len_bytes()
+            alternatives := mapped_rule_names_to_compiled_alternatives_map[i]
+            if nullables.find(rule_names[i]):
+                compiled_grammar.append(1)
+            else:
+                compiled_grammar.append(0)
+            compiled_grammar.append(alternatives.len())
+            compiled_grammar.extend(alternatives)
+
+        compiled_grammar[_COMPILED_GRAMMAR_RECOGNISER_BRACKETS_MAPS_OFFSETS] := compiled_grammar.len_bytes()
+        compiled_grammar.append(recogniser_brackets_map.len())
+        compiled_recogniser_brackets_map_start := compiled_grammar.len()
+        compiled_grammar.extend([-1] * recogniser_brackets_map.len())
+        for i := 0.iter_to(recogniser_brackets_map.len()):
+            compiled_grammar[compiled_recogniser_brackets_map_start + i] := compiled_grammar.len_bytes()
+            compiled_grammar.append(recogniser_brackets_map[i].len())
+            compiled_grammar.extend(recogniser_brackets_map[i])
+
+        compiled_grammar[_COMPILED_GRAMMAR_PARSER_BRACKETS_MAPS_OFFSETS] := compiled_grammar.len_bytes()
+        compiled_grammar.append(parser_brackets_map.len())
+        compiled_parser_brackets_map_start := compiled_grammar.len()
+        compiled_grammar.extend([-1] * parser_brackets_map.len())
+        for i := 0.iter_to(parser_brackets_map.len()):
+            compiled_grammar[compiled_parser_brackets_map_start + i] := compiled_grammar.len_bytes()
+            compiled_grammar.append(parser_brackets_map[i].len())
+            compiled_grammar.extend(parser_brackets_map[i])
+
+        return [compiled_grammar.serialize(), rule_names]
+    
+    
+    
+    func _error(self, msg, token):
+        
+        Sys::println(self._tokens_map)
+        Sys::println(Strings::format("%s: %s", token.src_infos.to_str(), msg))
+        raise "XXX"
+
+
+
+    func _make_recogniser_brackets_map(self, compiled_alternative, j):
+    
+        if j < compiled_alternative.len() & [_COMPILED_OPEN_KLEENE_STAR_GROUP, _COMPILED_CLOSE_KLEENE_STAR_GROUP, _COMPILED_OPEN_OPTIONAL_GROUP, _COMPILED_CLOSE_OPTIONAL_GROUP].find(compiled_alternative[j]):
+            bracket_map := self._make_recogniser_brackets_map(compiled_alternative, j + 2)
+            if compiled_alternative[j] == _COMPILED_OPEN_KLEENE_STAR_GROUP | compiled_alternative[j] == _COMPILED_OPEN_OPTIONAL_GROUP:
+                count := 1
+                j += 2
+                while count > 0:
+                    if compiled_alternative[j] == _COMPILED_CLOSE_OPTIONAL_GROUP | compiled_alternative[j] == _COMPILED_CLOSE_KLEENE_STAR_GROUP:
+                        count -= 1
+                    j += 2
+            elif compiled_alternative[j] == _COMPILED_CLOSE_KLEENE_STAR_GROUP:
+                count := 1
+                j -= 2
+                while count > 0:
+                    if compiled_alternative[j] == _COMPILED_OPEN_KLEENE_STAR_GROUP:
+                        count -= 1
+                    elif compiled_alternative[j] == _COMPILED_CLOSE_KLEENE_STAR_GROUP:
+                        count += 1
+                    j -= 2
+                j += 4
+            elif compiled_alternative[j] == _COMPILED_CLOSE_OPTIONAL_GROUP:
+                return bracket_map
+            else:
+                raise "XXX"
+            for new_j := self._make_recogniser_brackets_map(compiled_alternative, j).iter():
+                if not bracket_map.find(new_j):
+                    bracket_map.append(new_j)
+            return bracket_map
+        else:
+            return [j - _RULE_ENTRIES]
 
 
 
 
-	func _make_parser_brackets_map(self, compiled_alternative, j):
-	
-		if j < compiled_alternative.len() & (compiled_alternative[j] == _COMPILED_OPEN_KLEENE_STAR_GROUP | compiled_alternative[j] == _COMPILED_CLOSE_KLEENE_STAR_GROUP | compiled_alternative[j] == _COMPILED_OPEN_OPTIONAL_GROUP | compiled_alternative[j] == _COMPILED_CLOSE_OPTIONAL_GROUP):
-			if compiled_alternative[j] == _COMPILED_OPEN_KLEENE_STAR_GROUP:
-				count := 1
-				k := j + 2
-				while count > 0:
-					if compiled_alternative[k] == _COMPILED_OPEN_KLEENE_STAR_GROUP:
-						count += 1
-					elif compiled_alternative[k] == _COMPILED_CLOSE_KLEENE_STAR_GROUP:
-						count -= 1
-					k += 2
-				brackets_map := self._make_parser_brackets_map(compiled_alternative, k - 4)
-				if j - _RULE_ENTRIES == 0:
-					brackets_map.append(-2)
-				else:
-					brackets_map.extend(self._make_parser_brackets_map(compiled_alternative, j - 2))
-				
-				return brackets_map
-			elif compiled_alternative[j] == _COMPILED_CLOSE_KLEENE_STAR_GROUP:
-				count := 1
-				k := j - 2
-				while count > 0:
-					if compiled_alternative[k] == _COMPILED_OPEN_KLEENE_STAR_GROUP:
-						count -= 1
-					elif compiled_alternative[k] == _COMPILED_CLOSE_KLEENE_STAR_GROUP:
-						count += 1
-					k -= 2
-				
-				if k - _RULE_ENTRIES >= 0:
-					brackets_map := self._make_parser_brackets_map(compiled_alternative, k)
-				else:
-					brackets_map := [-2]
-				brackets_map.extend(self._make_parser_brackets_map(compiled_alternative, j - 2))
-				
-				return brackets_map
-			elif compiled_alternative[j] == _COMPILED_OPEN_OPTIONAL_GROUP:
-				if j - _RULE_ENTRIES == 0:
-					return [-2]
-				else:
-					return self._make_parser_brackets_map(compiled_alternative, j - 2)
-			else:
-				count := 1
-				k := j - 2
-				while count > 0:
-					if compiled_alternative[k] == _COMPILED_OPEN_OPTIONAL_GROUP:
-						count -= 1
-					elif compiled_alternative[k] == _COMPILED_CLOSE_OPTIONAL_GROUP:
-						count += 1
-					k -= 2
-				
-				if k - _RULE_ENTRIES >= 0:
-					brackets_map := self._make_parser_brackets_map(compiled_alternative, k)
-				else:
-					brackets_map := [-2]
-				brackets_map.extend(self._make_parser_brackets_map(compiled_alternative, j - 2))
-				
-				return brackets_map
-		else:
-			return [j - _RULE_ENTRIES]
+    func _make_parser_brackets_map(self, compiled_alternative, j):
+    
+        if j < compiled_alternative.len() & (compiled_alternative[j] == _COMPILED_OPEN_KLEENE_STAR_GROUP | compiled_alternative[j] == _COMPILED_CLOSE_KLEENE_STAR_GROUP | compiled_alternative[j] == _COMPILED_OPEN_OPTIONAL_GROUP | compiled_alternative[j] == _COMPILED_CLOSE_OPTIONAL_GROUP):
+            if compiled_alternative[j] == _COMPILED_OPEN_KLEENE_STAR_GROUP:
+                count := 1
+                k := j + 2
+                while count > 0:
+                    if compiled_alternative[k] == _COMPILED_OPEN_KLEENE_STAR_GROUP:
+                        count += 1
+                    elif compiled_alternative[k] == _COMPILED_CLOSE_KLEENE_STAR_GROUP:
+                        count -= 1
+                    k += 2
+                brackets_map := self._make_parser_brackets_map(compiled_alternative, k - 4)
+                if j - _RULE_ENTRIES == 0:
+                    brackets_map.append(-2)
+                else:
+                    brackets_map.extend(self._make_parser_brackets_map(compiled_alternative, j - 2))
+                
+                return brackets_map
+            elif compiled_alternative[j] == _COMPILED_CLOSE_KLEENE_STAR_GROUP:
+                count := 1
+                k := j - 2
+                while count > 0:
+                    if compiled_alternative[k] == _COMPILED_OPEN_KLEENE_STAR_GROUP:
+                        count -= 1
+                    elif compiled_alternative[k] == _COMPILED_CLOSE_KLEENE_STAR_GROUP:
+                        count += 1
+                    k -= 2
+                
+                if k - _RULE_ENTRIES >= 0:
+                    brackets_map := self._make_parser_brackets_map(compiled_alternative, k)
+                else:
+                    brackets_map := [-2]
+                brackets_map.extend(self._make_parser_brackets_map(compiled_alternative, j - 2))
+                
+                return brackets_map
+            elif compiled_alternative[j] == _COMPILED_OPEN_OPTIONAL_GROUP:
+                if j - _RULE_ENTRIES == 0:
+                    return [-2]
+                else:
+                    return self._make_parser_brackets_map(compiled_alternative, j - 2)
+            else:
+                count := 1
+                k := j - 2
+                while count > 0:
+                    if compiled_alternative[k] == _COMPILED_OPEN_OPTIONAL_GROUP:
+                        count -= 1
+                    elif compiled_alternative[k] == _COMPILED_CLOSE_OPTIONAL_GROUP:
+                        count += 1
+                    k -= 2
+                
+                if k - _RULE_ENTRIES >= 0:
+                    brackets_map := self._make_parser_brackets_map(compiled_alternative, k)
+                else:
+                    brackets_map := [-2]
+                brackets_map.extend(self._make_parser_brackets_map(compiled_alternative, j - 2))
+                
+                return brackets_map
+        else:
+            return [j - _RULE_ENTRIES]
 
 
 
 func compile(grammar, start_rule, tokens_map):
 
-	return Grammar.new(grammar, start_rule, tokens_map).compile()
+    return Grammar.new(grammar, start_rule, tokens_map).compile()

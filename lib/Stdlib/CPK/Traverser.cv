@@ -26,34 +26,34 @@ import Builtins, Exceptions, Strings, Sys
 
 class Traverser:
 
-	func _preorder(self, node):
+    func _preorder(self, node):
 
-		if not Builtins::List.conformed_by(node):
-			fail
-			
-		name := "_t_" + node[0]
-		if self.find_slot(name):
-			return self.get_slot(name)(node)
-		else:
-			return self._default(node)
+        if not Builtins::List.conformed_by(node):
+            fail
+            
+        name := "_t_" + node[0]
+        if self.find_slot(name):
+            return self.get_slot(name)(node)
+        else:
+            return self._default(node)
 
 
 
 
 class Liberal_Traverser(Traverser):
 
-	func _default(self, node):
-	
-		for c := node[1 : ].iter():
-			self.preorder(c)
+    func _default(self, node):
+    
+        for c := node[1 : ].iter():
+            self.preorder(c)
 
-		return null
+        return null
 
 
 
 
 class Strict_Traverser(Traverser):
 
-	func _default(self, node):
-	
-		raise Exceptions::User_Exception.new(Strings::format("Unknown node '%s'.", node[0]))
+    func _default(self, node):
+    
+        raise Exceptions::User_Exception.new(Strings::format("Unknown node '%s'.", node[0]))

@@ -25,60 +25,60 @@ import C_Time, Exceptions
 
 
 class Time_Exception(Exceptions::User_Exception):
-	pass
+    pass
 
 
 
 
 class Instant:
 
-	func init(self, sec, nsec):
-	
-		if nsec < 0 | nsec >= 100000*10000:
-			raise Time_Exception.new("Invalid nsec value")
-	
-		self.sec := sec
-		self.nsec := nsec
+    func init(self, sec, nsec):
+    
+        if nsec < 0 | nsec >= 100000*10000:
+            raise Time_Exception.new("Invalid nsec value")
+    
+        self.sec := sec
+        self.nsec := nsec
 
 
 
-	func ==(self, o):
-	
-		if self.sec == o.sec & self.nsec == o.nsec:
-			return 1
-		
-		fail
+    func ==(self, o):
+    
+        if self.sec == o.sec & self.nsec == o.nsec:
+            return 1
+        
+        fail
 
 
 
-	func !=(self, o):
-	
-		if self.sec != o.sec | self.nsec != o.nsec:
-			return 1
-		
-		fail
+    func !=(self, o):
+    
+        if self.sec != o.sec | self.nsec != o.nsec:
+            return 1
+        
+        fail
 
 
 
-	func <(self, o):
-	
-		if self.sec < o.sec:
-			return 1
-		elif self.sec == o.sec & self.nsec < o.nsec:
-			return 1
-		
-		fail
+    func <(self, o):
+    
+        if self.sec < o.sec:
+            return 1
+        elif self.sec == o.sec & self.nsec < o.nsec:
+            return 1
+        
+        fail
 
 
 
-	func >(self, o):
-	
-		if self.sec > o.sec:
-			return 1
-		elif self.sec == o.sec & self.nsec > o.nsec:
-			return 1
-		
-		fail
+    func >(self, o):
+    
+        if self.sec > o.sec:
+            return 1
+        elif self.sec == o.sec & self.nsec > o.nsec:
+            return 1
+        
+        fail
 
 
 
@@ -86,10 +86,10 @@ class Instant:
 
 func current():
 
-	return Instant.new.apply(C_Time::current())
+    return Instant.new.apply(C_Time::current())
 
 
 
 func mk_timespec(sec, nsec):
 
-	return Instant.new(sec, nsec)
+    return Instant.new(sec, nsec)

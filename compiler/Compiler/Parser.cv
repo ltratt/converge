@@ -35,7 +35,7 @@ defn  ::= class_defn
       ::= import
       ::= name ( "," name )* ":=" expr
       ::= splice
-	  ::= insert
+      ::= insert
 
 
 name ::= "ID"
@@ -53,8 +53,8 @@ import_as   ::= "AS" "ID"
 class_defn      ::= "CLASS" class_name class_supers class_metaclass ":" "INDENT" class_fields "DEDENT"
 class_name      ::= "ID"
                 ::= splice
-				::= insert
-				::=
+                ::= insert
+                ::=
 class_supers    ::= "(" expr ( "," expr )* ")"
                 ::=
 class_metaclass ::= "METACLASS" expr
@@ -64,7 +64,7 @@ class_field     ::= class_defn
                 ::= func_defn
                 ::= name ":=" expr
                 ::= splice
-				::= insert
+                ::= insert
                 ::= "PASS"
 
 func_defn             ::= func_type func_name "(" func_params ")" ":" "INDENT" func_decls expr_seq "DEDENT"
@@ -94,7 +94,7 @@ func_param_default    ::= ":=" expr
                       ::=
 func_varargs          ::= "*" name
                       ::= "*" splice
-					  ::= "*" insert
+                      ::= "*" insert
 func_decls            ::= func_decl ( "NEWLINE" func_decl )*
                       ::=
 func_decl             ::= func_decl_nonlocals
@@ -103,7 +103,7 @@ func_decl_nonlocals   ::= "NONLOCAL" name ( "," name )* "NEWLINE"
 func_decl_rename      ::= "RENAME" func_decl_rename_elem ( "," func_decl_rename_elem )* "NEWLINE"
 func_decl_rename_elem ::= name "AS" name
                       ::= splice
-					  ::= insert
+                      ::= insert
 
 
 expr_seq ::= expr ( "NEWLINE" expr )*
@@ -112,9 +112,9 @@ expr ::= class_defn
      ::= func_defn
      ::= while           %precedence 5
      ::= if
-	 ::= ndif
+     ::= ndif
      ::= for             %precedence 5
-	 ::= try
+     ::= try
      ::= number
      ::= var_lookup
      ::= dict
@@ -122,7 +122,7 @@ expr ::= class_defn
      ::= list
      ::= dict
      ::= string
-	 ::= module_lookup   %precedence 50
+     ::= module_lookup   %precedence 50
      ::= slot_lookup     %precedence 50
      ::= list
      ::= application     %precedence 40
@@ -146,7 +146,7 @@ expr ::= class_defn
      ::= pass
      ::= import			 %precedence 5
      ::= splice
-	 ::= insert
+     ::= insert
      ::= quasi_quotes
      ::= brackets
 
@@ -290,36 +290,36 @@ brackets ::= "(" expr ")"
 
 class Parser(Earley::Parser::Parser):
 
-	func error(self, token):
+    func error(self, token):
 
-		if token.value is null:
-			token_print := token.type
-		else:
-			token_print := token.value
-		
-		Core::peek_compiler().error(Strings::format("Parsing error at or near `%s' token.", token_print), token.src_infos)
+        if token.value is null:
+            token_print := token.type
+        else:
+            token_print := token.value
+        
+        Core::peek_compiler().error(Strings::format("Parsing error at or near `%s' token.", token_print), token.src_infos)
 
 
 
 
 func parse(src_data):
 
-	compiler := Core::peek_compiler()
+    compiler := Core::peek_compiler()
 
-	compiler.tokenizer.tokenize(src_data, [[compiler.mod_id, 0]], [], [])
-	tokens_map := Tokenizer::tokens_map([], [])
-	grammar, rule_names := Grammar::compile(GRAMMAR, "top_level", tokens_map)
+    compiler.tokenizer.tokenize(src_data, [[compiler.mod_id, 0]], [], [])
+    tokens_map := Tokenizer::tokens_map([], [])
+    grammar, rule_names := Grammar::compile(GRAMMAR, "top_level", tokens_map)
 
-	return Parser.new().parse(grammar, rule_names, tokens_map, compiler.tokenizer.tokens)
+    return Parser.new().parse(grammar, rule_names, tokens_map, compiler.tokenizer.tokens)
 
 
 
 func parse_expr_seq(src_data):
 
-	compiler := Core::peek_compiler()
+    compiler := Core::peek_compiler()
 
-	compiler.tokenizer.tokenize(src_data, [[compiler.mod_id, 0]], [], [])
-	tokens_map := Tokenizer::tokens_map([], [])
-	grammar, rule_names := Grammar::compile(GRAMMAR, "expr_seq", tokens_map)
+    compiler.tokenizer.tokenize(src_data, [[compiler.mod_id, 0]], [], [])
+    tokens_map := Tokenizer::tokens_map([], [])
+    grammar, rule_names := Grammar::compile(GRAMMAR, "expr_seq", tokens_map)
 
-	return Parser.new().parse(grammar, rule_names, tokens_map, compiler.tokenizer.tokens)
+    return Parser.new().parse(grammar, rule_names, tokens_map, compiler.tokenizer.tokens)

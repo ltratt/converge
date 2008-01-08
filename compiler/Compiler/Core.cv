@@ -57,25 +57,25 @@ _compilers := []
 
 func push_compiler(compiler):
 
-	_compilers.append(compiler)
+    _compilers.append(compiler)
 
 
 
 func peek_compiler():
 
-	return _compilers[-1]
+    return _compilers[-1]
 
 
 
 func pop_compiler():
 
-	_compilers.pop()
+    _compilers.pop()
 
 
 
 func num_compilers():
 
-	return _compilers.len()
+    return _compilers.len()
 
 
 
@@ -104,15 +104,15 @@ LIB_EXT := "cvl"
 
 func get_cache_path(path):
 
-	name, ext := File::split_ext(path)
-	if ext == SRC_EXT:
-		// Rename module M.cv to M.cvb
-		return File::join_ext(name, CACHE_EXT)
-	else:
-		// Rename package P to P.cvb
-		return File::join_ext(path, CACHE_EXT)
-	
-	return path
+    name, ext := File::split_ext(path)
+    if ext == SRC_EXT:
+        // Rename module M.cv to M.cvb
+        return File::join_ext(name, CACHE_EXT)
+    else:
+        // Rename package P to P.cvb
+        return File::join_ext(path, CACHE_EXT)
+    
+    return path
 
 
 
@@ -134,14 +134,14 @@ _fresh_name_counter := 0
 
 func fresh_name(name := null):
 
-	nonlocal _fresh_name_counter
-	
-	_fresh_name_counter += 1
-	
-	if name is null:
-		return Strings::format(UNIQUE_NAME_TEMPLATE, (_fresh_name_counter - 1).to_str())
-	else:
-		return Strings::format(UNIQUE_NAME_EXTRA_TEMPLATE, (_fresh_name_counter - 1).to_str(), name)
+    nonlocal _fresh_name_counter
+    
+    _fresh_name_counter += 1
+    
+    if name is null:
+        return Strings::format(UNIQUE_NAME_TEMPLATE, (_fresh_name_counter - 1).to_str())
+    else:
+        return Strings::format(UNIQUE_NAME_EXTRA_TEMPLATE, (_fresh_name_counter - 1).to_str(), name)
 
 
 
@@ -152,70 +152,71 @@ func fresh_name(name := null):
 
 func find_std_includes():
 
-	includes := []
-	
-	// Find Stdlib library.
+    includes := []
+    
+    // Find Stdlib library.
 
-	bin_dir := File::split_leaf(Sys::program_path)[0]
-	lib_path_candidates := [File::join_names(bin_dir, "..", "lib", "converge-" + Sys::version, "Stdlib"), \
-	  File::join_names(bin_dir, "..", "lib", "converge", "Stdlib"), \
-	  File::join_names(bin_dir, "..", "lib", "Stdlib")]
-	for lib_path := lib_path_candidates.iter():
-		if File::exists(lib_path):
-			includes.append(File::canon_path(lib_path))
-			break
-	exhausted:
-		peek_compiler().error("Can't find Converge Stdlib library.")
+    bin_dir := File::split_leaf(Sys::program_path)[0]
+    lib_path_candidates := [File::join_names(bin_dir, "..", "lib", "converge-" + Sys::version, "Stdlib"), \
+      File::join_names(bin_dir, "..", "lib", "converge", "Stdlib"), \
+      File::join_names(bin_dir, "..", "lib", "Stdlib")]
+    for lib_path := lib_path_candidates.iter():
+        if File::exists(lib_path):
+            includes.append(File::split_leaf(File::canon_path(lib_path))[0])
+            includes.append(File::canon_path(lib_path))
+            break
+    exhausted:
+        peek_compiler().error("Can't find Converge Stdlib library directory.")
 
-	// Find Compiler library.
+    // Find Compiler library.
 
-	compiler_path_candidates := [File::join_names(bin_dir, "..", "lib", "converge-" + Sys::version, "Compiler"), \
-	  File::join_names(bin_dir, "..", "lib", "converge", "Compiler"), \
-	  File::join_names(bin_dir, "Compiler")]
-	for lib_path := compiler_path_candidates.iter():
-		if File::exists(lib_path):
-			includes.append(File::canon_path(File::join_names(lib_path, "..")))
-			break
-	exhausted:
-		peek_compiler().error("Can't find Converge Compiler library.")
+    compiler_path_candidates := [File::join_names(bin_dir, "..", "lib", "converge-" + Sys::version, "Compiler"), \
+      File::join_names(bin_dir, "..", "lib", "converge", "Compiler"), \
+      File::join_names(bin_dir, "Compiler")]
+    for lib_path := compiler_path_candidates.iter():
+        if File::exists(lib_path):
+            includes.append(File::canon_path(File::join_names(lib_path, "..")))
+            break
+    exhausted:
+        peek_compiler().error("Can't find Converge Compiler library directory.")
 
-	return includes
+    return includes
 
 
 
 func get_std_libraries():
 
-	bin_dir := File::split_leaf(Sys::program_path)[0]
-	
-	libraries := []
+    bin_dir := File::split_leaf(Sys::program_path)[0]
+    
+    libraries := []
 
-	// Find libconverge.cvl
+    // Find libconverge.cvl
 
-	cnd_dirs := [File::join_names(bin_dir, "..", "lib", "converge-" + Sys::version, "Stdlib"), \
-	  File::join_names(bin_dir, "..", "lib", "converge", "Stdlib"), \
-	  File::join_names(bin_dir, "..", "lib", "Stdlib")]
-	for cnd_dir := cnd_dirs.iter():
-		cnd_path := File::join_names(cnd_dir, "libconverge.cvl")
-		if File::exists(cnd_path):
-			libraries.append(File::canon_path(cnd_path))
-			break
-	exhausted:
-		peek_compiler().error("Can't find libconverge.cvl.")
+    cnd_dirs := [File::join_names(bin_dir, "..", "lib", "converge-" + Sys::version), \
+      File::join_names(bin_dir, "..", "lib", "converge"), \
+      File::join_names(bin_dir, "..", "lib")]
+    for cnd_dir := cnd_dirs.iter():
+        cnd_path := File::join_names(cnd_dir, "Stdlib.cvl")
+        if File::exists(cnd_path):
+            libraries.append(File::canon_path(cnd_path))
+            break
+    exhausted:
+        peek_compiler().error("Can't find Stdlib.cvl.")
 
-	// Find libcompiler.cvl.
+    // Find libcompiler.cvl.
 
-	cnd_dirs := [File::join_names(bin_dir, "..", "lib", "converge-" + Sys::version, "Compiler"), \
-	  File::join_names(bin_dir, "..", "lib", "converge", "Compiler"), \
-	  File::join_names(bin_dir)]
-	for cnd_dir := cnd_dirs.iter():
-		cnd_path := File::join_names(cnd_dir, "libcompiler.cvl")
-		if File::exists(cnd_path):
-			libraries.append(File::canon_path(cnd_path))
-			break
-	exhausted:
-		peek_compiler().error("Can't find libcompiler.cvl.")
+    cnd_dirs := [File::join_names(bin_dir, "..", "lib", "converge-" + Sys::version), \
+      File::join_names(bin_dir, "..", "lib", "converge"), \
+      File::join_names(bin_dir)]
+    for cnd_dir := cnd_dirs.iter():
+        cnd_path := File::join_names(cnd_dir, "Compiler.cvl")
+        if File::exists(cnd_path):
+            libraries.append(File::canon_path(cnd_path))
+            break
+    exhausted:
+        peek_compiler().error("Can't find Compiler.cvl.")
 
-	return libraries
+    return libraries
 
 
 
@@ -226,11 +227,11 @@ func get_std_libraries():
 
 func mk_mod_id(src_path):
 
-	if Properties::case_sensitive_filenames == 0:
-		// On operating systems which are case insensitive (but presumably case preserving), mod
-		// IDs need to be lower cased so that they can be compared even when files have different
-		// capitilizations. Of course there is still potential for hilarity if some filing
-		// systems on these OSs are case sensitive, but there's only so much one can cope with.
-		src_path := src_path.lower_cased()
+    if Properties::case_sensitive_filenames == 0:
+        // On operating systems which are case insensitive (but presumably case preserving), mod
+        // IDs need to be lower cased so that they can be compared even when files have different
+        // capitilizations. Of course there is still potential for hilarity if some filing
+        // systems on these OSs are case sensitive, but there's only so much one can cope with.
+        src_path := src_path.lower_cased()
 
-	return Strings::format("%s:%s", Host::get_hostname(), src_path)
+    return Strings::format("%s:%s", Host::get_hostname(), src_path)

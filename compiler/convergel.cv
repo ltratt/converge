@@ -28,201 +28,201 @@ import Compiler::Core, Compiler::BC_Exec, Compiler::BC_Mod, Compiler::BC_Lib, Co
 
 class Linker:
 
-	func link(self):
-	
-		self.includes := []
-	
-		options := Parse_Options::Options.new(self.usage)
-		options.add(Parse_Options::Option_Spec.new("output", "o", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ONE))
-		options.add(Parse_Options::Option_Spec.new("target", "T", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_ONE))
-		
-		target_name := Strings::format("%dbit", Properties::word_bits)
-		parsed_args, extra_args := options.parse()
-		for option_name, option_val := parsed_args.iter():
-			if option_name == "output":
-				output_path := option_val
-			elif option_name == "target":
-				target_name := option_val
-			else:
-				raise "XXX"
-		
-		if extra_args.len() == 0:
-			self.usage("Not enough arguments.")
+    func link(self):
+    
+        self.includes := []
+    
+        options := Parse_Options::Options.new(self.usage)
+        options.add(Parse_Options::Option_Spec.new("output", "o", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ONE))
+        options.add(Parse_Options::Option_Spec.new("target", "T", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_ONE))
+        
+        target_name := Strings::format("%dbit", Properties::word_bits)
+        parsed_args, extra_args := options.parse()
+        for option_name, option_val := parsed_args.iter():
+            if option_name == "output":
+                output_path := option_val
+            elif option_name == "target":
+                target_name := option_val
+            else:
+                raise "XXX"
+        
+        if extra_args.len() == 0:
+            self.usage("Not enough arguments.")
 
-		target := self.target_name_to_target(target_name)
-		
-		input_paths := extra_args
-		input_paths.extend(Core::get_std_libraries())
+        target := self.target_name_to_target(target_name)
+        
+        input_paths := extra_args
+        input_paths.extend(Core::get_std_libraries())
 
-		bc_mods := []
-		for input_path := extra_args.iter():
-			input_path := File::canon_path(input_path)
-			input_file := File::open(input_path, "r")
-			bc := input_file.read()
+        bc_mods := []
+        for input_path := extra_args.iter():
+            input_path := File::canon_path(input_path)
+            input_file := File::open(input_path, "r")
+            bc := input_file.read()
 
-			if BC_Lib::is_bc_lib(bc):
-				bc_lib := BC_Lib::BC_Lib.new(target)
-				for bc_mod := bc_lib.deserialize(bc).iter():
-					bc_mods.append(bc_mod)
-			elif BC_Mod::is_bc_mod(bc):
-				bc_mod := BC_Mod::BC_Mod.new(target)
-				bc_mod.deserialize_str(bc)
-				bc_mods.append(bc_mod)
-			elif BC_Pkg::is_bc_pkg(bc):
-				bc_pkg := BC_Pkg::BC_Pkg.new(target)
-				bc_pkg.deserialize_str(bc)
-				bc_mods.append(bc_pkg)
-			else:
-				self.error(Strings::format("File '%s' is not of a known type.", input_path))
+            if BC_Lib::is_bc_lib(bc):
+                bc_lib := BC_Lib::BC_Lib.new(target)
+                for bc_mod := bc_lib.deserialize(bc).iter():
+                    bc_mods.append(bc_mod)
+            elif BC_Mod::is_bc_mod(bc):
+                bc_mod := BC_Mod::BC_Mod.new(target)
+                bc_mod.deserialize_str(bc)
+                bc_mods.append(bc_mod)
+            elif BC_Pkg::is_bc_pkg(bc):
+                bc_pkg := BC_Pkg::BC_Pkg.new(target)
+                bc_pkg.deserialize_str(bc)
+                bc_mods.append(bc_pkg)
+            else:
+                self.error(Strings::format("File '%s' is not of a known type.", input_path))
 
-		self.bc_mods_map := Dict{}
-		for bc_mod := bc_mods.iter():
-			self.bc_mods_map[bc_mod.get_mod_id()] := bc_mod
+        self.bc_mods_map := Dict{}
+        for bc_mod := bc_mods.iter():
+            self.bc_mods_map[bc_mod.get_mod_id()] := bc_mod
 
-		bc_mods := Link::link_min_pkgs(bc_mods, self, target)
+        bc_mods := Link::link_min_pkgs(bc_mods, self, target)
 
-		ser := BC_Exec::serialize(target, bc_mods)
-		output_file := File::File.new(output_path, "w")
-		output_file.write(ser)
-		output_file.close()
-		File::chmod(output_path, 493)
-
-
-
-	func lib_link(self):
-	
-		self.includes := []
-	
-		options := Parse_Options::Options.new(self.usage)
-		options.add(Parse_Options::Option_Spec.new("lib_mode", "l", Parse_Options::NONE, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ONE))
-		options.add(Parse_Options::Option_Spec.new("output", "o", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ONE))
-		options.add(Parse_Options::Option_Spec.new("target", "T", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_ONE))
-		
-		target_name := Strings::format("%dbit", Properties::word_bits)
-		parsed_args, extra_args := options.parse()
-		for option_name, option_val := parsed_args.iter():
-			if option_name == "lib_mode":
-				pass
-			elif option_name == "output":
-				output_path := option_val
-			elif option_name == "target":
-				target_name := option_val
-			else:
-				raise "XXX"
-		
-		if extra_args.len() == 0:
-			self.usage("Not enough arguments.")
-
-		target := self.target_name_to_target(target_name)
-
-		ser_mods := []
-		for input_path := extra_args.iter():
-			input_path := File::canon_path(input_path)
-			input_file := File::open(input_path, "r")
-			bc := input_file.read()
-
-			if BC_Lib::is_bc_lib(bc):
-				bc_lib := BC_Lib::BC_Lib.new(target)
-				for bc_mod := bc_lib.deserialize(bc).iter():
-					ser_mods.append(bc_mod.serialize())
-			elif BC_Mod::is_bc_mod(bc):
-				ser_mods.append(bc)
-			elif BC_Pkg::is_bc_pkg(bc):
-				ser_mods.append(bc)
-			else:
-				self.error(Strings::format("File '%s' is not of a known type.", input_path))
-
-		// In one sense, the following should belong in BC_Lib::BC_Lib.serialize. But by
-		// doing it here we can forego the pointless string -> array -> string conversion.
-
-		lib := Array::Array.new(target.ARRAY_TYPE)
-		lib.extend_from_string(BC_Lib::LIB_INIT_STR)
-		lib.append(BC_Lib::LIBRARY_VERSION)
-
-		lib.append(ser_mods.len())
-		
-		offsets := Array::Array.new(target.ARRAY_TYPE)
-		serialized_modules := Array::Array.new(target.ARRAY_TYPE)
-		for module := ser_mods.iter():
-			offsets.append((lib.len() + ser_mods.len() + serialized_modules.len()) * target.WORDSIZE)
-			serialized_modules.extend_from_string(module)
-		
-		lib.extend(offsets)
-		lib.extend(serialized_modules)		
-		
-		output_file := File::File.new(output_path, "w")
-		output_file.write(lib.serialize())
+        ser := BC_Exec::serialize(target, bc_mods)
+        output_file := File::File.new(output_path, "w")
+        output_file.write(ser)
+        output_file.close()
+        File::chmod(output_path, 493)
 
 
 
-	func usage(self, msg):
+    func lib_link(self):
+    
+        self.includes := []
+    
+        options := Parse_Options::Options.new(self.usage)
+        options.add(Parse_Options::Option_Spec.new("lib_mode", "l", Parse_Options::NONE, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ONE))
+        options.add(Parse_Options::Option_Spec.new("output", "o", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ONE))
+        options.add(Parse_Options::Option_Spec.new("target", "T", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_ONE))
+        
+        target_name := Strings::format("%dbit", Properties::word_bits)
+        parsed_args, extra_args := options.parse()
+        for option_name, option_val := parsed_args.iter():
+            if option_name == "lib_mode":
+                pass
+            elif option_name == "output":
+                output_path := option_val
+            elif option_name == "target":
+                target_name := option_val
+            else:
+                raise "XXX"
+        
+        if extra_args.len() == 0:
+            self.usage("Not enough arguments.")
 
-		Sys::stderr.writeln(Strings::format("Error: %s", msg))
-		Sys::stderr.writeln("Usage: convergel [-l] -o <output> <input> [... <input>]")
-		Sys::exit(1)
+        target := self.target_name_to_target(target_name)
+
+        ser_mods := []
+        for input_path := extra_args.iter():
+            input_path := File::canon_path(input_path)
+            input_file := File::open(input_path, "r")
+            bc := input_file.read()
+
+            if BC_Lib::is_bc_lib(bc):
+                bc_lib := BC_Lib::BC_Lib.new(target)
+                for bc_mod := bc_lib.deserialize(bc).iter():
+                    ser_mods.append(bc_mod.serialize())
+            elif BC_Mod::is_bc_mod(bc):
+                ser_mods.append(bc)
+            elif BC_Pkg::is_bc_pkg(bc):
+                ser_mods.append(bc)
+            else:
+                self.error(Strings::format("File '%s' is not of a known type.", input_path))
+
+        // In one sense, the following should belong in BC_Lib::BC_Lib.serialize. But by
+        // doing it here we can forego the pointless string -> array -> string conversion.
+
+        lib := Array::Array.new(target.ARRAY_TYPE)
+        lib.extend_from_string(BC_Lib::LIB_INIT_STR)
+        lib.append(BC_Lib::LIBRARY_VERSION)
+
+        lib.append(ser_mods.len())
+        
+        offsets := Array::Array.new(target.ARRAY_TYPE)
+        serialized_modules := Array::Array.new(target.ARRAY_TYPE)
+        for module := ser_mods.iter():
+            offsets.append((lib.len() + ser_mods.len() + serialized_modules.len()) * target.WORDSIZE)
+            serialized_modules.extend_from_string(module)
+        
+        lib.extend(offsets)
+        lib.extend(serialized_modules)		
+        
+        output_file := File::File.new(output_path, "w")
+        output_file.write(lib.serialize())
 
 
 
-	func error(self, msg, src_infos := null):
+    func usage(self, msg):
 
-		self.print_msg("Error", msg, src_infos)
-		Sys::exit(1)
-
-
-
-	func warning(self, msg, src_infos := null):
-
-		self.print_msg("Warning", msg, src_infos)
+        Sys::stderr.writeln(Strings::format("Error: %s", msg))
+        Sys::stderr.writeln("Usage: convergel [-l] -o <output> <input> [... <input>]")
+        Sys::exit(1)
 
 
 
-	func print_msg(self, pre_msg, msg, src_infos := null):
+    func error(self, msg, src_infos := null):
 
-		if not src_infos is null:
-			Sys::stderr.writeln(Strings::format("%s:", pre_msg))
-			for src_info := src_infos.iter():
-				mod := Builtins::Module.new(self.bc_mods_map[src_info[0]].serialize())
-				line, col := mod.src_offset_to_line_column(src_info[1])
-				
-				Sys::stderr.writeln(Strings::format("  %s, line %d, column %d", src_info[0], line, col))
-
-			Sys::stderr.writeln(msg)
-		else:
-			Sys::stderr.writeln(Strings::format("%s: %s", pre_msg, msg))
+        self.print_msg("Error", msg, src_infos)
+        Sys::exit(1)
 
 
 
-	func target_name_to_target(self, target_name):
+    func warning(self, msg, src_infos := null):
 
-		if not Available::TARGETS.find(target_name):
-			self.error(Strings::format("No support yet for target '%s'.", target_name))
-
-		return Available::TARGETS[target_name].new()
+        self.print_msg("Warning", msg, src_infos)
 
 
 
-	//
-	// Translates lists of bytecode src infos of the form [<import num>, <offset>] to proper src
-	// infos of the form [<module id>, <offset>].
-	//
+    func print_msg(self, pre_msg, msg, src_infos := null):
 
-	func _tn_src_infos(self, src_infos, mod):
-	
-		new_src_infos := []
-		for mod_num, offset := src_infos.iter():
-			if mod_num == -1:
-				new_src_infos.append([mod.get_mod_id(), offset])
-			else:
-				new_src_infos.append([mod.get_imports()[mod_num][0], offset])
+        if not src_infos is null:
+            Sys::stderr.writeln(Strings::format("%s:", pre_msg))
+            for src_info := src_infos.iter():
+                mod := Builtins::Module.new(self.bc_mods_map[src_info[0]].serialize())
+                line, col := mod.src_offset_to_line_column(src_info[1])
+                
+                Sys::stderr.writeln(Strings::format("  %s, line %d, column %d", src_info[0], line, col))
 
-		return new_src_infos
+            Sys::stderr.writeln(msg)
+        else:
+            Sys::stderr.writeln(Strings::format("%s: %s", pre_msg, msg))
+
+
+
+    func target_name_to_target(self, target_name):
+
+        if not Available::TARGETS.find(target_name):
+            self.error(Strings::format("No support yet for target '%s'.", target_name))
+
+        return Available::TARGETS[target_name].new()
+
+
+
+    //
+    // Translates lists of bytecode src infos of the form [<import num>, <offset>] to proper src
+    // infos of the form [<module id>, <offset>].
+    //
+
+    func _tn_src_infos(self, src_infos, mod):
+    
+        new_src_infos := []
+        for mod_num, offset := src_infos.iter():
+            if mod_num == -1:
+                new_src_infos.append([mod.get_mod_id(), offset])
+            else:
+                new_src_infos.append([mod.get_imports()[mod_num][0], offset])
+
+        return new_src_infos
 
 
 
 
 func main():
 
-	if Sys::argv.len() > 1 & Sys::argv[0] == "-l":
-		Linker.new().lib_link()
-	else:
-		Linker.new().link()
+    if Sys::argv.len() > 1 & Sys::argv[0] == "-l":
+        Linker.new().lib_link()
+    else:
+        Linker.new().link()

@@ -27,19 +27,19 @@ import Builtins, Strings
 class Token:
 
 
-	func init(self, type, value, src_infos):
-	
-		self.type := type
-		self.value := value
-		self.src_infos := src_infos
+    func init(self, type, value, src_infos):
+    
+        self.type := type
+        self.value := value
+        self.src_infos := src_infos
 
 
 
-	func to_str(self):
-	
-		if self.value is null:
-			return Strings::format("<%s>", self.type)
-		elif Builtins::List.conformed_by(self.value):
-			return Strings::format("<%s %s>", self.type, self.value.to_str())
-		else:
-			return Strings::format("<%s %s>", self.type, self.value)
+    func to_str(self):
+    
+        if self.value is null:
+            return Strings::format("<%s>", self.type)
+        elif Builtins::List.conformed_by(self.value):
+            return Strings::format("<%s %s>", self.type, self.value.to_str())
+        else:
+            return Strings::format("<%s %s>", self.type, self.value)

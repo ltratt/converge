@@ -32,74 +32,74 @@ import Compiler::Core, Compiler::Eval
 //
 
 class _Dummy_Exception(Exceptions::Exception):
-	pass
+    pass
 
 
 
 
 class _Interactive_Compiler(Eval::Eval_Compiler):
 
-	func error(self, msg, src_infos := null):
-	
-		self._print_msg("Error", msg, src_infos)
-		
-		raise _Dummy_Exception.new()
+    func error(self, msg, src_infos := null):
+    
+        self._print_msg("Error", msg, src_infos)
+        
+        raise _Dummy_Exception.new()
 
 
 
-	func warning(self, msg, src_infos := null):
-	
-		self._print_msg("Warning", msg, src_infos)
-	
-	
-	
-	func _print_msg(self, pre_msg, msg, src_infos := null):
+    func warning(self, msg, src_infos := null):
+    
+        self._print_msg("Warning", msg, src_infos)
+    
+    
+    
+    func _print_msg(self, pre_msg, msg, src_infos := null):
 
-		Sys::stderr.writeln(Strings::format("%s: %s", pre_msg, msg))
-		Sys::stderr.flush()
+        Sys::stderr.writeln(Strings::format("%s: %s", pre_msg, msg))
+        Sys::stderr.flush()
 
 
 
 
 func main():
 
-	includes := Core::find_std_includes()
+    includes := Core::find_std_includes()
 
-	Sys::println("Converge ", Sys::version)
-	d := Dict{}
-	while 1:
-		Sys::print(">>> ")
-		input := []
-		while 1:
-			Sys::stdout.flush()
-			if not (line := Sys::stdin.readln()):
-				Sys::exit(0)
+    Sys::println("Converge ", Sys::version)
+    d := Dict{}
+    while 1:
+        Sys::print(">>> ")
+        input := []
+        while 1:
+            Sys::stdout.flush()
+            if not (line := Sys::stdin.readln()):
+                Sys::exit(0)
 
-			input.append(line)
-			st_line := line.stripped()
-			
-			if st_line == "":
-				break
-			
-			if input.len() == 1 & not (st_line[-1] == ":" | st_line[-1] == "\\"):
-				break
-			
-			Sys::print("... ")
+            input.append(line)
+            st_line := line.stripped()
+            
+            if st_line == "":
+                break
+            
+            if input.len() == 1 & not (st_line[-1] == ":" | st_line[-1] == "\\"):
+                break
+            
+            Sys::print("... ")
 
-		input := Strings::join(input, "\n")
-		if input.stripped() == "":
-			continue
+        input := Strings::join(input, "\n")
+        if input.stripped() == "":
+            continue
 
-		try:
-			compiler := _Interactive_Compiler.new(input, d, includes)
-			Core::push_compiler(compiler)
-			if rtn := compiler.eval():
-				Sys::println(rtn)
-			Core::pop_compiler()
-		catch _Dummy_Exception into e:
-			pass
-		catch Exceptions::System_Exit_Exception into e:
-			Sys::exit(e.code)
-		catch Exceptions::Exception into e:
-			Sys::stderr.writeln(Exceptions::backtrace(e))
-			Sys::stderr.flush()
+        try:
+            compiler := _Interactive_Compiler.new(input, d, includes)
+            Core::push_compiler(compiler)
+            if rtn := compiler.eval():
+                Sys::println(rtn)
+            Core::pop_compiler()
+        catch _Dummy_Exception into e:
+            pass
+        catch Exceptions::System_Exit_Exception into e:
+            Sys::exit(e.code)
+        catch Exceptions::Exception into e:
+            Sys::stderr.writeln(Exceptions::backtrace(e))
+            Sys::stderr.flush()

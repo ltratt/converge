@@ -36,49 +36,49 @@ EXEC_BYTECODE_MODULE_OFFSETS := 4
 
 func serialize(target, bc_mods):
 
-	ser_mods := Array::Array.new(target.ARRAY_TYPE)
-	ser_mods_offsets := []
-	for mod := bc_mods.iter():
-		ser_mods_offsets.append(ser_mods.len_bytes())
-		ser_mods.extend_from_string(mod.serialize())
+    ser_mods := Array::Array.new(target.ARRAY_TYPE)
+    ser_mods_offsets := []
+    for mod := bc_mods.iter():
+        ser_mods_offsets.append(ser_mods.len_bytes())
+        ser_mods.extend_from_string(mod.serialize())
 
-	bc := Array::Array.new(target.ARRAY_TYPE)
-	bc.extend_from_string(EXEC_INIT_STR)
-	bc.append(0)  // Version
-	bc.append(-1) // Number of modules
-	bc[target.LIBRARY_BYTECODE_NUM_MODULES] := ser_mods_offsets.len()
+    bc := Array::Array.new(target.ARRAY_TYPE)
+    bc.extend_from_string(EXEC_INIT_STR)
+    bc.append(0)  // Version
+    bc.append(-1) // Number of modules
+    bc[target.LIBRARY_BYTECODE_NUM_MODULES] := ser_mods_offsets.len()
 
-	preamble_length := (bc.len() + ser_mods_offsets.len()) * target.WORDSIZE
-	for mod_offset := ser_mods_offsets.iter():
-		bc.append(preamble_length + mod_offset)
+    preamble_length := (bc.len() + ser_mods_offsets.len()) * target.WORDSIZE
+    for mod_offset := ser_mods_offsets.iter():
+        bc.append(preamble_length + mod_offset)
 
-	bc.extend(ser_mods)
+    bc.extend(ser_mods)
 
-	sh_header := "#! /usr/bin/env converge\n"
-	ser := sh_header + "\n" * (target.align(sh_header.len()) - sh_header.len()) + bc.serialize()
-	
-	return ser
+    sh_header := "#! /usr/bin/env converge\n"
+    ser := sh_header + "\n" * (target.align(sh_header.len()) - sh_header.len()) + bc.serialize()
+    
+    return ser
 
 
 
 func deserialize(target, exec_str):
 
-	raise "XXX"
-	exec_array := Array::Array.new(target.ARRAY_TYPE, exec_str)
-	
-	if exec_array[0 : EXEC_INIT_STR.len() / target.WORDSIZE].to_str() != EXEC_INIT_STR:
-		raise "XXX"
-	
-	modules := []
-	for i := 0.iter_to(exec_array[EXEC_BYTECODE_NUM_MODULES]):
-		module_offset := exec_array[EXEC_BYTECODE_MODULE_OFFSETS + i] / target.WORDSIZE
-		to := module_offset + (exec_array[module_offset + target.MODULE_BYTECODE_SIZE] / target.WORDSIZE)
-		module := BC_Mod::BC_Mod.new(target)
-		module.deserialize_array(exec_array[module_offset : to])
-		modules.append([exec_str[module_offset * target.WORDSIZE : to * target.WORDSIZE], module])
-		assert module.serialize() == exec_str[module_offset * target.WORDSIZE : to * target.WORDSIZE]
-	
-	return modules
+    raise "XXX"
+    exec_array := Array::Array.new(target.ARRAY_TYPE, exec_str)
+    
+    if exec_array[0 : EXEC_INIT_STR.len() / target.WORDSIZE].to_str() != EXEC_INIT_STR:
+        raise "XXX"
+    
+    modules := []
+    for i := 0.iter_to(exec_array[EXEC_BYTECODE_NUM_MODULES]):
+        module_offset := exec_array[EXEC_BYTECODE_MODULE_OFFSETS + i] / target.WORDSIZE
+        to := module_offset + (exec_array[module_offset + target.MODULE_BYTECODE_SIZE] / target.WORDSIZE)
+        module := BC_Mod::BC_Mod.new(target)
+        module.deserialize_array(exec_array[module_offset : to])
+        modules.append([exec_str[module_offset * target.WORDSIZE : to * target.WORDSIZE], module])
+        assert module.serialize() == exec_str[module_offset * target.WORDSIZE : to * target.WORDSIZE]
+    
+    return modules
 
 
 
@@ -88,13 +88,13 @@ func deserialize(target, exec_str):
 
 func is_bc_exec(bc):
 
-	i := 0
-	if bc.prefixed_by("#!"):
-		i += bc.find_index("\n")
-		while i < bc.len() & bc[i] == "\n":
-			i += 1
+    i := 0
+    if bc.prefixed_by("#!"):
+        i += bc.find_index("\n")
+        while i < bc.len() & bc[i] == "\n":
+            i += 1
 
-	if bc.prefixed_by(EXEC_INIT_STR, i):
-		return 1
+    if bc.prefixed_by(EXEC_INIT_STR, i):
+        return 1
 
-	fail
+    fail

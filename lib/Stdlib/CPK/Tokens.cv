@@ -21,10 +21,10 @@
 
 func tokens_map(list):
 
-	map := Dict{}
-	i := 0
-	for terminal := list.iter():
-		map[terminal] := i
-		i += 1
+    map := Dict{}
+    i := 0
+    for terminal := list.iter():
+        map[terminal] := i
+        i += 1
 
-	return map
+    return map

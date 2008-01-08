@@ -26,35 +26,35 @@ import Exceptions, Sys
 
 func map(func_, list):
 
-	new_list := []
-	for elem := list.iter():
-		if not mapped := func_(elem):
-			raise Exceptions::Exception("Function passed to 'map' did not return an element.")
-		new_list.append(mapped)
-	
-	return new_list
+    new_list := []
+    for elem := list.iter():
+        if not mapped := func_(elem):
+            raise Exceptions::Exception("Function passed to 'map' did not return an element.")
+        new_list.append(mapped)
+    
+    return new_list
 
 
 
 func foldl(func_, list, initializer := null):
 
-	if list.len() == 0 & initializer is null:
-		raise Exceptions::Exception("foldl passed an empty list and no initializer.")
-	elif list.len() == 0:
-		return initializer
+    if list.len() == 0 & initializer is null:
+        raise Exceptions::Exception("foldl passed an empty list and no initializer.")
+    elif list.len() == 0:
+        return initializer
 
-	if list.len() == 1:
-		return list[0]
+    if list.len() == 1:
+        return list[0]
 
-	if not initializer is null:
-		accumulator := initializer
-		i := 0
-	else:
-		accumulator := func_(list[0], list[1])
-		i := 2
-	while i < list.len():
-		if not accumulator := func_(accumulator, list[i]):
-			raise Exceptions::Exception("Function passed to foldl did not return an element.")
-		i += 1
+    if not initializer is null:
+        accumulator := initializer
+        i := 0
+    else:
+        accumulator := func_(list[0], list[1])
+        i := 2
+    while i < list.len():
+        if not accumulator := func_(accumulator, list[i]):
+            raise Exceptions::Exception("Function passed to foldl did not return an element.")
+        i += 1
 
-	return accumulator
+    return accumulator

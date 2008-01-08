@@ -26,59 +26,59 @@ import Builtins, C_Strings, Exceptions, Functional, Maths, Sys
 
 func format(format, *args):
 
-	str := ""
+    str := ""
 
-	i := 0
-	j := 0
-	while i < format.len():
-		if format[i] == "%" & i + 1 < format.len():
-			if format[i + 1] == "%":
-				str += format[i]
-				i += 2
-			else:
-				if j == args.len():
-					raise Exceptions::Parameters_Exception.new("Too few parameters passed for format string.")
-				if format[i + 1] == "s":
-					if not Builtins::String.conformed_by(args[j]):
-						raise Exceptions::Type_Exception.new(Builtins::String.path(), args[j], "parameter " + (j + 2).to_str())
-					str += args[j]
-					i += 2
-					j += 1
-				elif format[i + 1] == "d":
-					if not Builtins::Int.conformed_by(args[j]):
-						raise Exceptions::Type_Exception.new(Builtins::Int.path(), args[j], "parameter " + (j + 2).to_str())
-					str += args[j].to_str()
-					i += 2
-					j += 1
-				else:
-					raise Exceptions::Exception("Unknown identifier '" + format[i + 1] + "'")
-		else:
-			str += format[i]
-			i += 1
-	if j < args.len():
-		raise Exceptions::Parameters_Exception.new("Too many parameters passed.")
-	
-	return str
+    i := 0
+    j := 0
+    while i < format.len():
+        if format[i] == "%" & i + 1 < format.len():
+            if format[i + 1] == "%":
+                str += format[i]
+                i += 2
+            else:
+                if j == args.len():
+                    raise Exceptions::Parameters_Exception.new("Too few parameters passed for format string.")
+                if format[i + 1] == "s":
+                    if not Builtins::String.conformed_by(args[j]):
+                        raise Exceptions::Type_Exception.new(Builtins::String.path(), args[j], "parameter " + (j + 2).to_str())
+                    str += args[j]
+                    i += 2
+                    j += 1
+                elif format[i + 1] == "d":
+                    if not Builtins::Int.conformed_by(args[j]):
+                        raise Exceptions::Type_Exception.new(Builtins::Int.path(), args[j], "parameter " + (j + 2).to_str())
+                    str += args[j].to_str()
+                    i += 2
+                    j += 1
+                else:
+                    raise Exceptions::Exception("Unknown identifier '" + format[i + 1] + "'")
+        else:
+            str += format[i]
+            i += 1
+    if j < args.len():
+        raise Exceptions::Parameters_Exception.new("Too many parameters passed.")
+    
+    return str
 
 
 
 func join(list, separator):
 
-	return C_Strings::join(list, separator)
+    return C_Strings::join(list, separator)
 
 
 
 func split(str, seperator):
 
-	split_str := []
-	i := 0
-	for j := str.find_index(seperator):
-		split_str.append(str[i : j])
-		i := j + seperator.len()
-	if i < str.len():
-		split_str.append(str[i : ])
+    split_str := []
+    i := 0
+    for j := str.find_index(seperator):
+        split_str.append(str[i : j])
+        i := j + seperator.len()
+    if i < str.len():
+        split_str.append(str[i : ])
 
-	return split_str
+    return split_str
 
 
 
@@ -88,23 +88,23 @@ func split(str, seperator):
 
 func lcp(strings):
 
-	if strings.len() == 0:
-		return ""
+    if strings.len() == 0:
+        return ""
 
-	i := Maths::min.apply(Functional::map(func (x) {
-		return x.len()
-	}, strings))
-	
-	while i > 0:
-		prefix := strings[0][ : i]
-		j := 1
-		while j < strings.len():
-			if not strings[j].prefixed_by(prefix):
-				break
-			j += 1
-		exhausted:
-			return prefix
-		
-		i -= 1
-	
-	return ""
+    i := Maths::min.apply(Functional::map(func (x) {
+        return x.len()
+    }, strings))
+    
+    while i > 0:
+        prefix := strings[0][ : i]
+        j := 1
+        while j < strings.len():
+            if not strings[j].prefixed_by(prefix):
+                break
+            j += 1
+        exhausted:
+            return prefix
+        
+        i -= 1
+    
+    return ""

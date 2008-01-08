@@ -27,31 +27,31 @@ import ITree
 
 func lift(obj, src_infos := null):
 
-	if src_infos is null:
-		src_infos := Thread::get_continuation_src_infos(2)
-	else:
-		src_infos += Thread::get_continuation_src_infos(2)
+    if src_infos is null:
+        src_infos := Thread::get_continuation_src_infos(2)
+    else:
+        src_infos += Thread::get_continuation_src_infos(2)
 
-	if obj is null:
-		return ITree::IVar.new("null", src_infos)
-	elif Builtins::String.conformed_by(obj):
-		return ITree::IString.new(obj, src_infos)
-	elif Builtins::Int.conformed_by(obj):
-		return ITree::IInt.new(obj, src_infos)
-	elif Builtins::List.conformed_by(obj):
-		elems := []
-		for e := obj.iter():
-			elems.append(lift(e, src_infos))
-		return ITree::IList.new(elems, src_infos)
-	elif Builtins::Set.conformed_by(obj):
-		elems := []
-		for e := obj.iter():
-			elems.append(lift(e, src_infos))
-		return ITree::ISet.new(elems, src_infos)
-	elif Builtins::Dict.conformed_by(obj):
-		elems := []
-		for key, val := obj.iter():
-			elems.append([lift(key, src_infos), lift(val, src_infos)])
-		return ITree::IDict.new(elems, src_infos)
-	else:
-		raise Exceptions::Exception.new(Strings::format("Don't know how to lift instance of '%s': '%s'.", obj.instance_of.name, obj.to_str()))
+    if obj is null:
+        return ITree::IVar.new("null", src_infos)
+    elif Builtins::String.conformed_by(obj):
+        return ITree::IString.new(obj, src_infos)
+    elif Builtins::Int.conformed_by(obj):
+        return ITree::IInt.new(obj, src_infos)
+    elif Builtins::List.conformed_by(obj):
+        elems := []
+        for e := obj.iter():
+            elems.append(lift(e, src_infos))
+        return ITree::IList.new(elems, src_infos)
+    elif Builtins::Set.conformed_by(obj):
+        elems := []
+        for e := obj.iter():
+            elems.append(lift(e, src_infos))
+        return ITree::ISet.new(elems, src_infos)
+    elif Builtins::Dict.conformed_by(obj):
+        elems := []
+        for key, val := obj.iter():
+            elems.append([lift(key, src_infos), lift(val, src_infos)])
+        return ITree::IDict.new(elems, src_infos)
+    else:
+        raise Exceptions::Exception.new(Strings::format("Don't know how to lift instance of '%s': '%s'.", obj.instance_of.name, obj.to_str()))

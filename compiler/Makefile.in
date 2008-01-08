@@ -29,7 +29,7 @@ OBJ_FILES = ${COMPILER_OBJS} ${TARGET_OBJ_FILES} ${PKG_OBJS} ${EXEC_OBJS}
 	${CONVERGE_VM} ${CONVERGEC} -o $@ $<
 
 
-all: libcompiler.cvl convergec convergei convergel convergep
+all: Compiler.cvl convergec convergei convergel convergep
 
 install: all
 	${INSTALL} -d ${DESTDIR}${bindir}
@@ -48,7 +48,7 @@ endif
 	${foreach obj,${COMPILER_OBJS:.cvb=.cv},${INSTALL} -c -m 444 ${obj} ${DESTDIR}${conlibdir}/${obj};}
 	${foreach obj,${COMPILER_OBJS},${INSTALL} -c -m 444 ${obj} ${DESTDIR}${conlibdir}/${obj};}
 	${foreach obj,${PKG_OBJS},${INSTALL} -c -m 444 ${obj} ${DESTDIR}${conlibdir}/${obj};}
-	${INSTALL} -c -m 444 libcompiler.cvl ${DESTDIR}${conlibdir}/Compiler
+	${INSTALL} -c -m 444 Compiler.cvl ${DESTDIR}${conlibdir}
 
 
 ifdef TARGET
@@ -60,17 +60,17 @@ CROSS_OBJS = ${OBJ_FILES:.cvb=.${TARGET}.cvb}
 %.${TARGET}.cvb: %
 	${CONVERGE_VM} ${CONVERGEC} -T ${TARGET} -o $@ $<
 
-cross: ${CROSS_OBJS} ${CONVERGE_STDLIB_DIR}/libconverge.${TARGET}.cvl
-	${CONVERGE_VM} ${CONVERGEL} -T ${TARGET} -o convergec.${TARGET} convergec.${TARGET}.cvb ${CROSS_OBJS} ${CONVERGE_STDLIB_DIR}/libconverge.${TARGET}.cvl
-	${CONVERGE_VM} ${CONVERGEL} -T ${TARGET} -o convergel.${TARGET} convergel.${TARGET}.cvb ${CROSS_OBJS} ${CONVERGE_STDLIB_DIR}/libconverge.${TARGET}.cvl
+cross: ${CROSS_OBJS} ${CONVERGE_LIB_DIR}/Stdlib.${TARGET}.cvl
+	${CONVERGE_VM} ${CONVERGEL} -T ${TARGET} -o convergec.${TARGET} convergec.${TARGET}.cvb ${CROSS_OBJS} ${CONVERGE_LIB_DIR}/Stdlib.${TARGET}.cvl
+	${CONVERGE_VM} ${CONVERGEL} -T ${TARGET} -o convergel.${TARGET} convergel.${TARGET}.cvb ${CROSS_OBJS} ${CONVERGE_LIB_DIR}/Stdlib.${TARGET}.cvl
 
 cross-clean:
 	rm -f ${CROSS_OBJS} convergec.${TARGET} convergel.${TARGET}
 endif
 
 
-libcompiler.cvl: ${OBJ_FILES}
-	${CONVERGE_VM} ${CONVERGEL} -l -o libcompiler.cvl ${OBJ_FILES}
+Compiler.cvl: ${OBJ_FILES}
+	${CONVERGE_VM} ${CONVERGEL} -l -o Compiler.cvl ${OBJ_FILES}
 
 convergec: ${OBJ_FILES} ${CONVERGE_STDLIB}
 	${CONVERGE_VM} ${CONVERGEL} -o convergec convergec.cvb ${OBJ_FILES}
@@ -85,7 +85,7 @@ convergep: ${OBJ_FILES} ${CONVERGE_STDLIB}
 	${CONVERGE_VM} ${CONVERGEL} -o convergep convergep.cvb ${OBJ_FILES}
 
 clean:
-	rm -f libcompiler.cvl ${OBJ_FILES}
+	rm -f Compiler.cvl ${OBJ_FILES}
 
 distclean: clean
 	rm -f Makefile convergec convergei convergel convergep

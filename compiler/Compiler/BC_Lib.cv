@@ -36,58 +36,58 @@ LIBRARY_VERSION := 0
 
 class BC_Lib:
 
-	func init(self, target):
-	
-		self._target := target
+    func init(self, target):
+    
+        self._target := target
 
 
 
-	func deserialize(self, mod_str):
-	
-		library := Array::Array.new(self._target.ARRAY_TYPE, mod_str)
-	
-		self.modules := []
-		for i := 0.iter_to(library[self._target.LIBRARY_BYTECODE_NUM_MODULES]):
-			mod_offset := library[self._target.LIBRARY_BYTECODE_MODULE_OFFSETS + i] / self._target.WORDSIZE
-			
-			assert BC_Mod::MOD_INIT_STR.len() == BC_Pkg::PKG_INIT_STR.len()
-			
-			mod_header := mod_str[mod_offset * self._target.WORDSIZE : mod_offset * self._target.WORDSIZE + BC_Mod::MOD_INIT_STR.len()]
-			
-			ndif mod_header == BC_Mod::MOD_INIT_STR:
-				to := mod_offset + library[mod_offset + self._target.MODULE_BYTECODE_SIZE] / self._target.WORDSIZE
-				bc_mod := BC_Mod::BC_Mod.new(self._target)
-				bc_mod.deserialize_str(mod_str[mod_offset * self._target.WORDSIZE : to * self._target.WORDSIZE])
-			elif mod_header == BC_Pkg::PKG_INIT_STR:
-				to := mod_offset + library[mod_offset + self._target.PKG_BYTECODE_SIZE] / self._target.WORDSIZE
-				bc_mod := BC_Pkg::BC_Pkg.new(self._target)
-				bc_mod.deserialize_str(mod_str[mod_offset * self._target.WORDSIZE : to * self._target.WORDSIZE])
-				
-			self.modules.append(bc_mod)
-		
-		return self.modules
+    func deserialize(self, mod_str):
+    
+        library := Array::Array.new(self._target.ARRAY_TYPE, mod_str)
+    
+        self.modules := []
+        for i := 0.iter_to(library[self._target.LIBRARY_BYTECODE_NUM_MODULES]):
+            mod_offset := library[self._target.LIBRARY_BYTECODE_MODULE_OFFSETS + i] / self._target.WORDSIZE
+            
+            assert BC_Mod::MOD_INIT_STR.len() == BC_Pkg::PKG_INIT_STR.len()
+            
+            mod_header := mod_str[mod_offset * self._target.WORDSIZE : mod_offset * self._target.WORDSIZE + BC_Mod::MOD_INIT_STR.len()]
+            
+            ndif mod_header == BC_Mod::MOD_INIT_STR:
+                to := mod_offset + library[mod_offset + self._target.MODULE_BYTECODE_SIZE] / self._target.WORDSIZE
+                bc_mod := BC_Mod::BC_Mod.new(self._target)
+                bc_mod.deserialize_str(mod_str[mod_offset * self._target.WORDSIZE : to * self._target.WORDSIZE])
+            elif mod_header == BC_Pkg::PKG_INIT_STR:
+                to := mod_offset + library[mod_offset + self._target.PKG_BYTECODE_SIZE] / self._target.WORDSIZE
+                bc_mod := BC_Pkg::BC_Pkg.new(self._target)
+                bc_mod.deserialize_str(mod_str[mod_offset * self._target.WORDSIZE : to * self._target.WORDSIZE])
+                
+            self.modules.append(bc_mod)
+        
+        return self.modules
 
 
 
-	func serialize(self):
-	
-		library := Array::Array.new(self._target.ARRAY_TYPE)
-		library.extend_from_string(LIB_INIT_STR)
-		library.append(LIBRARY_VERSION)
+    func serialize(self):
+    
+        library := Array::Array.new(self._target.ARRAY_TYPE)
+        library.extend_from_string(LIB_INIT_STR)
+        library.append(LIBRARY_VERSION)
 
-		library.append(self.modules.len())
-		library.append(-1) // Offset to modules offsets
-		
-		library[self._target.LIBRARY_BYTECODE_MODULE_OFFSETS] := library.len_bytes()
-		
-		serialized_modules := Array::Array.new(self._target.ARRAY_TYPE)
-		for module := self.modules.iter():
-			library.append(library.len_bytes() + serialized_modules.len_bytes())
-			serialized_modules.extend_from_string(module.serialize())
-		
-		library.extend(serialized_modules)
-		
-		return library
+        library.append(self.modules.len())
+        library.append(-1) // Offset to modules offsets
+        
+        library[self._target.LIBRARY_BYTECODE_MODULE_OFFSETS] := library.len_bytes()
+        
+        serialized_modules := Array::Array.new(self._target.ARRAY_TYPE)
+        for module := self.modules.iter():
+            library.append(library.len_bytes() + serialized_modules.len_bytes())
+            serialized_modules.extend_from_string(module.serialize())
+        
+        library.extend(serialized_modules)
+        
+        return library
 
 
 
@@ -98,7 +98,7 @@ class BC_Lib:
 
 func is_bc_lib(bc):
 
-	if bc.prefixed_by(LIB_INIT_STR):
-		return 1
+    if bc.prefixed_by(LIB_INIT_STR):
+        return 1
 
-	fail
+    fail

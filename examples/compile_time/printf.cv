@@ -67,134 +67,134 @@ PRINTF_STRING := 1
 
 func printf(format):
 
-	// First of all split the format string up (this is equivalent to the 'parse' function in the
-	// Template Haskell paper).
-	//
-	// "%s has %d %s" will result in split being equal to:
-	//
-	//   [PRINTF_STRING, " has ", PRINTF_INT, " ", PRINTF_STRING]
+    // First of all split the format string up (this is equivalent to the 'parse' function in the
+    // Template Haskell paper).
+    //
+    // "%s has %d %s" will result in split being equal to:
+    //
+    //   [PRINTF_STRING, " has ", PRINTF_INT, " ", PRINTF_STRING]
 
-	split := split_format(format)
+    split := split_format(format)
 
-	// Generate parts of the function.
+    // Generate parts of the function.
 
-	body := []
-	if split.len() == 0:
-		// If the original string was empty, we have no need of parameters, and the return value from
-		// this function is simply the empty string.
-		
-		parameters := []
-		return_expr := [| "" |]
-	else:
-		// This is where it gets more interesting. We build the function in three parts: the
-		// functions parameters, and the body of the function, and the return expression.
-		
-		return_expr := null
-		parameters := []
-		parameter_num := 0
-		for i := 0.iter_to(split.len()):
-			part := split[i]
-			if Builtins::String.conformed_by(part):
-				// Strings are just inserted "as is".
-				
-				expr_part := [| ${CEI::lift(part)} |]
-			else:
-				// We have a parameter type!
-				//
-				// First of all create a variable name, and make a parameter for it.
+    body := []
+    if split.len() == 0:
+        // If the original string was empty, we have no need of parameters, and the return value from
+        // this function is simply the empty string.
+        
+        parameters := []
+        return_expr := [| "" |]
+    else:
+        // This is where it gets more interesting. We build the function in three parts: the
+        // functions parameters, and the body of the function, and the return expression.
+        
+        return_expr := null
+        parameters := []
+        parameter_num := 0
+        for i := 0.iter_to(split.len()):
+            part := split[i]
+            if Builtins::String.conformed_by(part):
+                // Strings are just inserted "as is".
+                
+                expr_part := [| ${CEI::lift(part)} |]
+            else:
+                // We have a parameter type!
+                //
+                // First of all create a variable name, and make a parameter for it.
 
-				param_var := CEI::ivar(CEI::fresh_name())
-				parameters.append(CEI::iparam(param_var, null))
-				
+                param_var := CEI::ivar(CEI::fresh_name())
+                parameters.append(CEI::iparam(param_var, null))
+                
 
-				// Now - whatever type it is - the path is pretty simple. First, generate some code
-				// which checks that the input parameter is of the correct type. Then generate a
-				// little chunk of code (into the expr_part variable) which will allow the input
-				// argument to be added to the output.
-				
-				if part == PRINTF_INT:
-					body.append([|
-						if not Builtins::Int.conformed_by($c{param_var}):
-							raise Exceptions::Type_Exception.new(Builtins::Int.path(), $c{param_var}, ${CEI::lift("parameter " + parameter_num.to_str())})
-					|])
-					expr_part := [| $c{param_var}.to_str() |]
-				elif part == PRINTF_STRING:
-					body.append([|
-						if not Builtins::String.conformed_by($c{param_var}):
-							raise Exceptions::Type_Exception.new(Builtins::String.path(), $c{param_var}, ${CEI::lift("parameter " + parameter_num.to_str())})
-					|])
-					expr_part := [| $c{param_var} |]
-				parameter_num += 1
-			if return_expr is null:
-				// If this is the first part of the return expression, it simply becomes the return
-				// return expression.
-				
-				return_expr := expr_part
-			else:
-				// If this is a subsequent part of the return expression, we need to add the output
-				// of the current argument to the existing part of the return expression.
-			
-				return_expr := [| $c{return_expr} + $c{expr_part} |]
-	
-	// Now we actually generate the function - it's essentially a case of pasting in the code chunks
-	// we've already generated into a simple stub. Et voila.
-	//
-	// The function is anonymous since giving it a name doesn't affect its usage.
-	
-	func_ := [|
-		func ($c{parameters}):
-			$c{body}
-		
-			return $c{return_expr}
-	|]
-	
-	// For the users convenience we pretty print the function so that they can see what's actually
-	// been generated. I suggest you run this program, as seeing the actual output can really bring
-	// what's happening above to life.
-	
-	Sys::println(Strings::format("For the input:\n  %s\nformat generated the following function:\n", format))
-	Sys::println(CEI::itree_pp(func_) + "\n")
-	
-	return func_
+                // Now - whatever type it is - the path is pretty simple. First, generate some code
+                // which checks that the input parameter is of the correct type. Then generate a
+                // little chunk of code (into the expr_part variable) which will allow the input
+                // argument to be added to the output.
+                
+                if part == PRINTF_INT:
+                    body.append([|
+                        if not Builtins::Int.conformed_by($c{param_var}):
+                            raise Exceptions::Type_Exception.new(Builtins::Int.path(), $c{param_var}, ${CEI::lift("parameter " + parameter_num.to_str())})
+                    |])
+                    expr_part := [| $c{param_var}.to_str() |]
+                elif part == PRINTF_STRING:
+                    body.append([|
+                        if not Builtins::String.conformed_by($c{param_var}):
+                            raise Exceptions::Type_Exception.new(Builtins::String.path(), $c{param_var}, ${CEI::lift("parameter " + parameter_num.to_str())})
+                    |])
+                    expr_part := [| $c{param_var} |]
+                parameter_num += 1
+            if return_expr is null:
+                // If this is the first part of the return expression, it simply becomes the return
+                // return expression.
+                
+                return_expr := expr_part
+            else:
+                // If this is a subsequent part of the return expression, we need to add the output
+                // of the current argument to the existing part of the return expression.
+            
+                return_expr := [| $c{return_expr} + $c{expr_part} |]
+    
+    // Now we actually generate the function - it's essentially a case of pasting in the code chunks
+    // we've already generated into a simple stub. Et voila.
+    //
+    // The function is anonymous since giving it a name doesn't affect its usage.
+    
+    func_ := [|
+        func ($c{parameters}):
+            $c{body}
+        
+            return $c{return_expr}
+    |]
+    
+    // For the users convenience we pretty print the function so that they can see what's actually
+    // been generated. I suggest you run this program, as seeing the actual output can really bring
+    // what's happening above to life.
+    
+    Sys::println(Strings::format("For the input:\n  %s\nformat generated the following function:\n", format))
+    Sys::println(CEI::itree_pp(func_) + "\n")
+    
+    return func_
 
 
 
 func split_format(format):
 
-	split_format := []
-	i := 0
-	current_chars := []
-	while i < format.len():
-		if format[i] == "%":
-			if i + 1 < format.len():
-				if format[i + 1] == "d":
-					if current_chars.len() > 0:
-						split_format.append(Strings::join(current_chars, ""))
-						current_chars := []
-					split_format.append(PRINTF_INT)
-					i += 2
-				elif format[i + 1] == "s":
-					if current_chars.len() > 0:
-						split_format.append(Strings::join(current_chars, ""))
-						current_chars := []
-					split_format.append(PRINTF_STRING)
-					i += 2
-				elif format[i + 1] == "%":
-					current_chars.append(format[i])
-					i += 1
-				else:
-					raise Exceptions::Exception("Unknown format specifier '" + format[i + 1] + "'")
-			else:
-				current_chars.append(format[i])
-				i += 1
-		else:
-			current_chars.append(format[i])
-			i += 1
-	if current_chars.len() > 0:
-		split_format.append(Strings::join(current_chars, ""))
-		current_chars := []
+    split_format := []
+    i := 0
+    current_chars := []
+    while i < format.len():
+        if format[i] == "%":
+            if i + 1 < format.len():
+                if format[i + 1] == "d":
+                    if current_chars.len() > 0:
+                        split_format.append(Strings::join(current_chars, ""))
+                        current_chars := []
+                    split_format.append(PRINTF_INT)
+                    i += 2
+                elif format[i + 1] == "s":
+                    if current_chars.len() > 0:
+                        split_format.append(Strings::join(current_chars, ""))
+                        current_chars := []
+                    split_format.append(PRINTF_STRING)
+                    i += 2
+                elif format[i + 1] == "%":
+                    current_chars.append(format[i])
+                    i += 1
+                else:
+                    raise Exceptions::Exception("Unknown format specifier '" + format[i + 1] + "'")
+            else:
+                current_chars.append(format[i])
+                i += 1
+        else:
+            current_chars.append(format[i])
+            i += 1
+    if current_chars.len() > 0:
+        split_format.append(Strings::join(current_chars, ""))
+        current_chars := []
 
-	return split_format
+    return split_format
 
 
 
@@ -205,49 +205,49 @@ func split_format(format):
 
 func simple_printf(format):
 
-	split := split_format(format)
+    split := split_format(format)
 
-	params := []
-	i := 0
-	for part := split.iter():
-		if part == PRINTF_INT | part == PRINTF_STRING:
-			params.append(CEI::iparam(CEI::ivar("p" + i.to_str()), null))
-			i += 1
+    params := []
+    i := 0
+    for part := split.iter():
+        if part == PRINTF_INT | part == PRINTF_STRING:
+            params.append(CEI::iparam(CEI::ivar("p" + i.to_str()), null))
+            i += 1
 
-	return [|
-		func ($c{params}):
-			return $c{simple_printf_expr(split, 0)}
-	|]
+    return [|
+        func ($c{params}):
+            return $c{simple_printf_expr(split, 0)}
+    |]
 
 
 
 func simple_printf_expr(split, param_i):
 
-	if split.len() == 0:
-		return [| "" |]
+    if split.len() == 0:
+        return [| "" |]
 
-	param := CEI::ivar("p" + param_i.to_str())
-	if Builtins::String.conformed_by(split[0]):
-		return [| ${CEI::lift(split[0])} + $c{simple_printf_expr(split[1 : ], param_i)} |]
-	elif split[0] == PRINTF_INT:
-		return [| $c{param}.to_str() + $c{simple_printf_expr(split[1 : ], param_i + 1)} |]
-	elif split[0] == PRINTF_STRING:
-		return [| $c{param} + $c{simple_printf_expr(split[1 : ], param_i + 1)} |]
-	
+    param := CEI::ivar("p" + param_i.to_str())
+    if Builtins::String.conformed_by(split[0]):
+        return [| ${CEI::lift(split[0])} + $c{simple_printf_expr(split[1 : ], param_i)} |]
+    elif split[0] == PRINTF_INT:
+        return [| $c{param}.to_str() + $c{simple_printf_expr(split[1 : ], param_i + 1)} |]
+    elif split[0] == PRINTF_STRING:
+        return [| $c{param} + $c{simple_printf_expr(split[1 : ], param_i + 1)} |]
+    
 
 
 func main():
 
-	Sys::println($<printf("%s has %d %s")>("England", 39, "traditional counties"))
-	
-	//Sys::println($<simple_printf("%s has %d %s")>("England", 39, "traditional counties"))
-	
-	// If you want to, you can uncomment the next chunk of code to compare the timings of the
-	// compile-time and run-time variants of format.
-	//
-	//	i := 10000
-	//	while i > 0:
-	//		$<<printf("%s has %d %s")>>("England", 39, "traditional counties")
-	//		Strings::format("%s has %d %s", "England", 39, "traditional counties")
-	//		i -= 1
-		
+    Sys::println($<printf("%s has %d %s")>("England", 39, "traditional counties"))
+    
+    //Sys::println($<simple_printf("%s has %d %s")>("England", 39, "traditional counties"))
+    
+    // If you want to, you can uncomment the next chunk of code to compare the timings of the
+    // compile-time and run-time variants of format.
+    //
+    //	i := 10000
+    //	while i > 0:
+    //		$<<printf("%s has %d %s")>>("England", 39, "traditional counties")
+    //		Strings::format("%s has %d %s", "England", 39, "traditional counties")
+    //		i -= 1
+        

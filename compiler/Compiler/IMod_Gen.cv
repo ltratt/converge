@@ -160,7 +160,7 @@ class IMod_Gen:
 
         ITree_WF::wf(tmp_imodule)
 
-        tmp_bc_mod := Code_Gen::Code_Gen.new().generate(tmp_imodule, self._compiler.internal_target)
+        tmp_bc_mod := Code_Gen::Code_Gen.new().generate(self._compiler.internal_target, tmp_imodule)
 
         bc_mod_stack := [tmp_bc_mod]
         mods_to_add := [Builtins::Module.new(tmp_bc_mod.serialize())]

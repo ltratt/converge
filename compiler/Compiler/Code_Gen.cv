@@ -89,7 +89,7 @@ IMPORT_SRC_PATH := 1
 
 class Code_Gen:
 
-    func generate(self, imodule, target):
+    func generate(self, target, imodule):
 
         // 'closures' is a list of '(variables, renames)' tuples for each closure level.
         //

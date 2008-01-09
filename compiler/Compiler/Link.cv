@@ -27,11 +27,10 @@ import Code_Gen, Core, BC_Exec, BC_Pkg, ITree
 
 class _Link:
 
-    func link(self, mods, linker, target, max_pkgs):
+    func link(self, linker, mods, max_pkgs):
 
         self._mods := mods
         self._linker := linker
-        self._target := target
         
         self._mods_map := Dict{}
         for mod := mods.iter():
@@ -168,7 +167,7 @@ class _Link:
             self.src_path := bc_pkg.get_src_path()
             self.newlines := []
             Core::push_compiler(self)
-            pkg_as_mod := Code_Gen::Code_Gen.new().generate(imod, self._target)
+            pkg_as_mod := Code_Gen::Code_Gen.new().generate(self._linker.target, imod)
             Core::pop_compiler()
             
             self._done_mods.append(pkg_as_mod)
@@ -177,15 +176,15 @@ class _Link:
 
 
 
-func link_min_pkgs(mods, linker, target):
+func link_min_pkgs(linker, mods):
 
-    return _Link.new().link(mods, linker, target, 0)
+    return _Link.new().link(linker, mods, 0)
 
 
 
-func link_max_pkgs(mods, linker, target):
+func link_max_pkgs(linker, mods):
 
-    return _Link.new().link(mods, linker, target, 1)
+    return _Link.new().link(linker, mods, 1)
 
 
 

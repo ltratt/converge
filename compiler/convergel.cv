@@ -49,7 +49,7 @@ class Linker:
         if extra_args.len() == 0:
             self.usage("Not enough arguments.")
 
-        target := self.target_name_to_target(target_name)
+        self.target := self.target_name_to_target(target_name)
         
         input_paths := extra_args
         input_paths.extend(Core::get_std_libraries())
@@ -61,15 +61,15 @@ class Linker:
             bc := input_file.read()
 
             if BC_Lib::is_bc_lib(bc):
-                bc_lib := BC_Lib::BC_Lib.new(target)
+                bc_lib := BC_Lib::BC_Lib.new(self.target)
                 for bc_mod := bc_lib.deserialize(bc).iter():
                     bc_mods.append(bc_mod)
             elif BC_Mod::is_bc_mod(bc):
-                bc_mod := BC_Mod::BC_Mod.new(target)
+                bc_mod := BC_Mod::BC_Mod.new(self.target)
                 bc_mod.deserialize_str(bc)
                 bc_mods.append(bc_mod)
             elif BC_Pkg::is_bc_pkg(bc):
-                bc_pkg := BC_Pkg::BC_Pkg.new(target)
+                bc_pkg := BC_Pkg::BC_Pkg.new(self.target)
                 bc_pkg.deserialize_str(bc)
                 bc_mods.append(bc_pkg)
             else:
@@ -79,9 +79,9 @@ class Linker:
         for bc_mod := bc_mods.iter():
             self.bc_mods_map[bc_mod.get_mod_id()] := bc_mod
 
-        bc_mods := Link::link_min_pkgs(bc_mods, self, target)
+        bc_mods := Link::link_min_pkgs(self, bc_mods)
 
-        ser := BC_Exec::serialize(target, bc_mods)
+        ser := BC_Exec::serialize(self.target, bc_mods)
         output_file := File::File.new(output_path, "w")
         output_file.write(ser)
         output_file.close()
@@ -113,7 +113,7 @@ class Linker:
         if extra_args.len() == 0:
             self.usage("Not enough arguments.")
 
-        target := self.target_name_to_target(target_name)
+        self.target := self.target_name_to_target(target_name)
 
         ser_mods := []
         for input_path := extra_args.iter():
@@ -122,7 +122,7 @@ class Linker:
             bc := input_file.read()
 
             if BC_Lib::is_bc_lib(bc):
-                bc_lib := BC_Lib::BC_Lib.new(target)
+                bc_lib := BC_Lib::BC_Lib.new(self.target)
                 for bc_mod := bc_lib.deserialize(bc).iter():
                     ser_mods.append(bc_mod.serialize())
             elif BC_Mod::is_bc_mod(bc):
@@ -135,16 +135,16 @@ class Linker:
         // In one sense, the following should belong in BC_Lib::BC_Lib.serialize. But by
         // doing it here we can forego the pointless string -> array -> string conversion.
 
-        lib := Array::Array.new(target.ARRAY_TYPE)
+        lib := Array::Array.new(self.target.ARRAY_TYPE)
         lib.extend_from_string(BC_Lib::LIB_INIT_STR)
         lib.append(BC_Lib::LIBRARY_VERSION)
 
         lib.append(ser_mods.len())
         
-        offsets := Array::Array.new(target.ARRAY_TYPE)
-        serialized_modules := Array::Array.new(target.ARRAY_TYPE)
+        offsets := Array::Array.new(self.target.ARRAY_TYPE)
+        serialized_modules := Array::Array.new(self.target.ARRAY_TYPE)
         for module := ser_mods.iter():
-            offsets.append((lib.len() + ser_mods.len() + serialized_modules.len()) * target.WORDSIZE)
+            offsets.append((lib.len() + ser_mods.len() + serialized_modules.len()) * self.target.WORDSIZE)
             serialized_modules.extend_from_string(module)
         
         lib.extend(offsets)

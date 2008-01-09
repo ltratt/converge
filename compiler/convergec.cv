@@ -315,7 +315,7 @@ class Compiler:
 
         imodule := IMod_Gen::IMod_Gen.new().gen(parse_tree)
         
-        bc := Code_Gen::Code_Gen.new().generate(imodule, self.target)
+        bc := Code_Gen::Code_Gen.new().generate(self.target, imodule)
         
         if self.verbosity > 0:
             self.info(Strings::format("Finished compiling %s.", src_path))
@@ -450,7 +450,7 @@ class Compiler:
 
             self.mod_id := bc_mods[0].get_mod_id()
             self.src_path := bc_mods[0].get_src_path()
-            linked_bc_mods := Linker.new().link(bc_mods, self.target)
+            linked_bc_mods := Linker.new().link(self.target, bc_mods)
 
             ser := BC_Exec::serialize(self.target, linked_bc_mods)
             output_file := File::File.new(self.output_path, "w")
@@ -600,11 +600,12 @@ class Compiler:
 
 class Linker:
 
-    func link(self, mods, target):
+    func link(self, target, mods):
 
+        self.target := target
         self.mods := mods
 
-        return Link::link_min_pkgs(mods, self, target)
+        return Link::link_min_pkgs(self, mods)
 
 
 

@@ -105,13 +105,15 @@ class Eval_Compiler:
         dummy_defns := [ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(eval_name, src_infos)], dummy_func, src_infos)]
         dummy_imodule := ITree::IModule.new(eval_name, dummy_defns, src_infos)
         
-        bc_mod := _Eval_Code_Gen.new().generate(dummy_imodule, self.target)
+        bc_mod := _Eval_Code_Gen.new().generate(self.target, dummy_imodule)
         
         bc_mods := [bc_mod]
         for cached_mod_id, cached_bc_mod := self._cached_mods.iter_vals():
             bc_mods.append(cached_bc_mod)
         
-        linked_bc_mods := Link::link_max_pkgs(bc_mods, Core::peek_compiler(), self.target)
+        // XXX technically we should provide our own linker class as an argument to link_max_pkgs.
+		
+        linked_bc_mods := Link::link_max_pkgs(Core::peek_compiler(), bc_mods)
         
         // We always make sure that the first bc mod is linked in, as it's the "main" module, and
         // might already have had a partial version of itself included in the VM if the user used

@@ -3,4 +3,4 @@ import C_Platform_Exec
 
 
 
-command := C_Platform_Exec::command
+sh_cmd := C_Platform_Exec::sh_cmd

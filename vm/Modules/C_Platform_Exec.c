@@ -43,13 +43,13 @@
 Con_Obj *Con_Module_C_Platform_Exec_init(Con_Obj *, Con_Obj *);
 Con_Obj *Con_Module_C_Platform_Exec_import(Con_Obj *, Con_Obj *);
 
-Con_Obj *_Con_Module_C_Platform_Exec_command(Con_Obj *);
+Con_Obj *_Con_Module_C_Platform_Exec_sh_cmd(Con_Obj *);
 
 
 
 Con_Obj *Con_Module_C_Platform_Exec_init(Con_Obj *thread, Con_Obj *identifier)
 {
-	const char* defn_names[] = {"command", NULL};
+	const char* defn_names[] = {"sh_cmd", NULL};
 
 	return Con_Builtins_Module_Atom_new_c(thread, identifier, CON_NEW_STRING("C_Platform_Exec"), defn_names, CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
 }
@@ -58,7 +58,7 @@ Con_Obj *Con_Module_C_Platform_Exec_init(Con_Obj *thread, Con_Obj *identifier)
 
 Con_Obj *Con_Module_C_Platform_Exec_import(Con_Obj *thread, Con_Obj *env_mod)
 {
-	CON_SET_MOD_DEFN(env_mod, "command", CON_NEW_UNBOUND_C_FUNC(_Con_Module_C_Platform_Exec_command, "command", env_mod));
+	CON_SET_MOD_DEFN(env_mod, "sh_cmd", CON_NEW_UNBOUND_C_FUNC(_Con_Module_C_Platform_Exec_sh_cmd, "sh_cmd", env_mod));
 
 	return env_mod;
 }
@@ -70,10 +70,10 @@ Con_Obj *Con_Module_C_Platform_Exec_import(Con_Obj *thread, Con_Obj *env_mod)
 //
 
 //
-// 'command(cmd)' passes 'cmd' to the shell for execution, returning the exit code.
+// 'sh_cmd(cmd)' passes 'cmd' to the shell for execution, returning the exit code.
 //
 
-Con_Obj *_Con_Module_C_Platform_Exec_command(Con_Obj *thread)
+Con_Obj *_Con_Module_C_Platform_Exec_sh_cmd(Con_Obj *thread)
 {
 	Con_Obj *cmd;
 	CON_UNPACK_ARGS("S", &cmd);

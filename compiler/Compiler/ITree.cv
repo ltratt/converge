@@ -666,25 +666,18 @@ class IDict:
         self.qq_bound_vars := Set{}
         self.free_vars := Set{}
         self.mod_id_lookups := Dict{}
-        for key, val := elems.iter():
-            self.bound_vars.extend(key.bound_vars)
-            self.bound_vars.extend(val.bound_vars)
-            self.import_vars.extend(key.import_vars)
-            self.import_vars.extend(val.import_vars)
-            self.qq_bound_vars.extend(key.qq_bound_vars)
-            self.qq_bound_vars.extend(val.qq_bound_vars)
-            self.free_vars.extend(key.free_vars)
-            self.free_vars.extend(val.free_vars)
-            _merge_mod_id_lookups(self.mod_id_lookups, key.mod_id_lookups)
-            _merge_mod_id_lookups(self.mod_id_lookups, val.mod_id_lookups)
+        for elem := elems.iter():
+            self.bound_vars.extend(elem.bound_vars)
+            self.import_vars.extend(elem.import_vars)
+            self.qq_bound_vars.extend(elem.qq_bound_vars)
+            self.free_vars.extend(elem.free_vars)
+            _merge_mod_id_lookups(self.mod_id_lookups, elem.mod_id_lookups)
 
 
 
     func extended_src_infos(self, extra_src_infos):
     
-        elems := []
-        for key, val := self.elems.iter():
-            elems.append([key.extended_src_infos(extra_src_infos), val.extended_src_infos(extra_src_infos)])
+        elems := _extended_collection_src_infos(self.elems, extra_src_infos)
         
         return IDict.new(elems, self.src_infos + extra_src_infos)
 
@@ -1397,6 +1390,33 @@ class IRename:
         ext_as := self.as_.extended_src_infos(extra_src_infos)
         
         return IRename.new(ext_from, ext_as, self.src_infos + extra_src_infos)
+
+
+
+
+class IDict_Elem:
+
+    func init(self, key, val, src_infos):
+
+        self.key := key
+        self.val := val
+        self.src_infos := src_infos
+
+        self.bound_vars := key.bound_vars + val.bound_vars
+        self.import_vars := key.import_vars + val.import_vars
+        self.qq_bound_vars := key.qq_bound_vars + val.qq_bound_vars
+        self.free_vars := key.free_vars + val.free_vars
+        self.mod_id_lookups := key.mod_id_lookups
+        _merge_mod_id_lookups(self.mod_id_lookups, val.mod_id_lookups)
+
+
+
+    func extended_src_infos(self, extra_src_infos):
+    
+        ext_key := self.key.extended_src_infos(extra_src_infos)
+        ext_val := self.val.extended_src_infos(extra_src_infos)
+        
+        return IDict_Elem.new(ext_key, ext_val, self.src_infos + extra_src_infos)
             
 
 

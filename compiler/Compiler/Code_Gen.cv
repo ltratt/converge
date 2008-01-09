@@ -944,9 +944,9 @@ class Code_Gen:
 
     func _t_idict(self, node):
     
-        for key, val := node.elems.iter():
-            self.preorder(key)
-            self.preorder(val)
+        for elem := node.elems.iter():
+            self.preorder(elem.key)
+            self.preorder(elem.val)
         self._instructions.append(self._target.Instr_Dict.new(node.src_infos, node.elems.len()))
 
 

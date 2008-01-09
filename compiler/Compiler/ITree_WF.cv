@@ -270,10 +270,9 @@ class ITree_WF:
     
         if not Builtins::List.conformed_by(node.elems):
             self._type_error(node, "elems", node.elems, "List")
-        for i := 0.iter_to(node.elems.len()):
-            key, val := node.elems[i]
-            self._check_expr(node, Strings::format("element[%d] key", i), key)
-            self._check_expr(node, Strings::format("element[%d] val", i), val)
+
+        for elem := node.elems.iter():
+            self._preorder(elem)
 
 
 
@@ -466,6 +465,13 @@ class ITree_WF:
             if ITree::IPass.instantiated(expr):
                 continue
             self._check_expr(node, "expr", expr)
+
+
+
+    func _t_idict_elem(self, node):
+    
+        self._check_expr(node, "key", node.key)
+        self._check_expr(node, "val", node.val)
 
 
 

@@ -299,7 +299,7 @@ class ITree_PP:
 
     func _t_idict(self, node):
 
-        elems := Functional::map(func (e) { return Strings::format("%s : %s", self._preorder(e[0]), self._preorder(e[1])) }, node.elems)
+        elems := Functional::map(self._preorder, node.elems)
 
         return Strings::format("Dict{%s}", Strings::join(elems, ", "))
 
@@ -547,6 +547,15 @@ class ITree_PP:
             return Strings::format("%s := %s", self._preorder(node.var), self._preorder(node.default))
         else:
             return self._preorder(node.var)
+
+
+
+    func _t_idict_elem(self, node):
+    
+        key := self._preorder(node.key)
+        val := self._preorder(node.val)
+    
+        return Strings::format("%s : %s", key, val)
 
 
 

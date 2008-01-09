@@ -894,7 +894,10 @@ class IMod_Gen:
         elems := []
         i := 2
         while i < node.len() & Builtins::List.conformed_by(node[i]):
-            elems.append([self._preorder(node[i], extra_src_infos), self._preorder(node[i + 2], extra_src_infos)])
+            key := self._preorder(node[i], extra_src_infos)
+            val := self._preorder(node[i + 2], extra_src_infos)
+            elem := ITree::IDict_Elem.new(key, val, node[i + 1].src_infos)
+            elems.append(elem)
             i += 4
         
         return ITree::IDict.new(elems, extra_src_infos + node[1].src_infos)

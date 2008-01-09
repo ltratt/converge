@@ -552,8 +552,11 @@ class QQ_Mode:
     func _t_idict(self, node):
 
         elems := []
-        for key, val := node.elems.iter():
-            elems.append(ITree::IList.new([self._preorder(key), self._preorder(val)], node.src_infos))
+        for elem := node.elems.iter():
+            ikey := self._preorder(elem.key)
+            ival := self._preorder(elem.val)
+            elem := self._qq("IDict_Elem", [ikey, ival], elem.src_infos)
+            elems.append(elem)
         
         return self._qq("IDict", [ITree::IList.new(elems, node.src_infos)], node.src_infos)
 

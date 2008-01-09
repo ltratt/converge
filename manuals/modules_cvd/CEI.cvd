@@ -215,7 +215,7 @@ Returns an IList whose elements are the list of IExpr's in <code>elems</code>.
 <function name="idict">
 <argument name="elems" />
 <argument name="src_infos" />
-Returns an IDict whose elements are specified in the list of pairs <code>[<emph>key</emph>, <emph>val</emph>]</code> (both elements of which are IExpr's) in <code>elems</code>.
+Returns an IDict whose elements are specified in the list of IDict_Elems <code>elems</code>.
 </function>
 
 
@@ -395,6 +395,14 @@ Returns an IExpr_Seq of the non-empty list of IExpr's <code>exprs</code>.
 <argument name="default" />
 <argument name="src_infos" />
 Returns an IParam whose name is defined by the IVar <code>name</code>, and whose default value is specified by the IExpr <code>default</code> or <code>null</code> if there is no default value.
+</function>
+
+
+<function name="idict_elem">
+<argument name="key" />
+<argument name="val" />
+<argument name="src_infos" />
+Returns an IDict_Elem whose key is <code>key</code>, and whose value is <code>val</code>.
 </function>
 
 

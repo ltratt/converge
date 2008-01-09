@@ -341,8 +341,8 @@ class _Renamer:
     func _t_idict(self, node):
 
         elems := []
-        for key, val := node.elems.iter():
-            elems.append([self._preorder(key), self._preorder(val)])
+        for elem := node.elems.iter():
+            elems.append(self._preorder(elem))
         
         return ITree::IDict.new(elems, node.src_infos)
 
@@ -538,6 +538,15 @@ class _Renamer:
             default := self._preorder(node.default)
         
         return ITree::IParam.new(var, default, node.src_infos)
+
+
+
+    func _t_idict_elem(self, node):
+    
+        key := self._preorder(node.key)
+        val := self._preorder(node.val)
+        
+        return ITree::IDict_Elem.new(key, val, node.src_infos)
 
 
 

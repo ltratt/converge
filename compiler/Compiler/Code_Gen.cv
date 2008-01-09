@@ -97,10 +97,10 @@ class Code_Gen:
         // corresponding closure at execution time.
         //
         // 'renames' maps a rename to its original variable name. e.g. "rename x as y" is stored as
-        // Dict{"y" : "x"}. This might seem backwards, but the _add_assign_to_var function is the
-        // main consumer of these lists and it needs to discover what a variable is named in the
-        // outer scope (for the running example, this means that when it goes up a level of nesting,
-        // rather than search for "y", it needs to search for "x").
+        // Dict{"y" : IVar.new("x")}. This might seem backwards, but the _add_assign_to_var function
+        // is the main consumer of these lists and it needs to discover what a variable is named in
+        // the outer scope (for the running example, this means that when it goes up a level of
+        // nesting, rather than search for "y", it needs to search for "x").
     
         self.closures := []
         

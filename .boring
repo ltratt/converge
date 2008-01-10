@@ -46,6 +46,7 @@ Makefile.inc$
 .*\.cvb$
 .*\.cvl$
 lib/Makefile$
+lib/Makefile.Stdlib$
 test/t1$
 test/thread_test$
 compiler/convergec$
@@ -65,6 +66,6 @@ bootstrap/id_fix.bootstrap$
 manuals/cvd_to_html
 manuals/modules_html/.*.html
 vm/Std_Modules.[ch]$
-tests/lang/namespaces/ns[1-9]
-tests/lang/namespaces/qq[1-9]
-tests/lang/namespaces/tests
+tests/lang/namespaces/ns[1-9]$
+tests/lang/namespaces/qq[1-9]$
+tests/lang/namespaces/tests$

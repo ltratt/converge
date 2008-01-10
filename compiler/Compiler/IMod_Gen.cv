@@ -553,15 +553,15 @@ class IMod_Gen:
                         nonlocals.append(var)
                         j += 2
                 else:
-                    // func_decl_rename ::= "RENAME" func_decl_rename_elem ( "," "RENAME"
+                    // func_decl_rename ::= "RENAME" func_decl_rename_elem ( ","
                     //                      func_decl_rename_elem )* "NEWLINE"
                     j := 1
                     while j < decl.len():
                         rename_ := decl[j + 1]
                         if rename_.len() == 4:
                             // func_decl_rename_elem ::= name "AS" name
-                            rename_from := self._preorder(decl[j + 1], extra_src_infos)
-                            rename_as := self._preorder(decl[j + 3], extra_src_infos)
+                            rename_from := self._preorder(rename_[1], extra_src_infos)
+                            rename_as := self._preorder(rename_[3], extra_src_infos)
                             renames.append(ITree::IRename.new(rename_from, rename_as, decl[j].src_infos))
                         elif rename_[0] == "splice":
                             // func_decl_rename_elem ::= splice

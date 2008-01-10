@@ -105,9 +105,10 @@ class Compiler:
 
 
 
-    func from_mk_mode(self, mod_id, src_path, start_includes, verbosity, target, internal_target, mk_done_bc_mods, mk_mtime_map):
+    func from_mk_mode(self, mod_id, src_path, start_includes, verbosity, mk_fresh, target, internal_target, mk_done_bc_mods, mk_mtime_map):
 
         self.mk_mode := 1
+        self.mk_fresh := mk_fresh
         self.output_path := null
         self.start_includes := start_includes
         self.verbosity := verbosity
@@ -181,7 +182,7 @@ class Compiler:
         
         compiler := Compiler.new()
         Core::push_compiler(compiler)
-        bc_mod := compiler.from_mk_mode(mod_id, src_path, self.start_includes, self.verbosity, self.target, self.internal_target, self.mk_done_bc_mods, self.mk_mtime_map)
+        bc_mod := compiler.from_mk_mode(mod_id, src_path, self.start_includes, self.verbosity, self.mk_fresh, self.target, self.internal_target, self.mk_done_bc_mods, self.mk_mtime_map)
         Core::pop_compiler()
         
         if self.verbosity > 0:
@@ -217,8 +218,9 @@ class Compiler:
                 src_path := File::canon_path(matched_path)
                 if mod_id := self.src_paths_to_mod_ids.find(src_path):
                     break
-
-                if cvb_path := Core::get_cache_path(src_path) & File::exists(cvb_path):
+                
+                if (self.mk_mode == 0 | (self.mk_mode == 1 & self.mk_fresh == 0)) & \
+                  cvb_path := Core::get_cache_path(src_path) & File::exists(cvb_path):
                     f := File::open(cvb_path, "r")
                     bc := f.read()
                     if BC_Mod::is_bc_mod(bc):

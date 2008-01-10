@@ -19,7 +19,7 @@
 // IN THE SOFTWARE.
 
 
-import Builtins, Exceptions, File, Strings, Sys, VM
+import Builtins, Exceptions, Strings, Sys, VM
 import Code_Gen, Core, BC_Mod, ITree, ITree_Rename, ITree_WF, Lift
 
 

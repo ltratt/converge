@@ -123,11 +123,7 @@ class ITree_PP:
             pp.append(Strings::join(nonlocals, ", "))
 
         renames := []
-        for rename_ := node.renames.iter():
-            pp_rename_from := self._preorder(rename_.from)
-            pp_rename_as := self._preorder(rename_.as_)
-            rename_pp := Strings::format("%s as %s", pp_rename_from, pp_rename_as)
-            renames.append(rename_pp)
+        for renames.append(self._preorder(node.renames.iter()))
         if renames.len() > 0:
             pp.append("\n")
             pp.append(_INDENT_STRING * (self._indent_level + 1))
@@ -547,6 +543,12 @@ class ITree_PP:
             return Strings::format("%s := %s", self._preorder(node.var), self._preorder(node.default))
         else:
             return self._preorder(node.var)
+
+
+
+    func _t_irename(self, node):
+    
+        return Strings::format("%s as %s", self._preorder(node.from), self._preorder(node.as_))
 
 
 

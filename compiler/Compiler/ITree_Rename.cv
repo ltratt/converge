@@ -541,6 +541,15 @@ class _Renamer:
 
 
 
+    func _t_irename(self, node):
+    
+        from := self._preorder(node.from)
+        as_ := self._preorder(node.as_)
+        
+        return ITree::IRename.new(from, as_, node.src_infos)
+
+
+
     func _t_idict_elem(self, node):
     
         key := self._preorder(node.key)

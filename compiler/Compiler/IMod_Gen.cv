@@ -563,9 +563,13 @@ class IMod_Gen:
                             rename_from := self._preorder(rename_[1], extra_src_infos)
                             rename_as := self._preorder(rename_[3], extra_src_infos)
                             renames.append(ITree::IRename.new(rename_from, rename_as, decl[j].src_infos))
-                        elif rename_[0] == "splice":
+                        elif rename_[1][0] == "splice":
                             // func_decl_rename_elem ::= splice
-                            raise "XXX"
+                            splice := rename_[1]
+                            rename_ := self._eval_splice(splice, extra_src_infos)
+                            if not (ITree::IRename.instantiated(rename_) & ITree_WF::wf(rename_)):
+                                ITree_WF::type_error("IRename", "splice result", extra_src_infos + splice[1][1].src_infos)
+                            renames.append(rename_)
                         else:
                             // func_decl_rename_elem ::= insert
                             renames.append(self._preorder(rename_[1]))

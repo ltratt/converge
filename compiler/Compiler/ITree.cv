@@ -203,22 +203,14 @@ class IFunc_Defn:
                 _merge_mod_id_lookups(self.mod_id_lookups, rename_.mod_id_lookups)
                 self.internal_import_vars.extend(rename_.import_vars)
             else:
-                if not IVar.instantiated(rename_.from):
-                    all_bound_vars.extend(rename_.from.bound_vars)
-                    self.import_vars.extend(rename_.from.import_vars)
-                    self.qq_bound_vars.extend(rename_.from.qq_bound_vars)
-                    all_free_vars.extend(rename_.from.free_vars)
-                    _merge_mod_id_lookups(self.mod_id_lookups, rename_.from.mod_id_lookups)
+                all_bound_vars.extend(rename_.bound_vars)
+                self.import_vars.extend(rename_.import_vars)
+                self.qq_bound_vars.extend(rename_.qq_bound_vars)
+                all_free_vars.extend(rename_.free_vars)
+                _merge_mod_id_lookups(self.mod_id_lookups, rename_.from.mod_id_lookups)
 
                 if IVar.instantiated(rename_.as_):
                     nl_vars.add(rename_.as_.name)
-                    self.qq_bound_vars.add(rename_.as_.name)
-                else:
-                    all_bound_vars.extend(rename_.as_.bound_vars)
-                    self.import_vars.extend(rename_.as_.import_vars)
-                    self.qq_bound_vars.extend(rename_.as_.qq_bound_vars)
-                    all_free_vars.extend(rename_.as_.free_vars)
-                    _merge_mod_id_lookups(self.mod_id_lookups, rename_.as_.mod_id_lookups)
 
         self.bound_vars := all_bound_vars.complement(nl_vars)
         self.internal_bound_vars := all_internal_bound_vars.complement(nl_vars)
@@ -1381,6 +1373,28 @@ class IRename:
         self.from := from
         self.as_ := as_
         self.src_infos := src_infos
+        
+        if IVar.instantiated(from):
+            self.bound_vars := Set{}
+            self.import_vars := Set{}
+            self.qq_bound_vars := Set{}
+            self.free_vars := Set{from.name}
+            self.mod_id_lookups := Dict{}
+        else:
+            self.bound_vars := from.bound_vars.scopy()
+            self.import_vars := from.import_vars.scopy()
+            self.qq_bound_vars := from.qq_bound_vars.scopy()
+            self.free_vars := from.free_vars.scopy()
+            self.mod_id_lookups := from.mod_id_lookups.scopy()
+
+        if IVar.instantiated(as_):
+            self.qq_bound_vars.add(as_.name)
+        else:
+            self.bound_vars.extend(as_.bound_vars)
+            self.import_vars.extend(as_.import_vars)
+            self.qq_bound_vars.extend(as_.qq_bound_vars)
+            self.free_vars.extend(as_.free_vars)
+            _merge_mod_id_lookups(self.mod_id_lookups, as_.mod_id_lookups)
 
 
 

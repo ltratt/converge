@@ -491,13 +491,13 @@ class ITree_WF:
         if ITree::IVar.instantiated(rename_from) | ITree::IModule_Lookup.instantiated(rename_from) | ITree::IInsert.instantiated(rename_from):
             self._preorder(rename_from)
         else:
-            self._type_error(node, "from", node.var, "[IVar, IModule_Lookup, IInsert]")
+            self._type_error(node, "from", node.from, "[IVar, IModule_Lookup, IInsert]")
 
         rename_as := node.as_
         if ITree::IVar.instantiated(rename_as) | ITree::IInsert.instantiated(rename_as):
             self._preorder(rename_as)
         else:
-            self._type_error(node, "as_", node.var, "[IVar, IInsert]")
+            self._type_error(node, "as_", node.as_, "[IVar, IInsert]")
 
 
 

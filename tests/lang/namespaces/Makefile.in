@@ -5,7 +5,7 @@ TESTS = ns1 ns2 ns3 ns4 qq1 qq2 qq3 qq4 qq5 qq6
 
 
 all:
-	${CONVERGEC} -I .. -m tests.cv
+	${CONVERGE_VM} ${CONVERGEC} -I .. -m tests.cv
 
 clean:
 	${foreach test,${TESTS},rm -f ${test} ${test}.cvb}

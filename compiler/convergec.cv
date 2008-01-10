@@ -99,7 +99,7 @@ class Compiler:
             self._make(extra[0])
         else:
             bc_mod := self._compile_path(extra[0])
-            output_file := File::File.new(self.output_path, "w")
+            output_file := File::open(self.output_path, "w")
             output_file.write(bc_mod.serialize())
             output_file.close()
 
@@ -472,7 +472,7 @@ class Compiler:
             linked_bc_mods := Linker.new().link(self.target, bc_mods)
 
             ser := BC_Exec::serialize(self.target, linked_bc_mods)
-            output_file := File::File.new(self.output_path, "w")
+            output_file := File::open(self.output_path, "w")
             output_file.write(ser)
             output_file.close()
             try:

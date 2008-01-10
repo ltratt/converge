@@ -206,7 +206,7 @@ class _Eval_Code_Gen(Code_Gen::Code_Gen):
 
     func _prc_mod_lookup(self, mod_lookup):
 
-        assert _Eval_Compiler.instantiated(self._compiler)
+        assert Eval_Compiler.instantiated(self._compiler)
 
         if not (val := self._compiler.vars.find(mod_lookup.names[0].name)):
             // Since this doesn't even refer to a valid variable, a "variable not found" error will

@@ -484,8 +484,6 @@ class QQ_Mode:
 
     func _t_imodule_lookup(self, node):
 
-        assert ITree::IVar.instantiated(node.names[0])
-
         names := []
 
         if ITree::IInsert.instantiated(node.names[0]):

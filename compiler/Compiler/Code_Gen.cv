@@ -1063,19 +1063,18 @@ class Code_Gen:
         assert_failed_label := self._create_label()
         assert_end_label := self._create_label()
         
-        // XXX
-        //self._nesting.append([NEST_NORMAL])
-        //self.instructions.append(self._target.Instr_Add_Failure_Frame.new(node.src_infos, assert_failed_label))
-        //self.preorder(node.assert_expr)
-        //self.instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
-        //self._nesting.del(-1)
-        //self.instructions.append(self._target.Instr_Branch.new(node.src_infos, assert_end_label))
-        //
-        //self._set_label(assert_failed_label)
-        //self.preorder(ITree::IOriginal_Name("Exceptions", Bytecode.IMPORT_BUILTIN, "Assert_Exception", node.src_infos))
-        //self.instructions.append(self._target.Instr_String.new(node.src_infos, "Assertion failed."))
-        //self.instructions.append(self._target.Instr_Apply.new(node.src_infos, 1))
-        //self.instructions.append(self._target.Instr_Raise.new(node.src_infos))
+        self._nesting.append([NEST_NORMAL])
+        self._instructions.append(self._target.Instr_Add_Failure_Frame.new(node.src_infos, assert_failed_label))
+        self.preorder(node.expr)
+        self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
+        self._nesting.del(-1)
+        self._instructions.append(self._target.Instr_Branch.new(node.src_infos, assert_end_label))
+        
+        self._set_label(assert_failed_label)
+        self._add_mod_defn_lookup(["Exceptions", "Assert_Exception"], node.src_infos)
+        self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(node.src_infos, "new"))
+        self._instructions.append(self._target.Instr_Apply.new(node.src_infos, 0))
+        self._instructions.append(self._target.Instr_Raise.new(node.src_infos))
         
         self._set_label(assert_end_label)
 

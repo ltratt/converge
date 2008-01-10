@@ -816,7 +816,7 @@ class IMod_Gen:
         if node.len() == 2 & not Builtins::List.conformed_by(node[1]):
             // name ::= "ID"
             if node[1].value == SRC_INFO_VAR:
-                assert node.src_infos.len() == 1
+                assert node[1].src_infos.len() == 1
                 src_path := ITree::IString.new(node[1].src_infos[0][0], extra_src_infos + node[1].src_infos)
                 src_infos := ITree::IInt.new(node[1].src_infos[0][1], extra_src_infos + node[1].src_infos)
                 return ITree::IList.new([ITree::IList.new([src_path, src_infos], extra_src_infos + node[1].src_infos)], extra_src_infos + node[1].src_infos)

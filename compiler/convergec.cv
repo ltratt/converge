@@ -94,6 +94,7 @@ class Compiler:
         self.target := self._target_name_to_target(target_name)
         self.internal_target := self._target_name_to_target(internal_target_name)
 
+        self.src_paths_to_mod_ids := Dict{}
         if self.mk_mode == 1:
             self._make(extra[0])
         else:
@@ -113,6 +114,7 @@ class Compiler:
         self.target := target
         self.internal_target := internal_target
         
+        self.src_paths_to_mod_ids := Dict{}
         self.mk_done_bc_mods := mk_done_bc_mods
 
         bc_mod := self._compile_path(src_path)
@@ -171,7 +173,8 @@ class Compiler:
     
         if not(self.mk_mode == 1 & self.mk_fresh == 1):
             if bc_mod, mtime := self._read_cache_cvb(src_path):
-                return bc_mod
+                if mod_id == bc_mod.get_mod_id():
+                    return bc_mod
 
         if self.mk_mode == 0:
             self.error(Strings::format("Can not find compiled version of '%s'.", src_path), src_infos)
@@ -209,7 +212,12 @@ class Compiler:
     
         for include_dir := self.includes.iter():
             if matched_path, extra_pos := match_path(0, include_dir):
+                import_extras := import_name_list[extra_pos + 1 : ]
+
                 src_path := File::canon_path(matched_path)
+                if mod_id := self.src_paths_to_mod_ids.find(src_path):
+                    break
+
                 if cvb_path := Core::get_cache_path(src_path) & File::exists(cvb_path):
                     f := File::open(cvb_path, "r")
                     bc := f.read()
@@ -222,7 +230,8 @@ class Compiler:
                     mod_id := bc_mod.get_mod_id()
                 else:
                     mod_id := Core::mk_mod_id(src_path)
-                import_extras := import_name_list[extra_pos + 1 : ]
+
+                self.src_paths_to_mod_ids[src_path] := mod_id
                 break
         exhausted:
             // If the first part of the import references a builtin, then looking up that module ID
@@ -358,9 +367,12 @@ class Compiler:
             lib_bc := lib_file.read()
             lib_file.close()
             for bc_mod := bc_lib.deserialize(lib_bc).iter():
+                lib_mod_id := bc_mod.get_mod_id()
+                lib_mod_src_path := bc_mod.get_src_path()
                 lib_mods.append(bc_mod)
-                lib_mod_ids.add(bc_mod.get_mod_id())
-                self.mk_done_bc_mods[bc_mod.get_mod_id()] := [bc_mod.get_src_path(), bc_mod]
+                lib_mod_ids.add(lib_mod_id)
+                self.mk_done_bc_mods[lib_mod_id] := [lib_mod_src_path, bc_mod]
+                self.src_paths_to_mod_ids[lib_mod_src_path] := lib_mod_id
 
         // The main loop. Basically we keep on going around this, reading in cached files or
         // compiling new files; and updating any modules who are older than their import
@@ -380,6 +392,11 @@ class Compiler:
 
                 if lib_mod_ids.find(mod_id):
                     continue
+
+                // We update the src path -> mod id map regardless of whether an entry already
+                // existed or it pointed to a different mod id.
+                
+                self.src_paths_to_mod_ids[mod_src_path] := mod_id
                 
                 compile := 0
                 if bc_mod is null:
@@ -389,8 +406,8 @@ class Compiler:
                         // We haven't previously encountered this module, so try seeing if we can
                         // read in a cached version.
                         if bc_mod, mtime := self._read_cache_cvb(mod_src_path):
-                            mod_id := bc_mod.get_mod_id()
-                            self.mk_done_bc_mods[mod_id] := [bc_mod.get_src_path(), bc_mod]
+                            assert mod_id == bc_mod.get_mod_id()
+                            self.mk_done_bc_mods[mod_id] := [mod_src_path, bc_mod]
                             self.mk_mtime_map[mod_id] := mtime
                         else:
                             compile := 1

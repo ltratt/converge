@@ -1,0 +1,23 @@
+import CEI, Sys
+
+
+
+x := 2
+
+func f():
+
+    return [|
+        func ():
+            rename x as y
+        
+            x := 10
+            y += 2
+    |]
+
+
+
+func main():
+
+    assert x == 2
+    $<f()>()
+    assert x == 4

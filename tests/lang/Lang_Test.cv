@@ -1,0 +1,202 @@
+// Copyright (c) 2008 Laurence Tratt <laurie@tratt.net>
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to
+// deal in the Software without restriction, including without limitation the
+// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+// sell copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+// IN THE SOFTWARE.
+
+
+// XXX: this is unfinished. It doesn't check the output of programs properly
+// and really only checks that a program terminates as specified without seeing
+// if it satisfies other conditions. This is still enough to be useful, but
+// will require more advance sub-process facilities to be complete.
+
+
+import CEI, CPK::Traverser, Platform::Exec, Strings, Sys
+
+
+
+_MODE_CTIME := 0
+_MODE_RTIME := 1
+
+_GRAMMAR := """
+tests ::= file ( "NEWLINE" file )*
+
+file   ::= "STRING"
+       ::= "STRING" ":" "INDENT" detail ( "NEWLINE" detail )* "DEDENT"
+detail ::= mode type
+
+mode ::= "CTIME"
+     ::= "RTIME"
+
+type ::= warning
+     ::= exception
+
+warning ::= "WARNING" "STRING"
+
+exception ::= "EXCEPTION" "STRING"
+"""
+
+
+
+class _Test:
+
+    func init(self, details):
+
+        self.details := details
+
+
+
+
+class _Detail_Exception:
+
+    func init(self, name):
+
+        self.name := name
+
+
+
+
+class _Test_Translator(Traverser::Strict_Traverser):
+
+    func generate(self, node):
+
+        return self._preorder(node)
+
+
+
+    func _t_tests(self, node):
+
+        // tests ::= file ( "NEWLINE" file )*
+
+        itests := []
+        i := 1
+        while i < node.len():
+            itests.append(self._preorder(node[i]))
+            i += 2
+
+        return [|
+            class:
+                _tests := ${CEI::idict(itests)}
+
+                func run_all(self):
+
+                    failed := []
+                    for path := self._tests.iter_keys():
+                        if self.run(path) != 0:
+                            failed.append(path)
+
+                    if failed.len() > 0:
+                        Sys::stderr.write("\n===> The following tests failed:")
+                        for path := failed.iter():
+                            Sys::stderr.write(" " + path)
+                        Sys::stderr.writeln("")
+                        Sys::stderr.flush()
+                        return 1
+                    else:
+                        return 0
+
+
+
+                func run(self, path):
+
+                    test := self._tests[path]
+                    Sys::stderr.write("===> " + path)
+                    Sys::stderr.flush()
+
+                    if test.details.len() == 0:
+                        cmd := Strings::format("%s -f %s > /dev/null 2> /dev/null", Sys::vm_path, path)
+                        rtn := Exec::sh_cmd(cmd)
+                        if rtn == 0:
+                            Sys::stderr.writeln(" pass")
+                            Sys::stderr.flush()
+                            return 0
+                        else:
+                            Sys::stderr.writeln(" fail")
+                            Sys::stderr.flush()
+                            return 1
+                    else:
+                        cmd := Strings::format("%s -f %s > /dev/null 2> /dev/null", Sys::vm_path, path)
+                        rtn := Exec::sh_cmd(cmd)
+                        if rtn != 0:
+                            Sys::stderr.writeln(" pass")
+                            Sys::stderr.flush()
+                            return 0
+                        else:
+                            Sys::stderr.writeln(" fail")
+                            Sys::stderr.flush()
+                            return 1
+        |]
+
+
+
+    func _t_file(self, node):
+
+        // file ::= "STRING"
+        //      ::= "STRING" ":" "INDENT" detail ( "NEWLINE" detail )* "DEDENT"
+
+        path := CEI::istring(node[1].value, node[1].src_infos)
+
+        details := []
+        i := 4
+        while i < node.len():
+            details.append(self._preorder(node[i]))
+            i += 2
+
+        return CEI::idict_elem(path, [| _Test.new(${CEI::ilist(details)}) |])
+
+
+
+    func _t_detail(self, node):
+
+        // detail ::= mode type
+
+        mode_node := node[1][1]
+        ndif mode_node.type == "CTIME":
+            imode := [| _MODE_CTIME |]
+        elif mode_node.type == "RTIME":
+            imode := [| _MODE_RTIME |]
+
+        return [| [${imode}, ${self._preorder(node[2])}] |]
+
+
+
+    func _t_type(self, node):
+
+        // type ::= warning
+        //      ::= exception
+
+        return self._preorder(node[1])
+
+
+
+    func _t_exception(self, node):
+
+        // exception ::= "EXCEPTION" "STRING"
+
+        iex_name := CEI::istring(node[2].value, node[2].src_infos)
+
+        return [<node[1].src_infos>| _Detail_Exception.new(${iex_name}) |]
+
+
+
+
+
+func tests(dsl_block, src_infos):
+
+    parse_tree := CEI::dsl_parse(dsl_block, src_infos, ["ctime", "rtime", "warning", "exception"], [], _GRAMMAR, "tests")
+
+    return _Test_Translator.new().generate(parse_tree)

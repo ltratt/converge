@@ -1,0 +1,12 @@
+import Sys
+
+
+func main():
+
+    x := 2
+    
+    func () {
+        x := 4
+    }()
+    
+    assert x == 2

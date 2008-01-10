@@ -2,11 +2,15 @@ include @abs_top_srcdir@/Makefile.inc
 
 
 all: 
-	cd threads && ${MAKE} ${MFLAGS}
 
 clean:
+	cd lang && ${MAKE} ${MFLAGS} clean
 	cd threads && ${MAKE} ${MFLAGS} clean
 
 distclean:
+	cd lang && ${MAKE} ${MFLAGS} distclean
 	cd threads && ${MAKE} ${MFLAGS} distclean
 	rm -f Makefile
+
+regress:
+	cd lang && ${MAKE} ${MFLAGS} regress

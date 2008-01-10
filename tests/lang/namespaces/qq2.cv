@@ -1,0 +1,21 @@
+import Sys
+
+
+
+x := 2
+
+func f():
+
+    return [|
+        func ():
+            nonlocal x
+        
+            x += 2
+    |]
+
+
+
+func main():
+
+    $<f()>()
+    assert x == 4

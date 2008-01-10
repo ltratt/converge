@@ -1,0 +1,28 @@
+import CEI, Sys
+
+
+
+x := 2
+
+func f():
+
+    y := CEI::ivar(CEI::fresh_name())
+
+    it := [|
+        func (z := 2):
+            rename x as $c{y}
+        
+            $c{y} += 2
+            z
+    |]
+    Sys::println(CEI::itree_pp(it))
+
+    return it
+
+
+
+func main():
+
+    Sys::println(x)
+    $c<f()>()
+    Sys::println(x)

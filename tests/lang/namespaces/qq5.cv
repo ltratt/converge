@@ -1,0 +1,25 @@
+import CEI, Sys
+
+
+
+x := 2
+
+func f():
+
+    y := CEI::ivar(CEI::fresh_name())
+    x := CEI::ivar("x")
+
+    return [|
+        func ():
+            rename $c{x} as $c{y}
+        
+            $c{y} += 2
+    |]
+
+
+
+func main():
+
+    assert x == 2
+    $c<f()>()
+    assert x == 4

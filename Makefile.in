@@ -14,7 +14,6 @@ else
 endif
 	cd examples && ${MAKE} ${MFLAGS}
 	cd manuals && ${MAKE} ${MFLAGS}
-	cd tests && ${MAKE} ${MFLAGS}
 
 install: all
 	cd vm && ${MAKE} ${MFLAGS} install
@@ -51,6 +50,9 @@ distclean:
 	cd manuals && ${MAKE} ${MFLAGS} distclean
 	cd tests && ${MAKE} ${MFLAGS} distclean
 	rm -rf autom4te.cache Makefile Makefile.inc configure config.log config.status
+
+regress:
+	cd tests && ${MAKE} ${MFLAGS} regress
 
 release: distclean
 	mkdir converge-@CONVERGE_VERSION@

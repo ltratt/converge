@@ -1,0 +1,20 @@
+import CEI, Sys
+
+
+
+x := 2
+
+func f():
+
+    rename $c<CEI::irename(CEI::ivar("x"), CEI::ivar("y"))>
+        
+    x := 10
+    y += 2
+
+
+
+func main():
+
+    assert x == 2
+    f()
+    assert x == 4

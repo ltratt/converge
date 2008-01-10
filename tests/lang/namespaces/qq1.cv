@@ -1,0 +1,18 @@
+import Sys
+
+
+
+x := 2
+
+func f():
+
+    return [|
+        func ():
+            x += 2
+    |]
+
+
+
+func main():
+
+    $<f()>()

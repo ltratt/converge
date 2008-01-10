@@ -1,0 +1,19 @@
+include @abs_top_srcdir@/Makefile.inc
+
+
+OBJ_FILES = Lang_Test.cvb
+
+
+all: 
+	cd namespaces && ${MAKE} ${MFLAGS}
+
+clean:
+	cd namespaces && ${MAKE} ${MFLAGS} clean
+	rm -f ${OBJ_FILES}
+
+distclean: clean
+	cd namespaces && ${MAKE} ${MFLAGS} distclean
+	rm -f Makefile
+
+regress:
+	cd namespaces && ${MAKE} ${MFLAGS} regress

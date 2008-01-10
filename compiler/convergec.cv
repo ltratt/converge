@@ -582,9 +582,9 @@ class Compiler:
             can_write := 1
             if File::exists(cvb_path):
                 cvb_file := File::open(cvb_path, "r")
-                bc := cvb_file.read()
+                old_bc := cvb_file.read()
                 cvb_file.close()
-                if not (BC_Mod::is_bc_mod(bc) | BC_Pkg::is_bc_pkg(bc)):
+                if not (BC_Mod::is_bc_mod(old_bc) | BC_Pkg::is_bc_pkg(old_bc)):
                     can_write := 0
 
             if can_write == 1:

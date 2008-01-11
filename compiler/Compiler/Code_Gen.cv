@@ -128,7 +128,7 @@ class Code_Gen:
         self._mod_id := self._compiler.mod_id
         self._target := target
         
-        self.preorder(imodule)
+        self._preorder(imodule)
         
         // Fudge for constants.
         
@@ -333,10 +333,10 @@ class Code_Gen:
 
             fst := renamed_var_name.names[0]
             if ITree::IMod_Id_Import.instantiated(fst):
-                self.preorder(fst)
+                self._preorder(fst)
             else:
                 self._prc_mod_lookup(renamed_var_name)
-                self.preorder(fst)
+                self._preorder(fst)
 
             for name := renamed_var_name.names.iter(1, -1):
                 self._instructions.append(self._target.Instr_Module_Lookup.new(name.src_infos, name.name))
@@ -368,7 +368,7 @@ class Code_Gen:
         renamed_var_name, closures_offset, var_num := self._get_var_offsets(var_name, src_infos)
         
         if ITree::IModule_Lookup.instantiated(renamed_var_name):
-            self.preorder(renamed_var_name)
+            self._preorder(renamed_var_name)
         else:
             self._instructions.append(self._target.Instr_Lookup_Var.new(src_infos, closures_offset, var_num))
 
@@ -427,7 +427,7 @@ class Code_Gen:
     // Traversal
     //
 
-    func preorder(self, node):
+    func _preorder(self, node):
     
         self.get_slot("_t_" + node.instance_of.name.lower_cased())(node)
 
@@ -440,9 +440,9 @@ class Code_Gen:
             self._nesting.append([NEST_NORMAL])
             self._instructions.append(self._target.Instr_Add_Failure_Frame.new(expr.src_infos, end_of_expr_label))
             if ITree::IFunc_Defn.instantiated(expr) & not expr.func_name is null:
-                self.preorder(ITree::IAssignment.new(ITree::STD_ASSIGN, [expr.func_name], expr, expr.src_infos))
+                self._preorder(ITree::IAssignment.new(ITree::STD_ASSIGN, [expr.func_name], expr, expr.src_infos))
             else:
-                self.preorder(expr)
+                self._preorder(expr)
 
             self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(expr.src_infos))
             self._nesting.del(-1)
@@ -468,7 +468,7 @@ class Code_Gen:
         for defn := node.defns.iter():
             end_of_defn_label := self._create_label()
             self._instructions.append(self._target.Instr_Add_Failure_Frame.new(node.src_infos, end_of_defn_label))
-            self.preorder(defn)
+            self._preorder(defn)
             self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
             self._set_label(end_of_defn_label)
 
@@ -485,14 +485,14 @@ class Code_Gen:
         if node.metaclass_ is null:
             self._instructions.append(self._target.Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_CLASS_CLASS))
         else:
-            self.preorder(node.metaclass_)
+            self._preorder(node.metaclass_)
         self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(node.src_infos, "new"))
         
         self._instructions.append(self._target.Instr_String.new(node.src_infos, node.class_name))
         
         if node.supers.len() > 0:
             for super_ := node.supers.iter():
-                self.preorder(super_)
+                self._preorder(super_)
             self._instructions.append(self._target.Instr_List.new(node.src_infos, node.supers.len()))
         else:
             // Object is the default superclass
@@ -517,16 +517,16 @@ class Code_Gen:
                 if field.func_name is null:
                     self._compiler.error("Functions as class fields can not be anonymous.", node.src_infos)
                 self._instructions.append(self._target.Instr_String.new(field.src_infos, field.func_name.name))
-                self.preorder(field)
+                self._preorder(field)
             elif ITree::IClass_Defn.instantiated(field):
                 if field.class_name == "":
                     self._compiler.error("Classes as class fields can not be anonymous.", node.src_infos)
                 self._instructions.append(self._target.Instr_String.new(field.src_infos, field.class_name))
-                self.preorder(field)
+                self._preorder(field)
             elif ITree::IAssignment.instantiated(field):
                 assert field.targets.len() == 1
                 self._instructions.append(self._target.Instr_String.new(field.src_infos, field.targets[0].name))
-                self.preorder(field.expr)
+                self._preorder(field.expr)
             else:
                 Sys::println(field.pp(0))
                 raise "XXX"
@@ -597,13 +597,13 @@ class Code_Gen:
             assert not ITree::IModule_Lookup.instantiated(renamed_var_name)
             self._instructions.append(self._target.Instr_Is_Assigned.new(node.src_infos, closures_offset, var_num, next_param_label))
             self._instructions.append(self._target.Instr_Add_Failure_Frame.new(node.src_infos, next_param_label))
-            self.preorder(param.default)
+            self._preorder(param.default)
             self._add_assign_to_var(param.var.name, node.src_infos)
             self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
             self._nesting.del(-1)
             self._set_label(next_param_label)
 
-        self.preorder(node.body)
+        self._preorder(node.body)
         self._pop_vars()
         self._nesting.del(-1)
 
@@ -639,7 +639,7 @@ class Code_Gen:
             end_of_clause_label := self._create_label()
             self._nesting.append([NEST_NORMAL])
             self._instructions.append(self._target.Instr_Add_Failure_Frame.new(node.src_infos, end_of_clause_label))
-            self.preorder(clause.condition)
+            self._preorder(clause.condition)
             body_label := self._create_label()
             self._instructions.append(self._target.Instr_Branch_If_Not_Fail.new(node.src_infos, body_label))
             self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
@@ -647,12 +647,12 @@ class Code_Gen:
             self._instructions.append(self._target.Instr_Branch.new(node.src_infos, end_of_clause_label))
             self._set_label(body_label)
             self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
-            self.preorder(clause.body)
+            self._preorder(clause.body)
             self._instructions.append(self._target.Instr_Branch.new(node.src_infos, end_of_if_label))
             self._set_label(end_of_clause_label)
         
         if not node.else_body is null:
-            self.preorder(node.else_body)
+            self._preorder(node.else_body)
         
         self._set_label(end_of_if_label)
 
@@ -665,7 +665,7 @@ class Code_Gen:
             end_of_clause_label := self._create_label()
             self._nesting.append([NEST_NORMAL])
             self._instructions.append(self._target.Instr_Add_Failure_Frame.new(node.src_infos, end_of_clause_label))
-            self.preorder(clause.condition)
+            self._preorder(clause.condition)
             body_label := self._create_label()
             self._instructions.append(self._target.Instr_Branch_If_Not_Fail.new(node.src_infos, body_label))
             self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
@@ -673,7 +673,7 @@ class Code_Gen:
             self._instructions.append(self._target.Instr_Branch.new(node.src_infos, end_of_clause_label))
             self._set_label(body_label)
             self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
-            self.preorder(clause.body)
+            self._preorder(clause.body)
             self._instructions.append(self._target.Instr_Branch.new(node.src_infos, end_of_ndif_label))
             self._set_label(end_of_clause_label)
         
@@ -756,14 +756,14 @@ class Code_Gen:
             self._nesting.append([NEST_NORMAL])
             self._instructions.append(self._target.Instr_Add_Failure_Frame.new(node.src_infos, exhausted_body_label))
             self._set_label(start_of_while_label)
-            self.preorder(node.condition)
+            self._preorder(node.condition)
             self._instructions.append(self._target.Instr_Branch_If_Not_Fail.new(node.src_infos, body_label))
             self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
             self._instructions.append(self._target.Instr_Branch.new(node.src_infos, exhausted_body_label))
             self._nesting.del(-1)
         else:
             self._set_label(start_of_while_label)
-            self.preorder(node.condition)
+            self._preorder(node.condition)
             self._instructions.append(self._target.Instr_Branch_If_Not_Fail.new(node.src_infos, body_label))
             self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
             self._instructions.append(self._target.Instr_Fail_Now.new(node.src_infos))
@@ -772,14 +772,14 @@ class Code_Gen:
         if not node.body is null:
             self._nesting.append([NEST_WHILE, start_of_while_label, broken_body_label])
             self._instructions.append(self._target.Instr_Add_Failure_Frame.new(node.src_infos, start_of_while_label))
-            self.preorder(node.body)
+            self._preorder(node.body)
             self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
             self._nesting.del(-1)
         self._instructions.append(self._target.Instr_Branch.new(node.src_infos, start_of_while_label))
         
         if not node.exhausted_body is null:
             self._set_label(exhausted_body_label)
-            self.preorder(node.exhausted_body)
+            self._preorder(node.exhausted_body)
             self._instructions.append(self._target.Instr_Fail_Now.new(node.src_infos))
 
         self._set_label(broken_body_label)
@@ -787,7 +787,7 @@ class Code_Gen:
         if not node.exhausted_body is null:
             self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
         if not node.broken_body is null:
-            self.preorder(node.broken_body)
+            self._preorder(node.broken_body)
         self._instructions.append(self._target.Instr_Fail_Now.new(node.src_infos))
 
 
@@ -802,7 +802,7 @@ class Code_Gen:
             self._instructions.append(self._target.Instr_Add_Failure_Frame.new(node.src_infos, exhausted_body_label))
             self._instructions.append(self._target.Instr_Add_Fail_Up_Frame.new(node.src_infos))
             self._nesting.append([NEST_NORMAL])
-            self.preorder(node.condition)
+            self._preorder(node.condition)
             self._nesting.del(-1)
             self._instructions.append(self._target.Instr_Branch_If_Not_Fail.new(node.src_infos, body_label))
             self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
@@ -810,7 +810,7 @@ class Code_Gen:
         else:
             self._instructions.append(self._target.Instr_Add_Fail_Up_Frame.new(node.src_infos))
             self._nesting.append([NEST_NORMAL])
-            self.preorder(node.condition)
+            self._preorder(node.condition)
             self._nesting.del(-1)
             self._instructions.append(self._target.Instr_Branch_If_Not_Fail.new(node.src_infos, body_label))
             self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
@@ -821,7 +821,7 @@ class Code_Gen:
             fail_now_label := self._create_label()
             self._nesting.append([NEST_FOR, broken_body_label])
             self._instructions.append(self._target.Instr_Add_Failure_Frame.new(node.src_infos, fail_now_label))
-            self.preorder(node.body)
+            self._preorder(node.body)
             self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
             self._nesting.del(-1)
             self._set_label(fail_now_label)
@@ -829,7 +829,7 @@ class Code_Gen:
 
         if not node.exhausted_body is null:
             self._set_label(exhausted_body_label)
-            self.preorder(node.exhausted_body)
+            self._preorder(node.exhausted_body)
             self._instructions.append(self._target.Instr_Fail_Now.new(node.src_infos))
 
         self._set_label(broken_body_label)
@@ -838,7 +838,7 @@ class Code_Gen:
         if not node.exhausted_body is null:
             self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
         if not node.broken_body is null:
-            self.preorder(node.broken_body)
+            self._preorder(node.broken_body)
         self._instructions.append(self._target.Instr_Fail_Now.new(node.src_infos))
 
 
@@ -847,7 +847,7 @@ class Code_Gen:
     
         catches_label := self._create_label()
         self._instructions.append(self._target.Instr_Add_Exception_Frame.new(node.src_infos, catches_label))
-        self.preorder(node.body)
+        self._preorder(node.body)
         self._instructions.append(self._target.Instr_Remove_Exception_Frame.new(node.src_infos))
         end_label := self._create_label()
         self._instructions.append(self._target.Instr_Branch.new(node.src_infos, end_label))
@@ -857,7 +857,7 @@ class Code_Gen:
             next_label := self._create_label()
             self._instructions.append(self._target.Instr_Dup.new(catch_.src_infos))
             self._instructions.append(self._target.Instr_Add_Failure_Frame.new(catch_.src_infos, next_label))
-            self.preorder(catch_.expr)
+            self._preorder(catch_.expr)
             self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(catch_.expr.src_infos, "instantiated"))
             self._instructions.append(self._target.Instr_Pull.new(catch_.expr.src_infos, 3))
             self._instructions.append(self._target.Instr_Apply.new(catch_.expr.src_infos, 1))
@@ -865,7 +865,7 @@ class Code_Gen:
             if not catch_.var is null:
                 self._add_assign_to_var(catch_.var.name, catch_.var.src_infos)
             self._instructions.append(self._target.Instr_Pop.new(catch_.src_infos))
-            self.preorder(catch_.body)
+            self._preorder(catch_.body)
             self._instructions.append(self._target.Instr_Branch.new(node.src_infos, end_label))
             self._set_label(next_label)
         self._instructions.append(self._target.Instr_Raise.new(node.src_infos))
@@ -892,7 +892,7 @@ class Code_Gen:
 
     func _t_islot_lookup(self, node):
     
-        self.preorder(node.target)
+        self._preorder(node.target)
         self._instructions.append(self._target.Instr_Slot_Lookup.new(node.src_infos, node.slot_name))
 
 
@@ -916,15 +916,15 @@ class Code_Gen:
                     // cases where this is possible (although I doubt anyone would use them).
                     // Therefore we fall back to the "normal" way of evaluating things, which will
                     // either give the right behaviour or give an nice error message later.
-                    self.preorder(fst)
+                    self._preorder(fst)
                     i := 1
             else:
-                self.preorder(fst)
+                self._preorder(fst)
                 i := 1
         else:
             self._prc_mod_lookup(node)
 
-            self.preorder(node.names[0])
+            self._preorder(node.names[0])
             
             i := 1
         
@@ -937,7 +937,7 @@ class Code_Gen:
     func _t_ilist(self, node):
     
         for elem := node.elems.iter():
-            self.preorder(elem)
+            self._preorder(elem)
         self._instructions.append(self._target.Instr_List.new(node.src_infos, node.elems.len()))
 
 
@@ -945,8 +945,8 @@ class Code_Gen:
     func _t_idict(self, node):
     
         for elem := node.elems.iter():
-            self.preorder(elem.key)
-            self.preorder(elem.val)
+            self._preorder(elem.key)
+            self._preorder(elem.val)
         self._instructions.append(self._target.Instr_Dict.new(node.src_infos, node.elems.len()))
 
 
@@ -954,7 +954,7 @@ class Code_Gen:
     func _t_iset(self, node):
     
         for elem := node.elems.iter():
-            self.preorder(elem)
+            self._preorder(elem)
         self._instructions.append(self._target.Instr_Set.new(node.src_infos, node.elems.len()))
 
 
@@ -962,13 +962,13 @@ class Code_Gen:
     func _t_iapplication(self, node):
     
         if ITree::ISlot_Lookup.instantiated(node.target):
-            self.preorder(node.target.target)
+            self._preorder(node.target.target)
             self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(node.target.src_infos, node.target.slot_name))
         else:
-            self.preorder(node.target)
+            self._preorder(node.target)
             
         for arg := node.args.iter():
-            self.preorder(arg)
+            self._preorder(arg)
             
         self._instructions.append(self._target.Instr_Apply.new(node.src_infos, node.args.len()))
 
@@ -976,27 +976,27 @@ class Code_Gen:
 
     func _t_iget(self, node):
 
-        self.preorder(node.target)
+        self._preorder(node.target)
         self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(node.src_infos, "get"))
-        self.preorder(node.index)
+        self._preorder(node.index)
         self._instructions.append(self._target.Instr_Apply.new(node.src_infos, 1))
 
 
 
     func _t_islice(self, node):
     
-        self.preorder(node.target)
+        self._preorder(node.target)
         self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(node.src_infos, "get_slice"))
         
         if node.lower_bound is null:
             self._instructions.append(self._target.Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_NULL_OBJ))
         else:
-            self.preorder(node.lower_bound)
+            self._preorder(node.lower_bound)
             
         if node.upper_bound is null:
             self._instructions.append(self._target.Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_NULL_OBJ))
         else:
-            self.preorder(node.upper_bound)
+            self._preorder(node.upper_bound)
             
         self._instructions.append(self._target.Instr_Apply.new(node.src_infos, 2))
 
@@ -1013,7 +1013,7 @@ class Code_Gen:
             self._compiler.error("exbi can only be used when in scope of a bound function.", node.src_infos)
 
         self._add_lookup_var("self", node.src_infos)
-        self.preorder(node.target)
+        self._preorder(node.target)
         self._instructions.append(self._target.Instr_EXBI.new(node.src_infos, node.field_name))
 
 
@@ -1027,7 +1027,7 @@ class Code_Gen:
             return_failed_label := self._create_label()
             self._instructions.append(self._target.Instr_Add_Failure_Frame.new(node.src_infos, return_failed_label))
             self._nesting.append([NEST_NORMAL])
-            self.preorder(node.expr)
+            self._preorder(node.expr)
             self._nesting.del(-1)
             self._instructions.append(self._target.Instr_Return.new(node.src_infos))
 
@@ -1039,7 +1039,7 @@ class Code_Gen:
 
     func _t_iyield(self, node):
     
-        self.preorder(node.expr)
+        self._preorder(node.expr)
         self._instructions.append(self._target.Instr_Yield.new(node.src_infos))
 
 
@@ -1053,7 +1053,7 @@ class Code_Gen:
 
     func _t_iraise(self, node):
     
-        self.preorder(node.expr)
+        self._preorder(node.expr)
         self._instructions.append(self._target.Instr_Raise.new(node.src_infos))
 
 
@@ -1065,7 +1065,7 @@ class Code_Gen:
         
         self._nesting.append([NEST_NORMAL])
         self._instructions.append(self._target.Instr_Add_Failure_Frame.new(node.src_infos, assert_failed_label))
-        self.preorder(node.expr)
+        self._preorder(node.expr)
         self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
         self._nesting.del(-1)
         self._instructions.append(self._target.Instr_Branch.new(node.src_infos, assert_end_label))
@@ -1120,7 +1120,7 @@ class Code_Gen:
 
         for i := 0.iter_to(node.exprs.len()):
             next_expr_label := self._create_label()
-            self.preorder(node.exprs[i])
+            self._preorder(node.exprs[i])
             if i + 1 == node.exprs.len():
                 self._instructions.append(self._target.Instr_Dup.new(node.src_infos))
             self._instructions.append(self._target.Instr_Branch_If_Not_Fail.new(node.src_infos, next_expr_label))
@@ -1136,7 +1136,7 @@ class Code_Gen:
             next_expr_label := self._create_label()
             self._nesting.append([NEST_NORMAL])
             self._instructions.append(self._target.Instr_Add_Failure_Frame.new(node.src_infos, next_expr_label))
-            self.preorder(expr)
+            self._preorder(expr)
             self._instructions.append(self._target.Instr_EYield.new(node.src_infos))
             self._nesting.del(-1)
             self._instructions.append(self._target.Instr_Branch.new(node.src_infos, end_of_alternation_label))
@@ -1154,13 +1154,13 @@ class Code_Gen:
                 ndif ITree::IVar.instantiated(target):
                     self._add_lookup_var(target.name, target.src_infos)
                 elif ITree::ISlot_Lookup.instantiated(target):
-                    self.preorder(target)
+                    self._preorder(target)
                 elif ITree::IGet.instantiated(target):
-                    self.preorder(target)
+                    self._preorder(target)
                 elif ITree::IModule_Lookup.instantiated(target):
-                    self.preorder(target)
+                    self._preorder(target)
     
-        self.preorder(node.expr)
+        self._preorder(node.expr)
         
         if node.targets.len() > 1:
             self._instructions.append(self._target.Instr_Unpack_Assign.new(node.src_infos, node.targets.len()))
@@ -1174,21 +1174,21 @@ class Code_Gen:
             ndif ITree::IVar.instantiated(target):
                 self._add_assign_to_var(target.name, target.src_infos)
             elif ITree::ISlot_Lookup.instantiated(target):
-                self.preorder(target.target)
+                self._preorder(target.target)
                 self._instructions.append(self._target.Instr_Assign_Slot.new(target.src_infos, target.slot_name))
             elif ITree::IGet.instantiated(target):
-                self.preorder(target.target)
+                self._preorder(target.target)
                 self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(target.src_infos, "set"))
-                self.preorder(target.index)
+                self._preorder(target.index)
                 self._instructions.append(self._target.Instr_Pull.new(target.src_infos, 2))
                 self._instructions.append(self._target.Instr_Apply.new(target.src_infos, 2))
             elif ITree::IModule_Lookup.instantiated(target):
                 fst := target.names[0]
                 if ITree::IMod_Id_Import.instantiated(fst):
-                    self.preorder(fst)
+                    self._preorder(fst)
                 else:
                     self._prc_mod_lookup(target)
-                    self.preorder(fst)
+                    self._preorder(fst)
 
                 for name := target.names.iter(1, -1):
                     self._instructions.append(self._target.Instr_Module_Lookup.new(name.src_infos, name.name))
@@ -1199,18 +1199,18 @@ class Code_Gen:
                 self._instructions.append(self._target.Instr_Pull.new(target.src_infos, 2))
                 self._instructions.append(self._target.Instr_Apply.new(target.src_infos, 2))
             elif ITree::ISlice.instantiated(target):
-                self.preorder(target.target)
+                self._preorder(target.target)
                 self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(target.src_infos, "set_slice"))
 
                 if target.lower_bound is null:
                     self._instructions.append(self._target.Instr_Builtin_Lookup.new(target.src_infos, _BUILTIN_NULL_OBJ))
                 else:
-                    self.preorder(target.lower_bound)
+                    self._preorder(target.lower_bound)
 
                 if target.upper_bound is null:
                     self._instructions.append(self._target.Instr_Builtin_Lookup.new(target.src_infos, _BUILTIN_NULL_OBJ))
                 else:
-                    self.preorder(target.upper_bound)
+                    self._preorder(target.upper_bound)
 
                 self._instructions.append(self._target.Instr_Pull.new(target.src_infos, 3))
                 self._instructions.append(self._target.Instr_Apply.new(target.src_infos, 3))
@@ -1225,7 +1225,7 @@ class Code_Gen:
         success_label := self._create_label()
         self._nesting.append([NEST_NORMAL])
         self._instructions.append(self._target.Instr_Add_Failure_Frame.new(node.src_infos, success_label))
-        self.preorder(node.expr)
+        self._preorder(node.expr)
         self._instructions.append(self._target.Instr_Branch_If_Fail.new(node.src_infos, success_label))
         self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
         self._nesting.del(-1)
@@ -1238,7 +1238,7 @@ class Code_Gen:
     
     func _t_ibinary(self, node):
 
-        self.preorder(node.lhs)
+        self._preorder(node.lhs)
         
         if node.type == ITree::BINARY_ADD:
             slot_name := "+"
@@ -1252,15 +1252,15 @@ class Code_Gen:
             slot_name := "%"
 
         self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(node.src_infos, slot_name))
-        self.preorder(node.rhs)
+        self._preorder(node.rhs)
         self._instructions.append(self._target.Instr_Apply.new(node.src_infos, 1))
 
 
 
     func _t_icomparison(self, node):
 
-        self.preorder(node.lhs)
-        self.preorder(node.rhs)
+        self._preorder(node.lhs)
+        self._preorder(node.rhs)
         if node.type == ITree::IS_COMPARISON:
             self._instructions.append(self._target.Instr_Is.new(node.src_infos))
         elif node.type == ITree::EQ_COMPARISON:
@@ -1286,7 +1286,7 @@ class Code_Gen:
 
     func _t_iquasi_quotes(self, node):
     
-        self.preorder(QQ_Mode::QQ_Mode.new().generate(self, node))
+        self._preorder(QQ_Mode::QQ_Mode.new().generate(self, node))
 
 
 

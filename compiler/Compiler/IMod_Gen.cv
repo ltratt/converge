@@ -259,7 +259,7 @@ class IMod_Gen:
         ndif node.len() == 2 & node[1][0] == "class_defn":
             // defn ::= class_defn
             class_defn := self._preorder(node[1], extra_src_infos)
-            return [ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(class_defn.class_name, extra_src_infos + node[1][2][1].src_infos)], class_defn, extra_src_infos + node[1][2][1].src_infos)]
+            return [ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(class_defn.name, extra_src_infos + node[1][2][1].src_infos)], class_defn, extra_src_infos + node[1][2][1].src_infos)]
         elif node.len() == 2 & node[1][0] == "func_defn":
             // defn ::= func_defn
             return [self._preorder(node[1], extra_src_infos)]

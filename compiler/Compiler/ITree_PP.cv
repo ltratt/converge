@@ -66,12 +66,12 @@ class ITree_PP:
 
         pp := ["class"]
         
-        if node.class_name != "":
+        if node.name != "":
             pp.append(" ")
-            pp.append(node.class_name)
+            pp.append(node.name)
 
         if node.supers.len() > 0:
-            if node.class_name == "":
+            if node.name == "":
                 pp.append(" ")
             pp.append("(")
             pp.append(Strings::join(Functional::map(self._preorder, node.supers), ", "))

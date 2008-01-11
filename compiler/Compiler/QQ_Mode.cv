@@ -294,17 +294,17 @@ class QQ_Mode:
 
     func _t_iclass_defn(self, node):
 
-        if ITree::IInsert.instantiated(node.class_name):
-            class_name := self._process_insert(node.class_name, _pi_class_name)
+        if ITree::IInsert.instantiated(node.name):
+            class_name := self._process_insert(node.name, _pi_class_name)
         else:
-            if node.class_name == "":
+            if node.name == "":
                 class_name := ITree::IString.new("", node.src_infos)
             else:
                 if self._nesting.len() > 0 & self._nesting[-1] == _NEST_CLASS:
                     // Classes which are class fields are not alpha-renamed.
-                    class_name := ITree::IString.new(node.class_name, node.src_infos)
+                    class_name := ITree::IString.new(node.name, node.src_infos)
                 else:
-                    class_name := self._process_assign_name(node.class_name, node.src_infos)
+                    class_name := self._process_assign_name(node.name, node.src_infos)
 
         supers := []
         for super := node.supers.iter():

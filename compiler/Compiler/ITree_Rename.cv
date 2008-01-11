@@ -123,10 +123,10 @@ class _Renamer:
     func _t_iclass_defn(self, node):
 
         if self._nesting.len() > 0 & self._nesting[-1] == _NEST_CLASS:
-            name := node.class_name
+            name := node.name
         else:
-            name := node.class_name // XXX
-            //name := self._preorder(node.class_name)
+            name := node.name // XXX
+            //name := self._preorder(node.name)
         
         supers := []
         for supers.append(self._preorder(node.supers.iter()))

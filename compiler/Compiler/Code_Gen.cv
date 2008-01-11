@@ -488,7 +488,7 @@ class Code_Gen:
             self._preorder(node.metaclass_)
         self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(node.src_infos, "new"))
         
-        self._instructions.append(self._target.Instr_String.new(node.src_infos, node.class_name))
+        self._instructions.append(self._target.Instr_String.new(node.src_infos, node.name))
         
         if node.supers.len() > 0:
             for super_ := node.supers.iter():
@@ -519,9 +519,9 @@ class Code_Gen:
                 self._instructions.append(self._target.Instr_String.new(field.src_infos, field.func_name.name))
                 self._preorder(field)
             elif ITree::IClass_Defn.instantiated(field):
-                if field.class_name == "":
+                if field.name == "":
                     self._compiler.error("Classes as class fields can not be anonymous.", node.src_infos)
-                self._instructions.append(self._target.Instr_String.new(field.src_infos, field.class_name))
+                self._instructions.append(self._target.Instr_String.new(field.src_infos, field.name))
                 self._preorder(field)
             elif ITree::IAssignment.instantiated(field):
                 assert field.targets.len() == 1
@@ -534,7 +534,7 @@ class Code_Gen:
             self._instructions.append(self._target.Instr_Pop.new(field.src_infos))
         self._nesting.del(-1)
 
-        if node.class_name == "":
+        if node.name == "":
             return
 
         inside_class := 0
@@ -545,7 +545,7 @@ class Code_Gen:
                 break
 
         if inside_class == 0:
-            self._add_assign_to_var(node.class_name, node.src_infos)
+            self._add_assign_to_var(node.name, node.src_infos)
 
 
 

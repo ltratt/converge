@@ -84,8 +84,8 @@ class ITree_WF:
 
     func _t_iclass_defn(self, node):
 
-        if not (Builtins::String.instantiated(node.class_name) | ITree::IInsert.instantiated(node.class_name)):
-            self._type_error(node, "class_name", node.class_name, "String")
+        if not (Builtins::String.instantiated(node.name) | ITree::IInsert.instantiated(node.name)):
+            self._type_error(node, "class_name", node.name, "String")
 
         if not Builtins::List.conformed_by(node.supers):
             self._type_error(node, "supers", node.supers, "List")

@@ -90,20 +90,20 @@ class IModule:
 
 class IClass_Defn:
 
-    func init(self, class_name, supers, metaclass_, fields, src_infos):
+    func init(self, name, supers, metaclass_, fields, src_infos):
 
-        self.class_name := class_name
+        self.name := name
         self.supers := supers
         self.metaclass_ := metaclass_
         self.fields := fields
         self.src_infos := src_infos
 
-        if IInsert.instantiated(class_name) | class_name == "":
+        if IInsert.instantiated(name) | name == "":
             self.bound_vars := Set{}
             self.qq_bound_vars := Set{}
         else:
-            self.bound_vars := Set{class_name}
-            self.qq_bound_vars := Set{class_name}
+            self.bound_vars := Set{name}
+            self.qq_bound_vars := Set{name}
         self.import_vars := Set{}
         self.mod_id_lookups := Dict{}
         for super := supers.iter():
@@ -134,7 +134,7 @@ class IClass_Defn:
         metaclass_ := _extended_obj_src_infos(self.metaclass_, extra_src_infos)
         fields := _extended_collection_src_infos(self.fields, extra_src_infos)
         
-        return IClass_Defn.new(self.class_name, supers, metaclass_, fields, self.src_infos + extra_src_infos)
+        return IClass_Defn.new(self.name, supers, metaclass_, fields, self.src_infos + extra_src_infos)
 
 
 

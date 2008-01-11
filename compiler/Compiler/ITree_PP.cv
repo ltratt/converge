@@ -64,26 +64,36 @@ class ITree_PP:
 
     func _t_iclass_defn(self, node):
 
-        supers := Strings::join(Functional::map(func (x) { return self._preorder(x) }, node.supers), ", ")
-        if node.metaclass_ is null:
-            metaclass_ := "Class"
-        else:
-            metaclass_ := self._preorder(node.metaclass_)
+        pp := ["class"]
+        
+        if node.class_name != "":
+            pp.append(" ")
+            pp.append(node.class_name)
+
+        if node.supers.len() > 0:
+            if node.class_name == "":
+                pp.append(" ")
+            pp.append("(")
+            pp.append(Strings::join(Functional::map(self._preorder, node.supers), ", "))
+            pp.append(")")
+        
+        if not node.metaclass_ is null:
+            pp.append(" metaclass")
+            pp.append(self._preorder(node.metaclass_))
+
+        pp.append(":")
 
         self._indent_level += 1
         self._nesting.append(_NEST_CLASS)
         fields := []
         for field := node.fields.iter():
-            fields.append(self._preorder(field))
+            pp.append("\n")
+            pp.append(_INDENT_STRING * self._indent_level)
+            pp.append(self._preorder(field))
         self._nesting.pop()
         self._indent_level -= 1
 
-        indent := _INDENT_STRING * (self._indent_level + 1)
-
-        return Strings::format("""class %s(%s) metaclass %s:
-
-%s%s""", node.class_name, supers, metaclass_, indent, Strings::join(fields, "\n" + indent))
-
+        return Strings::join(pp, "")
 
 
     func _t_ifunc_defn(self, node):

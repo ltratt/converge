@@ -125,8 +125,12 @@ class _Renamer:
         if self._nesting.len() > 0 & self._nesting[-1] == _NEST_CLASS:
             name := node.name
         else:
-            name := node.name // XXX
-            //name := self._preorder(node.name)
+            ndif node.name is null:
+                name := null
+            elif ITree::IVar.instantiated(node.name):
+                name := self._preorder(node.name)
+            elif ITree::IInsert.instantiated(node.name):
+                raise "XXX"
         
         supers := []
         for supers.append(self._preorder(node.supers.iter()))

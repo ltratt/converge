@@ -439,7 +439,8 @@ class Code_Gen:
             end_of_expr_label := self._create_label()
             self._nesting.append([NEST_NORMAL])
             self._instructions.append(self._target.Instr_Add_Failure_Frame.new(expr.src_infos, end_of_expr_label))
-            if ITree::IFunc_Defn.instantiated(expr) & not expr.name is null:
+            if (ITree::IFunc_Defn.instantiated(expr) | ITree::IClass_Defn.instantiated(expr)) \
+              & not expr.name is null:
                 self._preorder(ITree::IAssignment.new(ITree::STD_ASSIGN, [expr.name], expr, expr.src_infos))
             else:
                 self._preorder(expr)
@@ -488,7 +489,10 @@ class Code_Gen:
             self._preorder(node.metaclass_)
         self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(node.src_infos, "new"))
         
-        self._instructions.append(self._target.Instr_String.new(node.src_infos, node.name))
+        if node.name is null:
+            self._instructions.append(self._target.Instr_String.new(node.src_infos, ""))
+        else:
+            self._instructions.append(self._target.Instr_String.new(node.name.src_infos, node.name.name))
         
         if node.supers.len() > 0:
             for super_ := node.supers.iter():
@@ -519,7 +523,7 @@ class Code_Gen:
                 self._instructions.append(self._target.Instr_String.new(field.src_infos, field.name.name))
                 self._preorder(field)
             elif ITree::IClass_Defn.instantiated(field):
-                if field.name == "":
+                if field.name is null:
                     self._compiler.error("Classes as class fields can not be anonymous.", node.src_infos)
                 self._instructions.append(self._target.Instr_String.new(field.src_infos, field.name))
                 self._preorder(field)
@@ -534,7 +538,7 @@ class Code_Gen:
             self._instructions.append(self._target.Instr_Pop.new(field.src_infos))
         self._nesting.del(-1)
 
-        if node.name == "":
+        if node.name is null:
             return
 
         inside_class := 0
@@ -544,8 +548,8 @@ class Code_Gen:
             elif nest[0] == NEST_FUNC:
                 break
 
-        if inside_class == 0:
-            self._add_assign_to_var(node.name, node.src_infos)
+        if inside_class == 0 & not node.name is null:
+            self._add_assign_to_var(node.name.name, node.src_infos)
 
 
 

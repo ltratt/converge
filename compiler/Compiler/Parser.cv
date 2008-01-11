@@ -51,9 +51,7 @@ import_as   ::= "AS" "ID"
 
 
 class_defn      ::= "CLASS" class_name class_supers class_metaclass ":" "INDENT" class_fields "DEDENT"
-class_name      ::= "ID"
-                ::= splice
-                ::= insert
+class_name      ::= name
                 ::=
 class_supers    ::= "(" expr ( "," expr )* ")"
                 ::=

@@ -98,12 +98,12 @@ class IClass_Defn:
         self.fields := fields
         self.src_infos := src_infos
 
-        if IInsert.instantiated(name) | name == "":
+        if IVar.instantiated(name):
+            self.bound_vars := Set{name.name}
+            self.qq_bound_vars := Set{name.name}
+        else:
             self.bound_vars := Set{}
             self.qq_bound_vars := Set{}
-        else:
-            self.bound_vars := Set{name}
-            self.qq_bound_vars := Set{name}
         self.import_vars := Set{}
         self.mod_id_lookups := Dict{}
         for super := supers.iter():
@@ -130,11 +130,15 @@ class IClass_Defn:
 
     func extended_src_infos(self, extra_src_infos):
 
+        if self.name is null:
+            name := null
+        else:
+            name := self.name.extended_src_infos(extra_src_infos)
         supers := _extended_collection_src_infos(self.supers, extra_src_infos)
         metaclass_ := _extended_obj_src_infos(self.metaclass_, extra_src_infos)
         fields := _extended_collection_src_infos(self.fields, extra_src_infos)
         
-        return IClass_Defn.new(self.name, supers, metaclass_, fields, self.src_infos + extra_src_infos)
+        return IClass_Defn.new(name, supers, metaclass_, fields, self.src_infos + extra_src_infos)
 
 
 

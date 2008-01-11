@@ -197,20 +197,6 @@ class QQ_Mode:
 
 
 
-    func _process_assign_name(self, var_name, node_src_infos):
-
-        renamed_var_name, mode, i := self._get_var_offset(var_name, node_src_infos)
-        
-        assert mode == self
-        assert var_name == renamed_var_name
-        
-        if self._nesting.len() > 0 & self._nesting[-1] == _NEST_CLASS:
-            return ITree::IVar.new(var_name, node_src_infos)
-        else:
-            return ITree::IVar.new(self._qq_bound_var_name(var_name), node_src_infos)
-
-
-
     //
     // Return an IOriginal_Name which looks up 'defn_name' in the module named 'module_name' in the
     // Converge compiler.
@@ -297,14 +283,14 @@ class QQ_Mode:
         if ITree::IInsert.instantiated(node.name):
             class_name := self._process_insert(node.name, _pi_class_name)
         else:
-            if node.name == "":
-                class_name := ITree::IString.new("", node.src_infos)
+            if node.name is null:
+                class_name := ITree::IVar.new("null", node.src_infos)
             else:
                 if self._nesting.len() > 0 & self._nesting[-1] == _NEST_CLASS:
                     // Classes which are class fields are not alpha-renamed.
-                    class_name := ITree::IString.new(node.name, node.src_infos)
+                    class_name := self._qq("IVar", [ITree::IString.new(node.name.name, node.name.src_infos)], node.name.src_infos)
                 else:
-                    class_name := self._process_assign_name(node.name, node.src_infos)
+                    class_name := self._process_var(node.name.name, node.name.src_infos)
 
         supers := []
         for super := node.supers.iter():
@@ -883,7 +869,7 @@ func _pi_expr(expr, src_infos):
 
 func _pi_class_name(name, src_infos):
 
-    if not Builtins::String.instantiated(name):
+    if not ITree::IVar.instantiated(name):
         ITree_WF::type_error("Class_Defn", "name", name, "String", src_infos)
 
     return name

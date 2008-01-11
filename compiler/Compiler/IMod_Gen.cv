@@ -258,8 +258,7 @@ class IMod_Gen:
 
         ndif node.len() == 2 & node[1][0] == "class_defn":
             // defn ::= class_defn
-            class_defn := self._preorder(node[1], extra_src_infos)
-            return [ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(class_defn.name, extra_src_infos + node[1][2][1].src_infos)], class_defn, extra_src_infos + node[1][2][1].src_infos)]
+            return [self._preorder(node[1], extra_src_infos)]
         elif node.len() == 2 & node[1][0] == "func_defn":
             // defn ::= func_defn
             return [self._preorder(node[1], extra_src_infos)]
@@ -344,25 +343,13 @@ class IMod_Gen:
 
         // class_defn ::= "CLASS" class_name class_supers class_metaclass ":" "INDENT" class_fields "DEDENT"
         
-        if node[2].len() == 1:
+        name_node := node[2]
+        if name_node.len() == 1:
             // class_name ::=
-            class_name := ""
-        elif not Builtins::List.conformed_by(node[2][1]):
-            // class_name ::= "ID"
-            class_name := node[2][1].value
-        elif Builtins::List.conformed_by(node[2][1]):
-            // func_name ::= splice
-            //           ::= insert
-            if node[2][1][0] == "splice":
-                // splice ::= expr_splice
-                //        ::= dsl_splice
-                class_name := self._eval_splice(node[2][1], extra_src_infos)
-                if not Builtins::String.instantiated(class_name):
-                    ITree_WF::type_error("Class", "name", class_name, "String", extra_src_infos + node[2][1][1][1].src_infos)
-            else:
-                class_name := self._preorder(node[2][1], extra_src_infos)
+            class_name := null
         else:
-            raise "XXX"
+            // class_name ::= name
+            class_name := self._preorder(name_node[1], extra_src_infos)
         
         supers := []
         i := 2

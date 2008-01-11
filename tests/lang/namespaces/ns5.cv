@@ -1,0 +1,10 @@
+import CEI, Sys
+
+
+
+func main():
+
+    [|
+        func x():
+            pass
+    |]

@@ -106,7 +106,7 @@ class QQ_Mode:
             return_exprs.append(asgn)
 
         self._qq_bound_vars_map := node.qq_bound_vars_map
-        self._add_vars(node.bound_vars, [])
+        self._add_vars(node.internal_bound_vars, [])
         qq_body := self._eval_expr_block(node.body)
         self._pop_vars()
 

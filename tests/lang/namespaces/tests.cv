@@ -33,6 +33,8 @@ tests := $<<Lang_Test::tests>>:
     "ns3.cv"
     
     "ns4.cv"
+    
+    "ns5.cv"
 
     "qq1.cv":
         rtime exception "Unassigned_Var_Exception"

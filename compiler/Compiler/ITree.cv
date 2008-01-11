@@ -1241,6 +1241,7 @@ class IQuasi_Quotes:
         self.qq_bound_vars := Set{}
         self.free_vars := body.free_vars.scopy()
         self.mod_id_lookups := body.mod_id_lookups.scopy()
+        self.internal_bound_vars := body.bound_vars
         
         if not extra_src_infos is null:
             self.extra_src_infos_var_name := Core::fresh_name()

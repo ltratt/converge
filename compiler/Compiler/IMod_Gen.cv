@@ -792,7 +792,11 @@ class IMod_Gen:
             return ITree::IInsert.new(ITree::INSERT_CAPTURING, var, extra_src_infos + node[1].src_infos)
         elif node[1][0] == "splice":
             // name ::= splice
-            raise "XXX"
+            splice_node := node[1]
+            name := self._eval_splice(splice_node, splice_node[1][1].src_infos)
+            if not (ITree::IVar.instantiated(name) & ITree_WF::wf(name)):
+                raise "XXX"
+            return name
         else:
             // name ::= insert
             return self._preorder(node[1])

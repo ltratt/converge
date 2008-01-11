@@ -333,17 +333,17 @@ class QQ_Mode:
     func _t_ifunc_defn(self, node):
 
         is_bound := ITree::IInt.new(node.is_bound, node.src_infos)
-        if ITree::IInsert.instantiated(node.func_name):
-            func_name := self._process_insert(node.func_name, _pi_func_name)
+        if ITree::IInsert.instantiated(node.name):
+            func_name := self._process_insert(node.name, _pi_func_name)
         else:
-            if node.func_name is null:
+            if node.name is null:
                 func_name := ITree::IVar.new("null", node.src_infos)
             else:
                 if self._nesting.len() > 0 & self._nesting[-1] == _NEST_CLASS:
                     // Functions which are class fields are not alpha-renamed.
-                    func_name := self._qq("IVar", [ITree::IString.new(node.func_name.name, node.func_name.src_infos)], node.func_name.src_infos)
+                    func_name := self._qq("IVar", [ITree::IString.new(node.name.name, node.name.src_infos)], node.name.src_infos)
                 else:
-                    func_name := self._process_var(node.func_name.name, node.func_name.src_infos)
+                    func_name := self._process_var(node.name.name, node.name.src_infos)
 
         qq_nonlocals := []
         for nonlocal_ := node.nonlocals.iter():

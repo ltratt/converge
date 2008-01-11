@@ -111,8 +111,8 @@ class ITree_PP:
             else:
                 pp.append("unbound_func ")
 
-        if not node.func_name is null:
-            pp.append(self._preorder(node.func_name))
+        if not node.name is null:
+            pp.append(self._preorder(node.name))
 
         pp.append("(")
         pp.append(Strings::join(Functional::map(self._preorder, node.params), ", "))

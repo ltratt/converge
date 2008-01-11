@@ -150,13 +150,13 @@ class _Renamer:
         is_bound := node.is_bound
         
         if self._nesting.len() > 0 & self._nesting[-1] == _NEST_CLASS:
-            func_name := node.func_name
+            func_name := node.name
         else:
-            ndif node.func_name is null:
+            ndif node.name is null:
                 func_name := null
-            elif ITree::IVar.instantiated(node.func_name):
-                func_name := self._preorder(node.func_name)
-            elif ITree::IInsert.instantiated(node.func_name):
+            elif ITree::IVar.instantiated(node.name):
+                func_name := self._preorder(node.name)
+            elif ITree::IInsert.instantiated(node.name):
                 raise "XXX"
 
         rn_nonlocals := []

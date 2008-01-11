@@ -141,10 +141,10 @@ class IClass_Defn:
 
 class IFunc_Defn:
 
-    func init(self, is_bound, func_name, params, var_arg, nonlocals, renames, body, src_infos):
+    func init(self, is_bound, name, params, var_arg, nonlocals, renames, body, src_infos):
 
         self.is_bound := is_bound
-        self.func_name := func_name
+        self.name := name
         self.params := params
         self.var_arg := var_arg
         self.nonlocals := nonlocals
@@ -152,9 +152,9 @@ class IFunc_Defn:
         self.body := body
         self.src_infos := src_infos
 
-        if IVar.instantiated(func_name):
-            all_bound_vars := Set{func_name.name}
-            self.qq_bound_vars := Set{func_name.name}
+        if IVar.instantiated(name):
+            all_bound_vars := Set{name.name}
+            self.qq_bound_vars := Set{name.name}
         else:
             all_bound_vars := Set{}
             self.qq_bound_vars := Set{}
@@ -227,17 +227,17 @@ class IFunc_Defn:
 
     func extended_src_infos(self, extra_src_infos):
         
-        if self.func_name is null:
-            func_name := null
+        if self.name is null:
+            name := null
         else:
-            func_name := self.func_name.extended_src_infos(extra_src_infos)
+            name := self.name.extended_src_infos(extra_src_infos)
         params := _extended_collection_src_infos(self.params, extra_src_infos)
         var_arg := _extended_obj_src_infos(self.var_arg, extra_src_infos)
         nonlocals := _extended_collection_src_infos(self.nonlocals, extra_src_infos)
         renames := _extended_collection_src_infos(self.renames, extra_src_infos)
         body := self.body.extended_src_infos(extra_src_infos)
         
-        return IFunc_Defn.new(self.is_bound, func_name, params, var_arg, nonlocals, renames, body, self.src_infos + extra_src_infos)
+        return IFunc_Defn.new(self.is_bound, name, params, var_arg, nonlocals, renames, body, self.src_infos + extra_src_infos)
 
 
 

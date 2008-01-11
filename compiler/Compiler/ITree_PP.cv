@@ -58,7 +58,7 @@ class ITree_PP:
 
     func _t_imodule(self, node):
     
-        return Strings::join(Functional::map(func (x) { return self._preorder(x) }, node.defns), "\n")
+        return Strings::join(Functional::map(self._preorder, node.defns), "\n")
 
 
 

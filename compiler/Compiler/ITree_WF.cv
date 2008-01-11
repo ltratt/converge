@@ -99,8 +99,8 @@ class ITree_WF:
             self._type_error(node, "fields", node.fields, "List")
         for i := 0.iter_to(node.fields.len()):
             field := node.fields[i]
-            if not (ITree::IAssignment.instantiated(field) | ITree::IFunc_Defn.instantiated(field) | ITree::IClass_Defn.instantiated(field)):
-                self._type_error(node, Strings::format("fields[%d]", i), field, "[IAssignment, IFunc_Defn, IClass_Defn]")
+            if not (ITree::IAssignment.instantiated(field) | ITree::IFunc_Defn.instantiated(field) | ITree::IClass_Defn.instantiated(field) | ITree::IPass.instantiated(field)):
+                self._type_error(node, Strings::format("fields[%d]", i), field, "[IAssignment, IFunc_Defn, IClass_Defn, IPass]")
             self._preorder(field)
 
 

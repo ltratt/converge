@@ -1,13 +1,13 @@
-Installing Converge on MacOSX follows a "unixish" approach that users unfamiliar with unix may find confusing. The following steps should make the installation process simple:
+Building Converge on Mac OS X follows a typical "unixish" approach that users unfamiliar with unix may find confusing. The following steps should make the installation process simple:
 
 1 - Let's assume that the Converge source has been decompressed into a folder named 'Converge' located on the desktop. 
 
-1 - Converge relies on two external libraries: PCRE (Perl Compatible Regular Expressions) and libxml2. Since these are typically not installed on MacOS X systems, they need to be installed manually. Download the PCRE source code from http://pcre.org/ and decompress it into the Converge folder. Open a terminal (a.k.a xterm), go to the pcre-7.2 folder (assuming that you installed the version 7.2 of it) and execute the following command:
+
+2 - Converge relies on two external libraries: PCRE (Perl Compatible Regular Expressions) and libxml2. PCRE is typically not found on Mac OS X systems, while libxml2 may be partially installed. In both cases full version need to be manually installed. Download the PCRE source code from http://pcre.org/ and decompress it into the Converge folder. Open a terminal (a.k.a xterm), go to the pcre-X.Y folder (where X.Y is the PCRE version number) and execute the following command:
 
   $ ./configure --prefix=$HOME/Desktop/Converge
 
-This invocation will build the Makefile needed to compile PCRE. It also says that it will have to be installed in the Converge folder. I am sure you do not not want to touch the Darwin filesystem :-)
-You can now invoke 'make' and then 'make install':
+This invocation will build the Makefile needed to compile PCRE. It also says that it will have to be installed in the Converge folder. I am sure you do not not want to touch the Darwin filesystem :-) You can now invoke 'make' and then 'make install':
 
   $ make
   gcc -DHAVE_CONFIG_H -I. -O2 -MT pcre_compile.lo -MD -MP -MF .deps/pcre_compile.Tpo -c pcre_compile.c -o pcre_compile.o >/dev/null 2>&1
@@ -20,12 +20,15 @@ You can now invoke 'make' and then 'make install':
 
 New folders titled 'bin', 'include' will have been created, and populated, in the Converge folder.
 
-3 - The path has to be adjusted. The new 'bin' folder has to be included in the shell variable PATH. Simply execute:
 
-  $ export PATH=$PATH:$HOME/Desktop/Converge/bin/
+3 - Perform the same sequence of operations (with the same commands) for libxml2.
 
 
-4 - Installing libxml2 is much simpler. Just go to http://www.explain.com.au/oss/libxml2xslt.html and download the image for MacOS 10.4 (http://www.explain.com.au/download/combo-2006-06-15.dmg.gz). Mount the archive (double click on it if it is not automatically done) and copy its files in a new folder libxml2 in the Converge folder. The PATH variable does not need to be adjusted for this. MacOSX is smart enough to discover this library without external help.
+4 - The path has to be adjusted. The new 'bin' folder has to be included in the shell variable PATH. Simply execute:
+
+  $ export PATH=$HOME/Desktop/Converge/bin/:$PATH
+
+Note that since we want to ensure that our versions of PCRE and libxml2 are picked up, rather than other versions that may have been previously installed we put the 'bin' folder at the beginning of $PATH. This command will only effect your current terminal, and its effects will be lost when you close the terminal.
 
 
 5 - Converge can now be compiled. Go to ~/Desktop/Converge and type: 
@@ -34,12 +37,13 @@ New folders titled 'bin', 'include' will have been created, and populated, in th
   $ make
   $ make install
 
-If you now type 'converge' in your Terminal, you should see a message such as:
+If you now type 'converge' in your Terminal, you should see be taken to the interactive prompt:
 
-  $ converge: too few options.
-  usage: converge <file> [args]
+  $ converge
+  Converge current
+  >>> 
 
-You're done! Converge is installed!
+The prompt can be exited from with Ctrl-D. You're done! Converge is installed!
 
 
 Hardware used during the writing of this file:

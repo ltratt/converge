@@ -1,0 +1,65 @@
+The examples in this directory show an example of a statemachine DSL evolving in
+power and reliability. It is intended to show a small, but realistic, example of
+DSL development. It is a good first starting point for learning about DSL
+development in Converge.
+
+Each evolution of the DSL comes with two files SMr.cv and exr.cv where r is the DSL's version number. Therefore SM1.cv and ex1.cv are the starting point. Each version of the DSL is runnable. e.g. to run the first version type:
+
+  $ converge -v ex1.cv
+
+The DSL and its implementation will be compiled and run. The first three versions are non-interactive, whereas the fourth and fifth versions require input from the user.
+
+  1: Very simple implementation allowing only states, transitions, and events.
+     Events received by the system cause transitions to be taken; if no valid
+     transition is found for a given event, an exception is raised.
+
+  2: Guards (effectively preconditions), variables and simple actions (updating
+     variables) on top of version 1. This is expressive enough for a decent
+     subset of statemachines.
+
+     However there is a notable usability problem with this example. If the
+     user makes a run-time mistake in their input - e.g. change one of the
+     conditions to compare a number and a string - and the resulting run-time
+     exception will be in terms of the SMr.cv file, not the exr.cv file. This
+     makes debugging very hard.
+
+  3: The same as version 2, but extra src infos are added to generated code.
+     If you make the same run-time-exception-raising change to this version
+     as you did to version 2, you will see that the resulting exception also
+     pinpoints exactly where within the ex3.cv the error resulted from.
+
+     This is achived by adding src infos to quasi-quoted code e.g.:
+
+       [<node[1].src_infos>| ... |]
+
+  4: Allow functions to be called from actions. Some "built in" functions are
+     added to the statemachine (the input() function returns input from the
+     user). Non-built in functions are assumed to be calls to user-defined
+     functions outside the statemachine. This allows the statemachine in ex4.cv
+     sufficient power to model a cash-machine including user input. To use the
+     statemachine, first choose an account number (1 or 2), and then choose
+     whether to Withdraw or Finish. If you withdraw, you will be asked for an
+     amount; you can not overdraw an account.
+
+     There is a subtle problem with this version of the DSL. If you use certain
+     names for functions, then seemingly inexplicable behaviour occurs. Try for
+     example renaming the read_card function (and all references to it) to
+     "sm" which will trigger this problem. The reason this happens is that the
+     DSL dynamically scopes references to unknown functions; in other words the
+     read_card function is translated to an unmolested read_card variable
+     without being renamed to a fresh name. Parts of the generated DSL code use
+     - for their own convenience - dynamically scoped names too (e.g. "sm" which
+     you will see in SM4.cv as "&sm"). In other words, this version of the DSL
+     suffers from a hygiene problem.
+
+  5: Same as version 4, but without the hygiene problem. This version of the DSL
+     renames unknown functions such as read_card to a fresh name; in the
+     generated code it then uses the rename declaration to ensure that the fresh
+     name is the one in scope. This means that the generated code looks roughly
+     as follows:
+
+       rename read_card as $$20$$
+       ...
+       $$20$$(...)
+
+     This version of the DSL thus solves the hygiene problem of version 4.

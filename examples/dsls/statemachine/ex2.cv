@@ -1,0 +1,57 @@
+// Copyright (c) 2008 Laurence Tratt <laurie@tratt.net>
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to
+// deal in the Software without restriction, including without limitation the
+// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+// sell copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+// IN THE SOFTWARE.
+
+
+import SM2
+
+
+
+
+Vending_Machine := $<<SM2::sm>>:
+    drinks := 1
+    sweets := 2
+
+    state Waiting
+    state Vend_Drink
+    state Vend_Sweet
+    state Empty
+    
+    transition vending_drink from Waiting to Vend_Drink: Vend_Drink [ drinks > 0 ] / drinks := drinks - 1
+    transition vended_drink from Vend_Drink to Waiting: Vended [drinks > 0 or sweets > 0]
+
+    transition vending_sweet from Waiting to Vend_Sweet: Vend_Sweet [ sweets > 0 ] / sweets := sweets - 1
+    transition vended_sweet from Vend_Sweet to Waiting: Vended [sweets > 0 or drinks > 0]
+    
+    transition empty from Vend_Sweet to Empty: Vended [drinks == 0 and sweets == 0]
+    transition empty from Vend_Drink to Empty: Vended [drinks == 0 and sweets == 0]
+
+
+
+func main():
+
+    vending_machine := Vending_Machine.new()
+    vending_machine.event("Vend_Drink")
+    vending_machine.event("Vended")
+    vending_machine.event("Vend_Sweet")
+    vending_machine.event("Vended")
+    vending_machine.event("Vend_Sweet")
+    vending_machine.event("Vended")
+    // Firing the following event will cause an exception as there are no sweets left to vend:
+    // vending_machine.event("Vend_Sweet")

@@ -1,0 +1,41 @@
+include @abs_top_srcdir@/Makefile.inc
+
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+bindir = @bindir@
+datarootdir = @datarootdir@
+datadir = @datadir@
+conexamplesdir = ${datadir}/examples/converge-@CONVERGE_VERSION@
+INSTALL = @INSTALL@
+
+
+VERSIONS = 1 2 3 4 5
+
+
+%.cvb: %.cv
+	${CONVERGE_VM} ${CONVERGEC} -o $@ $<
+
+
+all:
+
+STATEMACHINEDIR = ${DESTDIR}${conexamplesdir}/dsls/statemachine
+install: all
+	${INSTALL} -d ${STATEMACHINEDIR}
+	${INSTALL} -c -m 444 README ${STATEMACHINEDIR}
+	${foreach v,${VERSIONS},${INSTALL} -c -m 444 SM${v}.cv ${STATEMACHINEDIR}/SM${v}.cv;}
+	${foreach v,${VERSIONS},${INSTALL} -c -m 444 ex${v}.cv ${STATEMACHINEDIR}/ex${v}.cv;}
+
+clean:
+	${foreach v,${VERSIONS},rm -f SM${v}.cvb;}
+	${foreach v,${VERSIONS},rm -f ex${v}.cvb;}
+	${foreach v,${VERSIONS},rm -f ex${v};}
+
+distclean: clean
+	rm -f Makefile
+
+regress: all
+	${CONVERGE_VM} -f -v ex1.cv
+	${CONVERGE_VM} -f -v ex2.cv
+	${CONVERGE_VM} -f -v ex3.cv
+	${CONVERGE_VM} ${CONVERGEC} -m -f -v ex4.cv
+	${CONVERGE_VM} ${CONVERGEC} -m -f -v ex5.cv

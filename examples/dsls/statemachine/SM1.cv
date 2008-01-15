@@ -1,0 +1,157 @@
+// Copyright (c) 2008 Laurence Tratt <laurie@tratt.net>
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to
+// deal in the Software without restriction, including without limitation the
+// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+// sell copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+// IN THE SOFTWARE.
+
+
+import Builtins, CEI, CPK::Traverser, Exceptions, Strings, Sys
+
+
+
+
+GRAMMAR := """
+system ::= element ( "NEWLINE" element )*
+
+element ::= state
+        ::= transition
+
+state ::= "STATE" "ID"
+
+transition ::= "TRANSITION" "FROM" "ID" "TO" "ID" event
+
+event ::= ":" "ID"
+      ::=
+"""
+
+
+
+class Transition:
+
+    func init(self, from, to, event):
+
+        self.from := from
+        self.to := to
+        self.event := event
+
+
+
+
+class SM_Translator(Traverser::Strict_Traverser):
+
+    func generate(self, node):
+
+        return self._preorder(node)
+
+
+
+    func _t_system(self, node):
+
+        sts := [] // States
+        tns := [] // Transitions
+
+        i := 1
+        while i < node.len():
+            ndif node[i][1][0] == "state":
+                sts.append(self._preorder(node[i]))
+            elif node[i][1][0] == "transition":
+                tns.append(self._preorder(node[i]))
+            i += 2
+
+        return [|
+            class:
+
+                states := $c{CEI::ilist(sts)}
+                transitions := $c{CEI::ilist(tns)}
+
+
+                func init(self):
+                    self.state := $c{sts[0]}
+
+                    while self.transition("")
+
+
+
+                func event(self, e):
+                    if not self.transition(e):
+                        msg := Strings::format("Error: No valid transition for event %s from state %s", e, self.state)
+                        raise Exceptions::User_Exception.new()
+                    while self.transition("")
+
+
+
+                func transition(self, e):
+                    for tn := self.transitions.iter():
+                        if tn.from == self.state & tn.event == e:
+                            Sys::println("  Event ", e," causes transition to state ", tn.to)
+                            self.state := tn.to
+                            break
+                    exhausted:
+                        fail
+        |]
+
+
+
+    func _t_element(self, node):
+
+        // element ::= state
+        //         ::= transition
+
+        return self._preorder(node[1])
+
+
+
+    func _t_state(self, node):
+
+        // state ::= "STATE" "ID"
+
+        return CEI::lift(node[2].value)
+
+
+
+    func _t_transition(self, node):
+
+        // transition ::= "TRANSITION" "FROM" "ID" "TO" "ID" event
+
+        event := self._preorder(node[-1])
+
+        return [| Transition.new($c{CEI::istring(node[3].value)}, $c{CEI::istring(node[5].value)}, $c{event}) |]
+
+
+
+    func _t_event(self, node):
+
+        // event ::= ":" "ID"
+        //       ::=
+
+        if node.len() == 1:
+            return [| "" |]
+        else:
+            return CEI::istring(node[2].value)
+
+
+
+func sm(dsl_block, src_infos):
+
+    new_keywords := ["state", "transition", "and", "or", "from", "to"]
+    new_symbols := []
+    parse_tree := CEI::dsl_parse(dsl_block, src_infos, new_keywords, new_symbols, GRAMMAR, "system")
+
+    it := SM_Translator.new().generate(parse_tree)
+    Sys::println(CEI::itree_pp(it))
+
+    return it

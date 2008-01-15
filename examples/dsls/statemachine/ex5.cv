@@ -1,0 +1,144 @@
+// Copyright (c) 2008 Laurence Tratt <laurie@tratt.net>
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to
+// deal in the Software without restriction, including without limitation the
+// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+// sell copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+// IN THE SOFTWARE.
+
+
+import Builtins, CEI, Sys
+import SM5
+
+
+
+
+// The "database" of accounts mapping account names to balances.
+
+accounts := Dict{"1" : 1000, "2" : 10}
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Helper functions
+//
+
+func sm():
+
+    Sys::print("Account # ")
+    Sys::stdout.flush()
+    if not line := Sys::stdin.readln(): 
+        // If we hit EOF on stdin, exit unconditionally.
+        Sys::exit(0)
+    card_num := line.stripped()
+    if accounts.find(card_num):
+        return card_num
+    else:
+        return -1
+
+
+
+func get_balance(card_num):
+
+    return accounts[card_num]
+
+
+
+func get_action():
+
+    Sys::print("Action [[W]ithdraw, [F]inished]: ")
+    Sys::stdout.flush()
+
+    if not line := Sys::stdin.readln():
+        // If we hit EOF on stdin, exit unconditionally.
+        Sys::exit(0)
+    
+    return line.stripped()
+
+
+
+func get_amount():
+
+    Sys::print("Amount £")
+    Sys::stdout.flush()
+
+    return Builtins::Int.new(Sys::stdin.readln().stripped())
+
+
+
+func withdraw(card_num, amount):
+
+    accounts[card_num] -= amount
+
+    return accounts[card_num]
+
+
+
+func error(msg):
+
+    Sys::stderr.write("Error: ")
+    Sys::stderr.writeln(msg)
+    Sys::stderr.flush()
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Statemachine
+//
+
+ATM := $c<<SM5::sm>>:
+    card_num := -1 // -1 signifies an invalid card
+    balance := -1  // Stores the balance of account 'card_num' when card_num != -1.
+    action := ""
+    amount := -1
+
+    state Waiting
+    state sm
+    state Get_Balance
+    state Display_Menu
+    state Get_Action
+    state Withdraw
+    state Return_Card
+
+    // Get the account number.
+
+    transition reading_card from Waiting to sm: / card_num := sm()
+    transition getting_balance from sm to Get_Balance: [card_num != -1] / balance := get_balance(card_num)
+    transition invalid_card from sm to Waiting: [card_num == -1] / error("Unknown account")
+
+    // Get the balance of the account, and then ask what the user wants to do.
+
+    transition goto_menu from Get_Balance to Display_Menu
+    transition get_action from Display_Menu to Get_Action: / action := get_action()
+    transition invalid_action from Get_Action to Display_Menu: [ action != "W" and action != "F" ]
+
+    // Try to withdraw money.
+
+    transition withdrawing from Get_Action to Withdraw_Ask: [ action == "W" ] / amount := get_amount()
+    transition do_withdraw from Withdraw_Ask to Withdraw: [ balance - amount >= 0 ]
+    transition fail_withdraw from Withdraw_Ask to Display_Menu: [ balance - amount < 0 ] / error("Trying to withdraw too much")
+    transition withdraw from Withdraw to Display_Menu: / balance := withdraw(card_num, amount)
+
+    // Finished working on this account; reset the card number and go back to reading account numbers.
+
+    transition withdrawing from Get_Action to Waiting: [ action == "F" ] / card_num := -1
+
+
+
+func main():
+
+    atm := ATM.new()
+    atm.event()

@@ -111,27 +111,32 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 	int verbosity = 0;
 	bool mk_fresh = false;
 
+    // We include our own simplistic arg parsing code to avoid platform problems with getopt etc.
+
 	int i = 1;
 	while (i < argc) {
-		if (argv[i][0] == '-') {
-			if (strlen(argv[i]) == 1 || strlen(argv[i]) > 2)
+        char *arg = argv[i];
+		if (arg[0] == '-') {
+			if (strlen(arg) == 1)
 				usage();
 
-			switch (argv[i][1]) {
-				case 'v':
-					verbosity += 1;
-					i += 1;
-					break;
-				case 'f':
-					mk_fresh = true;
-					i += 1;
-					break;
-				default:
-					usage();
-			}
+            for (unsigned int j = 1; j < strlen(arg); j += 1) {
+			    switch (arg[j]) {
+				    case 'v':
+					    verbosity += 1;
+					    break;
+				    case 'f':
+					    mk_fresh = true;
+					    break;
+				    default:
+					    usage();
+			    }
+            }
 		}
 		else
 			break;
+
+        i += 1;
 	}
 	argc -= i;
 	argv += i;

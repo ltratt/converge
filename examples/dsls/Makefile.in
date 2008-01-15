@@ -13,20 +13,14 @@ INSTALL = @INSTALL@
 	${CONVERGE_VM} ${CONVERGEC} -o $@ $<
 
 
-all: switch
+all:
 	cd statemachine && ${MAKE} ${MFLAGS}
 
 install: all
 	cd statemachine && ${MAKE} ${MFLAGS} install
-	${INSTALL} -d ${DESTDIR}${conexamplesdir}/dsls
-	${INSTALL} -c -m 444 switch.cv ${DESTDIR}${conexamplesdir}/dsls
-
-switch: switch.cvb
-	${CONVERGE_VM} ${CONVERGEL} -o switch switch.cvb
 
 clean:
 	cd statemachine && ${MAKE} ${MFLAGS} clean
-	rm -f switch switch.cvb
 
 distclean: clean
 	cd statemachine && ${MAKE} ${MFLAGS} distclean

@@ -35,7 +35,7 @@ accounts := Dict{"1" : 1000, "2" : 10}
 // Helper functions
 //
 
-func sm():
+func read_card():
 
     Sys::print("Account # ")
     Sys::stdout.flush()
@@ -106,7 +106,7 @@ ATM := $c<<SM5::sm>>:
     amount := -1
 
     state Waiting
-    state sm
+    state Read_Card
     state Get_Balance
     state Display_Menu
     state Get_Action
@@ -115,9 +115,9 @@ ATM := $c<<SM5::sm>>:
 
     // Get the account number.
 
-    transition reading_card from Waiting to sm: / card_num := sm()
-    transition getting_balance from sm to Get_Balance: [card_num != -1] / balance := get_balance(card_num)
-    transition invalid_card from sm to Waiting: [card_num == -1] / error("Unknown account")
+    transition reading_card from Waiting to Read_Card: / card_num := read_card()
+    transition getting_balance from Read_Card to Get_Balance: [card_num != -1] / balance := get_balance(card_num)
+    transition invalid_card from Read_Card to Waiting: [card_num == -1] / error("Unknown account")
 
     // Get the balance of the account, and then ask what the user wants to do.
 

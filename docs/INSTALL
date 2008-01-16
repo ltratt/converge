@@ -19,8 +19,8 @@ Converge only keeps a bootstrap compiler for 64-bit machines in version control.
 If you are running another type of machine, you will need to download a recent
 snapshot and extract the appropriate bootstrap compiler and linker. e.g.:
 
-  cp <snapshot>/bootstrap/<your machine type>/convergec.bootstrap bootstrap/convergec
-  cp <snapshot>/bootstrap/<your machine type>/convergel.bootstrap bootstrap/convergel
+  cp <snapshot>/bootstrap/<your machine type>/convergec.bootstrap bootstrap/<your machine type>
+  cp <snapshot>/bootstrap/<your machine type>/convergel.bootstrap bootstrap/<your machine type>
 
 You then execute the following as with any normal install:
 

@@ -3,11 +3,16 @@ power and reliability. It is intended to show a small, but realistic, example of
 DSL development. It is a good first starting point for learning about DSL
 development in Converge.
 
-Each evolution of the DSL comes with two files SMr.cv and exr.cv where r is the DSL's version number. Therefore SM1.cv and ex1.cv are the starting point. Each version of the DSL is runnable. e.g. to run the first version type:
+Each evolution of the DSL comes with two files SMr.cv and exr.cv where r is
+the DSL's version number. Therefore SM1.cv and ex1.cv are the starting
+point. Each version of the DSL is runnable. e.g. to run the first version
+type:
 
   $ converge -v ex1.cv
 
-The DSL and its implementation will be compiled and run. The first three versions are non-interactive, whereas the fourth and fifth versions require input from the user.
+The DSL and its implementation will be compiled and run. The first three
+versions are non-interactive, whereas the fourth and fifth versions require
+input from the user.
 
   1: Very simple implementation allowing only states, transitions, and events.
      Events received by the system cause transitions to be taken; if no valid
@@ -15,7 +20,12 @@ The DSL and its implementation will be compiled and run. The first three version
 
   2: Guards (effectively preconditions), variables and simple actions (updating
      variables) on top of version 1. This is expressive enough for a decent
-     subset of statemachines.
+     subset of statemachines. The general format of a transition is:
+
+       "TRANSITION" "FROM" <state> "TO" <state>: <event> "[" <guard> "]"
+       "/" <action>
+
+     where <event>, "[" <guard> "]", and "/" <action> are all optional.
 
      However there is a notable usability problem with this example. If the
      user makes a run-time mistake in their input - e.g. change one of the

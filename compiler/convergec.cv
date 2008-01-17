@@ -497,12 +497,13 @@ class Compiler:
         if not src_infos is null:
             assert src_infos.len() > 0
 
-            // If any of the src infos reference a file other than the one being specified, then
-            // other_files will be set to 1. This then changes the way we format error messages.
+            // If any of the src infos reference a file other than the original file being compiled,
+            // then other_files will be set to 1. This then changes the way we format error messages.
 
             other_files := 0
+            head_compiler := Core::head_compiler()
             for src_info := src_infos.iter():
-                if src_info[0] != self.mod_id:
+                if src_info[0] != head_compiler.mod_id:
                     other_files := 1
                     break
 
@@ -532,11 +533,31 @@ class Compiler:
                     if other_files == 0:
                         Sys::stderr.writeln(Strings::format("  Line %d, column %d", line, col))
                     else:
-                        Sys::stderr.writeln(Strings::format("  %s, line %d, column %d", src_info[0], line, col))
+                        if local_src_path := self._mod_id_to_local_src_path(src_info[0]):
+                            entry := Strings::format("""  File "%s", line %d, column %d""", local_src_path, line, col)
+                            Sys::stderr.writeln(entry)
+                        else:
+                            entry := Strings::format("""  Mod id "%s", line %d, column %d""", src_info[0], line, col)
+                            Sys::stderr.writeln(entry)
 
             Sys::stderr.writeln(msg)
         else:
             Sys::stderr.writeln(Strings::format("%s: %s", pre_msg, msg))
+
+
+
+    //
+    // If 'mod_id' refers to a module with a corresponding source file on the local machine, this
+    // function returns the source files path name. Otherwise it fails.
+    //
+
+    func _mod_id_to_local_src_path(self, mod_id):
+    
+        for compiler := Core::iter_compilers():
+            if compiler.mod_id == mod_id:
+                return compiler.src_path
+
+        fail
                     
 
 

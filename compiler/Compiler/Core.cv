@@ -73,6 +73,20 @@ func pop_compiler():
 
 
 
+func head_compiler():
+
+    return _compilers[0]
+
+
+
+func iter_compilers():
+
+    for yield _compilers.iter()
+    
+    fail
+
+
+
 func num_compilers():
 
     return _compilers.len()

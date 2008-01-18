@@ -539,8 +539,8 @@ Con_Obj *_Con_Module_Exception_backtrace_func(Con_Obj *thread)
 	CON_MUTEX_LOCK(&exception->mutex);
 
 	// Iterate over the call chain in reverse order, printing out each entry.
-    Con_Obj *file_mod = Con_Modules_get_stdlib(thread, CON_STDLIB_FILE);
-    Con_Obj *exists_func = CON_GET_MOD_DEFN(file_mod, "exists");
+	Con_Obj *file_mod = Con_Modules_get_stdlib(thread, CON_STDLIB_FILE);
+	Con_Obj *exists_func = CON_GET_MOD_DEFN(file_mod, "exists");
 	for (Con_Int i = exception_atom->num_call_chain_entries - 1; i >= 0; i -= 1) {
 		Con_Builtins_Exception_Class_Call_Chain_Entry *call_chain_entry = &exception_atom->call_chain[i];
 		Con_Obj *func = call_chain_entry->func;
@@ -590,20 +590,20 @@ Con_Obj *_Con_Module_Exception_backtrace_func(Con_Obj *thread)
 				Con_Obj *mod = Con_Modules_get(thread, mod_id);
 				Con_Obj *src_path = CON_GET_SLOT(mod, "src_path");
 
-                // We now try to see if src_path is really a file on the local machine; if it is, we
-                // assume (not necessarily correctly) that it corresponds to mod_id and print out the
-                // file name. If we don't find src_path we print out the module id instead.
+				// We now try to see if src_path is really a file on the local machine; if it is, we
+				// assume (not necessarily correctly) that it corresponds to mod_id and print out the
+				// file name. If we don't find src_path we print out the module id instead.
 
-                if (CON_APPLY_NO_FAIL(exists_func, src_path) != NULL) {
-    				entry = CON_ADD(entry, CON_NEW_STRING("File \""));
-	    			entry = CON_ADD(entry, src_path);
-                }
-                else {
-                    entry = CON_ADD(entry, CON_NEW_STRING("Mod id \""));
-	    			entry = CON_ADD(entry, mod_id);
-                }
+				if (CON_APPLY_NO_FAIL(exists_func, src_path) != NULL) {
+					entry = CON_ADD(entry, CON_NEW_STRING("File \""));
+					entry = CON_ADD(entry, src_path);
+				}
+				else {
+					entry = CON_ADD(entry, CON_NEW_STRING("Mod id \""));
+					entry = CON_ADD(entry, mod_id);
+				}
 
-                Con_Int line, column;
+				Con_Int line, column;
 				Con_Builtins_Module_Atom_src_offset_to_line_column(thread, mod, Con_Numbers_Number_to_Con_Int(thread, src_offset), &line, &column);
 				entry = CON_ADD(entry, CON_NEW_STRING("\", line "));
 				entry = CON_ADD(entry, CON_GET_SLOT_APPLY(CON_NEW_INT(line), "to_str"));

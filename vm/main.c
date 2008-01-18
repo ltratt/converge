@@ -102,16 +102,16 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 {
 	assert(argc > 0);
 
-    // We define here all variables which contain GC'd objects; these will be explicitly set to NULL
-    // so that we can make a reasonable stab at freeing all the memory we've allocated. We define
-    // all these variables here so that we can track them.
+	// We define here all variables which contain GC'd objects; these will be explicitly set to NULL
+	// so that we can make a reasonable stab at freeing all the memory we've allocated. We define
+	// all these variables here so that we can track them.
 
-    Con_Obj *thread, *main_module_identifier, *exception, *main_module, *backtrace;
-    char *vm_path, *canon_prog_path;
-    u_char *bytecode;
+	Con_Obj *thread, *main_module_identifier, *exception, *main_module, *backtrace;
+	char *vm_path, *canon_prog_path;
+	u_char *bytecode;
 	
-    // And now the rest of the function...
-    
+	// And now the rest of the function...
+	
 #	ifndef CON_DEFINE___PROGNAME
 	__progname = argv[0];
 #	endif
@@ -121,32 +121,32 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 	int verbosity = 0;
 	bool mk_fresh = false;
 
-    // We include our own simplistic arg parsing code to avoid platform problems with getopt etc.
+	// We include our own simplistic arg parsing code to avoid platform problems with getopt etc.
 
 	int i = 1;
 	while (i < argc) {
-        char *arg = argv[i];
+		char *arg = argv[i];
 		if (arg[0] == '-') {
 			if (strlen(arg) == 1)
 				usage();
 
-            for (unsigned int j = 1; j < strlen(arg); j += 1) {
-			    switch (arg[j]) {
-				    case 'v':
-					    verbosity += 1;
-					    break;
-				    case 'f':
-					    mk_fresh = true;
-					    break;
-				    default:
-					    usage();
-			    }
-            }
+			for (unsigned int j = 1; j < strlen(arg); j += 1) {
+				switch (arg[j]) {
+					case 'v':
+						verbosity += 1;
+						break;
+					case 'f':
+						mk_fresh = true;
+						break;
+					default:
+						usage();
+				}
+			}
 		}
 		else
 			break;
 
-        i += 1;
+		i += 1;
 	}
 	argc -= i;
 	argv += i;
@@ -170,7 +170,7 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 	// of this seems particularly reliable, but it's not clear that there's any better mechanism.
 
 	struct stat tmp_stat;
-    vm_path = NULL;
+	vm_path = NULL;
 
 #	ifdef READ_VM_PATH_FROM_PROC_SELF_EXE_SYMLINK
 	// On Linux we first try reading the symlink /proc/self/exe. Since this seems an inherently
@@ -178,18 +178,18 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 	// other mechanism if it doesn't work.
 
 	vm_path = malloc(PATH_MAX);
-    int rtn = readlink("/proc/self/exe", vm_path, PATH_MAX);
+	int rtn = readlink("/proc/self/exe", vm_path, PATH_MAX);
 	if (rtn != -1) {
-        vm_path[rtn] = '\0';
-        if (stat(vm_path, &tmp_stat) == -1) {
-            free(vm_path);
-    		vm_path = NULL;
-        }
-    }
-    else {
-        free(vm_path);
-        vm_path = NULL;
-    }
+		vm_path[rtn] = '\0';
+		if (stat(vm_path, &tmp_stat) == -1) {
+			free(vm_path);
+			vm_path = NULL;
+		}
+	}
+	else {
+		free(vm_path);
+		vm_path = NULL;
+	}
 #	endif
 
 #	ifdef CON_PLATFORM_MINGW
@@ -198,9 +198,9 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 	// just "x", and that would make working this out painful in the extreme.
 	vm_path = malloc(PATH_MAX);
 	if (GetModuleFileName(NULL, vm_path, PATH_MAX) == PATH_MAX || stat(vm_path, &tmp_stat) == -1) {
-        free(vm_path);
+		free(vm_path);
 		vm_path = NULL;
-    }
+	}
 #	endif
 
 	if (vm_path == NULL) {
@@ -240,12 +240,12 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 					i = j + 1;
 				}
 				free(cnd);
-                cnd = NULL;
+				cnd = NULL;
 			}
 #		else
 			// On non-POSIX platforms, we have no real idea what to do if realpath didn't give us
 			// a good answer.
-            free(vm_path);
+			free(vm_path);
 			vm_path = NULL;
 #		endif
 		}
@@ -305,10 +305,10 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 			exit(1);
 		}
 	}
-    
+	
 	main_module_identifier = Con_Bytecode_add_executable(thread, bytecode + bytecode_start);
 	free(bytecode);
-    bytecode = NULL;
+	bytecode = NULL;
 	
 	CON_TRY {
 		main_module = Con_Modules_import(thread, Con_Modules_get(thread, main_module_identifier));
@@ -367,14 +367,14 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 	// process so hopefully aren't too important.
 
 	main_module_identifier = exception = main_module = backtrace = NULL;
-    if (vm_path != NULL) {
-        free(vm_path);
-        vm_path = NULL;
-    }
-    if (canon_prog_path != NULL) {
-        free(canon_prog_path);
-        canon_prog_path = NULL;
-    }
+	if (vm_path != NULL) {
+		free(vm_path);
+		vm_path = NULL;
+	}
+	if (canon_prog_path != NULL) {
+		free(canon_prog_path);
+		canon_prog_path = NULL;
+	}
 	Con_Memory_gc_force(thread);
 	
 	return 0;

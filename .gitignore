@@ -1,0 +1,14 @@
+# Boring file regexps:
+*.o
+*~
+*.a
+*Makefile
+*Makefile.inc
+autom4te.cache
+config.log
+config.status
+configure
+*.core
+*.cvb
+*.cvl
+converge-*

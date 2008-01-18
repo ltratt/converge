@@ -1,0 +1,6 @@
+Config.h
+Config.h.in
+Version.h
+converge
+libconverge.a
+Std_Modules.[ch]

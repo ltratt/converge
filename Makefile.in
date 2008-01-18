@@ -57,8 +57,8 @@ regress: all
 release: distclean
 	mkdir converge-@CONVERGE_VERSION@
 	${MAKE} -f Makefile.bootstrap configure
-	find . -type d | grep -v "_darcs" | grep -v "^\.$$" | sed "s/^\..//" | grep -v "^autom4te.cache" | grep -v "converge-@CONVERGE_VERSION@" | xargs -I {} mkdir -p converge-@CONVERGE_VERSION@/{}
-	find . \! -type d | grep -v "_darcs" | sed "s/^\..//" | grep -v "^autom4te.cache" | grep -v "config\..*" | grep -v "\.binaries" | grep -v "\.boring" | grep -v "\.cvsignore" | grep -v "\.core$$" | grep -v ".depend$$" | grep -v "converge-@CONVERGE_VERSION@" | xargs -I {} cp -r {} converge-@CONVERGE_VERSION@/{}
+	find . -type d | grep -v "\.git" | grep -v "^\.$$" | sed "s/^\..//" | grep -v "^autom4te.cache" | grep -v "converge-@CONVERGE_VERSION@" | xargs -I {} mkdir -p converge-@CONVERGE_VERSION@/{}
+	find . \! -type d | grep -v "\.git" | sed "s/^\..//" | grep -v "^autom4te.cache" | grep -v "config\..*" | grep -v "\.binaries" | grep -v "\.gitignore" | grep -v "\.core$$" | grep -v ".depend$$" | grep -v "converge-@CONVERGE_VERSION@" | xargs -I {} cp -r {} converge-@CONVERGE_VERSION@/{}
 	tar cfz converge-@CONVERGE_VERSION@.tar.gz converge-@CONVERGE_VERSION@
 	@echo "\nMake sure that this distribution has the correct version and date!\n  @CONVERGE_VERSION@ (@CONVERGE_DATE@)"
 

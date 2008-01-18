@@ -101,7 +101,17 @@ int main(int argc, char** argv)
 int main_do(int argc, char** argv, u_char *root_stack_start)
 {
 	assert(argc > 0);
+
+    // We define here all variables which contain GC'd objects; these will be explicitly set to NULL
+    // so that we can make a reasonable stab at freeing all the memory we've allocated. We define
+    // all these variables here so that we can track them.
+
+    Con_Obj *thread, *main_module_identifier, *exception, *main_module, *backtrace;
+    char *vm_path, *canon_prog_path;
+    u_char *bytecode;
 	
+    // And now the rest of the function...
+    
 #	ifndef CON_DEFINE___PROGNAME
 	__progname = argv[0];
 #	endif
@@ -160,7 +170,7 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 	// of this seems particularly reliable, but it's not clear that there's any better mechanism.
 
 	struct stat tmp_stat;
-	char *vm_path = NULL;
+    vm_path = NULL;
 
 #	ifdef READ_VM_PATH_FROM_PROC_SELF_EXE_SYMLINK
 	// On Linux we first try reading the symlink /proc/self/exe. Since this seems an inherently
@@ -171,11 +181,15 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
     int rtn = readlink("/proc/self/exe", vm_path, PATH_MAX);
 	if (rtn != -1) {
         vm_path[rtn] = '\0';
-        if (stat(vm_path, &tmp_stat) == -1)
+        if (stat(vm_path, &tmp_stat) == -1) {
+            free(vm_path);
     		vm_path = NULL;
+        }
     }
-    else
+    else {
+        free(vm_path);
         vm_path = NULL;
+    }
 #	endif
 
 #	ifdef CON_PLATFORM_MINGW
@@ -183,8 +197,10 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 	// executable path, which is doubly nice because its possible to execute "x.exe" as simply
 	// just "x", and that would make working this out painful in the extreme.
 	vm_path = malloc(PATH_MAX);
-	if (GetModuleFileName(NULL, vm_path, PATH_MAX) == PATH_MAX || stat(vm_path, &tmp_stat) == -1)
+	if (GetModuleFileName(NULL, vm_path, PATH_MAX) == PATH_MAX || stat(vm_path, &tmp_stat) == -1) {
+        free(vm_path);
 		vm_path = NULL;
+    }
 #	endif
 
 	if (vm_path == NULL) {
@@ -224,10 +240,12 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 					i = j + 1;
 				}
 				free(cnd);
+                cnd = NULL;
 			}
 #		else
 			// On non-POSIX platforms, we have no real idea what to do if realpath didn't give us
 			// a good answer.
+            free(vm_path);
 			vm_path = NULL;
 #		endif
 		}
@@ -241,7 +259,7 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 	else
 		prog_path = argv[0];
 	
-	char *canon_prog_path = malloc(PATH_MAX);
+	canon_prog_path = malloc(PATH_MAX);
 	if (realpath(prog_path, canon_prog_path) == NULL) {
 		// If we can't canonicalise the programs path name, we fall back on the "raw" path and cross
 		// our fingers.
@@ -260,14 +278,14 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 		exit(1);
 	}
 
-	Con_Obj *thread = Con_Bootstrap_do(root_stack_start, argc, argv, vm_path, canon_prog_path);
+	thread = Con_Bootstrap_do(root_stack_start, argc, argv, vm_path, canon_prog_path);
 	if (thread == NULL) {
 		fprintf(stderr, "%s: error when trying to initialize virtual machine.\n", __progname);
 		exit(1);
 	}
 	
 	size_t bytecode_size = con_binary_file_stat.st_size;
-	u_char *bytecode = malloc(bytecode_size);
+	bytecode = malloc(bytecode_size);
 	fread(bytecode, 1, bytecode_size, con_binary_file);
 
 	if (fclose(con_binary_file) != 0) {
@@ -287,12 +305,13 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 			exit(1);
 		}
 	}
-	Con_Obj *main_module_identifier = Con_Bytecode_add_executable(thread, bytecode + bytecode_start);
+    
+	main_module_identifier = Con_Bytecode_add_executable(thread, bytecode + bytecode_start);
 	free(bytecode);
-
-	Con_Obj *exception;
+    bytecode = NULL;
+	
 	CON_TRY {
-		Con_Obj *main_module = Con_Modules_import(thread, Con_Modules_get(thread, main_module_identifier));
+		main_module = Con_Modules_import(thread, Con_Modules_get(thread, main_module_identifier));
 		CON_APPLY(CON_GET_MOD_DEFN(main_module, "main"));
 	}
 	CON_CATCH(exception) {
@@ -304,7 +323,7 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 		if (CON_GET_SLOT_APPLY_NO_FAIL(CON_GET_MOD_DEFN(CON_BUILTIN(CON_BUILTIN_EXCEPTIONS_MODULE), "System_Exit_Exception"), "instantiated", exception) != NULL)
 			exit_code = Con_Numbers_Number_to_Con_Int(thread, CON_GET_SLOT(exception, "code"));
 		else {
-			Con_Obj *backtrace = CON_APPLY(CON_GET_MOD_DEFN(CON_BUILTIN(CON_BUILTIN_EXCEPTIONS_MODULE), "backtrace"), exception);
+			backtrace = CON_APPLY(CON_GET_MOD_DEFN(CON_BUILTIN(CON_BUILTIN_EXCEPTIONS_MODULE), "backtrace"), exception);
 			fprintf(stderr, "%s\n", Con_Builtins_String_Atom_to_c_string(thread, backtrace));
 			backtrace = NULL;
 			exit_code = 1;
@@ -347,7 +366,15 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 	// executed, but they should mostly (if not all) be objects created during the bootstrap
 	// process so hopefully aren't too important.
 
-	main_module_identifier = NULL;
+	main_module_identifier = exception = main_module = backtrace = NULL;
+    if (vm_path != NULL) {
+        free(vm_path);
+        vm_path = NULL;
+    }
+    if (canon_prog_path != NULL) {
+        free(canon_prog_path);
+        canon_prog_path = NULL;
+    }
 	Con_Memory_gc_force(thread);
 	
 	return 0;

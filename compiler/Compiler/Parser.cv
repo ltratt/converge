@@ -306,11 +306,11 @@ class Parser(Earley::Parser::Parser):
 
 
 
-func parse(src_data):
+func parse(src_data, src_offset := 0):
 
     compiler := Core::peek_compiler()
 
-    compiler.tokenizer.tokenize(src_data, [[compiler.mod_id, 0]], [], [])
+    compiler.tokenizer.tokenize(src_data, [[compiler.mod_id, src_offset]], [], [])
     tokens_map := Tokenizer::tokens_map([], [])
     grammar, rule_names := Grammar::compile(GRAMMAR, "top_level", tokens_map)
 
@@ -318,11 +318,11 @@ func parse(src_data):
 
 
 
-func parse_expr_seq(src_data):
+func parse_expr_seq(src_data, src_offset := 0):
 
     compiler := Core::peek_compiler()
 
-    compiler.tokenizer.tokenize(src_data, [[compiler.mod_id, 0]], [], [])
+    compiler.tokenizer.tokenize(src_data, [[compiler.mod_id, src_offset]], [], [])
     tokens_map := Tokenizer::tokens_map([], [])
     grammar, rule_names := Grammar::compile(GRAMMAR, "expr_seq", tokens_map)
 

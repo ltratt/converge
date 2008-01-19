@@ -320,8 +320,20 @@ class Compiler:
         src_data := src_file.read()
         src_file.close()
 
+        // If there's a UNIX shell "#!" line at the beginning of the file, we completely ignore it.
+        // Note that this behaviour happens on all platforms, even though it might seem it should be
+        // restricted to UNIX machines. This is because UNIX scripts often end up being
+        // transferred to non-UNIX machines, and it's not feasible to have people take out and put in
+        // "#!" lines continuously.
+
+        src_offset := 0
+        if src_data.prefixed_by("#!"):
+            while src_offset < src_data.len() & not ["\n", "\r"].find(src_data[src_offset]):
+                src_offset += 1
+            src_data := src_data[src_offset : ]
+
         self.tokenizer := Tokenizer::Tokenizer.new()
-        parse_tree := Parser::parse(src_data)
+        parse_tree := Parser::parse(src_data, src_offset)
         self.newlines := self.tokenizer.newlines
 
         imodule := IMod_Gen::IMod_Gen.new().gen(parse_tree)

@@ -19,6 +19,11 @@
 // IN THE SOFTWARE.
 
 
+//
+// This module contains all the ITree data-types.
+//
+
+
 import Builtins, Functional, Strings, Sys
 import Core
 

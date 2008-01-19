@@ -18,6 +18,12 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 
+
+//
+// This module handles executable files. It should be brought into line with the other BC_* modules.
+//
+
+
 import Array
 import BC_Mod
 

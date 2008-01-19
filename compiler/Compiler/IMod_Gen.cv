@@ -19,6 +19,14 @@
 // IN THE SOFTWARE.
 
 
+//
+// This module converts a parse-tree into an ITree. More specifically it takes a parse tree
+// representing a module into an ITree::IModule instance. This conversion is largely mechanical and
+// (intentionally) doesn't do very much clever (apart from evaluating splices). The cleverness
+// happens in Code_Gen.cv and QQ_Mode.cv.
+//
+
+
 import Builtins, Exceptions, Strings, Sys, VM
 import Code_Gen, Core, BC_Mod, ITree, ITree_Rename, ITree_WF, Lift
 

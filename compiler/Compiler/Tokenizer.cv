@@ -20,6 +20,12 @@
 // IN THE SOFTWARE.
 
 
+//
+// This module breaks streams of text up into tokens. It is intended to be easily extensible, and
+// almost entirely stand-alone from the rest of the compiler.
+//
+
+
 import File, PCRE, Strings, Sys
 import CPK::Token::Token, CPK::Tokens
 import Core

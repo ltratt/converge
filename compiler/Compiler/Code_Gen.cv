@@ -19,6 +19,11 @@
 // IN THE SOFTWARE.
 
 
+//
+// This module generates bytecode from an ITree.
+//
+
+
 import Array, Builtins, File, Functional, Strings, Sys
 import Core, BC_Mod, ITree, QQ_Mode
 

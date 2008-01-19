@@ -19,6 +19,11 @@
 // IN THE SOFTWARE.
 
 
+//
+// This module contains shared parts of the compiler that don't naturally fit elsewhere.
+//
+
+
 import Exceptions, File, Platform::Host, Platform::Properties, Strings, Sys
 
 

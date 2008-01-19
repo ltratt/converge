@@ -19,6 +19,11 @@
 // IN THE SOFTWARE.
 
 
+//
+// This module handles .cvl files.
+//
+
+
 import Array, File, Sys
 import BC_Mod, BC_Pkg
 

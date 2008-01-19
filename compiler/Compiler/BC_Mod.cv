@@ -19,6 +19,12 @@
 // IN THE SOFTWARE.
 
 
+
+//
+// This module handles .cvb files.
+//
+
+
 import Array, File
 
 

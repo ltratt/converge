@@ -19,6 +19,12 @@
 // IN THE SOFTWARE.
 
 
+//
+// This module takes in an AST and renames all externally visible variables to fresh names. It is
+// chiefly used to implement double-sided macro hygiene $<...> and ${...}.
+//
+
+
 import Builtins, Strings
 import Core, ITree
 

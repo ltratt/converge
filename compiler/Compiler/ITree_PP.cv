@@ -19,6 +19,11 @@
 // IN THE SOFTWARE.
 
 
+//
+// This module contains code for converting ASTs into pretty-printed string equivalents.
+//
+
+
 import File, Functional, Strings
 import Core, ITree
 

@@ -19,6 +19,12 @@
 // IN THE SOFTWARE.
 
 
+//
+// This module contains a (currently slightly half-baked) run-time expression evaluation system.
+// It needs rewriting.
+//
+
+
 import Platform::Properties
 import Builtins, Code_Gen, Core, BC_Lib, BC_Mod, Parser, BC_Pkg, File, Functional, IMod_Gen, ITree, Link,  Strings, Targets::Available, Tokenizer, VM
 

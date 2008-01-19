@@ -19,6 +19,15 @@
 // IN THE SOFTWARE.
 
 
+//
+// This module handles quasi-quoted code; given an AST of quasi-quoted code it returns another AST
+// capable of building the code inside the quasi-quotes. In other words an AST for [| 1 + 2 |]
+// would be translated into add(int(1), int(2)). Note that this is more involved than it seems as
+// quasi-quotes need to do certain activities (like resolving variables) that would otherwise seem
+// to be more at home in the code generator.
+//
+
+
 import Builtins, Strings
 import Core, ITree, ITree_Rename, ITree_WF, Lift
 

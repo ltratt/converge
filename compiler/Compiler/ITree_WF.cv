@@ -19,6 +19,17 @@
 // IN THE SOFTWARE.
 
 
+//
+// This module checks ITree's for well-formedness; it is a sort of super-type checker for ASTs (in
+// that it can detect certain types of problems that normal type systems can't express). The main
+// aim of this module is to help catch out latent AST errors. For example if the user writes
+// [| 2 + ${"3"} |] then statically Converge can't detect that inserting a string into an addition
+// will cause problems; the error would show up somewhere much deeper in the bowels of the compiler.
+// This module catches such errors out, and gives nice error messages that make debugging such
+// problems practical.
+//
+
+
 import Builtins, File, Functional, Strings
 import Core, ITree
 

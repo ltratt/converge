@@ -19,6 +19,13 @@
 // IN THE SOFTWARE.
 
 
+//
+// This module contains code for 'lifting' normal Converge values into their AST equivalents.
+// Ultimately this should probably provide some sort of interface to allow non-builtin objects to be
+// lifted.
+//
+
+
 import Builtins, Exceptions, Strings, Thread
 import ITree
 

@@ -19,6 +19,12 @@
 // IN THE SOFTWARE.
 
 
+//
+// This module contains the Converge grammar and the minimal code needed to parse text according to
+// the grammar.
+//
+
+
 import File, Strings, Sys
 import CPK::Earley::Grammar, CPK::Earley, CPK::Tokens, CPK::Tree
 import Core, Tokenizer

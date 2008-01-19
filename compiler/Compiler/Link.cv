@@ -19,6 +19,13 @@
 // IN THE SOFTWARE.
 
 
+//
+// This module links together Converge objects (modules, packages, libraries). In a sense, this
+// overstates what it does - its task is more to discover what should be linked, and to find any
+// gaps / errors in what it is asked to link.
+//
+
+
 import Array, File, Strings
 import Code_Gen, Core, BC_Exec, BC_Pkg, ITree
 

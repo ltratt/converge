@@ -500,14 +500,6 @@ class Tokenizer:
                     
 
 
-func tokenize(str, src_path, src_offset := 0, line_offset := 0, extra_keywords := [], extra_symbols := []):
-
-    tokenizer := Tokenizer.new()
-    tokenizer.tokenize(str, src_path, src_offset, line_offset, extra_keywords, extra_symbols)
-    
-    return [tokenizer.tokens, tokenizer.newlines]
-
-
 
 func tokens_map(extra_symbols, extra_keywords):
 
@@ -516,12 +508,3 @@ func tokens_map(extra_symbols, extra_keywords):
         tokens.append(keyword.upper_cased())
 
     return Tokens::tokens_map(tokens)
-
-
-
-func main():
-
-    for file_name := Sys::argv.iter():
-        file := File::open(file_name, "r")
-        Sys::println(tokenize(file.read(), file_name)[0])
-

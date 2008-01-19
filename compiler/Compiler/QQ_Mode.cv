@@ -171,7 +171,11 @@ class QQ_Mode:
             
             mode := mode.parent_mode
 
-        self._compiler.error(Strings::format("Unknown variable '%s'.", var_name), src_infos)
+        if search_var_name == var_name:
+            self._compiler.error(Strings::format("Unknown variable '%s'.", var_name), src_infos)
+        else:
+            msg := Strings::format("Unknown variable '%s' (renamed from '%s').", var_name, search_var_name)
+            self._compiler.error(msg, src_infos)
 
 
 

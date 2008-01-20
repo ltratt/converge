@@ -17,6 +17,7 @@ VERSIONS = 1 2 3 4 5
 
 
 all:
+	${foreach v,${VERSIONS},${CONVERGE_VM} ${CONVERGEC} -v -m ex${v}.cv;}
 
 STATEMACHINEDIR = ${DESTDIR}${conexamplesdir}/dsls/statemachine
 install: all

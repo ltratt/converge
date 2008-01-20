@@ -24,7 +24,7 @@
 //
 
 
-import File, Functional, Strings
+import Builtins, File, Functional, Strings
 import Core, ITree
 
 
@@ -51,7 +51,12 @@ class ITree_PP:
 
         self._nesting := []
         
-        return self._preorder(itree)
+        if Builtins::List.instantiated(itree):
+            pp := []
+            for pp.append(self._preorder(itree.iter()))
+            return Strings::join(pp, "\n")
+        else:
+            return self._preorder(itree)
 
 
 

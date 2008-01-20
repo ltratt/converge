@@ -65,7 +65,7 @@ func main():
 
     includes := Core::find_std_includes()
 
-    Sys::println("Converge ", Sys::version)
+    Sys::println("Converge ", Sys::version, " (built at ", Sys::version_date, ")")
     d := Dict{}
     while 1:
         Sys::print(">>> ")

@@ -56,7 +56,7 @@ Con_Obj *_Con_Module_Sys_println_func(Con_Obj *);
 
 Con_Obj *Con_Module_Sys_init(Con_Obj *thread, Con_Obj *identifier)
 {
-	const char* defn_names[] = {"print", "println", "stdin", "stdout", "stderr", "vm_path", "program_path", "argv", "version", "exit", NULL};
+	const char* defn_names[] = {"print", "println", "stdin", "stdout", "stderr", "vm_path", "program_path", "argv", "version", "version_date", "exit", NULL};
 
 	return Con_Builtins_Module_Atom_new_c(thread, identifier, CON_NEW_STRING("Sys"), defn_names, CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
 }
@@ -106,6 +106,7 @@ Con_Obj *Con_Module_Sys_import(Con_Obj *thread, Con_Obj *sys_mod)
 	// Version info.
 
 	CON_SET_MOD_DEFN(sys_mod, "version", CON_NEW_STRING(CON_VERSION));
+	CON_SET_MOD_DEFN(sys_mod, "version_date", CON_NEW_STRING(CON_DATE));
 	
 	return sys_mod;
 }

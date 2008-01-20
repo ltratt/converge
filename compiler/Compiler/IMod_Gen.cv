@@ -217,7 +217,7 @@ class IMod_Gen:
                 out_itree := out_itree.extended_src_infos(node[1][1].src_infos)
 
         if st == ITree::SPLICE_DEFAULT:
-            out_itree := ITree_Rename::rename_all(out_itree)
+            out_itree := ITree_Rename::rename_fresh(out_itree)
 
         return out_itree
 

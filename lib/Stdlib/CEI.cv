@@ -68,9 +68,37 @@ func itree_elided_pp(itree, self_mod_id := null):
 
 
 
-func mk_hygienic(itree, vars := Set{}):
+func rename_itree(itree, rename_vars := null):
 
-    return ITree_Rename::rename_except(itree, vars)
+    if rename_vars is null:
+        return ITree_Rename::rename_fresh(itree)
+    else:
+        return ITree_Rename::rename_(itree)
+
+
+
+func mk_embeddable_itree(itree, except_vars := Set{}):
+
+    if Builtins::List.instantiated(itree):
+        itrees := itree
+    else:
+        itrees := [itree]
+
+    all_vars := Set{}
+    for itree := itrees.iter():
+        all_vars.extend(itree.free_vars)
+        all_vars.extend(itree.bound_vars)
+    
+    rename_vars := all_vars.complement(except_vars)
+    
+    renames := Dict{}
+    rename_elems := []
+    for var := rename_vars.iter():
+        fn := fresh_name(var)
+        renames[var] := fn
+        rename_elems.append(irename(ivar(var), ivar(fn)))
+
+    return [ITree_Rename::rename_(itree, renames), rename_elems]
 
 
 

@@ -277,7 +277,7 @@ class QQ_Mode:
         if node.type == ITree::INSERT_CAPTURING:
             return post_insert
         
-        return self._lift_func_call(ITree_Rename::rename_all, [post_insert], node.src_infos)
+        return self._lift_func_call(ITree_Rename::rename_fresh, [post_insert], node.src_infos)
         
 
 

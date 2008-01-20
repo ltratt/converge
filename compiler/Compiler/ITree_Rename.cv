@@ -42,11 +42,9 @@ _NEST_FUNC := 1
 
 class _Renamer:
 
-    func process(self, itrees, rename_vars):
+    func process(self, itrees, renames):
     
-        self._preorders := Dict{}
-        for var := rename_vars.iter():
-            self._preorders[var] := Core::fresh_name(var)
+        self._renames := renames
 
         // closures is a list of (set{variable names}, list(renames)) tuples. This is different, and
         // rather simpler, than in many other parts of the compiler.
@@ -101,6 +99,8 @@ class _Renamer:
             if closure[CLOSURE_VARS].find(srch_name):
                 break
             if rename_as := closure[CLOSURE_RENAMES].find(srch_name):
+                if ITree::IVar.instantiated(rename_as):
+                    break
                 srch_name := rename_as
             i -= 1
         exhausted:
@@ -228,7 +228,7 @@ class _Renamer:
 
     func _t_ivar(self, node):
 
-        if self._get_var_offset(node.name) <= 0 & renamed := self._preorders.find(node.name):
+        if self._get_var_offset(node.name) <= 0 & renamed := self._renames.find(node.name):
             return ITree::IVar.new(renamed, node.src_infos)
         else:
             return node
@@ -238,7 +238,7 @@ class _Renamer:
     func _t_iimport(self, node):
     
         // XXX this should be a proper var, not a string
-        if self._get_var_offset(node.var_name) <= 0 & renamed := self._preorders.find(node.var_name):
+        if self._get_var_offset(node.var_name) <= 0 & renamed := self._renames.find(node.var_name):
             var := renamed
         else:
             var := node.var_name
@@ -588,24 +588,20 @@ class _Renamer:
 
 
 
-
 //
-// Rename all externally visible variables in 'itree' (which may be a list) to new fresh names.
+// Rename all 'itree's externally visible variables mentioned in the keys of 'renames' to the
+// corresponding value. In other words, 'renames' is a dictionary mapping old variable names
+// to new variable names.
 //
 
-func rename_all(itree):
+func rename_(itree, renames):
 
     if Builtins::List.instantiated(itree):
         itrees := itree
     else:
         itrees := [itree]
 
-    vars := Set{}
-    for it := itrees.iter():
-        vars.extend(it.bound_vars)
-        vars.extend(it.free_vars)
-
-    renamed := _Renamer.new().process(itrees, vars)
+    renamed := _Renamer.new().process(itrees, renames)
 
     if Builtins::List.instantiated(itree):
         return renamed
@@ -614,23 +610,27 @@ func rename_all(itree):
 
 
 
+
 //
 // Rename all externally visible variables in 'itree' (which may be a list) to new fresh names.
 //
 
-func rename_except(itree, vars):
+func rename_fresh(itree):
 
     if Builtins::List.instantiated(itree):
         itrees := itree
     else:
         itrees := [itree]
 
-    fb_vars := Set{}
+    rename_vars := Set{}
     for it := itrees.iter():
-        fb_vars.extend(it.bound_vars)
-        fb_vars.extend(it.free_vars)
-    
-    renamed := _Renamer.new().process(itrees, fb_vars.complement(vars))
+        rename_vars.extend(it.bound_vars)
+        rename_vars.extend(it.free_vars)
+
+    renames := Dict{}
+    for var := rename_vars.iter():
+        renames[var] := Core::fresh_name(var)
+    renamed := _Renamer.new().process(itrees, renames)
 
     if Builtins::List.instantiated(itree):
         return renamed

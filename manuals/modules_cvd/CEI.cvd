@@ -71,10 +71,17 @@ Parse the string <code>dsl_block</code>, relative to the src infos <code>src_inf
 
 <h4>Hygiene</h4>
 
-<function name="mk_hygienic">
+<function name="rename_itree">
 <argument name="itree" />
-<argument name="vars" type="Set{String}">Set{}</argument>
-Returns a version of <code>itree</code> which is made hygienic except for variable names in the set of strings <code>vars</code>. If <code>vars</code> is the empty set, this means that <code>itree</code> will be made fully hygienic.
+<argument name="vars" type="Dict{String : String}">null</argument>
+Returns a version of <code>itree</code> where all externally visible free / bound variables which are mentioned in the keys of <code>vars</code> are renamed to the corresponding value. If <code>vars</code> is null, then all externally visible free / bound variables are renamed to fresh names.
+</function>
+
+
+<function name="mk_embeddable_itree">
+<argument name="itree" />
+<argument name="except_vars" type="Set{String}">Set{}</argument>
+This function is intended to be used on <q>external</q> ITrees which one wishes to embed in an AST being constructed. The external AST may have dynamically scoped references to variables which the AST it is embedded into should not interfere with. Thus this function renames all externally visible free / bound variables other than those in <code>except_vars</code> to fresh names. It then returns a list of IRename instances which can be easily inserted into a <code>rename</code> declaration.
 </function>
 
 

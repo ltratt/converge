@@ -19,7 +19,7 @@
 // IN THE SOFTWARE.
 
 
-import Exceptions, Strings, Sys
+import File, Exceptions, Strings, Sys
 import Compiler::Core, Compiler::Eval
 
 
@@ -63,7 +63,7 @@ class _Interactive_Compiler(Eval::Eval_Compiler):
 
 func main():
 
-    includes := Core::find_std_includes()
+    includes := [File::canon_path(".")]
 
     Sys::println("Converge ", Sys::version, " (built at ", Sys::version_date, ")")
     d := Dict{}

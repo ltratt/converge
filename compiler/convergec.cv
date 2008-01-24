@@ -33,8 +33,6 @@ class Compiler:
 
     func from_cmd_line(self):
     
-        start_includes := []
-    
         options := Parse_Options::Options.new(self._usage_callback)
         options.add(Parse_Options::Option_Spec.new("output", "o", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_ONE))
         options.add(Parse_Options::Option_Spec.new("includes", "I", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_MORE))
@@ -93,6 +91,17 @@ class Compiler:
 
         self.target := self._target_name_to_target(target_name)
         self.internal_target := self._target_name_to_target(internal_target_name)
+        
+        self.end_includes := []
+        for lib_path := Core::get_std_libraries(self).iter():
+            lib_file := File::open(lib_path, "r")
+            bc := lib_file.read()
+            lib_file.close()
+            if not BC_Lib::is_bc_lib(bc):
+                self.error(Strings::format("File '%s' is not a library.", lib_path))
+            bc_lib := BC_Lib::BC_Lib.new(self.internal_target)
+            bc_lib.deserialize(bc)
+            self.end_includes.append(bc_lib)
 
         self.src_paths_to_mod_ids := Dict{}
         if self.mk_mode == 1:
@@ -105,12 +114,13 @@ class Compiler:
 
 
 
-    func from_mk_mode(self, mod_id, src_path, start_includes, verbosity, mk_fresh, target, internal_target, mk_done_bc_mods, mk_mtime_map):
+    func from_mk_mode(self, mod_id, src_path, start_includes, end_includes, verbosity, mk_fresh, target, internal_target, mk_done_bc_mods, mk_mtime_map):
 
         self.mk_mode := 1
         self.mk_fresh := mk_fresh
         self.output_path := null
         self.start_includes := start_includes
+        self.end_includes := end_includes
         self.verbosity := verbosity
         self.target := target
         self.internal_target := internal_target
@@ -182,7 +192,7 @@ class Compiler:
         
         compiler := Compiler.new()
         Core::push_compiler(compiler)
-        bc_mod := compiler.from_mk_mode(mod_id, src_path, self.start_includes, self.verbosity, self.mk_fresh, self.target, self.internal_target, self.mk_done_bc_mods, self.mk_mtime_map)
+        bc_mod := compiler.from_mk_mode(mod_id, src_path, self.start_includes, self.end_includes, self.verbosity, self.mk_fresh, self.target, self.internal_target, self.mk_done_bc_mods, self.mk_mtime_map)
         Core::pop_compiler()
         
         if self.verbosity > 0:
@@ -211,30 +221,49 @@ class Compiler:
             fail
             
     
-        for include_dir := self.includes.iter():
-            if matched_path, extra_pos := match_path(0, include_dir):
-                import_extras := import_name_list[extra_pos + 1 : ]
+        for include := self.includes.iter():
+            if Builtins::String.instantiated(include):
+                if matched_path, extra_pos := match_path(0, include):
+                    import_extras := import_name_list[extra_pos + 1 : ]
 
-                src_path := File::canon_path(matched_path)
-                if mod_id := self.src_paths_to_mod_ids.find(src_path):
-                    break
-                
-                if (self.mk_mode == 0 | (self.mk_mode == 1 & self.mk_fresh == 0)) & \
-                  cvb_path := Core::get_cache_path(src_path) & File::exists(cvb_path):
-                    f := File::open(cvb_path, "r")
-                    bc := f.read()
-                    if BC_Mod::is_bc_mod(bc):
-                        bc_mod := BC_Mod::BC_Mod.new(self.internal_target)
+                    src_path := File::canon_path(matched_path)
+                    if mod_id := self.src_paths_to_mod_ids.find(src_path):
+                        break
+
+                    if (self.mk_mode == 0 | (self.mk_mode == 1 & self.mk_fresh == 0)) & \
+                      cvb_path := Core::get_cache_path(src_path) & File::exists(cvb_path):
+                        f := File::open(cvb_path, "r")
+                        bc := f.read()
+                        if BC_Mod::is_bc_mod(bc):
+                            bc_mod := BC_Mod::BC_Mod.new(self.internal_target)
+                        else:
+                            bc_mod := BC_Pkg::BC_Pkg.new(self.internal_target)
+                        bc_mod.deserialize_str(bc)
+                        f.close()
+                        mod_id := bc_mod.get_mod_id()
                     else:
-                        bc_mod := BC_Pkg::BC_Pkg.new(self.internal_target)
-                    bc_mod.deserialize_str(bc)
-                    f.close()
-                    mod_id := bc_mod.get_mod_id()
-                else:
-                    mod_id := Core::mk_mod_id(src_path)
+                        mod_id := Core::mk_mod_id(src_path)
 
-                self.src_paths_to_mod_ids[src_path] := mod_id
-                break
+                    self.src_paths_to_mod_ids[src_path] := mod_id
+                    break
+            else:
+                assert BC_Lib::BC_Lib.instantiated(include)
+                cnd := include.get_main_pkg()
+                if import_name_list[0] != "Stdlib" & cnd.get_name() == "Stdlib":
+                    if mod_id, src_path := cnd.get_entries().find(import_name_list[0]):
+                        if not cnd := include.find_mod_id(mod_id):
+                            raise "XXX"
+
+                if import_name_list[0] == cnd.get_name():
+                    i := 1
+                    while i < import_name_list.len() & not BC_Mod::BC_Mod.instantiated(cnd):
+                        mod_id, src_path := cnd.get_entries()[import_name_list[i]]
+                        if not cnd := include.find_mod_id(mod_id):
+                            raise "XXX"
+                        i += 1
+                    mod_id := cnd.get_mod_id()
+                    import_extras := import_name_list[i : ]
+                    break
         exhausted:
             // If the first part of the import references a builtin, then looking up that module ID
             // will succeed.
@@ -295,26 +324,24 @@ class Compiler:
 
     func _compile_mod(self, src_path):
 
-        self.includes := self.start_includes
-
         if self.verbosity > 0:
             self.info(Strings::format("Compiling %s...", src_path))
 
         self.src_path := File::canon_path(src_path)
         self.mod_id := Core::mk_mod_id(self.src_path)
 
+        self.includes := self.start_includes[ : ]
         if (input_file_dir := File::split_leaf(self.src_path)[0]) == "":
             self.includes.insert(0, ".")
         else:
             self.includes.insert(0, input_file_dir)
+        self.includes.extend(self.end_includes)
 
         // For the moment, we assume the compiled module name is simply the leaf name (minus its
         // extension). On platforms with non-case preserving filesystems, perhaps there is a need
         // for a more sophisticated mechanism?
 
         self.src_module_name := File::split_ext(File::split_leaf(self.src_path)[1])[0]
-
-        self.includes.extend(Core::find_std_includes())
 
         src_file := File::open(self.src_path, "r")
         src_data := src_file.read()
@@ -368,25 +395,21 @@ class Compiler:
             do_link := 1
 
         main_mod_id := Core::mk_mod_id(File::canon_path(src_path))
-        self.mk_done_bc_mods := Dict{main_mod_id : [File::canon_path(src_path), null]} // module id : BC_Mod instances map.
+        // mk_done_bc_mods is a map from mod ids to [src path, BC_Mod instance].
+        self.mk_done_bc_mods := Dict{main_mod_id : [File::canon_path(src_path), null]}
 
-        // We want to ensure that we never try to compile any of the stuff in the builtin libraries,
-        // so read these in to make sure this doesn't happen.
-        
-        lib_mods := []
-        lib_mod_ids := Set{}
-        for lib_path := Core::get_std_libraries().iter():
-            bc_lib := BC_Lib::BC_Lib.new(self.target)
-            lib_file := File::open(lib_path, "r")
-            lib_bc := lib_file.read()
-            lib_file.close()
-            for bc_mod := bc_lib.deserialize(lib_bc).iter():
-                lib_mod_id := bc_mod.get_mod_id()
-                lib_mod_src_path := bc_mod.get_src_path()
-                lib_mods.append(bc_mod)
-                lib_mod_ids.add(lib_mod_id)
-                self.mk_done_bc_mods[lib_mod_id] := [lib_mod_src_path, bc_mod]
-                self.src_paths_to_mod_ids[lib_mod_src_path] := lib_mod_id
+        // Now we read in any libraries that are part of the includes; we are very careful not to
+        // re-compile anything that is referenced in a library (this can happen if a machine has
+        // both the .cv and .cvb files referenced in a .cvl).
+
+        included_mod_ids := Set{}
+        for include := (self.start_includes + self.end_includes).iter():
+            ndif Builtins::String.instantiated(include):
+                continue
+            elif BC_Lib::BC_Lib.instantiated(include):
+                for bc_obj := include.iter_bc_mods():
+                    included_mod_ids.add(bc_obj.get_mod_id())
+                    self.mk_done_bc_mods[bc_obj.get_mod_id()] := [null, bc_obj]
 
         // The main loop. Basically we keep on going around this, reading in cached files or
         // compiling new files; and updating any modules who are older than their import
@@ -404,7 +427,7 @@ class Compiler:
             for mod_id, t := self.mk_done_bc_mods.iter():
                 mod_src_path, bc_mod := t
 
-                if lib_mod_ids.find(mod_id):
+                if included_mod_ids.find(mod_id):
                     continue
 
                 // We update the src path -> mod id map regardless of whether an entry already
@@ -474,7 +497,6 @@ class Compiler:
             for src_path, mod := self.mk_done_bc_mods.iter_vals():
                 if not mod is main_mod:
                     bc_mods.append(mod)
-            bc_mods.extend(lib_mods)
             
             if self.verbosity > 0:
                 self.info("Linking.")

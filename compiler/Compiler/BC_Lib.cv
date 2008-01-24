@@ -51,7 +51,8 @@ class BC_Lib:
     
         library := Array::Array.new(self._target.ARRAY_TYPE, mod_str)
     
-        self.modules := []
+        main_pkg := null
+        self._bc_mods_map := Dict{}
         for i := 0.iter_to(library[self._target.LIBRARY_BYTECODE_NUM_MODULES]):
             mod_offset := library[self._target.LIBRARY_BYTECODE_MODULE_OFFSETS + i] / self._target.WORDSIZE
             
@@ -67,10 +68,32 @@ class BC_Lib:
                 to := mod_offset + library[mod_offset + self._target.PKG_BYTECODE_SIZE] / self._target.WORDSIZE
                 bc_mod := BC_Pkg::BC_Pkg.new(self._target)
                 bc_mod.deserialize_str(mod_str[mod_offset * self._target.WORDSIZE : to * self._target.WORDSIZE])
-                
-            self.modules.append(bc_mod)
+            
+            if main_pkg is null:
+                main_pkg := bc_mod
+            self._bc_mods_map[bc_mod.get_mod_id()] := bc_mod
         
-        return self.modules
+        self._main_pkg := main_pkg
+
+
+
+    func get_main_pkg(self):
+    
+        return self._main_pkg
+
+
+
+    func find_mod_id(self, mod_id):
+    
+        return self._bc_mods_map.find(mod_id)
+
+
+
+    func iter_bc_mods(self):
+    
+        for yield self._bc_mods_map.iter_vals()
+        
+        fail
 
 
 

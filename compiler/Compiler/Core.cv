@@ -169,58 +169,11 @@ func fresh_name(name := null):
 // Location of standard libraries
 //
 
-func find_std_includes():
-
-    includes := []
-    
-    // Find Stdlib library.
-
-    bin_dir := File::split_leaf(Sys::program_path)[0]
-    lib_path_candidates := [File::join_names(bin_dir, "..", "lib", "converge-" + Sys::version, "Stdlib"), \
-      File::join_names(bin_dir, "..", "lib", "converge", "Stdlib"), \
-      File::join_names(bin_dir, "..", "lib", "Stdlib")]
-    for lib_path := lib_path_candidates.iter():
-        if File::exists(lib_path):
-            includes.append(File::split_leaf(File::canon_path(lib_path))[0])
-            includes.append(File::canon_path(lib_path))
-            break
-    exhausted:
-        peek_compiler().error("Can't find Converge Stdlib library directory.")
-
-    // Find Compiler library.
-
-    compiler_path_candidates := [File::join_names(bin_dir, "..", "lib", "converge-" + Sys::version, "Compiler"), \
-      File::join_names(bin_dir, "..", "lib", "converge", "Compiler"), \
-      File::join_names(bin_dir, "Compiler")]
-    for lib_path := compiler_path_candidates.iter():
-        if File::exists(lib_path):
-            includes.append(File::canon_path(File::join_names(lib_path, "..")))
-            break
-    exhausted:
-        peek_compiler().error("Can't find Converge Compiler library directory.")
-
-    return includes
-
-
-
-func get_std_libraries():
+func get_std_libraries(comp_link):
 
     bin_dir := File::split_leaf(Sys::program_path)[0]
     
     libraries := []
-
-    // Find libconverge.cvl
-
-    cnd_dirs := [File::join_names(bin_dir, "..", "lib", "converge-" + Sys::version), \
-      File::join_names(bin_dir, "..", "lib", "converge"), \
-      File::join_names(bin_dir, "..", "lib")]
-    for cnd_dir := cnd_dirs.iter():
-        cnd_path := File::join_names(cnd_dir, "Stdlib.cvl")
-        if File::exists(cnd_path):
-            libraries.append(File::canon_path(cnd_path))
-            break
-    exhausted:
-        peek_compiler().error("Can't find Stdlib.cvl.")
 
     // Find libcompiler.cvl.
 
@@ -233,7 +186,20 @@ func get_std_libraries():
             libraries.append(File::canon_path(cnd_path))
             break
     exhausted:
-        peek_compiler().error("Can't find Compiler.cvl.")
+        comp_link.warning("Can't find Compiler.cvl.")
+
+    // Find libconverge.cvl
+
+    cnd_dirs := [File::join_names(bin_dir, "..", "lib", "converge-" + Sys::version), \
+      File::join_names(bin_dir, "..", "lib", "converge"), \
+      File::join_names(bin_dir, "..", "lib")]
+    for cnd_dir := cnd_dirs.iter():
+        cnd_path := File::join_names(cnd_dir, "Stdlib.cvl")
+        if File::exists(cnd_path):
+            libraries.append(File::canon_path(cnd_path))
+            break
+    exhausted:
+        comp_link.warning("Can't find Stdlib.cvl.")
 
     return libraries
 

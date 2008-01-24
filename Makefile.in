@@ -3,8 +3,7 @@ all:
 ifeq (${wildcard lib/Stdlib.cvl}, )
 	@echo "===> lib/Stdlib.cvl does not exist: compiling minimal library"
 	cd lib && ${MAKE} ${MFLAGS} minimal
-	cd compiler && ${MAKE} ${MFLAGS}
-	rm lib/Stdlib.cvl
+	cd compiler && ${MAKE} ${MFLAGS} minimal
 	@echo "===> compiling rest of library"
 	cd lib && ${MAKE} ${MFLAGS}
 	cd compiler && ${MAKE} ${MFLAGS}

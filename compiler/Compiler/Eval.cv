@@ -38,20 +38,28 @@ class Eval_Compiler:
         self._str := str
         self.vars := vars
         
-        self.includes := includes
+        self.includes := includes[ : ]
         self.mod_id := Strings::format(Core::UNIQUE_EVAL_NAME_TEMPLATE, Core::fresh_name())
         self.src_path := self.mod_id
         self.internal_target := self.target := Available::TARGETS[Strings::format("%dbit", Properties::word_bits)].new()
 
-        self._cached_mods := Dict{}
-        for lib_path := Core::get_std_libraries().iter():
-            bc_lib := BC_Lib::BC_Lib.new(self.target)
+        for lib_path := Core::get_std_libraries(self).iter():
             lib_file := File::open(lib_path, "r")
-            lib_bc := lib_file.read()
+            bc := lib_file.read()
             lib_file.close()
-            for bc_mod := bc_lib.deserialize(lib_bc).iter():
-                self._cached_mods[bc_mod.get_mod_id()] := [bc_mod.get_src_path(), bc_mod]
+            if not BC_Lib::is_bc_lib(bc):
+                self.error(Strings::format("File '%s' is not a library.", lib_path))
+            bc_lib := BC_Lib::BC_Lib.new(self.internal_target)
+            bc_lib.deserialize(bc)
+            self.includes.append(bc_lib)
 
+        self._cached_mods := Dict{}
+        for include := self.includes.iter():
+            ndif Builtins::String.instantiated(include):
+                continue
+            elif BC_Lib::BC_Lib.instantiated(include):
+                for bc_obj := include.iter_bc_mods():
+                    self._cached_mods[bc_obj.get_mod_id()] := [null, bc_obj]
 
 
     func eval(self):
@@ -117,7 +125,7 @@ class Eval_Compiler:
         bc_mod := _Eval_Code_Gen.new().generate(self.target, dummy_imodule)
         
         bc_mods := [bc_mod]
-        for cached_mod_id, cached_bc_mod := self._cached_mods.iter_vals():
+        for cached_mod_src_path, cached_bc_mod := self._cached_mods.iter_vals():
             bc_mods.append(cached_bc_mod)
         
         // XXX technically we should provide our own linker class as an argument to link_max_pkgs.
@@ -159,25 +167,47 @@ class Eval_Compiler:
                 return [cnd_file_path, i]
             
             fail
-            
-    
-        for include_dir := self.includes.iter():
-            if matched_path, extra_pos := match_path(0, include_dir):
-                src_path := File::canon_path(matched_path)
-                if cvb_path := Core::get_cache_path(src_path) & File::exists(cvb_path):
-                    f := File::open(cvb_path, "r")
-                    bc := f.read()
-                    ndif BC_Mod::is_bc_mod(bc):
-                        bc_mod := BC_Mod::BC_Mod.new(self.internal_target)
-                    elif BC_Pkg::is_bc_pkg(bc):
-                        bc_mod := BC_Pkg::BC_Pkg.new(self.internal_target)
-                    bc_mod.deserialize_str(bc)
-                    f.close()
-                    mod_id := bc_mod.get_mod_id()
-                else:
-                    mod_id := Core::mk_mod_id(src_path)
-                import_extras := import_name_list[extra_pos + 1 : ]
-                break
+
+
+        for include := self.includes.iter():
+            if Builtins::String.instantiated(include):
+                if matched_path, extra_pos := match_path(0, include):
+                    import_extras := import_name_list[extra_pos + 1 : ]
+                    src_path := File::canon_path(matched_path)
+                    if cvb_path := Core::get_cache_path(src_path) & File::exists(cvb_path):
+                        f := File::open(cvb_path, "r")
+                        bc := f.read()
+                        if BC_Mod::is_bc_mod(bc):
+                            bc_mod := BC_Mod::BC_Mod.new(self.internal_target)
+                        else:
+                            bc_mod := BC_Pkg::BC_Pkg.new(self.internal_target)
+                        bc_mod.deserialize_str(bc)
+                        f.close()
+                        mod_id := bc_mod.get_mod_id()
+                        // We assume that if something's been imported that it will soon be
+                        // referenced, and so add it to the cached mods.
+                        self._cached_mods[mod_id] := [src_path, bc_mod]
+                    else:
+                        mod_id := Core::mk_mod_id(src_path)
+                    break
+            else:
+                assert BC_Lib::BC_Lib.instantiated(include)
+                cnd := include.get_main_pkg()
+                if import_name_list[0] != "Stdlib" & cnd.get_name() == "Stdlib":
+                    if mod_id, src_path := cnd.get_entries().find(import_name_list[0]):
+                        if not cnd := include.find_mod_id(mod_id):
+                            raise "XXX"
+
+                if import_name_list[0] == cnd.get_name():
+                    i := 1
+                    while i < import_name_list.len() & not BC_Mod::BC_Mod.instantiated(cnd):
+                        mod_id, src_path := cnd.get_entries()[import_name_list[i]]
+                        if not cnd := include.find_mod_id(mod_id):
+                            raise "XXX"
+                        i += 1
+                    mod_id := cnd.get_mod_id()
+                    import_extras := import_name_list[i : ]
+                    break
         exhausted:
             // If the first part of the import references a builtin, then looking up that module ID
             // will succeed.

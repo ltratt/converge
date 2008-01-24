@@ -7,29 +7,25 @@ libdir = @libdir@
 conlibdir = ${libdir}/converge-@CONVERGE_VERSION@
 INSTALL = @INSTALL@
 
-COMPILER_OBJS = Compiler/Parser.cvb Compiler/Tokenizer.cvb \
-	Compiler/IMod_Gen.cvb Compiler/ITree.cvb Compiler/Code_Gen.cvb \
-	Compiler/Targets/Thirty_Two_Bit.cvb Compiler/Core.cvb Compiler/BC_Mod.cvb \
-	Compiler/QQ_Mode.cvb Compiler/ITree_PP.cvb Compiler/ITree_WF.cvb \
-	Compiler/BC_Lib.cvb Compiler/BC_Exec.cvb Compiler/Eval.cvb \
+OBJS = Compiler.cvb Compiler/Parser.cvb Compiler/Tokenizer.cvb Compiler/IMod_Gen.cvb \
+	Compiler/ITree.cvb Compiler/Code_Gen.cvb Compiler/Targets/Thirty_Two_Bit.cvb \
+    Compiler/Core.cvb Compiler/BC_Mod.cvb Compiler/QQ_Mode.cvb Compiler/ITree_PP.cvb \
+    Compiler/ITree_WF.cvb Compiler/BC_Lib.cvb Compiler/BC_Exec.cvb Compiler/Eval.cvb \
 	Compiler/Lift.cvb Compiler/Link.cvb Compiler/ITree_Rename.cvb Compiler/BC_Pkg.cvb \
-	Compiler/Targets/Sixty_Four_Bit.cvb Compiler/Targets/Available.cvb
-
-PKG_OBJS = Compiler.cvb Compiler/Targets.cvb
-
-EXEC_OBJS = convergec.cvb convergel.cvb convergei.cvb convergep.cvb
-
-OBJ_FILES = ${COMPILER_OBJS} ${TARGET_OBJ_FILES} ${PKG_OBJS} ${EXEC_OBJS}
+	Compiler/Targets.cvb Compiler/Targets/Sixty_Four_Bit.cvb Compiler/Targets/Available.cvb \
+    convergec.cvb convergei.cvb convergel.cvb convergep.cvb
 
 
 %.cvb: %.cv
-	${CONVERGE_VM} ${CONVERGEC} -o $@ $<
+	${CONVERGE_VM} ${CONVERGEC} -I ${CONVERGE_STDLIB_DIR} -o $@ $<
 
 %.cvb: %
 	${CONVERGE_VM} ${CONVERGEC} -o $@ $<
 
 
 all: Compiler.cvl convergec convergei convergel convergep
+
+minimal: Compiler.cvl convergec convergel
 
 install: all
 	${INSTALL} -d ${DESTDIR}${bindir}
@@ -43,19 +39,15 @@ ifeq (@PLATFORM@, MinGW)
 	${INSTALL} -c -m 555 ../platform/MinGW/convergel.bat ${DESTDIR}${bindir}
 	${INSTALL} -c -m 555 ../platform/MinGW/convergep.bat ${DESTDIR}${bindir}
 endif
-	${INSTALL} -d ${DESTDIR}${conlibdir}/Compiler
-	${INSTALL} -d ${DESTDIR}${conlibdir}/Compiler/Targets
-	${foreach obj,${COMPILER_OBJS:.cvb=.cv},${INSTALL} -c -m 444 ${obj} ${DESTDIR}${conlibdir}/${obj};}
-	${foreach obj,${COMPILER_OBJS},${INSTALL} -c -m 444 ${obj} ${DESTDIR}${conlibdir}/${obj};}
-	${foreach obj,${PKG_OBJS},${INSTALL} -c -m 444 ${obj} ${DESTDIR}${conlibdir}/${obj};}
+	${INSTALL} -d ${DESTDIR}${conlibdir}
 	${INSTALL} -c -m 444 Compiler.cvl ${DESTDIR}${conlibdir}
 
 
 ifdef TARGET
-CROSS_OBJS = ${OBJ_FILES:.cvb=.${TARGET}.cvb}
+CROSS_OBJS = ${OBJS:.cvb=.${TARGET}.cvb}
 
 %.${TARGET}.cvb: %.cv
-	${CONVERGE_VM} ${CONVERGEC} -T ${TARGET} -o $@ $<
+	${CONVERGE_VM} ${CONVERGEC} -T ${TARGET} -I ${CONVERGE_STDLIB_DIR} -o $@ $<
 
 %.${TARGET}.cvb: %
 	${CONVERGE_VM} ${CONVERGEC} -T ${TARGET} -o $@ $<
@@ -69,23 +61,29 @@ cross-clean:
 endif
 
 
-Compiler.cvl: ${OBJ_FILES}
-	${CONVERGE_VM} ${CONVERGEL} -l -o Compiler.cvl ${OBJ_FILES}
+ifeq ($(MAKECMDGOALS),minimal)
+# In minimal mode, Stdlib.cvl won't have been created, so we need to manually pass .cvb files to
+# convergel. Bootstrapping is such great fun.
+STDLIB_OBJS=`find ../lib/ -name "*.cvb"`
+endif
 
-convergec: ${OBJ_FILES} ${CONVERGE_STDLIB}
-	${CONVERGE_VM} ${CONVERGEL} -o convergec convergec.cvb ${OBJ_FILES}
+Compiler.cvl: ${OBJS}
+	${CONVERGE_VM} ${CONVERGEL} -l -o Compiler.cvl Compiler.cvb ${OBJS}
 
-convergei: ${OBJ_FILES} ${CONVERGE_STDLIB}
-	${CONVERGE_VM} ${CONVERGEL} -o convergei convergei.cvb ${OBJ_FILES}
+convergec: ${OBJS}
+	${CONVERGE_VM} ${CONVERGEL} -o convergec convergec.cvb ${OBJS} ${STDLIB_OBJS}
 
-convergel: ${OBJ_FILES} ${CONVERGE_STDLIB}
-	${CONVERGE_VM} ${CONVERGEL} -o convergel convergel.cvb ${OBJ_FILES}
+convergei: ${OBJS}
+	${CONVERGE_VM} ${CONVERGEL} -o convergei convergei.cvb ${OBJS}
 
-convergep: ${OBJ_FILES} ${CONVERGE_STDLIB}
+convergel: ${OBJS}
+	${CONVERGE_VM} ${CONVERGEL} -o convergel convergel.cvb ${OBJ_FILES} ${STDLIB_OBJS}
+
+convergep: ${OBJS}
 	${CONVERGE_VM} ${CONVERGEL} -o convergep convergep.cvb ${OBJ_FILES}
 
 clean:
-	rm -f Compiler.cvl ${OBJ_FILES}
+	rm -f Compiler.cvl ${OBJS} converge[cilp].cvb
 
 distclean: clean
 	rm -f Makefile convergec convergei convergel convergep

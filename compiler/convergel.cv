@@ -52,7 +52,7 @@ class Linker:
         self.target := self.target_name_to_target(target_name)
         
         input_paths := extra_args
-        input_paths.extend(Core::get_std_libraries())
+        input_paths.extend(Core::get_std_libraries(self))
 
         bc_mods := []
         for input_path := extra_args.iter():
@@ -62,7 +62,8 @@ class Linker:
 
             if BC_Lib::is_bc_lib(bc):
                 bc_lib := BC_Lib::BC_Lib.new(self.target)
-                for bc_mod := bc_lib.deserialize(bc).iter():
+                bc_lib.deserialize(bc)
+                for bc_mod := bc_lib.iter_bc_mods():
                     bc_mods.append(bc_mod)
             elif BC_Mod::is_bc_mod(bc):
                 bc_mod := BC_Mod::BC_Mod.new(self.target)
@@ -91,6 +92,9 @@ class Linker:
 
     func lib_link(self):
     
+        // Create a .cvl library from a .cvb package. This reads in a .cvb package, and then bundles
+        // up (recursively) all of its sub-modules and sub-packages into a single binary library.
+    
         self.includes := []
     
         options := Parse_Options::Options.new(self.usage)
@@ -101,50 +105,98 @@ class Linker:
         target_name := Strings::format("%dbit", Properties::word_bits)
         parsed_args, extra_args := options.parse()
         for option_name, option_val := parsed_args.iter():
-            if option_name == "lib_mode":
+            ndif option_name == "lib_mode":
                 pass
             elif option_name == "output":
                 output_path := option_val
             elif option_name == "target":
                 target_name := option_val
-            else:
-                raise "XXX"
         
         if extra_args.len() == 0:
             self.usage("Not enough arguments.")
 
         self.target := self.target_name_to_target(target_name)
 
-        ser_mods := []
-        for input_path := extra_args.iter():
-            input_path := File::canon_path(input_path)
-            input_file := File::open(input_path, "r")
-            bc := input_file.read()
+        bc_pkgs_stack := []
+        input_path := File::canon_path(extra_args[0])
+        input_file := File::open(input_path, "r")
+        bc := input_file.read()
+        input_file.close()
+        if not BC_Pkg::is_bc_pkg(bc):
+            self.error(Strings::format("File '%s' is not a compiled package.", input_path))
+        bc_pkg := BC_Pkg::BC_Pkg.new(self.target)
+        bc_pkg.deserialize_str(bc)
+        
+        // Read in every file from the command line. start_pkg will be set to a BC_Pkg::BC_Pkg
+        // instance.
+        
+        start_pkg := null
+        bc_objs := Dict{}
+        for path := extra_args.iter():
+            file := File::open(path, "r")
+            bc := file.read()
+            file.close()
 
-            if BC_Lib::is_bc_lib(bc):
-                bc_lib := BC_Lib::BC_Lib.new(self.target)
-                for bc_mod := bc_lib.deserialize(bc).iter():
-                    ser_mods.append(bc_mod.serialize())
-            elif BC_Mod::is_bc_mod(bc):
-                ser_mods.append(bc)
+            if BC_Mod::is_bc_mod(bc):
+                if start_pkg is null:
+                    self.error(Strings::format("First file '%s' is not a package.", extra_args[0]))
+                bc_mod := BC_Mod::BC_Mod.new(self.target)
+                bc_mod.deserialize_str(bc)
+                bc_objs[bc_mod.get_mod_id()] := [bc, bc_mod]
             elif BC_Pkg::is_bc_pkg(bc):
-                ser_mods.append(bc)
+                bc_pkg := BC_Pkg::BC_Pkg.new(self.target)
+                bc_pkg.deserialize_str(bc)
+                bc_objs[bc_pkg.get_mod_id()] := [bc, bc_pkg]
+                if start_pkg is null:
+                    start_pkg := bc_pkg
             else:
                 self.error(Strings::format("File '%s' is not of a known type.", input_path))
+        
+        // Check (recursively) that every sub-module and sub-package of start_pkg was included in
+        // the input files. At the same time, populate the set ser_mod_ids with the mod ids of all
+        // necessary modules.
+        
+        pkgs_stack := [start_pkg]
+        ser_mod_ids := Set{start_pkg.get_mod_id()}
+        i := 0
+        while i < pkgs_stack.len():
+            bc_pkg := pkgs_stack[i]
+            for defn_name, t := bc_pkg.get_entries().iter():
+                mod_id, src_path := t
+                if not bc_objs.find(mod_id):
+                    msg := Strings::format("Module '%s' referenced in package '%s' not found", mod_id, bc_pkg.get_mod_id())
+                    self.error(msg)
+                ser_mod_ids.add(mod_id)
+                _, cnd_bc_obj := bc_objs[mod_id]
+                if BC_Pkg::BC_Pkg.instantiated(cnd_bc_obj):
+                    pkgs_stack.append(cnd_bc_obj)
+            i += 1
 
-        // In one sense, the following should belong in BC_Lib::BC_Lib.serialize. But by
-        // doing it here we can forego the pointless string -> array -> string conversion.
+        // Pick out the required files necessary to create a coherent package (unneeded input files
+        // are silently ignored)
+
+        start_pkg_mod_id := start_pkg.get_mod_id()
+        ser_bc_objs := [bc_objs[start_pkg_mod_id][0]]
+        for mod_id := ser_mod_ids.iter():
+            if mod_id == start_pkg_mod_id:
+                continue
+            ser_bc, _ := bc_objs[mod_id]
+            ser_bc_objs.append(ser_bc)
+
+        // Serialize the bc_objs. In one sense, the following should belong in
+        // BC_Lib::BC_Lib.serialize. But by doing it here we can forego the pointless and expensive
+        // string -> array -> string conversion.
 
         lib := Array::Array.new(self.target.ARRAY_TYPE)
         lib.extend_from_string(BC_Lib::LIB_INIT_STR)
         lib.append(BC_Lib::LIBRARY_VERSION)
 
-        lib.append(ser_mods.len())
+        lib.append(ser_bc_objs.len())
         
         offsets := Array::Array.new(self.target.ARRAY_TYPE)
         serialized_modules := Array::Array.new(self.target.ARRAY_TYPE)
-        for module := ser_mods.iter():
-            offsets.append((lib.len() + ser_mods.len() + serialized_modules.len()) * self.target.WORDSIZE)
+        for module := ser_bc_objs.iter():
+            offsets.append((lib.len() + ser_bc_objs.len() + serialized_modules.len()) * self.target.WORDSIZE)
             serialized_modules.extend_from_string(module)
         
         lib.extend(offsets)

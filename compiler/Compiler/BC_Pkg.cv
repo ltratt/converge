@@ -42,6 +42,8 @@ class BC_Pkg:
     func init(self, target):
     
         self._target := target
+
+        self._cached_entries := null
         
 
 
@@ -101,7 +103,10 @@ class BC_Pkg:
 
 
     func get_entries(self):
-    
+
+        if not self._cached_entries is null:
+            return self._cached_entries
+
         entries := Dict{}
         entries_pos := 0
         for i := 0.iter_to(self._num_entries):
@@ -119,11 +124,15 @@ class BC_Pkg:
             
             entries[defn_name] := [mod_id, src_path]
         
+        self._cached_entries := entries
+
         return entries
 
 
 
     func set_entries(self, entries):
+
+        self._cached_entries := null
 
         self._entries := Array::Array.new(self._target.ARRAY_TYPE)
         for defn_name, t := entries.iter():

@@ -6,24 +6,21 @@ libdir = @libdir@
 conlibdir = ${libdir}/converge-@CONVERGE_VERSION@
 INSTALL = @INSTALL@
 
-MINIMAL_OBJS = Stdlib/CPK/Earley/Grammar.cvb Stdlib/CPK/Earley/Parser.cvb Stdlib/CPK/Token.cvb \
-	Stdlib/CPK/Tokens.cvb Stdlib/CPK/Tree.cvb Stdlib/File.cvb Stdlib/Functional.cvb Stdlib/Maths.cvb \
-	Stdlib/Numbers.cvb Stdlib/Parse_Options.cvb Stdlib/Platform/Properties.cvb \
+MINIMAL_OBJS = Stdlib.cvb Stdlib/CPK.cvb Stdlib/CPK/Earley.cvb Stdlib/CPK/Earley/Grammar.cvb \
+	Stdlib/CPK/Earley/Parser.cvb Stdlib/CPK/Token.cvb Stdlib/CPK/Tokens.cvb Stdlib/CPK/Tree.cvb \
+    Stdlib/File.cvb Stdlib/Functional.cvb Stdlib/Maths.cvb Stdlib/Numbers.cvb \
+    Stdlib/Parse_Options.cvb Stdlib/Platform.cvb Stdlib/Platform/Properties.cvb \
 	Stdlib/Platform/Host.cvb Stdlib/Strings.cvb Stdlib/Time.cvb
 
-MINIMAL_PKG_OBJS = Stdlib/CPK.cvb Stdlib/CPK/Earley.cvb
-
 MAXIMAL_OBJS = Stdlib/CEI.cvb Stdlib/CPK/Traverser.cvb Stdlib/Platform/Env.cvb \
-	Stdlib/Platform/Exec.cvb Stdlib/Sort.cvb Stdlib/XML/Nodes.cvb Stdlib/XML/XDM.cvb \
+	Stdlib/Platform/Exec.cvb Stdlib/Sort.cvb Stdlib/XML/Nodes.cvb Stdlib/XML.cvb Stdlib/XML/XDM.cvb \
 	Stdlib/XML/XHTML.cvb
 
-MAXIMAL_PKG_OBJS = Stdlib.cvb Stdlib/Platform.cvb Stdlib/XML.cvb
-
-ALL_OBJS = ${MINIMAL_OBJS} ${MINIMAL_PKG_OBJS} ${MAXIMAL_OBJS} ${MAXIMAL_PKG_OBJS}
+ALL_OBJS = ${MINIMAL_OBJS} ${MAXIMAL_OBJS}
 
 
 %.cvb: %.cv
-	${CONVERGE_VM} ${CONVERGEC} -o $@ $<
+	${CONVERGE_VM} ${CONVERGEC} -I Stdlib -o $@ $<
 
 %.cvb: %
 	${CONVERGE_VM} ${CONVERGEC} -o $@ $<
@@ -31,18 +28,10 @@ ALL_OBJS = ${MINIMAL_OBJS} ${MINIMAL_PKG_OBJS} ${MAXIMAL_OBJS} ${MAXIMAL_PKG_OBJ
 
 all: Stdlib.cvl
 
-minimal: ${MINIMAL_OBJS} ${MINIMAL_PKG_OBJS}
-	${CONVERGE_VM} ${CONVERGEL} -l -o Stdlib.cvl ${MINIMAL_OBJS} ${MINIMAL_PKG_OBJS}
+minimal: ${MINIMAL_OBJS}
 
 install: all
-	${INSTALL} -d ${DESTDIR}${conlibdir}/Stdlib
-	${INSTALL} -d ${DESTDIR}${conlibdir}/Stdlib/CPK
-	${INSTALL} -d ${DESTDIR}${conlibdir}/Stdlib/CPK/Earley
-	${INSTALL} -d ${DESTDIR}${conlibdir}/Stdlib/Platform
-	${INSTALL} -d ${DESTDIR}${conlibdir}/Stdlib/XML
-	${foreach obj,${MINIMAL_OBJS:.cvb=.cv},${INSTALL} -c -m 444 ${obj} ${DESTDIR}${conlibdir}/${obj};}
-	${foreach obj,${MAXIMAL_OBJS:.cvb=.cv},${INSTALL} -c -m 444 ${obj} ${DESTDIR}${conlibdir}/${obj};}
-	${foreach obj,${ALL_OBJS},${INSTALL} -c -m 444 ${obj} ${DESTDIR}${conlibdir}/${obj};}
+	${INSTALL} -d ${DESTDIR}${conlibdir}
 	${INSTALL} -c -m 444 Stdlib.cvl ${DESTDIR}${conlibdir}
 
 
@@ -50,13 +39,13 @@ ifdef TARGET
 CROSS_OBJS = ${ALL_OBJS:.cvb=.${TARGET}.cvb}
 
 %.${TARGET}.cvb: %.cv
-	${CONVERGE_VM} ${CONVERGEC} -T ${TARGET} -o $@ $<
+	${CONVERGE_VM} ${CONVERGEC} -T ${TARGET} -I ${CONVERGE_COMPILER_DIR} -o $@ $<
 
 %.${TARGET}.cvb: %
 	${CONVERGE_VM} ${CONVERGEC} -T ${TARGET} -o $@ $<
 
 cross: ${CROSS_OBJS}
-	${CONVERGE_VM} ${CONVERGEL} -l -T ${TARGET} -o Stdlib.${TARGET}.cvl ${CROSS_OBJS}
+	${CONVERGE_VM} ${CONVERGEL} -l -T ${TARGET} -o Stdlib.${TARGET}.cvl Stdlib.${TARGET}.cvb ${CROSS_OBJS}
 
 cross-clean:
 	rm -f ${CROSS_OBJS} Stdlib.${TARGET}.cvl
@@ -64,7 +53,7 @@ endif
 
 
 Stdlib.cvl: ${ALL_OBJS}
-	${CONVERGE_VM} ${CONVERGEL} -l -o Stdlib.cvl ${ALL_OBJS}
+	${CONVERGE_VM} ${CONVERGEL} -l -o Stdlib.cvl Stdlib.cvb ${ALL_OBJS}
 
 clean:
 	rm -f ${ALL_OBJS} Stdlib.cvl

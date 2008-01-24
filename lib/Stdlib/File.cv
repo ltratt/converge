@@ -25,6 +25,7 @@ import POSIX_File, Strings, Sys, Time
 
 DIR_SEP := POSIX_File::DIR_SEP
 EXT_SEP := POSIX_File::EXT_SEP
+NULL_DEV := POSIX_File::NULL_DEV
 
 
 

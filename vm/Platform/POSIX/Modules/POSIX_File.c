@@ -98,7 +98,7 @@ Con_Obj *_Con_Module_POSIX_File_rm_func(Con_Obj *);
 
 Con_Obj *Con_Module_POSIX_File_init(Con_Obj *thread, Con_Obj *identifier)
 {
-	const char* defn_names[] = {"DIR_SEP", "EXT_SEP", "File_Atom_Def", "File", "canon_path", "exists", "is_dir", "is_file", "chmod", "rdmod", "iter_dir_entries", "mtime", "rm", NULL};
+	const char* defn_names[] = {"DIR_SEP", "EXT_SEP", "NULL_DEV", "File_Atom_Def", "File", "canon_path", "exists", "is_dir", "is_file", "chmod", "rdmod", "iter_dir_entries", "mtime", "rm", NULL};
 
 	return Con_Builtins_Module_Atom_new_c(thread, identifier, CON_NEW_STRING("POSIX_File"), defn_names, CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
 }
@@ -111,6 +111,7 @@ Con_Obj *Con_Module_POSIX_File_import(Con_Obj *thread, Con_Obj *posix_file_mod)
 	
 	CON_SET_MOD_DEFN(posix_file_mod, "DIR_SEP", CON_NEW_STRING(CON_DIR_SEP));
 	CON_SET_MOD_DEFN(posix_file_mod, "EXT_SEP", CON_NEW_STRING(CON_EXT_SEP));
+    CON_SET_MOD_DEFN(posix_file_mod, "NULL_DEV", CON_NEW_STRING(CON_NULL_DEV));
 
 	// File_Atom_Def
 	

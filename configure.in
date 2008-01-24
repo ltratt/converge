@@ -133,6 +133,17 @@ case $operating_system in
 		case_insensitive_file_system=0;;
 esac
 
+AC_MSG_CHECKING(for null device)
+AH_TEMPLATE(CON_NULL_DEV, [Define to your platforms null device (e.g. /dev/null).])
+case $operating_system in
+	MINGW*)
+		AC_MSG_RESULT(NUL:)
+		AC_DEFINE(CON_NULL_DEV, ["NUL:"]);;
+	*)
+		AC_MSG_RESULT(/dev/null)
+		AC_DEFINE(CON_NULL_DEV, ["/dev/null"]);;
+esac
+
 case $operating_system in
 	Linux ) AC_DEFINE(READ_VM_PATH_FROM_PROC_SELF_EXE_SYMLINK, [], [Define if your operating system allows the location of the VM executable to be determined by reading the symlink /proc/self/exe.])
 esac
@@ -774,9 +785,9 @@ LIBS="$extra_libs"
 AC_CONFIG_FILES([Makefile Makefile.inc compiler/Makefile vm/Version.h vm/Makefile lib/Makefile
 	lib/Makefile.Stdlib bootstrap/Makefile tests/Makefile tests/threads/Makefile
 	manuals/Makefile examples/Makefile examples/compile_time/Makefile examples/dsls/Makefile
-    examples/dsls/statemachine/Makefile	examples/metaclasses/Makefile tests/lang/Makefile
-    tests/lang/namespaces/Makefile tests/threads/pthreads/Makefile
-    tests/threads/single_thread/Makefile])
+	examples/dsls/statemachine/Makefile	examples/metaclasses/Makefile tests/lang/Makefile
+	tests/lang/namespaces/Makefile tests/threads/pthreads/Makefile
+	tests/threads/single_thread/Makefile])
 AC_OUTPUT
 
 

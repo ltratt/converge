@@ -25,7 +25,7 @@
 // will require more advance sub-process facilities to be complete.
 
 
-import CEI, CPK::Traverser, Platform::Exec, Strings, Sys
+import CEI, CPK::Traverser, File, Platform::Exec, Strings, Sys
 
 
 
@@ -118,7 +118,7 @@ class _Test_Translator(Traverser::Strict_Traverser):
                     Sys::stderr.flush()
 
                     if test.details.len() == 0:
-                        cmd := Strings::format("%s -f %s > /dev/null 2> /dev/null", Sys::vm_path, path)
+                        cmd := Strings::format("%s -f %s > %s 2> %s", Sys::vm_path, path, File::NULL_DEV, File::NULL_DEV)
                         rtn := Exec::sh_cmd(cmd)
                         if rtn == 0:
                             Sys::stderr.writeln(" pass")
@@ -129,7 +129,7 @@ class _Test_Translator(Traverser::Strict_Traverser):
                             Sys::stderr.flush()
                             return 1
                     else:
-                        cmd := Strings::format("%s -f %s > /dev/null 2> /dev/null", Sys::vm_path, path)
+                        cmd := Strings::format("%s -f %s > %s 2> %s", Sys::vm_path, path, File::NULL_DEV, File::NULL_DEV)
                         rtn := Exec::sh_cmd(cmd)
                         if rtn != 0:
                             Sys::stderr.writeln(" pass")

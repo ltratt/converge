@@ -298,6 +298,8 @@ class Compiler:
 
         if self.verbosity > 0:
             self.info(Strings::format("Compiling %s...", src_path))
+            
+        src_path := File::canon_path(src_path)
         
         pkg_entries := Dict{}
         for leaf := File::iter_dir_entries(src_path):

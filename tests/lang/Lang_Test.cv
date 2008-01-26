@@ -36,14 +36,14 @@ _GRAMMAR := """
 tests ::= file ( "NEWLINE" file )*
 
 file   ::= "STRING"
-       ::= "STRING" ":" "INDENT" detail ( "NEWLINE" detail )* "DEDENT"
+       | "STRING" ":" "INDENT" detail ( "NEWLINE" detail )* "DEDENT"
 detail ::= mode type
 
 mode ::= "CTIME"
-     ::= "RTIME"
+       | "RTIME"
 
 type ::= warning
-     ::= exception
+       | exception
 
 warning ::= "WARNING" "STRING"
 

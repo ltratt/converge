@@ -28,14 +28,14 @@ GRAMMAR := """
 system ::= element ( "NEWLINE" element )*
 
 element ::= state
-        ::= transition
+          | transition
 
 state ::= "STATE" "ID"
 
 transition ::= "TRANSITION" "FROM" "ID" "TO" "ID" event
 
 event ::= ":" "ID"
-      ::=
+        |
 """
 
 

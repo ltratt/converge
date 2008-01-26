@@ -33,191 +33,191 @@ import Core, Tokenizer
 
 GRAMMAR := """
 top_level ::= defn ( "NEWLINE" defn )*
-          ::=
+            |
 
 
 defn  ::= class_defn
-      ::= func_defn
-      ::= import
-      ::= name ( "," name )* ":=" expr
-      ::= splice
-      ::= insert
+        | func_defn
+        | import
+        | name ( "," name )* ":=" expr
+        | splice
+        | insert
 
 
 name ::= "ID"
-     ::= "&" "ID"
-     ::= splice
-     ::= insert
+       | "&" "ID"
+       | splice
+       | insert
 
 
 import      ::= "IMPORT" import_name import_as ( "," import_name import_as )*
 import_name ::= "ID" ( "::" "ID" )*
 import_as   ::= "AS" "ID"
-            ::=
+              |
 
 
 class_defn      ::= "CLASS" class_name class_supers class_metaclass ":" "INDENT" class_fields "DEDENT"
 class_name      ::= name
-                ::=
+                  |
 class_supers    ::= "(" expr ( "," expr )* ")"
-                ::=
+                  |
 class_metaclass ::= "METACLASS" expr
-                ::=
+                  |
 class_fields    ::= class_field ( "NEWLINE" class_field )*
 class_field     ::= class_defn
-                ::= func_defn
-                ::= name ":=" expr
-                ::= splice
-                ::= insert
-                ::= "PASS"
+                  | func_defn
+                  | name ":=" expr
+                  | splice
+                  | insert
+                  | "PASS"
 
 func_defn             ::= func_type func_name "(" func_params ")" ":" "INDENT" func_decls expr_seq "DEDENT"
-                      ::= func_type func_name "(" func_params ")" "{" "INDENT" func_decls expr_seq "DEDENT" "NEWLINE" "}"
-                      ::= func_type func_name "(" func_params ")" "{" expr "}"
+                        | func_type func_name "(" func_params ")" "{" "INDENT" func_decls expr_seq "DEDENT" "NEWLINE" "}"
+                        | func_type func_name "(" func_params ")" "{" expr "}"
 func_type             ::= "FUNC"
-                      ::= "BOUND_FUNC"
-                      ::= "UNBOUND_FUNC"
+                        | "BOUND_FUNC"
+                        | "UNBOUND_FUNC"
 func_name             ::= name
-                      ::= "+"
-                      ::= "-"
-                      ::= "/"
-                      ::= "*"
-                      ::= "<"
-                      ::= ">"
-                      ::= "=="
-                      ::= "!="
-                      ::= ">="
-                      ::= "<="
-                      ::=
+                        | "+"
+                        | "-"
+                        | "/"
+                        | "*"
+                        | "<"
+                        | ">"
+                        | "=="
+                        | "!="
+                        | ">="
+                        | "<="
+                        |
 func_params           ::= func_params_elems "," func_varargs
-                      ::= func_params_elems
-                      ::= func_varargs
-                      ::=
+                        | func_params_elems
+                        | func_varargs
+                        |
 func_params_elems     ::= name func_param_default ( "," name func_param_default )*
 func_param_default    ::= ":=" expr
-                      ::=
+                        |
 func_varargs          ::= "*" name
-                      ::= "*" splice
-                      ::= "*" insert
+                        | "*" splice
+                        | "*" insert
 func_decls            ::= func_decl ( "NEWLINE" func_decl )*
-                      ::=
+                        |
 func_decl             ::= func_decl_nonlocals
-                      ::= func_decl_rename
+                        | func_decl_rename
 func_decl_nonlocals   ::= "NONLOCAL" name ( "," name )* "NEWLINE"
 func_decl_rename      ::= "RENAME" func_decl_rename_elem ( "," func_decl_rename_elem )* "NEWLINE"
 func_decl_rename_elem ::= name "AS" name
-                      ::= splice
-                      ::= insert
+                        | splice
+                        | insert
 
 
 expr_seq ::= expr ( "NEWLINE" expr )*
 
 expr ::= class_defn
-     ::= func_defn
-     ::= while           %precedence 5
-     ::= if
-     ::= ndif
-     ::= for             %precedence 5
-     ::= try
-     ::= number
-     ::= var_lookup
-     ::= dict
-     ::= set
-     ::= list
-     ::= dict
-     ::= string
-     ::= module_lookup   %precedence 50
-     ::= slot_lookup     %precedence 50
-     ::= list
-     ::= application     %precedence 40
-     ::= get             %precedence 40
-     ::= slice           %precedence 40
-     ::= exbi
-     ::= return			 %precedence 5
-     ::= yield			 %precedence 5
-     ::= fail            %precedence 5
-     ::= raise           %precedence 5
-     ::= assert          %precedence 5
-     ::= break
-     ::= continue
-     ::= conjunction     %precedence 10
-     ::= alternation     %precedence 10
-     ::= assignment      %precedence 15
-     ::= not             %precedence 17
-     ::= neg             %precedence 35
-     ::= binary          %precedence 30
-     ::= comparison      %precedence 20
-     ::= pass
-     ::= import			 %precedence 5
-     ::= splice
-     ::= insert
-     ::= quasi_quotes
-     ::= brackets
+       | func_defn
+       | while           %precedence 5
+       | if
+       | ndif
+       | for             %precedence 5
+       | try
+       | number
+       | var_lookup
+       | dict
+       | set
+       | list
+       | dict
+       | string
+       | module_lookup   %precedence 50
+       | slot_lookup     %precedence 50
+       | list
+       | application     %precedence 40
+       | get             %precedence 40
+       | slice           %precedence 40
+       | exbi
+       | return			 %precedence 5
+       | yield			 %precedence 5
+       | fail            %precedence 5
+       | raise           %precedence 5
+       | assert          %precedence 5
+       | break
+       | continue
+       | conjunction     %precedence 10
+       | alternation     %precedence 10
+       | assignment      %precedence 15
+       | not             %precedence 17
+       | neg             %precedence 35
+       | binary          %precedence 30
+       | comparison      %precedence 20
+       | pass
+       | import			 %precedence 5
+       | splice
+       | insert
+       | quasi_quotes
+       | brackets
 
 if      ::= "IF" expr ":" "INDENT" expr_seq "DEDENT" ( if_elif )* if_else
-        ::= "IF" expr "{" "INDENT" expr_seq "DEDENT" "NEWLINE" "}" ( if_elif )* if_else
+          | "IF" expr "{" "INDENT" expr_seq "DEDENT" "NEWLINE" "}" ( if_elif )* if_else
 ndif    ::= "NDIF" expr ":" "INDENT" expr_seq "DEDENT" ( if_elif )*
-        ::= "NDIF" expr "{" "INDENT" expr_seq "DEDENT" "NEWLINE" "}" ( if_elif )*
+          | "NDIF" expr "{" "INDENT" expr_seq "DEDENT" "NEWLINE" "}" ( if_elif )*
 if_elif ::= "NEWLINE" "ELIF" expr ":" "INDENT" expr_seq "DEDENT"
-        ::= "NEWLINE" "ELIF" expr "{" "INDENT" expr_seq "DEDENT" "NEWLINE" "}"
+          | "NEWLINE" "ELIF" expr "{" "INDENT" expr_seq "DEDENT" "NEWLINE" "}"
 if_else ::= "NEWLINE" "ELSE" ":" "INDENT" expr_seq "DEDENT"
-        ::= "NEWLINE" "ELSE" "{" "INDENT" expr_seq "DEDENT" "NEWLINE" "}"
-        ::=
+          | "NEWLINE" "ELSE" "{" "INDENT" expr_seq "DEDENT" "NEWLINE" "}"
+          |
 
 while ::= "WHILE" expr ":" "INDENT" expr_seq "DEDENT" exhausted broken
-      ::= "WHILE" expr
+        | "WHILE" expr
 
 for ::= "FOR" expr ":" "INDENT" expr_seq "DEDENT" exhausted broken
-    ::= "FOR" expr
+      | "FOR" expr
 
 try           ::= "TRY" ":" "INDENT" expr_seq "DEDENT" ( try_catch )*
 try_catch     ::= "NEWLINE" "CATCH" expr try_catch_var ":" "INDENT" expr_seq "DEDENT"
 try_catch_var ::= "INTO" name
-              ::=
+                |
 
 exhausted ::= "NEWLINE" "EXHAUSTED" ":" "INDENT" expr_seq "DEDENT"
-          ::=
+            |
 
 broken ::= "NEWLINE" "BROKEN" ":" "INDENT" expr_seq "DEDENT"
-       ::=
+         |
 
 number ::= "INT"
-       ::= "FLOAT"
+         | "FLOAT"
 
 var_lookup ::= "ID"
-           ::= "&" "ID"
+             | "&" "ID"
 
 string ::= "STRING"
 
 module_lookup ::= name ( "::" name )+
 
 slot_lookup ::= expr "." "ID"
-            ::= expr "." splice
-            ::= expr "." insert
+              | expr "." splice
+              | expr "." insert
 
 list ::= "[" expr ( "," expr )* "]"
-     ::= "[" "]"
+       | "[" "]"
 
 dict ::= "DICT{" expr ":" expr ( "," expr ":" expr )* "}"
-     ::= "DICT{" "}"
+       | "DICT{" "}"
 
 set ::= "SET{" expr ( "," expr )* "}"
-    ::= "SET{" "}"
+      | "SET{" "}"
 
 application ::= expr "(" expr ( "," expr )* ")"
-            ::= expr "(" ")"
+              | expr "(" ")"
 
 get ::= expr "[" expr "]"
 
 slice ::= expr "[" expr ":" expr "]"
-      ::= expr "[" ":" expr "]"
-      ::= expr "[" expr ":" "]"
-      ::= expr "[" ":" "]"
+        | expr "[" ":" expr "]"
+        | expr "[" expr ":" "]"
+        | expr "[" ":" "]"
 
 exbi ::= "EXBI" expr "." "ID"
 
 return ::= "RETURN" expr
-       ::= "RETURN"
+         | "RETURN"
 
 yield ::= "YIELD" expr
 
@@ -237,14 +237,14 @@ alternation ::= expr ( "|" expr )+
 
 assignment        ::= assignment_target ( "," assignment_target )* assignment_type expr
 assignment_target ::= name
-                  ::= slot_lookup
-                  ::= get
-                  ::= slice
+                    | slot_lookup
+                    | get
+                    | slice
 assignment_type   ::= ":="
-                  ::= "*="
-                  ::= "/="
-                  ::= "+="
-                  ::= "-="
+                    | "*="
+                    | "/="
+                    | "+="
+                    | "-="
 
 not ::= "NOT" expr
 
@@ -252,38 +252,38 @@ neg ::= "-" expr
 
 binary    ::= expr binary_op expr
 binary_op ::= "*"       %precedence 40
-          ::= "/"       %precedence 30
-          ::= "%"       %precedence 30
-          ::= "+"       %precedence 20
-          ::= "-"       %precedence 20
+            | "/"       %precedence 30
+            | "%"       %precedence 30
+            | "+"       %precedence 20
+            | "-"       %precedence 20
 
 comparison    ::= expr comparison_op expr
 comparison_op ::= "IS"
-              ::= "=="
-              ::= "!="
-              ::= "<="
-              ::= ">="
-              ::= "<"
-              ::= ">"
+                | "=="
+                | "!="
+                | "<="
+                | ">="
+                | "<"
+                | ">"
 
 pass ::= "PASS"
 
 splice        ::= expr_splice
-              ::= dsl_splice
+                | dsl_splice
 expr_splice   ::= "$" splice_type "<" expr ">"
 dsl_splice    ::= "$" splice_type "<<" expr ">>" ":" "DSL_BLOCK"
-              ::= "$" splice_type "<<" expr ">>" "<<" "DSL_BLOCK" ">>"
+                | "$" splice_type "<<" expr ">>" "<<" "DSL_BLOCK" ">>"
 splice_type   ::= "ID"
-              ::=
+                |
 
 insert        ::= "$" insert_type "{" expr "}"
 insert_type   ::= "ID"
-              ::=
+                |
 
 quasi_quotes ::= quasi_quotes_customize "INDENT" expr_seq "DEDENT" "NEWLINE" "|]"
-             ::= quasi_quotes_customize expr "|]"
+               | quasi_quotes_customize expr "|]"
 quasi_quotes_customize ::= "[" "<" expr ">" "|"
-quasi_quotes_customize ::= "[|"
+                         | "[|"
 
 brackets ::= "(" expr ")"
 """

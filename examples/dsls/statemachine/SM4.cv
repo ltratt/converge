@@ -28,59 +28,59 @@ GRAMMAR := """
 system ::= element ( "NEWLINE" element )*
 
 element ::= state
-        ::= transition
-        ::= var_def
+          | transition
+          | var_def
 
 state ::= "STATE" "ID"
 
 
 transition      ::= "TRANSITION" "ID" "FROM" "ID" "TO" "ID" transition_tail
 transition_tail ::= ":" event guard action
-                ::=
+                  |
 
 var_def ::= "ID" ":=" const
 
 event ::= "ID"
-      ::=
+        |
 
 guard ::= "[" B "]"
-      ::=
+        |
 
 action ::= "/" C
-       ::=
+         |
 
 B ::= B "AND" B   %precedence 5
-  ::= B "OR" B   %precedence 5
-  ::= B "==" B   %precedence 10
-  ::= B "!=" B   %precedence 10
-  ::= B ">" B   %precedence 10
-  ::= B ">=" B   %precedence 10
-  ::= B "<" B   %precedence 10
-  ::= B "<=" B   %precedence 10
-  ::= "NOT" B   %precedence 5
-  ::= E
+    | B "OR" B   %precedence 5
+    | B "==" B   %precedence 10
+    | B "!=" B   %precedence 10
+    | B ">" B   %precedence 10
+    | B ">=" B   %precedence 10
+    | B "<" B   %precedence 10
+    | B "<=" B   %precedence 10
+    | "NOT" B   %precedence 5
+    | E
 
 C ::= A ( ";" A )*
 
 A ::= "ID" ":=" E
-  ::= E
+    | E
 
 E ::= E "+" E %precedence 5
-  ::= E "-" E %precedence 5
-  ::= E "*" E %precedence 10
-  ::= E "/" E %precedence 7
-  ::= var_lookup
-  ::= const
-  ::= apply
+    | E "-" E %precedence 5
+    | E "*" E %precedence 10
+    | E "/" E %precedence 7
+    | var_lookup
+    | const
+    | apply
 
 var_lookup ::= "ID"
 
 apply ::= "ID" "(" args ")"
 args ::= E ( "," E )*
-     ::=
+       |
 
 const ::= "INT"
-      ::= "STRING"
+        | "STRING"
 """
 
 

@@ -1,4 +1,5 @@
 // Copyright (c) 2003-2006 King's College London, created by Laurence Tratt
+// Copyright (c) 2008 Laurence Tratt <laurie@tratt.net>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to
@@ -44,8 +45,15 @@ _RE_INT := PCRE::compile("[0-9]+")
 // However introducing CTMP into a part of the compiler such as this is simply more trouble than it's
 // worth. Therefore we "manually" bootstrap the below grammar with the _BOOTSTRAP_* variables; in
 // essence we've done a splice "by hand". What this means is that if (for some reason) you need to
-// change the grammar in _GRAMMAR (unlikely, but not impossible), you will need to re-do this manual
-// process. If you don't do that, nothing will appear to have changed.
+// change the grammar in _GRAMMAR (unlikely, but not impossible) or the input format for the parser
+// changes (more likely), you will need to re-do this manual process. If you don't do that, nothing
+// will appear to have changed. The easiest way is to put a splice like the following at the bottom
+// of the file:
+//
+//    $p<compile(_GRAMMAR, "grammar", _BOOTSTRAPPED_TOKENS_MAP)>
+//
+// Then manually print out the contents of the returned Array and update _BOOTSTRAPPED_GRAMMAR (and
+// _BOOTSTRAPPED_RULE_NAMES if it's changed) accordingly.
 //
 
 _GRAMMAR := """
@@ -70,7 +78,7 @@ _BOOTSTRAPPED_TOKENS_MAP := Dict{"|" : 8, "?" : 4, "NONTERM" : 0, "(" : 9, ")" :
 
 _BOOTSTRAPPED_GRAMMAR := [5, 120, 155, 180, -1, 14, 19, 24, 33, 50, 57, 62, 73, 78, 83, 92, 101, 110, 117, 0, 0, 2, 0, 1, 0, 1, 6, 2, 0, 0, 2, 3, 1, 0, 2, 14, 1, 0, 1, 5, 0, 3, 2, 4, 1, 8, 0, 3, 3, 5, 0, 3, 4, 0, 4, 0, 6, 0, 3, 2, 0, 6, 0, 4, 8, 0, 5, 2, 2, 0, 5, 3, 3, 0, 5, 2, 1, 0, 0, 5, 2, 1, 1, 0, 5, 6, 1, 9, 0, 4, 1, 11, 0, 5, 6, 1, 9, 0, 4, 1, 12, 0, 5, 6, 1, 9, 0, 4, 1, 13, 0, 6, 4, 1, 6, 1, 7, 0, 6, 0, 7, 128, 131, 134, 137, 141, 144, 151, 1, 1, 0, 1, 1, 1, 0, 1, 2, 1, 2, 3, 4, 0, 1, 5, 0, 5, 6, 7, 8, 9, 10, 1, 2, 11, 12, 6, 162, 165, 168, 171, 174, 177, 2, 2, 6, 2, 6, 2, 2, 4, 8, 2, 8, 4, 2, 8, 14, 2, 14, 8, 6, 187, 190, 193, 196, 199, 202, 2, 2, -2, 2, -2, 2, 2, 4, 0, 2, 0, 4, 2, 10, 4, 2, 4, 10]
 
-_BOOTSTRAPPED_RULE_NAMES := ["__start__", "grammar", "rule", "alt", "symbols", "symbol", "precedence"]
+_BOOTSTRAPPED_RULE_NAMES := ["$$start$$", "grammar", "rule", "alt", "symbols", "symbol", "precedence"]
 
 
 
@@ -150,14 +158,7 @@ class _Parser:
                 i += m[0].len()
                 continue
 
-            Sys::println(i, grammar[i : ])		
-            raise "XXX"
-
-        if tokens.len() > 0 & tokens[0].type == "NEWLINE":
-            tokens.del(0)
-
-        if tokens.len() > 0 & tokens[-1].type == "NEWLINE":
-            tokens.del(-1)
+            self._error(Strings::format("Unknown character '%s'.", grammar[i]))
 
         return [tokens, newlines]
 
@@ -169,12 +170,16 @@ class _Parser:
 
 
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    // Traversal functions
+    //
+
     func _t_grammar(self, node):
 
         // grammar ::= ( rule )*
 
-        self._ordered_rule_names := ["__start__"]
-        self._rule_names_map := Dict{"__start__" : 0}
+        self._ordered_rule_names := ["$$start$$"]
+        self._rule_names_map := Dict{"$$start$$" : 0}
         for rule_node := node.iter(1):
             rule_name := rule_node[1].value
             if self._rule_names_map.find(rule_name):
@@ -268,6 +273,10 @@ class _Parser:
 
 
 
+//
+// Calculates and returns the set of nullable rules.
+//
+
 func _mk_nullables(rules):
 
     // The nullable computation is loosely based on that found in John Aycock's SPARK. It's a two
@@ -333,15 +342,22 @@ func _mk_nullables(rules):
 
 
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Bracket calculation
+//
+// These functions statically calculate offsets of consecutive / nested brackets for the Earley
+// parser.
+//
+
+_ALL_BRKS := [_COMPILED_OPEN_KLEENE_STAR_GROUP, _COMPILED_CLOSE_KLEENE_STAR_GROUP, _COMPILED_OPEN_OPTIONAL_GROUP, _COMPILED_CLOSE_OPTIONAL_GROUP]
+
 func _mk_brackets_maps(rules):
 
     recogniser_brks_map := []
     parser_brks_map := []
     for alt := rules.iter_vals().iter():
         for i := _RULE_SYMBOLS.iter_to(alt.len(), 2):
-            type := alt[i]
-            if type == _COMPILED_OPEN_KLEENE_STAR_GROUP | type == _COMPILED_CLOSE_KLEENE_STAR_GROUP \
-              | type == _COMPILED_OPEN_OPTIONAL_GROUP | type == _COMPILED_CLOSE_OPTIONAL_GROUP:
+            if _ALL_BRKS.find(alt[i]):
                 alt[i + 1] := recogniser_brks_map.len()
                 recogniser_brks_map.append(_mk_recogniser_brks_map(alt, i))
                 parser_brks_map.append(_mk_parser_brks_map(alt, i))
@@ -354,9 +370,9 @@ func _mk_brackets_maps(rules):
 
 func _mk_recogniser_brks_map(alt, j):
 
-    if j < alt.len() & [_COMPILED_OPEN_KLEENE_STAR_GROUP, _COMPILED_CLOSE_KLEENE_STAR_GROUP, _COMPILED_OPEN_OPTIONAL_GROUP, _COMPILED_CLOSE_OPTIONAL_GROUP].find(alt[j]):
+    if j < alt.len() & _ALL_BRKS.find(alt[j]):
         bracket_map := _mk_recogniser_brks_map(alt, j + 2)
-        if alt[j] == _COMPILED_OPEN_KLEENE_STAR_GROUP | alt[j] == _COMPILED_OPEN_OPTIONAL_GROUP:
+        ndif alt[j] == _COMPILED_OPEN_KLEENE_STAR_GROUP | alt[j] == _COMPILED_OPEN_OPTIONAL_GROUP:
             count := 1
             j += 2
             while count > 0:
@@ -375,11 +391,11 @@ func _mk_recogniser_brks_map(alt, j):
             j += 4
         elif alt[j] == _COMPILED_CLOSE_OPTIONAL_GROUP:
             return bracket_map
-        else:
-            raise "XXX"
+
         for new_j := _mk_recogniser_brks_map(alt, j).iter():
             if not bracket_map.find(new_j):
                 bracket_map.append(new_j)
+
         return bracket_map
     else:
         return [j - _RULE_SYMBOLS]
@@ -389,7 +405,7 @@ func _mk_recogniser_brks_map(alt, j):
 
 func _mk_parser_brks_map( alt, j):
 
-    if j < alt.len() & (alt[j] == _COMPILED_OPEN_KLEENE_STAR_GROUP | alt[j] == _COMPILED_CLOSE_KLEENE_STAR_GROUP | alt[j] == _COMPILED_OPEN_OPTIONAL_GROUP | alt[j] == _COMPILED_CLOSE_OPTIONAL_GROUP):
+    if j < alt.len() & _ALL_BRKS.find(alt[j]):
         if alt[j] == _COMPILED_OPEN_KLEENE_STAR_GROUP:
             count := 1
             k := j + 2

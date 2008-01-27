@@ -297,7 +297,9 @@ class IMod_Gen:
                 for d := defn.iter():
                     ITree_WF::wf_expr(d, "splice result", extra_src_infos + node[1][1][1].src_infos)
                 return defn
-            elif not ITree::IPass.instantiated(defn):
+            elif ITree::IPass.instantiated(defn):
+                return [defn]
+            else:
                 // Note that we only execute this clause if the expression returned wasn't a
                 // "pass" statement; if it was, we let it sail on harmlessly by.
 

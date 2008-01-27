@@ -222,7 +222,7 @@ typedef struct {
 #define _DEFAULT_NUM_STACK_ALTERNATIVES 4
 #define _DEFAULT_NUM_MALLOC_ALTERNATIVES 8
 
-#define _GET_PRODUCTION_INT(p, i) (((Con_Int *) ((u_char *) parser->grammar + parser->productions[p]))[i])
+#define _GET_PRODUCTION_INT(p, i) ((parser->grammar + parser->productions[p])[i])
 
 void _Con_Module_C_Earley_Parser_Parser_parse_func_recognise(Con_Obj *, parse_func_Parser_State *);
 void _Con_Module_C_Earley_Parser_Parser_parse_func_new_lstate(Con_Obj *, parse_func_Parser_State *);
@@ -275,10 +275,10 @@ Con_Obj *_Con_Module_C_Earley_Parser_Parser_parse_func(Con_Obj *thread)
 	// Setup a few things for convenience
 	
 	parser->grammar = (Con_Int *) grammar_string_atom->str;
-	parser->productions = (Con_Int *) ((u_char *) parser->grammar + parser->grammar[_COMPILED_OFFSET_TO_PRODUCTION] + _COMPILED_PRODUCTIONS_OFFSETS * sizeof(Con_Int));
-	parser->num_productions = parser->grammar[parser->grammar[_COMPILED_OFFSET_TO_PRODUCTION] / sizeof(Con_Int) + _COMPILED_PRODUCTIONS_NUM];
-	parser->alternatives_maps = (Con_Int *) ((u_char *) parser->grammar + parser->grammar[_COMPILED_OFFSET_TO_ALTERNATIVES_MAP] + _COMPILED_ALTERNATIVES_MAP_OFFSETS * sizeof(Con_Int));
-	parser->num_rules = parser->grammar[parser->grammar[_COMPILED_OFFSET_TO_ALTERNATIVES_MAP] / sizeof(Con_Int) + _COMPILED_ALTERNATIVES_MAP_NUM];
+	parser->productions = parser->grammar + parser->grammar[_COMPILED_OFFSET_TO_PRODUCTION] + _COMPILED_PRODUCTIONS_OFFSETS;
+	parser->num_productions = parser->grammar[parser->grammar[_COMPILED_OFFSET_TO_PRODUCTION] + _COMPILED_PRODUCTIONS_NUM];
+	parser->alternatives_maps = parser->grammar + parser->grammar[_COMPILED_OFFSET_TO_ALTERNATIVES_MAP] + _COMPILED_ALTERNATIVES_MAP_OFFSETS;
+	parser->num_rules = parser->grammar[parser->grammar[_COMPILED_OFFSET_TO_ALTERNATIVES_MAP] + _COMPILED_ALTERNATIVES_MAP_NUM];
 	
 	// Unpack rule names
 		
@@ -380,7 +380,7 @@ void _Con_Module_C_Earley_Parser_Parser_parse_func_recognise(Con_Obj *thread, pa
 		while (y < parser->lstates[x].num_states) {
 			parse_func_State state = parser->lstates[x].states[y];
 			
-			Con_Int *production = (Con_Int *) ((u_char *) parser->grammar + parser->productions[state.p]);
+			Con_Int *production = parser->grammar + parser->productions[state.p];
 			
 			if (x < parser->num_tokens && state.j < production[_COMPILED_PRODUCTION_NUM_SYMBOLS] && production[_COMPILED_PRODUCTION_SYMBOLS + state.j] == _SYMBOL_TOKEN && production[_COMPILED_PRODUCTION_SYMBOLS + state.j + 1] == parser->tokens[x].type) {
 				// Scanner
@@ -390,7 +390,7 @@ void _Con_Module_C_Earley_Parser_Parser_parse_func_recognise(Con_Obj *thread, pa
 			else if (state.j < production[_COMPILED_PRODUCTION_NUM_SYMBOLS] && production[_COMPILED_PRODUCTION_SYMBOLS + state.j] == _SYMBOL_RULE_REF) {
 				// Predictor
 
-				Con_Int *alternative_map = (Con_Int *) ((u_char *) parser->grammar + parser->alternatives_maps[production[_COMPILED_PRODUCTION_SYMBOLS + state.j + 1]]);
+				Con_Int *alternative_map = parser->grammar + parser->alternatives_maps[production[_COMPILED_PRODUCTION_SYMBOLS + state.j + 1]];
 				
 				// We only predict a rule once in each state.
 				Con_Int predicted_rule_num = production[_COMPILED_PRODUCTION_SYMBOLS + state.j + 1];
@@ -413,7 +413,7 @@ void _Con_Module_C_Earley_Parser_Parser_parse_func_recognise(Con_Obj *thread, pa
 				assert(state.f < parser->num_lstates);
 				for (Con_Int z = 0; z < parser->lstates[state.f].num_states; z += 1) {
 					parse_func_State f_state = parser->lstates[state.f].states[z];
-					Con_Int *f_production = (Con_Int *) ((u_char *) parser->grammar + parser->productions[f_state.p]);
+					Con_Int *f_production = parser->grammar + parser->productions[f_state.p];
 					if (f_state.j < f_production[_COMPILED_PRODUCTION_NUM_SYMBOLS] && f_production[_COMPILED_PRODUCTION_SYMBOLS + f_state.j] == _SYMBOL_RULE_REF && f_production[_COMPILED_PRODUCTION_SYMBOLS + f_state.j + 1] == production[_COMPILED_PRODUCTION_PARENT_RULE]) {
 						_Con_Module_C_Earley_Parser_Parser_parse_func_add_state(thread, parser, x, f_state.p, f_state.j + 2, f_state.f);
 					}
@@ -443,7 +443,7 @@ void _Con_Module_C_Earley_Parser_Parser_parse_func_add_state(Con_Obj *thread, pa
 		 _GET_PRODUCTION_INT(p, _COMPILED_PRODUCTION_SYMBOLS + j) == _SYMBOL_OPEN_OPTIONAL_GROUP ||
 		 _GET_PRODUCTION_INT(p, _COMPILED_PRODUCTION_SYMBOLS + j) == _SYMBOL_CLOSE_OPTIONAL_GROUP)) {
 		 
-		Con_Int *brackets_map = &parser->grammar[parser->grammar[parser->grammar[_COMPILED_OFFSET_TO_RECOGNISER_BRACKETS_MAPS] / sizeof(Con_Int) + _COMPILED_BRACKETS_MAPS_ENTRIES + _GET_PRODUCTION_INT(p, _COMPILED_PRODUCTION_SYMBOLS + j + 1)] / sizeof(Con_Int)];
+		Con_Int *brackets_map = &parser->grammar[parser->grammar[parser->grammar[_COMPILED_OFFSET_TO_RECOGNISER_BRACKETS_MAPS] + _COMPILED_BRACKETS_MAPS_ENTRIES + _GET_PRODUCTION_INT(p, _COMPILED_PRODUCTION_SYMBOLS + j + 1)]];
 		
 		for (Con_Int x = 0; x < brackets_map[_BRACKET_MAP_NUM_ENTRIES]; x += 1) {
 			Con_Int new_j = brackets_map[_BRACKET_MAP_ENTRIES + x];
@@ -542,7 +542,7 @@ parse_func_Alternative_Or_Alternatives _Con_Module_C_Earley_Parser_Parser_parse_
 		// If start_j points to a close grouping (by definition 'start_j' can't point to an open
 		// grouping) then we have to immediately start with multiple alternatives.
 		
-		Con_Int *brackets_map = &parser->grammar[parser->grammar[parser->grammar[_COMPILED_OFFSET_TO_PARSER_BRACKETS_MAPS] / sizeof(Con_Int) + _COMPILED_BRACKETS_MAPS_ENTRIES + _GET_PRODUCTION_INT(start_p, _COMPILED_PRODUCTION_SYMBOLS + start_j - 2 + 1)] / sizeof(Con_Int)];
+		Con_Int *brackets_map = &parser->grammar[parser->grammar[parser->grammar[_COMPILED_OFFSET_TO_PARSER_BRACKETS_MAPS] + _COMPILED_BRACKETS_MAPS_ENTRIES + _GET_PRODUCTION_INT(start_p, _COMPILED_PRODUCTION_SYMBOLS + start_j - 2 + 1)]];
 		for (Con_Int x = 0; x < brackets_map[_BRACKET_MAP_NUM_ENTRIES]; x += 1) {
 			Con_Int new_j = brackets_map[_BRACKET_MAP_ENTRIES + x];
 			if (new_j < 0 && start_lstate > start_f)
@@ -734,7 +734,7 @@ parse_func_Alternative_Or_Alternatives _Con_Module_C_Earley_Parser_Parser_parse_
 					else {
 						lstate = definite_alternative.lstate;
 						
-						Con_Int *brackets_map = &parser->grammar[parser->grammar[parser->grammar[_COMPILED_OFFSET_TO_PARSER_BRACKETS_MAPS] / sizeof(Con_Int) + _COMPILED_BRACKETS_MAPS_ENTRIES + _GET_PRODUCTION_INT(p, _COMPILED_PRODUCTION_SYMBOLS + j - 2 + 1)] / sizeof(Con_Int)];
+						Con_Int *brackets_map = &parser->grammar[parser->grammar[parser->grammar[_COMPILED_OFFSET_TO_PARSER_BRACKETS_MAPS] + _COMPILED_BRACKETS_MAPS_ENTRIES + _GET_PRODUCTION_INT(p, _COMPILED_PRODUCTION_SYMBOLS + j - 2 + 1)]];
 						for (Con_Int y = 1; y < brackets_map[_BRACKET_MAP_NUM_ENTRIES]; y += 1) {
 							parse_func_parse_Tree *new_tree = _Con_Module_C_Earley_Parser_Parser_parse_func_scopy_tree(thread, parser, tree);
 							new_entry.type = PARSE_TREE_TREE;
@@ -794,7 +794,7 @@ parse_func_Alternative_Or_Alternatives _Con_Module_C_Earley_Parser_Parser_parse_
 						// first branch) that we're effectively moving the dot over a terminal or
 						// non-terminal.
 
-						Con_Int *brackets_map = &parser->grammar[parser->grammar[parser->grammar[_COMPILED_OFFSET_TO_PARSER_BRACKETS_MAPS] / sizeof(Con_Int) + _COMPILED_BRACKETS_MAPS_ENTRIES + _GET_PRODUCTION_INT(p, _COMPILED_PRODUCTION_SYMBOLS + j - 2 + 1)] / sizeof(Con_Int)];
+						Con_Int *brackets_map = &parser->grammar[parser->grammar[parser->grammar[_COMPILED_OFFSET_TO_PARSER_BRACKETS_MAPS] + _COMPILED_BRACKETS_MAPS_ENTRIES + _GET_PRODUCTION_INT(p, _COMPILED_PRODUCTION_SYMBOLS + j - 2 + 1)]];
 
 						// First of all we take the current working alternative and add all but
 						// the first bracket alternatives into the alternatives.
@@ -864,7 +864,7 @@ parse_func_Alternative_Or_Alternatives _Con_Module_C_Earley_Parser_Parser_parse_
 
 					lstate -= 1;
 					
-					Con_Int *brackets_map = &parser->grammar[parser->grammar[parser->grammar[_COMPILED_OFFSET_TO_PARSER_BRACKETS_MAPS] / sizeof(Con_Int) + _COMPILED_BRACKETS_MAPS_ENTRIES + _GET_PRODUCTION_INT(p, _COMPILED_PRODUCTION_SYMBOLS + j - 2 + 1)] / sizeof(Con_Int)];
+					Con_Int *brackets_map = &parser->grammar[parser->grammar[parser->grammar[_COMPILED_OFFSET_TO_PARSER_BRACKETS_MAPS] + _COMPILED_BRACKETS_MAPS_ENTRIES + _GET_PRODUCTION_INT(p, _COMPILED_PRODUCTION_SYMBOLS + j - 2 + 1)]];
 					for (Con_Int y = 1; y < brackets_map[_BRACKET_MAP_NUM_ENTRIES]; y += 1) {
 						parse_func_parse_Tree *new_tree = _Con_Module_C_Earley_Parser_Parser_parse_func_scopy_tree(thread, parser, tree);
 						new_entry.type = PARSE_TREE_TOKEN;

@@ -53,22 +53,22 @@ grammar    ::= ( rule )*
 
 rule       ::= "NONTERM" "::=" alt ( "|" alt )*
 alt        ::= symbols precedence
-           ::= precedence
+             | precedence
 
 symbols    ::= ( symbol )+
 symbol     ::= "NONTERM"
-           ::= "TERM"
-           ::= "(" symbols ")*"
-           ::= "(" symbols ")+"
-           ::= "(" symbols ")?"
+             | "TERM"
+             | "(" symbols ")*"
+             | "(" symbols ")+"
+             | "(" symbols ")?"
 
 precedence ::= "%PRECEDENCE" "INT"
-           ::=
+             |
 """
 
 _BOOTSTRAPPED_TOKENS_MAP := Dict{"|" : 8, "?" : 4, "NONTERM" : 0, "(" : 9, ")" : 10, "*" : 2, "+" : 3, "INT" : 7, ")?" : 13, "::=" : 5, "%PRECEDENCE" : 6, ")*" : 11, ")+" : 12, "TERM" : 1}
 
-_BOOTSTRAPPED_GRAMMAR := [40, 960, 1240, 1440, -1, 14, 152, 192, 264, 400, 456, 496, 584, 624, 664, 736, 808, 880, 936, 0, 0, 2, 0, 1, 0, 1, 6, 2, 0, 0, 2, 3, 1, 0, 2, 14, 1, 0, 1, 5, 0, 3, 2, 2, 1, 8, 0, 3, 3, 3, 0, 3, 4, 0, 4, 0, 6, 0, 3, 2, 0, 6, 0, 4, 8, 0, 5, 2, 4, 0, 5, 3, 5, 0, 5, 2, 1, 0, 0, 5, 2, 1, 1, 0, 5, 6, 1, 9, 0, 4, 1, 11, 0, 5, 6, 1, 9, 0, 4, 1, 12, 0, 5, 6, 1, 9, 0, 4, 1, 13, 0, 6, 4, 1, 6, 1, 7, 0, 6, 0, 7, 1024, 1048, 1072, 1096, 1128, 1152, 1208, 1, 1, 0, 1, 1, 1, 0, 1, 2, 1, 2, 3, 4, 0, 1, 5, 0, 5, 6, 7, 8, 9, 10, 1, 2, 11, 12, 6, 1296, 1320, 1344, 1368, 1392, 1416, 2, 2, 6, 2, 6, 2, 2, 8, 14, 2, 14, 8, 2, 4, 8, 2, 8, 4, 6, 1496, 1520, 1544, 1568, 1592, 1616, 2, 2, -2, 2, -2, 2, 2, 10, 4, 2, 4, 10, 2, 4, 0, 2, 0, 4]
+_BOOTSTRAPPED_GRAMMAR := [5, 120, 155, 180, -1, 14, 19, 24, 33, 50, 57, 62, 73, 78, 83, 92, 101, 110, 117, 0, 0, 2, 0, 1, 0, 1, 6, 2, 0, 0, 2, 3, 1, 0, 2, 14, 1, 0, 1, 5, 0, 3, 2, 4, 1, 8, 0, 3, 3, 5, 0, 3, 4, 0, 4, 0, 6, 0, 3, 2, 0, 6, 0, 4, 8, 0, 5, 2, 2, 0, 5, 3, 3, 0, 5, 2, 1, 0, 0, 5, 2, 1, 1, 0, 5, 6, 1, 9, 0, 4, 1, 11, 0, 5, 6, 1, 9, 0, 4, 1, 12, 0, 5, 6, 1, 9, 0, 4, 1, 13, 0, 6, 4, 1, 6, 1, 7, 0, 6, 0, 7, 128, 131, 134, 137, 141, 144, 151, 1, 1, 0, 1, 1, 1, 0, 1, 2, 1, 2, 3, 4, 0, 1, 5, 0, 5, 6, 7, 8, 9, 10, 1, 2, 11, 12, 6, 162, 165, 168, 171, 174, 177, 2, 2, 6, 2, 6, 2, 2, 4, 8, 2, 8, 4, 2, 8, 14, 2, 14, 8, 6, 187, 190, 193, 196, 199, 202, 2, 2, -2, 2, -2, 2, 2, 4, 0, 2, 0, 4, 2, 10, 4, 2, 4, 10]
 
 _BOOTSTRAPPED_RULE_NAMES := ["__start__", "grammar", "rule", "alt", "symbols", "symbol", "precedence"]
 
@@ -467,7 +467,7 @@ func compile(grammar, start_rule, tokens_map):
     comp.append(-1) // Offset of recogniser brackets maps
     comp.append(-1) // Offset of parser brackets maps
 
-    comp[_COMPILED_GRAMMAR_RULES_OFFSET] := comp.len_bytes()
+    comp[_COMPILED_GRAMMAR_RULES_OFFSET] := comp.len()
     comp.append(total_alts + 1)
     comp_alts_offsets := comp.len()
     comp.extend([-1] * total_alts)
@@ -475,17 +475,17 @@ func compile(grammar, start_rule, tokens_map):
     i := 0
     for mapped_name := 0.iter_to(rule_names_map.len()):
         for alt := rules[mapped_name].iter():
-            comp[comp_alts_offsets + i] := comp.len_bytes()
+            comp[comp_alts_offsets + i] := comp.len()
             comp.extend(alt)
             i += 1
 
-    comp[_COMPILED_GRAMMAR_RULES_ALTERNATIVES] := comp.len_bytes()
+    comp[_COMPILED_GRAMMAR_RULES_ALTERNATIVES] := comp.len()
     comp.append(rule_names_map.len())
     comp_alts_map := comp.len()
     comp.extend([-1] * rule_names_map.len())
     i := 0
     for mapped_name := 0.iter_to(rule_names_map.len()):
-        comp[comp_alts_map + mapped_name] := comp.len_bytes()
+        comp[comp_alts_map + mapped_name] := comp.len()
         if nullables.find(mapped_name):
             comp.append(1)
         else:
@@ -496,21 +496,21 @@ func compile(grammar, start_rule, tokens_map):
             comp.append(i)
             i += 1
 
-    comp[_COMPILED_GRAMMAR_RECOGNISER_BRACKETS_MAPS_OFFSETS] := comp.len_bytes()
+    comp[_COMPILED_GRAMMAR_RECOGNISER_BRACKETS_MAPS_OFFSETS] := comp.len()
     comp.append(recogniser_brks_map.len())
     comp_recogniser_brks_map := comp.len()
     comp.extend([-1] * recogniser_brks_map.len())
     for i := 0.iter_to(recogniser_brks_map.len()):
-        comp[comp_recogniser_brks_map + i] := comp.len_bytes()
+        comp[comp_recogniser_brks_map + i] := comp.len()
         comp.append(recogniser_brks_map[i].len())
         comp.extend(recogniser_brks_map[i])
 
-    comp[_COMPILED_GRAMMAR_PARSER_BRACKETS_MAPS_OFFSETS] := comp.len_bytes()
+    comp[_COMPILED_GRAMMAR_PARSER_BRACKETS_MAPS_OFFSETS] := comp.len()
     comp.append(parser_brks_map.len())
     comp_parser_brks_map := comp.len()
     comp.extend([-1] * parser_brks_map.len())
     for i := 0.iter_to(parser_brks_map.len()):
-        comp[comp_parser_brks_map + i] := comp.len_bytes()
+        comp[comp_parser_brks_map + i] := comp.len()
         comp.append(parser_brks_map[i].len())
         comp.extend(parser_brks_map[i])
 

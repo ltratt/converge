@@ -77,7 +77,7 @@ func rename_itree(itree, rename_vars := null):
 
 
 
-func mk_embeddable_itree(itree, except_vars := Set{}):
+func embeddable_itree(itree, except_vars := Set{}):
 
     if Builtins::List.instantiated(itree):
         itrees := itree

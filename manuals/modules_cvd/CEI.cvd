@@ -78,7 +78,7 @@ Returns a version of <code>itree</code> where all externally visible free / boun
 </function>
 
 
-<function name="mk_embeddable_itree">
+<function name="embeddable_itree">
 <argument name="itree" />
 <argument name="except_vars" type="Set{String}">Set{}</argument>
 This function is intended to be used on <q>external</q> ITrees which one wishes to embed in an AST being constructed. The external AST may have dynamically scoped references to variables which the AST it is embedded into should not interfere with. Thus this function renames all externally visible free / bound variables other than those in <code>except_vars</code> to fresh names. It then returns a list of IRename instances which can be easily inserted into a <code>rename</code> declaration.

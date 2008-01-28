@@ -14,9 +14,16 @@ The DSL and its implementation will be compiled and run. The first three
 versions are non-interactive, whereas the fourth and fifth versions require
 input from the user.
 
+A brief description of each version now follows:
+
   1: Very simple implementation allowing only states, transitions, and events.
      Events received by the system cause transitions to be taken; if no valid
      transition is found for a given event, an exception is raised.
+     
+     Try making a syntactic error in the input (e.g. change a "to" keyword to
+     "ro"), and you will get a compile-time error pinpointing exactly where
+     the mistake occurred - notice that this is automatic and required no
+     extra effort from the DSL implementor.
 
   2: Guards (effectively preconditions), variables and simple actions (updating
      variables) on top of version 1. This is expressive enough for a decent
@@ -28,15 +35,23 @@ input from the user.
      where <event>, "[" <guard> "]", and "/" <action> are all optional.
 
      However there is a notable usability problem with this example. If the
-     user makes a run-time mistake in their input - e.g. change one of the
-     conditions to compare a number and a string - and the resulting run-time
-     exception will be in terms of the SMr.cv file, not the exr.cv file. This
-     makes debugging very hard.
+     user makes a mistake in their input which leads to a run-time exception,
+     then the resulting run-time exception will be in terms of the SMr.cv file,
+     not the exr.cv file. To simulate this, change one of the actions from:
+     
+       drinks := drinks - 1
+       
+     to:
+     
+       drinks := drinks - "woo"
+     
+     As you will see, the resulting exception does not provide much assistance
+     for debugging purposes.
 
   3: The same as version 2, but extra src infos are added to generated code.
-     If you make the same run-time-exception-raising change to this version
-     as you did to version 2, you will see that the resulting exception also
-     pinpoints exactly where within the ex3.cv the error resulted from.
+     Make the same run-time-exception-raising change to one of the actions
+     as you did to version 2, and you will see that the resulting exception now
+     also pinpoints exactly where within the ex3.cv the error resulted from.
 
      This is achived by adding src infos to quasi-quoted code e.g.:
 

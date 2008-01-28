@@ -15,7 +15,7 @@ func f():
             $c{y} += 2
             z
     |]
-    Sys::println(CEI::itree_pp(it))
+    Sys::println(CEI::pp_itree(it))
 
     return it
 

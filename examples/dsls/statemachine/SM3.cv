@@ -383,6 +383,6 @@ func sm(dsl_block, src_infos):
     parse_tree := CEI::dsl_parse(dsl_block, src_infos, ["state", "transition", "and", "or", "from", "to"], [], GRAMMAR, "system")
 
     it := SM_Translator.new().generate(parse_tree)
-    Sys::println(CEI::itree_pp(it))
+    Sys::println(CEI::pp_itree(it))
 
     return it

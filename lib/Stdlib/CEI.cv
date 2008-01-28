@@ -56,13 +56,13 @@ func fresh_name(name := null):
 
 
 
-func itree_pp(itree):
+func pp_itree(itree):
 
     return ITree_PP::pp(itree)
 
 
 
-func itree_elided_pp(itree, self_mod_id := null):
+func elided_pp_itree(itree, self_mod_id := null):
 
     return ITree_PP::elided_pp(itree, self_mod_id)
 

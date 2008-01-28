@@ -87,16 +87,16 @@ This function is intended to be used on <q>external</q> ITrees which one wishes 
 
 <h4>Pretty printing</h4>
 
-<function name="itree_pp">
+<function name="pp_itree">
 <argument name="itree" />
 Returns a string representing the pretty-printed ITree <code>itree</code>.
 </function>
 
 
-<function name="itree_elided_pp">
+<function name="pp_itree_elided">
 <argument name="itree" />
 <argument name="self_mod_id">null</argument>
-Returns an elided string representing the pretty-printed ITree <code>itree</code>. This function will try to elide extraneous, cluttering, details from the pretty-printed ITree, but in so doing can return misleading and incorrect representations. Chiefly it tries to pretty print module lookups in a <q>human readable</q> fashion; if <code>self_mod_id</code> is non-<code>null</code> any module lookup within a module of that Id will be elided still further. Both these mechanisms can cause problems in certain situations. It is recommended that users always use <ref name="itree_pp" /> initially, falling back on this elided representation only when the output from the former is untelligible.
+Returns an elided string representing the pretty-printed ITree <code>itree</code>. This function will try to elide extraneous, cluttering, details from the pretty-printed ITree, but in so doing can return misleading and incorrect representations. Chiefly it tries to pretty print module lookups in a <q>human readable</q> fashion; if <code>self_mod_id</code> is non-<code>null</code> any module lookup within a module of that Id will be elided still further. Both these mechanisms can cause problems in certain situations. It is recommended that users always use <ref name="pp_itree" /> initially, falling back on this elided representation only when the output from the former is untelligible.
 </function>
 
 

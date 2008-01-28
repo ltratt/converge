@@ -412,6 +412,6 @@ func sm(dsl_block, src_infos):
 
     x := SM_Translator.new().generate(parse_tree)
 
-    Sys::println(CEI::itree_pp(x))
+    Sys::println(CEI::pp_itree(x))
 
     return x

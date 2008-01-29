@@ -10,11 +10,12 @@ INSTALL = @INSTALL@
 
 
 MANUALS = modules_cvd/Array.cvd modules_cvd/Builtins.cvd modules_cvd/CEI.cvd \
-	modules_cvd/Exceptions.cvd modules_cvd/File.cvd modules_cvd/Functional.cvd \
-	modules_cvd/Maths.cvd modules_cvd/PCRE.cvd modules_cvd/Platform.Env.cvd \
-	modules_cvd/Platform.Properties.cvd modules_cvd/Platform.Exec.cvd modules_cvd/Platform.Host.cvd \
-	modules_cvd/Random.cvd modules_cvd/Sort.cvd modules_cvd/Sys.cvd modules_cvd/Strings.cvd \
-	modules_cvd/VM.cvd modules_cvd/XML.Nodes.cvd modules_cvd/XML.XDM.cvd modules_cvd/XML.XHTML.cvd
+	modules_cvd/CPK.Earley.DSL.cvd modules_cvd/Exceptions.cvd modules_cvd/File.cvd \
+	modules_cvd/Functional.cvd modules_cvd/Maths.cvd modules_cvd/PCRE.cvd \
+	modules_cvd/Platform.Env.cvd modules_cvd/Platform.Properties.cvd modules_cvd/Platform.Exec.cvd \
+	modules_cvd/Platform.Host.cvd modules_cvd/Random.cvd modules_cvd/Sort.cvd modules_cvd/Sys.cvd \
+	modules_cvd/Strings.cvd modules_cvd/VM.cvd modules_cvd/XML.Nodes.cvd modules_cvd/XML.XDM.cvd \
+	modules_cvd/XML.XHTML.cvd
 
 
 %.cvb: %.cv

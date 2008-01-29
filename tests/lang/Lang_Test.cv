@@ -25,30 +25,30 @@
 // will require more advance sub-process facilities to be complete.
 
 
-import CEI, CPK::Traverser, File, Platform::Exec, Strings, Sys
+import CEI, CPK::Earley::DSL, CPK::Traverser, File, Platform::Exec, Strings, Sys
 
 
 
 _MODE_CTIME := 0
 _MODE_RTIME := 1
 
-_GRAMMAR := """
-tests ::= file ( "NEWLINE" file )*
+parse := $<<DSL::mk_parser("tests", ["ctime", "rtime", "warning", "exception"], [])>>:
+    tests ::= file ( "NEWLINE" file )*
 
-file   ::= "STRING"
-       | "STRING" ":" "INDENT" detail ( "NEWLINE" detail )* "DEDENT"
-detail ::= mode type
+    file   ::= "STRING"
+             | "STRING" ":" "INDENT" detail ( "NEWLINE" detail )* "DEDENT"
+    detail ::= mode type
 
-mode ::= "CTIME"
-       | "RTIME"
+    mode ::= "CTIME"
+           | "RTIME"
 
-type ::= warning
-       | exception
+    type ::= warning
+           | exception
 
-warning ::= "WARNING" "STRING"
+    warning ::= "WARNING" "STRING"
 
-exception ::= "EXCEPTION" "STRING"
-"""
+    exception ::= "EXCEPTION" "STRING"
+
 
 
 
@@ -197,6 +197,6 @@ class _Test_Translator(Traverser::Strict_Traverser):
 
 func tests(dsl_block, src_infos):
 
-    parse_tree := CEI::dsl_parse(dsl_block, src_infos, ["ctime", "rtime", "warning", "exception"], [], _GRAMMAR, "tests")
+    parse_tree := parse(dsl_block, src_infos)
 
     return _Test_Translator.new().generate(parse_tree)

@@ -1,0 +1,46 @@
+import Strings
+import Compiler::Tokenizer
+import CEI, Grammar, Parser
+
+
+
+class _DSL_Parser(Parser::Parser):
+
+    func error(self, token):
+
+        if token.value is null:
+            token_print := token.type
+        else:
+            token_print := token.value
+        
+        msg := Strings::format("Parsing error at or near `%s' token.", token_print)
+        CEI::error(msg, token.src_infos)
+
+
+
+
+func mk_parser(start_rule, extra_keywords := [], extra_symbols := []):
+
+    func dif(dsl_block, src_infos):
+
+        tokens_map := Tokenizer::tokens_map(extra_symbols, extra_keywords)
+        grammar, rule_names := Grammar::compile(dsl_block, start_rule, tokens_map)
+        
+        iextra_keywords := CEI::lift(extra_keywords)
+        iextra_symbols := CEI::lift(extra_symbols)
+        igrammar := CEI::lift(grammar)
+        irule_names := CEI::lift(rule_names)
+        itokens_map := CEI::lift(tokens_map)
+        
+        return [|
+            func (dsl_block, src_infos):
+
+                tokenizer := Tokenizer::Tokenizer.new()
+                tokenizer.tokenize(dsl_block, src_infos, ${iextra_keywords}, ${iextra_symbols})
+
+                parser := _DSL_Parser.new(src_infos)
+
+                return parser.parse(${igrammar}, ${irule_names}, ${itokens_map}, tokenizer.tokens)
+        |]
+
+    return dif

@@ -1,0 +1,24 @@
+<module name="CPK::Earley::DSL">
+
+<function name="mk_parser">
+<argument name="start_rule" />
+<argument name="extra_keywords" />
+<argument name="extra_symbols" />
+This is a DSL implementation function for building parsers according to an Earlry grammar, where text is parsed according to the normal Converge tokenizer. Extra keywords and extra symbols that the tokenizer should recognise can be passed as lists of strings. <code>start_rule</code> specifies the top rule of the grammar. This function returns a quasi-quoted function which when spliced in takes two arguments <code>dsl_block</code> and <code>src_infos</code> and returns a parse tree of the DSL block. An example use is as follows:
+<pre>
+parse := $&lt;&lt;DSL::mk_parser("rule", ["tok", "tok2"], [])&gt;&gt;:
+    rule ::= a ( b )*
+    a ::= "TOK"
+        |
+    b ::= "TOK2"
+
+func my_dsl(dsl_block, src_infos)
+    parse_tree := parse(dsl_block, src_infos)
+    ...
+
+$&lt;&lt;my_dsl&gt;&gt;:
+    ...
+</pre>
+</function>
+
+</module>

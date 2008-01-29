@@ -19,24 +19,23 @@
 // IN THE SOFTWARE.
 
 
-import Builtins, CEI, CPK::Traverser, Exceptions, Strings, Sys
+import Builtins, CEI, CPK::Earley::DSL, CPK::Traverser, Exceptions, Strings, Sys
 
 
 
 
-GRAMMAR := """
-system ::= element ( "NEWLINE" element )*
+parse := $<<DSL::mk_parser("system", ["state", "transition", "and", "or", "from", "to"], [])>>:
+    system ::= element ( "NEWLINE" element )*
 
-element ::= state
-          | transition
+    element ::= state
+              | transition
 
-state ::= "STATE" "ID"
+    state ::= "STATE" "ID"
 
-transition ::= "TRANSITION" "FROM" "ID" "TO" "ID" event
+    transition ::= "TRANSITION" "FROM" "ID" "TO" "ID" event
 
-event ::= ":" "ID"
-        |
-"""
+    event ::= ":" "ID"
+            |
 
 
 
@@ -147,11 +146,10 @@ class SM_Translator(Traverser::Strict_Traverser):
 
 func sm(dsl_block, src_infos):
 
-    new_keywords := ["state", "transition", "and", "or", "from", "to"]
-    new_symbols := []
-    parse_tree := CEI::dsl_parse(dsl_block, src_infos, new_keywords, new_symbols, GRAMMAR, "system")
+    parse_tree := parse(dsl_block, src_infos)
 
     it := SM_Translator.new().generate(parse_tree)
+
     Sys::println(CEI::pp_itree(it))
 
     return it

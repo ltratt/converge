@@ -19,63 +19,63 @@
 // IN THE SOFTWARE.
 
 
-import Builtins, CEI, CPK::Traverser, Exceptions, Strings, Sys
+import Builtins, CEI, CPK::Earley::DSL, CPK::Traverser, Exceptions, Strings, Sys
 
 
 
 
-GRAMMAR := """
-system ::= element ( "NEWLINE" element )*
+parse := $<<DSL::mk_parser("system", ["state", "transition", "and", "or", "from", "to"], [])>>:
+    system ::= element ( "NEWLINE" element )*
 
-element ::= state
-          | transition
-          | var_def
+    element ::= state
+              | transition
+              | var_def
 
-state ::= "STATE" "ID"
+    state ::= "STATE" "ID"
 
-transition      ::= "TRANSITION" "ID" "FROM" "ID" "TO" "ID" transition_tail
-transition_tail ::= ":" event guard action
-                  |
+    transition      ::= "TRANSITION" "ID" "FROM" "ID" "TO" "ID" transition_tail
+    transition_tail ::= ":" event guard action
+                      |
 
-var_def ::= "ID" ":=" const
+    var_def ::= "ID" ":=" const
 
-event ::= "ID"
-        |
+    event ::= "ID"
+            |
 
-guard ::= "[" B "]"
-        |
+    guard ::= "[" B "]"
+            |
 
-action ::= "/" C
-         |
+    action ::= "/" C
+             |
 
-B ::= B "AND" B   %precedence 5
-    | B "OR" B   %precedence 5
-    | B "==" B   %precedence 10
-    | B "!=" B   %precedence 10
-    | B ">" B   %precedence 10
-    | B ">=" B   %precedence 10
-    | B "<" B   %precedence 10
-    | B "<=" B   %precedence 10
-    | "NOT" B   %precedence 5
-    | E
+    B ::= B "AND" B   %precedence 5
+        | B "OR" B   %precedence 5
+        | B "==" B   %precedence 10
+        | B "!=" B   %precedence 10
+        | B ">" B   %precedence 10
+        | B ">=" B   %precedence 10
+        | B "<" B   %precedence 10
+        | B "<=" B   %precedence 10
+        | "NOT" B   %precedence 5
+        | E
 
-C ::= A ( ";" A )*
+    C ::= A ( ";" A )*
 
-A ::= "ID" ":=" E
-    | E
+    A ::= "ID" ":=" E
+        | E
 
-E ::= E "+" E %precedence 5
-    | E "-" E %precedence 5
-    | E "*" E %precedence 10
-    | E "/" E %precedence 7
-    | var_lookup
-    | const
+    E ::= E "+" E %precedence 5
+        | E "-" E %precedence 5
+        | E "*" E %precedence 10
+        | E "/" E %precedence 7
+        | var_lookup
+        | const
 
-var_lookup ::= "ID"
+    var_lookup ::= "ID"
 
-const ::= "INT"
-        | "STRING"
-"""
+    const ::= "INT"
+            | "STRING"
+
 
 
 
@@ -378,9 +378,10 @@ class SM_Translator(Traverser::Strict_Traverser):
 
 func sm(dsl_block, src_infos):
 
-    parse_tree := CEI::dsl_parse(dsl_block, src_infos, ["state", "transition", "and", "or", "from", "to"], [], GRAMMAR, "system")
+    parse_tree := parse(dsl_block, src_infos)
 
     it := SM_Translator.new().generate(parse_tree)
+
     Sys::println(CEI::pp_itree(it))
 
     return it

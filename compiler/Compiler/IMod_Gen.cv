@@ -191,13 +191,26 @@ class IMod_Gen:
         VM::add_modules(mods_to_add)
         module := VM::import_module(mods_to_add[0])
         
+        
+        if not out_itree := module.get_defn(splice_name)():
+            got_val := 0
+        else:
+            got_val := 1
+
+        // Once we've evaluated the splice we need to remove the temporary module from the list of
+        // modules fully imported into the VM (though note that it may not be garbage collected, as
+        // references to it may remain). Without this, later splices can pick up a half-formed
+        // version of the "real" module which (seemingly inexplicably) will appear to be missing
+        // some of its definitions.
+
+        VM::vm.modules.del(self._mod_id)
+        
         if st == ITree::SPLICE_PRAGMA:
             // Pragmas are nice and easy to deal with as we ignore the splices return value and
             // return a simple "pass" statement.
-            module.get_defn(splice_name)()
             return ITree::IPass.new(node[1][1].src_infos)
 
-        if not out_itree := module.get_defn(splice_name)():
+        if got_val == 0:
             self._compiler.error("Splice did not return a value.", expr.src_infos)
         if out_itree is null:
             self._compiler.error("Splice returned null.", expr.src_infos)

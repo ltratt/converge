@@ -629,6 +629,8 @@ make:
 	// Read in the output from the child process.
 
 	i = sizeof(Con_Int) * 2 * *bytecode_size;
+	if (i < BUFSIZ)
+		i = BUFSIZ;
 	*bytecode_size = 0;
 	*bytecode = malloc(i);
 	while (1) {

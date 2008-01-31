@@ -421,7 +421,6 @@ class Compiler:
         // is not as efficient as a customised Makefile with static dependencies could be, it is
         // easier to use and is (hopefully) guaranteed to make sure everything is upto date.
 
-        main_mod := null
         self.mk_mtime_map := Dict{} // module id : mtime
 
         while 1:
@@ -484,9 +483,6 @@ class Compiler:
                     self.mk_mtime_map[mod_id] := Time::current()
                     again := 1
                     do_link := 1
-                    
-                if mod_id == main_mod_id:
-                    main_mod := bc_mod
 
             if again == 0:
                 break
@@ -495,6 +491,7 @@ class Compiler:
         
         if do_link == 1 | self.mk_fresh == 1:
             // Create the list of modules to link, including all library modules.
+            main_mod := self.mk_done_bc_mods[main_mod_id][1]
             bc_mods := [main_mod]
             for src_path, mod := self.mk_done_bc_mods.iter_vals():
                 if not mod is main_mod:
@@ -503,10 +500,10 @@ class Compiler:
             if self.verbosity > 0:
                 self.info("Linking.")
 
-            self.mod_id := bc_mods[0].get_mod_id()
-            self.src_path := bc_mods[0].get_src_path()
+            self.mod_id := main_mod_id
+            self.src_path := main_mod.get_src_path()
             linked_bc_mods := Linker.new().link(self.target, bc_mods)
-
+            
             ser := BC_Exec::serialize(self.target, linked_bc_mods)
             output_file := File::open(self.output_path, "w")
             output_file.write(ser)

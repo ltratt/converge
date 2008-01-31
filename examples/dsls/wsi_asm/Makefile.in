@@ -1,0 +1,39 @@
+include @abs_top_srcdir@/Makefile.inc
+
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+bindir = @bindir@
+datarootdir = @datarootdir@
+datadir = @datadir@
+conexamplesdir = ${datadir}/examples/converge-@CONVERGE_VERSION@
+INSTALL = @INSTALL@
+
+
+EXAMPLES = ex1 ex2 ex3 ex4 fib
+
+
+%.cvb: %.cv
+	${CONVERGE_VM} ${CONVERGEC} -o $@ $<
+
+
+all:
+	${foreach e,${EXAMPLES},${CONVERGE_VM} ${CONVERGEC} -v -m ${e}.cv;}
+
+WSI_ASMDIR = ${DESTDIR}${conexamplesdir}/dsls/wsi_asm
+install: all
+	${INSTALL} -d ${WSI_ASMDIR}
+	${INSTALL} -c -m 444 README ${WSI_ASMDIR}
+	${foreach e,${EXAMPLES},${INSTALL} -c -m 444 ${e}.cv ${WSI_ASMDIR};}
+
+clean:
+	${foreach e,${EXAMPLES},rm -f ${e}.cvb;}
+	${foreach e,${EXAMPLES},rm -f ${e};}
+
+distclean: clean
+	rm -f Makefile
+
+regress: all
+	${CONVERGE_VM} -fv ex1.cv
+	${CONVERGE_VM} -fv ex2.cv
+	${CONVERGE_VM} -fv ex3.cv
+	${CONVERGE_VM} -fv ex4.cv

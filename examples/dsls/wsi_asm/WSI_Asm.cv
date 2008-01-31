@@ -1,0 +1,355 @@
+// Copyright (c) 2008 Laurence Tratt <laurie@tratt.net>
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to
+// deal in the Software without restriction, including without limitation the
+// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+// sell copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+// IN THE SOFTWARE.
+
+
+import Builtins, CEI, CPK::Earley::DSL, CPK::Traverser, Exceptions, Strings, Sys
+
+
+
+
+_NUM_REGS := 8         // 8 registers in total
+_PC_REG := 7           // R7 == program counter
+_ST_REG := 6           // R6 == stack register
+_MEMORY_SIZE := 524288 // In words
+
+parse := $<<DSL::mk_parser("program", ["CALL", "RTN", "R0", "R1", "R2", "R3", "R4", "R5", "R6", "R7", "JMP", "SWI", "PUSH", "POP"], [])>>:
+    program ::= line ( "NEWLINE" line )*
+    
+    line ::= action
+           | label
+
+    action ::= register ":=" expr
+             | "[" register "]" ":=" expr
+             | "CALL" addr
+             | "RTN"
+             | "PUSH" register
+             | "POP" register
+             | swi
+             | branch
+
+    expr ::= register
+           | addr
+           | register op register
+           | register op "INT"
+           | "[" register "]"
+
+    op ::= "+"
+         | "-"
+         | "*"
+         | "/"
+
+    swi ::= "SWI" "ID"
+
+    branch ::= "IF" cond "JMP" addr
+             | "JMP" addr
+
+    cond ::= register cmp register
+           | register cmp addr
+
+    cmp ::= "=="
+          | "!="
+          | ">"
+          | ">="
+          | "<"
+          | "<="
+
+    register ::= "R0" | "R1" | "R2" | "R3" | "R4" | "R5" | "R6" | "R7"
+
+    label ::= "ID" ":"
+
+    addr ::= "INT"
+           | "ID"
+
+
+
+
+class Ab_Translator(Traverser::Strict_Traverser):
+
+    func generate(self, node):
+
+        instrs := self._preorder(node) 
+
+        it := [|
+            class AA:
+            
+                func exec(self):
+
+                    self.registers := [0] * _NUM_REGS
+                    self.registers[_PC_REG] := 0
+                    self.registers[_ST_REG] := _MEMORY_SIZE - 1
+                    self.memory := $c{CEI::ilist(instrs)}
+                    self.memory.extend([0] * (_MEMORY_SIZE - self.memory.len()))
+                    while 1:
+                        //Sys::println(self.registers)
+                        instr := self.memory[self.registers[_PC_REG]]
+                        instr(self)
+        |]
+        
+        //Sys::println(CEI::pp_itree(it))
+        
+        return it
+
+
+
+    func _t_program(self, node):
+            
+        // program ::= line ( "NEWLINE" line )
+
+        self._labels := Dict{}
+        mem_i := 0
+        for i := 1.iter_to(node.len(), 2):
+            aol_node := node[i][1]
+            if aol_node[0] == "action":
+                mem_i += 1
+            else:
+                // label ::= "ID" ":"
+                name := aol_node[1].value
+                self._labels[name] := mem_i
+        
+        memory := []
+
+        for i := 1.iter_to(node.len(), 2):
+            aol_node := node[i][1]
+            if aol_node[0] == "label":
+                continue
+
+            memory.append(self._t_action(aol_node))
+        
+        return memory
+    
+        
+
+
+    func _t_action(self, node):
+    
+        // action ::= register ":=" expr
+        //          | "[" register "]" ":=" expr
+        //          | "CALL" addr
+        //          | "RTN"
+        //          | "PUSH" register
+        //          | "POP" register
+        //          | swi
+        //          | branch
+        
+        ndif node.len() == 4:
+            // A ::= register ":=" expr
+            reg := self._t_register(node[1])
+            expr := self._t_expr(node[3])
+            actions := [<node[2].src_infos>|
+                $c{reg} := $c{expr}
+                &vm.registers[_PC_REG] += 1
+            |]
+        elif node.len() == 6:
+            // action ::= "[" register "]" ":=" expr
+            reg := self._t_register(node[2])
+            expr := self._t_expr(node[5])
+            actions := [<node[4].src_infos>|
+                &vm.memory[$c{reg}] := $c{expr}
+                &vm.registers[_PC_REG] += 1
+            |]
+        elif node.len() == 3 & node[1].type == "CALL":
+            // action ::= "CALL" addr
+            addr := self._t_addr(node[2])
+            actions := [<node[1].src_infos>|
+                // Push PC + 1 onto the stack and jump to 'addr'
+                &vm.memory[&vm.registers[_ST_REG]] := &vm.registers[_PC_REG] + 1
+                &vm.registers[_ST_REG] -= 1
+                &vm.registers[_PC_REG] := ${addr}
+            |]
+        elif node.len() == 2 & not Builtins::List.instantiated(node[1]):
+            // action ::= "RTN"
+            actions := [<node[1].src_infos>|
+                // Pop the rtn PC from the stack and jump to it
+                &vm.registers[_ST_REG] += 1
+                &vm.registers[_PC_REG] := &vm.memory[&vm.registers[_ST_REG]]
+            |]
+        elif node.len() == 3 & node[1].type == "PUSH":
+            // action ::= "PUSH" register
+            reg := self._t_register(node[2])
+            actions := [<node[1].src_infos>|
+                &vm.memory[&vm.registers[_ST_REG]] := $c{reg}
+                &vm.registers[_ST_REG] -= 1
+                &vm.registers[_PC_REG] += 1
+            |]
+        elif node.len() == 3 & node[1].type == "POP":
+            // action ::= "POP" register
+            reg := self._t_register(node[2])
+            actions := [<node[1].src_infos>|
+                &vm.registers[_ST_REG] += 1
+                $c{reg} := &vm.memory[&vm.registers[_ST_REG]]
+                &vm.registers[_PC_REG] += 1
+            |]
+        elif node.len() == 2 & node[1][0] == "swi":
+            // action ::= swi
+            actions := [<node[1][1].src_infos>|
+                $c{self._t_swi(node[1])}
+                &vm.registers[_PC_REG] += 1
+            |]
+        elif node.len() == 2 & node[1][0] == "branch":
+            // action ::= branch
+            actions := [self._t_branch(node[1])]
+
+        return [|
+            func (&vm):
+                $c{actions}
+        |]
+
+
+
+    func _t_swi(self, node):
+
+        // swi ::= "SWI" "ID"
+
+        swi := node[2].value
+        if swi == "exit":
+            return [<node[1].src_infos>| Sys::exit(0) |]
+        elif swi == "printi":
+            return [<node[1].src_infos>|
+                val := &vm.registers[0]
+                Sys::println(val)
+            |]
+        elif swi == "inputi":
+            return [<node[1].src_infos>|
+                Sys::print("> ")
+                Sys::stdout.flush()
+                input := Sys::stdin.readln().stripped()
+                int := Builtins::Int.new(input)
+                &vm.registers[0] := int
+            |]
+        else:
+            msg := Strings::format("Unknown SWI '%s'.", swi)
+            CEI::error(msg, node[1].src_infos)
+
+
+
+    func _t_branch(self, node):
+
+        // branch ::= "IF" cond "JMP" addr
+        //          | "JMP" addr
+        
+        addr := self._t_addr(node[-1])
+        if node.len() == 5:
+            // branch ::= "IF" cond "JMP" addr
+            cond := self._t_cond(node[2])
+            return [<node[1].src_infos>|
+                if $c{cond}:
+                    &vm.registers[_PC_REG] := ${addr}
+                else:
+                    &vm.registers[_PC_REG] += 1
+            |]
+        else:
+            // branch ::= "JMP" addr
+            return [<node[1].src_infos>| &vm.registers[_PC_REG] := ${addr} |]
+
+
+
+    func _t_register(self, node):
+    
+        // reg ::= R0 | R1 ...
+        
+        reg := CEI::iint(Builtins::Int.new(node[1].value[1 : ]))
+        return [<node[1].src_infos>| &vm.registers[${reg}] |]
+
+
+
+    func _t_expr(self, node):
+
+        // expr ::= register
+        //        | addr
+        //        | register op "INT"
+        //        | "[" register "]"
+
+        ndif node.len() == 2 & node[1][0] == "register":
+            // expr ::= register
+            return self._t_register(node[1])
+        elif node.len() == 2 & node[1][0] == "addr":
+            // expr ::= addr
+            return self._t_addr(node[1])
+        elif node.len() == 4 & Builtins::List.instantiated(node[1]):
+            // expr ::= register op register
+            //        | register op "INT"
+            lhs := self._t_register(node[1])
+            if Builtins::List.instantiated(node[3]):
+                // expr ::= register op register
+                rhs := self._t_register(node[3])
+            else:
+                // expr ::= register op "INT"
+                rhs := CEI::iint(Builtins::Int.new(node[3].value))
+            op := node[2][1].type
+            ndif op == "+":
+                return [<node[2][1].src_infos>| $c{lhs} + $c{rhs} |]
+            elif op == "-":
+                return [<node[2][1].src_infos>| $c{lhs} - $c{rhs} |]
+        elif node.len() == 4:
+            // expr ::= "[" register "]"
+            reg := self._t_register(node[2])
+            return [<node[1].src_infos>| &vm.memory[$c{reg}] |]
+
+
+
+    func _t_cond(self, node):
+
+        // cond ::= register cmp register
+        //        | register cmp addr
+        
+        lhs := self._t_register(node[1])
+        rhs := self._preorder(node[3])
+        
+        cmp := node[2][1].type
+        ndif cmp == "==":
+            return [<node[2][1].src_infos>| $c{lhs} == $c{rhs} |]
+        elif cmp == "!=":
+            return [<node[2][1].src_infos>| $c{lhs} != $c{rhs} |]
+        elif cmp == ">":
+            return [<node[2][1].src_infos>| $c{lhs} > $c{rhs} |]
+        elif cmp == ">=":
+            return [<node[2][1].src_infos>| $c{lhs} >= $c{rhs} |]
+        elif cmp == "<":
+            return [<node[2][1].src_infos>| $c{lhs} < $c{rhs} |]
+        elif cmp == "<=":
+            return [<node[2][1].src_infos>| $c{lhs} <= $c{rhs} |]
+
+
+
+    func _t_addr(self, node):
+
+        // addr ::= "INT"
+        //        | "ID"
+        
+        addr_node := node[1]
+        if addr_node.type == "INT":
+            return CEI::iint(Builtins::Int.new(addr_node.value))
+        else:
+            label := addr_node.value
+            if not addr := self._labels.find(label):
+                msg := Strings::format("Unknown label '%s'.", label)
+                CEI::error(msg, node[1].src_infos)
+            return CEI::iint(self._labels[addr_node.value])
+                        
+    
+
+
+func ab(dsl_block, src_infos):
+
+    parse_tree := parse(dsl_block, src_infos)
+
+    it := Ab_Translator.new().generate(parse_tree)
+
+    return it

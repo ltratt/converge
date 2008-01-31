@@ -1,0 +1,20 @@
+import WSI_Asm
+
+
+
+
+func main():
+    test := $<<WSI_Asm::ab>>:
+        R0 := L0
+        [R0] := 2
+        R0 := 0
+        R1 := L0
+        R0 := [R1]
+        [R1] := R0 + 2
+        SWI printi
+        R0 := [R1]
+        SWI printi
+        SWI exit
+        L0:
+
+    test.new().exec()

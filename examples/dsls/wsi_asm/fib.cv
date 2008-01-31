@@ -1,0 +1,42 @@
+import WSI_Asm
+
+
+
+
+func main():
+    test := $<<WSI_Asm::ab>>:
+        SWI inputi
+        CALL fib
+        SWI printi
+        SWI exit
+
+        //
+        // fib(n) reads in an int on R0 and outputs an int on R0.
+        //
+
+        fib:
+        // This routine corrupts R1 and R2, so push them onto the stack.
+        PUSH R1
+        PUSH R2
+        if R0 == 0 JMP fib0 // fib(0) == 0
+        if R0 == 1 JMP fib1 // fib(1) == 1
+        // fib(n) where n > 1
+        R1 := R0
+        R0 := R1 - 1
+        CALL fib
+        R2 := R0
+        R0 := R1 - 2
+        CALL fib
+        R0 := R2 + R0
+        JMP fib_finish
+        fib0: // fib(0) == 0
+        R0 := 0
+        JMP fib_finish
+        fib1: // fib(1) == 1
+        R0 := 1
+        fib_finish:
+        POP R2
+        POP R1
+        RTN
+
+    test.new().exec()

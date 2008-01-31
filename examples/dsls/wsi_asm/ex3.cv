@@ -1,0 +1,21 @@
+import WSI_Asm
+
+
+
+
+func main():
+    test := $<<WSI_Asm::ab>>:
+        R0 := 0
+        L0:
+        CALL inc
+        SWI exit
+
+        inc:
+        SWI printi
+        R0 := R0 + 2
+        if R0 == 8 JMP inc_finish
+        CALL inc
+        inc_finish:
+        RTN
+
+    test.new().exec()

@@ -15,13 +15,17 @@ INSTALL = @INSTALL@
 
 all:
 	cd statemachine && ${MAKE} ${MFLAGS}
+	cd wsi_asm && ${MAKE} ${MFLAGS}
 
 install: all
 	cd statemachine && ${MAKE} ${MFLAGS} install
+	cd wsi_asm && ${MAKE} ${MFLAGS} install
 
 clean:
 	cd statemachine && ${MAKE} ${MFLAGS} clean
+	cd wsi_asm && ${MAKE} ${MFLAGS} clean
 
 distclean: clean
 	cd statemachine && ${MAKE} ${MFLAGS} distclean
+	cd wsi_asm && ${MAKE} ${MFLAGS} distclean
 	rm -f Makefile

@@ -1,0 +1,68 @@
+The examples in this directory are of a simple, idealised assembler for a Word
+Size Independent (WSI) VM. WSI essentially means that the VM in question
+abstracts away from issues such as the bit size of an integer (it's not
+defined), which means that addresses start at 0 and monotonically increase by 1.
+Instructions begin at address 0; the stack starts at the end of memory and grows
+downwards. Addresses and integers are synonymous, and labels can be used
+wherever addresses are valid. Any memory location can be overwritten. Invalid
+actions lead to "seg faults" (represented by normal Converge expressions). The
+VM defines built-in routines to perform some primitive operations.
+
+By default the VM has 8 registers R0 to R7 inclusive. R7 is the Program Counter
+(PC) storing the address of the current instruction. R6 is the stack pointer
+pointing to the first free stack address. The default size of memory is 524288
+words.
+
+An assembly program is a sequence of lines. Each line specifies an action or a
+label. Actions are things like:
+
+  R0 := 2      // Store the value 2 into R0
+  R1 := R0 + 1 // Assign the value stored into R0, and incremented by 2, into R1
+ 
+Labels are identifiers followed by a colon:
+
+  L0:
+
+There are 8 types of action:
+
+  R0 := <expr>      // Store <expr> into R0
+  [R0] := <expr>    // Store <expr> into the address stored in R0
+  CALL L0           // Call L0, storing the return PC on the stack
+  RTN               // Pop the return PC from the stack and jump to it
+  PUSH R1           // Push R1 onto the stack
+  POP R2            // Pop R1 from the stack
+  SWI printi        // Execute the specified SoftWare Interrupt routine
+  if <cond> jmp L2  // If <cond> is true, jump to L2; "if <cond>" is optional
+
+There are 5 types of expression:
+
+  R0      // Read the contents of R0
+  L0      // Substitute the address of L0
+  R0 + R2 // Add R0 and R1
+  R0 + 2  // Add R0 and 2
+  [R2]    // Read the value in the address stored in R2
+
+Note that expressions involving [+-*/] are all of the form <reg> <op> <reg> or
+<reg> <op> <int> to approximate the limitations of typical assembler
+instructions. Note that this also implicitly means that there are no precedence
+issues to consider.
+
+The VM defines the following builtin SWIs:
+
+  exit   // Exits the program unconditionally
+  printi // Prints the integer in R0 to screen
+  inputi // Reads an integer from stdin, placing the result in R0
+
+There are 5 examples included with this DSL. ex1.cv to ex4.cv inclusive
+demonstrate low-level features with artifical examples. fib.cv defines a
+recursive fibonacci function. Execute this as follows:
+
+  $ converge fib.cv
+  >
+
+At the ">" prompt enter a number in the Fibonacci sequence e.g. 8:
+
+  $ converge fib.cv 
+  > 8
+  21
+  $

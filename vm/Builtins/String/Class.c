@@ -488,7 +488,7 @@ Con_Obj *_Con_Builtins_String_Class_prefixed_by_func(Con_Obj *thread)
 	if (i_obj == NULL)
 		i = 0;
 	else
-		i = Con_Misc_translate_index(thread, NULL, Con_Numbers_Number_to_Con_Int(thread, i_obj), self_string_atom->size);
+		i = Con_Misc_translate_slice_index(thread, NULL, Con_Numbers_Number_to_Con_Int(thread, i_obj), self_string_atom->size);
 	
 	if (self_string_atom->encoding != CON_STR_UTF_8 || o_string_atom->encoding != CON_STR_UTF_8)
 		CON_XXX;
@@ -653,7 +653,7 @@ Con_Obj *_Con_Builtins_String_Class_suffixed_by_func(Con_Obj *thread)
 	if (i_obj == NULL)
 		i = self_string_atom->size;
 	else
-		i = Con_Misc_translate_index(thread, NULL, Con_Numbers_Number_to_Con_Int(thread, i_obj), self_string_atom->size);
+		i = Con_Misc_translate_slice_index(thread, NULL, Con_Numbers_Number_to_Con_Int(thread, i_obj), self_string_atom->size);
 	
 	if (self_string_atom->encoding != CON_STR_UTF_8 || o_string_atom->encoding != CON_STR_UTF_8)
 		CON_XXX;

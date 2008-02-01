@@ -24,6 +24,7 @@ install: all
 	${INSTALL} -d ${WSI_ASMDIR}
 	${INSTALL} -c -m 444 README ${WSI_ASMDIR}
 	${foreach e,${EXAMPLES},${INSTALL} -c -m 444 ${e}.cv ${WSI_ASMDIR};}
+	${INSTALL} -c -m 444 WSI_Asm.cv ${WSI_ASMDIR}
 
 clean:
 	${foreach e,${EXAMPLES},rm -f ${e}.cvb;}

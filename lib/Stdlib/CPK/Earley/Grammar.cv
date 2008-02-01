@@ -255,7 +255,7 @@ class _Parser:
                 //        ::= "(" symbols ")+"
                 //        ::= "(" symbols ")?"
                 sub_symbols := self._t_symbols(symbol_node[2])
-                if symbol_node[3].type == ")*":
+                ndif symbol_node[3].type == ")*":
                     symbols.extend([_COMPILED_OPEN_KLEENE_STAR_GROUP, -1])
                     symbols.extend(sub_symbols)
                     symbols.extend([_COMPILED_CLOSE_KLEENE_STAR_GROUP, -1])
@@ -264,7 +264,7 @@ class _Parser:
                     symbols.extend([_COMPILED_OPEN_KLEENE_STAR_GROUP, -1])
                     symbols.extend(sub_symbols)
                     symbols.extend([_COMPILED_CLOSE_KLEENE_STAR_GROUP, -1])
-                elif symbol_node[3].type == ")+":
+                elif symbol_node[3].type == ")?":
                     symbols.extend([_COMPILED_OPEN_OPTIONAL_GROUP, -1])
                     symbols.extend(sub_symbols)
                     symbols.extend([_COMPILED_CLOSE_OPTIONAL_GROUP, -1])

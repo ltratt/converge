@@ -252,8 +252,8 @@ class _Parser:
                 symbols.extend([_COMPILED_TOKEN, self._tokens_map[symbol_node[1].value]])
             else:
                 // symbol ::= "(" symbols ")*"
-                //        ::= "(" symbols ")+"
-                //        ::= "(" symbols ")?"
+                //          | "(" symbols ")+"
+                //          | "(" symbols ")?"
                 sub_symbols := self._t_symbols(symbol_node[2])
                 ndif symbol_node[3].type == ")*":
                     symbols.extend([_COMPILED_OPEN_KLEENE_STAR_GROUP, -1])

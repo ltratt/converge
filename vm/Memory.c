@@ -126,7 +126,7 @@ void *Con_Memory_malloc(Con_Obj *thread, size_t size, Con_Memory_Chunk_Type type
 	if (chunk == NULL) {
 		Con_Memory_gc_force(thread);
 		if ((chunk = malloc(sizeof(Con_Memory_Chunk) + size)) == NULL)
-			CON_XXX;
+			CON_FATAL_ERROR("Unable to allocate memory.");
 	}
 	
 	if (type == CON_MEMORY_CHUNK_CONSERVATIVE)
@@ -139,7 +139,7 @@ void *Con_Memory_malloc(Con_Obj *thread, size_t size, Con_Memory_Chunk_Type type
 
 	CON_MUTEX_LOCK(&mem_store->mem_mutex);
 	if (!_Con_Memory_make_array_room_no_lock(thread, (void **) &mem_store->chunks, &mem_store->num_chunks_allocated, &mem_store->num_chunks, 1, sizeof(Con_Memory_Chunk *)))
-		CON_XXX;
+		CON_FATAL_ERROR("Unable to allocate memory.");
 	mem_store->chunks[mem_store->num_chunks++] = chunk;
 	
 	mem_store->num_allocations_since_last_gc += 1;
@@ -171,7 +171,7 @@ void *Con_Memory_malloc_no_gc(Con_Obj *thread, size_t size, Con_Memory_Chunk_Typ
 	
 	CON_MUTEX_LOCK(&mem_store->mem_mutex);
 	if (!_Con_Memory_make_array_room_no_lock(thread, (void **) &mem_store->chunks, &mem_store->num_chunks_allocated, &mem_store->num_chunks, 1, sizeof(Con_Memory_Chunk *)))
-		CON_XXX;
+		CON_FATAL_ERROR("Unable to allocate memory.");
 	mem_store->chunks[mem_store->num_chunks++] = chunk;
 	
 	mem_store->num_allocations_since_last_gc += 1;
@@ -196,7 +196,7 @@ void *Con_Memory_realloc(Con_Obj *thread, void *ptr, size_t size)
 		CON_MUTEX_UNLOCK(&mem_store->mem_mutex);
 		Con_Memory_gc_force(thread);
 		if ((new_chunk = realloc(chunk, sizeof(Con_Memory_Chunk) + size)) == NULL)
-			CON_XXX;
+			CON_FATAL_ERROR("Unable to allocate memory.");
 		CON_MUTEX_LOCK(&mem_store->mem_mutex);
 	}
 

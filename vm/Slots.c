@@ -129,11 +129,23 @@ void Con_Slots_set_slot(Con_Obj *thread, Con_Mutex *mutex, Con_Slots *slots, con
 		CON_MUTEX_UNLOCK(mutex);
 		
 		Con_Slots_Hash_Entry *hash_entries = Con_Memory_malloc_no_gc(thread, sizeof(Con_Slots_Hash_Entry) * CON_DEFAULT_NUM_SLOTS, CON_MEMORY_CHUNK_OPAQUE);
-		if (hash_entries == NULL)
-			CON_XXX;
+		if (hash_entries == NULL) {
+			CON_MUTEX_UNLOCK(mutex);
+            Con_Memory_gc_force(thread);
+            hash_entries = Con_Memory_malloc_no_gc(thread, sizeof(Con_Slots_Hash_Entry) * CON_DEFAULT_NUM_SLOTS, CON_MEMORY_CHUNK_OPAQUE);
+            if (hash_entries == NULL)
+                CON_FATAL_ERROR("Unable to allocate memory.");
+            CON_MUTEX_LOCK(mutex);
+        }
 		u_char *full_entries = Con_Memory_malloc_no_gc(thread, CON_DEFAULT_FULL_ENTRIES_SIZE, CON_MEMORY_CHUNK_OPAQUE);
-		if (full_entries == NULL)
-			CON_XXX;
+		if (full_entries == NULL) {
+            CON_MUTEX_UNLOCK(mutex);
+            Con_Memory_gc_force(thread);
+            full_entries = Con_Memory_malloc_no_gc(thread, CON_DEFAULT_FULL_ENTRIES_SIZE, CON_MEMORY_CHUNK_OPAQUE);
+            if (full_entries == NULL)
+                CON_FATAL_ERROR("Unable to allocate memory.");
+            CON_MUTEX_LOCK(mutex);
+        }
 		for (int i = 0; i < CON_DEFAULT_NUM_SLOTS; i += 1)
 			hash_entries[i].full_entry_offset = -1;
 		

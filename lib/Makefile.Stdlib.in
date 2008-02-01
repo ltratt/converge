@@ -9,7 +9,7 @@ INSTALL = @INSTALL@
 MINIMAL_OBJS = Stdlib.cvb Stdlib/CPK.cvb Stdlib/CPK/Earley.cvb Stdlib/CPK/Earley/Grammar.cvb \
 	Stdlib/CPK/Earley/Parser.cvb Stdlib/CPK/Token.cvb Stdlib/CPK/Tokens.cvb Stdlib/CPK/Tree.cvb \
     Stdlib/File.cvb Stdlib/Functional.cvb Stdlib/Maths.cvb Stdlib/Numbers.cvb \
-    Stdlib/Parse_Options.cvb Stdlib/Platform.cvb Stdlib/Platform/Properties.cvb \
+    Stdlib/Parse_Args.cvb Stdlib/Platform.cvb Stdlib/Platform/Properties.cvb \
 	Stdlib/Platform/Host.cvb Stdlib/Strings.cvb Stdlib/Time.cvb
 
 MAXIMAL_OBJS = Stdlib/CEI.cvb Stdlib/CPK/Earley/DSL.cvb Stdlib/CPK/Traverser.cvb \

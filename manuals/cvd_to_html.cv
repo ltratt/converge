@@ -19,7 +19,7 @@
 // IN THE SOFTWARE.
 
 
-import Builtins, File, Functional, Parse_Options, PCRE, Sort, Strings, Sys, XML::Nodes, XML::XDM, XML::XHTML
+import Builtins, File, Functional, Parse_Args, PCRE, Sort, Strings, Sys, XML::Nodes, XML::XDM, XML::XHTML
 
 
 
@@ -35,10 +35,10 @@ class CVD_To_HTML:
 
     func init(self):
 
-        options := Parse_Options::Options.new(self._usage_callback)
-        options.add(Parse_Options::Option_Spec.new("output", "o", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ONE))
+        options := []
+        options.append(Parse_Args::Opt_Spec.new("output", "o", Parse_Args::MANDATORY, Parse_Args::TYPE_ANY, Parse_Args::FREQUENCY_ONE))
 
-        parsed, extra := options.parse()
+        parsed, extra := Parse_Args::parse(self._usage_callback, options)
         for option_name, option_val := parsed.iter():
             ndif option_name == "output":
                 self._output_path := option_val

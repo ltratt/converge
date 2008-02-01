@@ -19,7 +19,7 @@
 // IN THE SOFTWARE.
 
 
-import Builtins, Exceptions, File, Parse_Options, Platform::Properties, Strings, Sys, Time, VM
+import Builtins, Exceptions, File, Parse_Args, Platform::Properties, Strings, Sys, Time, VM
 import Compiler::Code_Gen, Compiler::Core, Compiler::BC_Exec, Compiler::BC_Lib, Compiler::BC_Mod, Compiler::Parser, Compiler::BC_Pkg, Compiler::IMod_Gen, Compiler::Link, Compiler::Targets, Compiler::Tokenizer
 
 
@@ -33,14 +33,14 @@ class Compiler:
 
     func from_cmd_line(self):
     
-        options := Parse_Options::Options.new(self._usage_callback)
-        options.add(Parse_Options::Option_Spec.new("output", "o", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_ONE))
-        options.add(Parse_Options::Option_Spec.new("includes", "I", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_MORE))
-        options.add(Parse_Options::Option_Spec.new("make", "m", Parse_Options::NONE, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_ONE))
-        options.add(Parse_Options::Option_Spec.new("fresh", "f", Parse_Options::NONE, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_ONE))
-        options.add(Parse_Options::Option_Spec.new("optimise", "O", Parse_Options::NONE))
-        options.add(Parse_Options::Option_Spec.new("target", "T", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_ONE))
-        options.add(Parse_Options::Option_Spec.new("verbose", "v", Parse_Options::NONE, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_MORE))
+        options := []
+        options.append(Parse_Args::Opt_Spec.new("output", "o", Parse_Args::MANDATORY, Parse_Args::TYPE_ANY, Parse_Args::FREQUENCY_ZERO_OR_ONE))
+        options.append(Parse_Args::Opt_Spec.new("includes", "I", Parse_Args::MANDATORY, Parse_Args::TYPE_ANY, Parse_Args::FREQUENCY_ZERO_OR_MORE))
+        options.append(Parse_Args::Opt_Spec.new("make", "m", Parse_Args::NONE, Parse_Args::TYPE_ANY, Parse_Args::FREQUENCY_ZERO_OR_ONE))
+        options.append(Parse_Args::Opt_Spec.new("fresh", "f", Parse_Args::NONE, Parse_Args::TYPE_ANY, Parse_Args::FREQUENCY_ZERO_OR_ONE))
+        options.append(Parse_Args::Opt_Spec.new("optimise", "O", Parse_Args::NONE))
+        options.append(Parse_Args::Opt_Spec.new("target", "T", Parse_Args::MANDATORY, Parse_Args::TYPE_ANY, Parse_Args::FREQUENCY_ZERO_OR_ONE))
+        options.append(Parse_Args::Opt_Spec.new("verbose", "v", Parse_Args::NONE, Parse_Args::TYPE_ANY, Parse_Args::FREQUENCY_ZERO_OR_MORE))
         
         self.mk_mode := 0
         self.mk_fresh := 0
@@ -49,7 +49,7 @@ class Compiler:
         self.verbosity := 0
         target_name := Strings::format("%dbit", Properties::word_bits)
         internal_target_name := Strings::format("%dbit", Properties::word_bits)
-        parsed, extra := options.parse()
+        parsed, extra := Parse_Args::parse(self._usage_callback, options)
         for option_name, option_val := parsed.iter():
             ndif option_name == "output":
                 self.output_path := option_val

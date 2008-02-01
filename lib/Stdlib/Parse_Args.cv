@@ -36,7 +36,7 @@ FREQUENCY_ZERO_OR_MORE := 2
 
 
 
-class Option_Spec:
+class Opt_Spec:
 
     func init(self, name, short_option, optionality := NONE, type := TYPE_ANY, frequency := FREQUENCY_ZERO_OR_ONE):
     
@@ -49,21 +49,21 @@ class Option_Spec:
 
 
 
-class Options:
+class _Args_Parser:
 
     func init(self, usage_callback):
     
         self._usage_callback := usage_callback
-        self._option_specs := []
+        self._opt_specs := []
 
 
 
-    func add(self, option_spec):
+    func add(self, opt_spec):
     
-        if self._option_specs.find(option_spec.name):
-            raise Exceptions::User_Exception.new(Strings::format("Option '%s' has already been specified.", option_spec.name))
+        if self._opt_specs.find(opt_spec.name):
+            raise Exceptions::User_Exception.new(Strings::format("Option '%s' has already been specified.", opt_spec.name))
             
-        self._option_specs.append(option_spec)
+        self._opt_specs.append(opt_spec)
 
 
 
@@ -80,73 +80,84 @@ class Options:
             elif arg.len() > 0 & arg[0] == "-":
                 if arg.len() > 2 & not arg.prefixed_by("--"):
                     for arg_name := arg.iter(1):
-                        for option_spec := self._option_specs.iter():
-                            if option_spec.short_option == arg_name:
+                        for opt_spec := self._opt_specs.iter():
+                            if opt_spec.short_option == arg_name:
                                 break
                         exhausted:
                             msg := Strings::format("Unknown option '-%s'.", arg_name)
                             self._usage_callback(msg)
 
-                        ndif option_spec.optionality == NONE | option_spec.optionality == OPTIONAL:
-                            self._add_arg(option_spec, null)
-                        elif option_spec.optionality == MANDATORY:
+                        ndif opt_spec.optionality == NONE | opt_spec.optionality == OPTIONAL:
+                            self._add_arg(opt_spec, null)
+                        elif opt_spec.optionality == MANDATORY:
                             msg := Strings::format("'-%s' requires a value.", arg_name)
                             self._usage_callback(msg)
 
                     i += 1
                 else:
-                    option_spec := null
+                    opt_spec := null
 
                     if arg.len() == 2:
-                        for option_spec := self._option_specs.iter():
-                            if option_spec.short_option == arg[1 : ]:
+                        for opt_spec := self._opt_specs.iter():
+                            if opt_spec.short_option == arg[1 : ]:
                                 break
                     elif arg.len() > 2 & arg[0 : 2] == "--":
-                        for option_spec := self._option_specs.iter():
-                            if option_spec.name == arg[2 : ]:
+                        for opt_spec := self._opt_specs.iter():
+                            if opt_spec.name == arg[2 : ]:
                                 break
 
-                    if option_spec is null:
+                    if opt_spec is null:
                         msg := Strings::format("Unknown option '%s'.", arg)
                         self._usage_callback(msg)
                 
-                    ndif option_spec.optionality == NONE:
+                    ndif opt_spec.optionality == NONE:
                         val := null
                         i += 1
-                    elif option_spec.optionality == OPTIONAL:
+                    elif opt_spec.optionality == OPTIONAL:
                         if i + 1 < Sys::argv.len() & (Sys::argv[i + 1].len() == 0 | Sys::argv[i + 1][0] != "-"):
                             val := Sys::argv[i + 1]
                             i += 2
                         else:
                             val := null
                             i += 1
-                    elif option_spec.optionality == MANDATORY:
+                    elif opt_spec.optionality == MANDATORY:
                         if i + 1 == Sys::argv.len():
-                            msg := Strings::format("'-%s' requires a value.", option_spec.short_option)
+                            msg := Strings::format("'-%s' requires a value.", opt_spec.short_option)
                             self._usage_callback(msg)
                         val := Sys::argv[i + 1]
                         i += 2
 
-                    self._add_arg(option_spec, val)
+                    self._add_arg(opt_spec, val)
             else:
                 break
 
-        for option_spec := self._option_specs.iter():
-            if option_spec.frequency == FREQUENCY_ONE & not self._args.find(option_spec.name):
-                self._usage_callback(Strings::format("'%s' option must be specified.", option_spec.short_option))
+        for opt_spec := self._opt_specs.iter():
+            if opt_spec.frequency == FREQUENCY_ONE & not self._args.find(opt_spec.name):
+                self._usage_callback(Strings::format("'%s' option must be specified.", opt_spec.short_option))
 
         return [self._args, Sys::argv[i : ]]
 
 
 
-    func _add_arg(self, option_spec, val):
+    func _add_arg(self, opt_spec, val):
 
-        if option_spec.frequency == FREQUENCY_ONE | option_spec.frequency == FREQUENCY_ZERO_OR_ONE:
-            if self._args.find(option_spec.name):
-                msg := Strings::format("'%s' option may be specified a maximum of once.", option_spec.short_option)
+        if opt_spec.frequency == FREQUENCY_ONE | opt_spec.frequency == FREQUENCY_ZERO_OR_ONE:
+            if self._args.find(opt_spec.name):
+                msg := Strings::format("'%s' option may be specified a maximum of once.", opt_spec.short_option)
                 self._usage_callback(msg)
-            self._args[option_spec.name] := val
-        elif option_spec.frequency == FREQUENCY_ZERO_OR_MORE:
-            if not self._args.find(option_spec.name):
-                self._args[option_spec.name] := []
-            self._args[option_spec.name].append(val)
+            self._args[opt_spec.name] := val
+        elif opt_spec.frequency == FREQUENCY_ZERO_OR_MORE:
+            if not self._args.find(opt_spec.name):
+                self._args[opt_spec.name] := []
+            self._args[opt_spec.name].append(val)
+
+
+
+
+func parse(usage_callback, opt_specs):
+
+    parser := _Args_Parser.new(usage_callback)
+    for opt_spec := opt_specs.iter():
+        parser.add(opt_spec)
+    
+    return parser.parse()

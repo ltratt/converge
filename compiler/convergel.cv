@@ -19,7 +19,7 @@
 // IN THE SOFTWARE.
 
 
-import Array, Builtins, File, Maths, Parse_Options, Platform::Properties, Strings, Sys, VM
+import Array, Builtins, File, Maths, Parse_Args, Platform::Properties, Strings, Sys, VM
 import Compiler::Core, Compiler::BC_Exec, Compiler::BC_Mod, Compiler::BC_Lib, Compiler::BC_Pkg, Compiler::Link, Compiler::Targets::Available
 
 
@@ -32,12 +32,12 @@ class Linker:
     
         self.includes := []
     
-        options := Parse_Options::Options.new(self.usage)
-        options.add(Parse_Options::Option_Spec.new("output", "o", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ONE))
-        options.add(Parse_Options::Option_Spec.new("target", "T", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_ONE))
+        options := []
+        options.append(Parse_Args::Opt_Spec.new("output", "o", Parse_Args::MANDATORY, Parse_Args::TYPE_ANY, Parse_Args::FREQUENCY_ONE))
+        options.append(Parse_Args::Opt_Spec.new("target", "T", Parse_Args::MANDATORY, Parse_Args::TYPE_ANY, Parse_Args::FREQUENCY_ZERO_OR_ONE))
         
         target_name := Strings::format("%dbit", Properties::word_bits)
-        parsed_args, extra_args := options.parse()
+        parsed_args, extra_args := Parse_Args::parse(self.usage, options)
         for option_name, option_val := parsed_args.iter():
             if option_name == "output":
                 output_path := option_val
@@ -97,13 +97,13 @@ class Linker:
     
         self.includes := []
     
-        options := Parse_Options::Options.new(self.usage)
-        options.add(Parse_Options::Option_Spec.new("lib_mode", "l", Parse_Options::NONE, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ONE))
-        options.add(Parse_Options::Option_Spec.new("output", "o", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ONE))
-        options.add(Parse_Options::Option_Spec.new("target", "T", Parse_Options::MANDATORY, Parse_Options::TYPE_ANY, Parse_Options::FREQUENCY_ZERO_OR_ONE))
+        options := []
+        options.append(Parse_Args::Opt_Spec.new("lib_mode", "l", Parse_Args::NONE, Parse_Args::TYPE_ANY, Parse_Args::FREQUENCY_ONE))
+        options.append(Parse_Args::Opt_Spec.new("output", "o", Parse_Args::MANDATORY, Parse_Args::TYPE_ANY, Parse_Args::FREQUENCY_ONE))
+        options.append(Parse_Args::Opt_Spec.new("target", "T", Parse_Args::MANDATORY, Parse_Args::TYPE_ANY, Parse_Args::FREQUENCY_ZERO_OR_ONE))
         
         target_name := Strings::format("%dbit", Properties::word_bits)
-        parsed_args, extra_args := options.parse()
+        parsed_args, extra_args := Parse_Args::parse(self.usage, options)
         for option_name, option_val := parsed_args.iter():
             ndif option_name == "lib_mode":
                 pass

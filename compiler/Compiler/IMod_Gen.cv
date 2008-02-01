@@ -191,7 +191,6 @@ class IMod_Gen:
         VM::add_modules(mods_to_add)
         module := VM::import_module(mods_to_add[0])
         
-        
         if not out_itree := module.get_defn(splice_name)():
             got_val := 0
         else:

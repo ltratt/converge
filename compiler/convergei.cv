@@ -65,7 +65,7 @@ func main():
 
     includes := [File::canon_path(".")]
 
-    Sys::println("Converge ", Sys::version, " (built at ", Sys::version_date, ")")
+    Sys::println("Converge ", Sys::version, " (", Sys::version_date, ")")
     d := Dict{}
     while 1:
         Sys::print(">>> ")

@@ -12,18 +12,11 @@ INSTALL = @INSTALL@
 EXAMPLE_VERSIONS = 1 2 3 4 5
 
 
-all: ${EXAMPLES}
-
-
-define EXAMPLE_template
-ex${1}:
-	${CONVERGE_VM} ${CONVERGEC} -mv ex${1}.cv
-endef
-
-${foreach e,${EXAMPLE_VERSIONS},${eval ${call EXAMPLE_template,${e}}}}
-
-
 all: ${foreach e,${EXAMPLE_VERSIONS}, ex${e}}
+
+
+${foreach e,${EXAMPLE_VERSIONS}, ex${e}}: ${foreach e,${EXAMPLE_VERSIONS}, ex${e}.cv}
+	${CONVERGE_VM} ${CONVERGEC} -mv $@.cv
 
 
 STATEMACHINEDIR = ${DESTDIR}${conexamplesdir}/dsls/statemachine

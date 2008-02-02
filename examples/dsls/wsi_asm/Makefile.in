@@ -12,15 +12,11 @@ INSTALL = @INSTALL@
 EXAMPLES = ex1 ex2 ex3 ex4 fib
 
 
-all: ${EXAMPLES}
+all: ${foreach e,${EXAMPLES}, ${e}}
 
 
-define EXAMPLE_template
-${1}:
-	${CONVERGE_VM} ${CONVERGEC} -mv ${1}.cv
-endef
-
-${foreach e,${EXAMPLES},${eval ${call EXAMPLE_template,${e}}}}
+${foreach e,${EXAMPLES}, ${e}}: ${foreach e,${EXAMPLES}, ${e}.cv}
+	${CONVERGE_VM} ${CONVERGEC} -mv $@.cv
 
 
 WSI_ASMDIR = ${DESTDIR}${conexamplesdir}/dsls/wsi_asm

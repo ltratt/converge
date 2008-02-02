@@ -12,12 +12,16 @@ INSTALL = @INSTALL@
 EXAMPLES = ex1 ex2 ex3 ex4 fib
 
 
-%.cvb: %.cv
-	${CONVERGE_VM} ${CONVERGEC} -o $@ $<
+all: ${EXAMPLES}
 
 
-all:
-	${foreach e,${EXAMPLES},${CONVERGE_VM} ${CONVERGEC} -v -m ${e}.cv;}
+define EXAMPLE_template
+${1}:
+	${CONVERGE_VM} ${CONVERGEC} -mv ${1}.cv
+endef
+
+${foreach e,${EXAMPLES},${eval ${call EXAMPLE_template,${e}}}}
+
 
 WSI_ASMDIR = ${DESTDIR}${conexamplesdir}/dsls/wsi_asm
 install: all
@@ -35,7 +39,7 @@ distclean: clean
 	rm -f Makefile
 
 regress: all
-	${CONVERGE_VM} -fv ex1.cv
-	${CONVERGE_VM} -fv ex2.cv
-	${CONVERGE_VM} -fv ex3.cv
-	${CONVERGE_VM} -fv ex4.cv
+	${CONVERGE_VM} -v ex1.cv
+	${CONVERGE_VM} -v ex2.cv
+	${CONVERGE_VM} -v ex3.cv
+	${CONVERGE_VM} -v ex4.cv

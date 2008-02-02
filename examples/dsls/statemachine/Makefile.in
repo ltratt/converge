@@ -9,34 +9,39 @@ conexamplesdir = ${datadir}/examples/converge-@CONVERGE_VERSION@
 INSTALL = @INSTALL@
 
 
-VERSIONS = 1 2 3 4 5
+EXAMPLE_VERSIONS = 1 2 3 4 5
 
 
-%.cvb: %.cv
-	${CONVERGE_VM} ${CONVERGEC} -o $@ $<
+all: ${EXAMPLES}
 
 
-all:
-	${foreach v,${VERSIONS},${CONVERGE_VM} ${CONVERGEC} -v -m ex${v}.cv;}
+define EXAMPLE_template
+ex${1}:
+	${CONVERGE_VM} ${CONVERGEC} -mv ex${1}.cv
+endef
+
+${foreach e,${EXAMPLE_VERSIONS},${eval ${call EXAMPLE_template,${e}}}}
+
+
+all: ${foreach e,${EXAMPLE_VERSIONS}, ex${e}}
+
 
 STATEMACHINEDIR = ${DESTDIR}${conexamplesdir}/dsls/statemachine
 install: all
 	${INSTALL} -d ${STATEMACHINEDIR}
 	${INSTALL} -c -m 444 README ${STATEMACHINEDIR}
-	${foreach v,${VERSIONS},${INSTALL} -c -m 444 SM${v}.cv ${STATEMACHINEDIR}/SM${v}.cv;}
-	${foreach v,${VERSIONS},${INSTALL} -c -m 444 ex${v}.cv ${STATEMACHINEDIR}/ex${v}.cv;}
+	${foreach v,${EXAMPLE_VERSIONS},${INSTALL} -c -m 444 SM${v}.cv ${STATEMACHINEDIR}/SM${v}.cv;}
+	${foreach v,${EXAMPLE_VERSIONS},${INSTALL} -c -m 444 ex${v}.cv ${STATEMACHINEDIR}/ex${v}.cv;}
 
 clean:
-	${foreach v,${VERSIONS},rm -f SM${v}.cvb;}
-	${foreach v,${VERSIONS},rm -f ex${v}.cvb;}
-	${foreach v,${VERSIONS},rm -f ex${v};}
+	${foreach v,${EXAMPLE_VERSIONS},rm -f SM${v}.cvb;}
+	${foreach v,${EXAMPLE_VERSIONS},rm -f ex${v}.cvb;}
+	${foreach v,${EXAMPLE_VERSIONS},rm -f ex${v};}
 
 distclean: clean
 	rm -f Makefile
 
 regress: all
-	${CONVERGE_VM} -f -v ex1.cv
-	${CONVERGE_VM} -f -v ex2.cv
-	${CONVERGE_VM} -f -v ex3.cv
-	${CONVERGE_VM} ${CONVERGEC} -m -f -v ex4.cv
-	${CONVERGE_VM} ${CONVERGEC} -m -f -v ex5.cv
+	${CONVERGE_VM} -v ex1.cv
+	${CONVERGE_VM} -v ex2.cv
+	${CONVERGE_VM} -v ex3.cv

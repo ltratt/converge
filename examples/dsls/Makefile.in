@@ -29,3 +29,7 @@ distclean: clean
 	cd statemachine && ${MAKE} ${MFLAGS} distclean
 	cd wsi_asm && ${MAKE} ${MFLAGS} distclean
 	rm -f Makefile
+
+regress:
+	cd statemachine && ${MAKE} ${MFLAGS} regress
+	cd wsi_asm && ${MAKE} ${MFLAGS} regress

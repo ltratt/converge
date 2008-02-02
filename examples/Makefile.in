@@ -18,3 +18,6 @@ distclean: clean
 	cd dsls && ${MAKE} ${MFLAGS} distclean
 	cd metaclasses && ${MAKE} ${MFLAGS} distclean
 	rm -f Makefile
+
+regress:
+	cd dsls && ${MAKE} ${MFLAGS} regress

@@ -1262,7 +1262,7 @@ Con_Obj *_Con_Builtins_VM_Atom_execute(Con_Obj *thread)
 					Con_Builtins_Con_Stack_Atom_update_continuation_frame_pc(thread, con_stack, pc);
 					break;
 				case CON_INSTR_YIELD: {
-					Con_Obj *yield_obj = Con_Builtins_Con_Stack_Atom_pop_object(thread, con_stack);
+					Con_Obj *yield_obj = Con_Builtins_Con_Stack_Atom_peek_object(thread, con_stack);
 					pc.pc.bytecode_offset += sizeof(Con_Int);
 					Con_Builtins_Con_Stack_Atom_update_continuation_frame_pc(thread, con_stack, pc);
 					CON_MUTEX_UNLOCK(&con_stack->mutex);

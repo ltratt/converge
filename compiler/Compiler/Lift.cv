@@ -39,9 +39,7 @@ func lift(obj, src_infos := null):
     else:
         src_infos += Thread::get_continuation_src_infos(2)
 
-    if obj is null:
-        return ITree::IVar.new("null", src_infos)
-    elif Builtins::String.conformed_by(obj):
+    if Builtins::String.conformed_by(obj):
         return ITree::IString.new(obj, src_infos)
     elif Builtins::Int.conformed_by(obj):
         return ITree::IInt.new(obj, src_infos)

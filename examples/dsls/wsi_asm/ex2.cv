@@ -8,7 +8,7 @@ func main():
         R0 := 0
         L0:
         CALL inc
-        if R0 < 8 JMP L0
+        IF R0 < 8 JMP L0
         SWI exit
 
         inc:

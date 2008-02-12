@@ -29,7 +29,7 @@ _PC_REG := 7           // R7 == program counter
 _ST_REG := 6           // R6 == stack register
 _MEMORY_SIZE := 524288 // In words
 
-parse := $<<DSL::mk_parser("program", ["CALL", "RTN", "R0", "R1", "R2", "R3", "R4", "R5", "R6", "R7", "JMP", "SWI", "PUSH", "POP"], [])>>:
+parse := $<<DSL::mk_parser("program", ["CALL", "RTN", "R0", "R1", "R2", "R3", "R4", "R5", "R6", "R7", "JMP", "SWI", "PUSH", "POP", "IF"], [])>>:
     program ::= line ( "NEWLINE" line )*
     
     line ::= action

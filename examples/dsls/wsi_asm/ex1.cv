@@ -9,7 +9,7 @@ func main():
         L0:
         SWI printi
         R0 := R0 + 2
-        if R0 < 8 JMP L0
+        IF R0 < 8 JMP L0
         SWI exit
 
     test.new().exec()

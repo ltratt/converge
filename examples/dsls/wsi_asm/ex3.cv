@@ -13,7 +13,7 @@ func main():
         inc:
         SWI printi
         R0 := R0 + 2
-        if R0 == 8 JMP inc_finish
+        IF R0 == 8 JMP inc_finish
         CALL inc
         inc_finish:
         RTN

@@ -85,7 +85,7 @@ Con_Obj *Con_Builtins_List_Atom_new(Con_Obj *thread)
 
 Con_Obj *Con_Builtins_List_Atom_new_sized(Con_Obj *thread, Con_Int num_entries_to_allocate)
 {
-	assert(num_entries_to_allocate > 0);
+	assert(num_entries_to_allocate >= 0);
 
 	Con_Obj *new_list = Con_Object_new_from_class(thread, sizeof(Con_Obj) + sizeof(Con_Builtins_List_Atom) + sizeof(Con_Builtins_Slots_Atom), CON_BUILTIN(CON_BUILTIN_LIST_CLASS));
 	Con_Builtins_List_Atom *list_atom = (Con_Builtins_List_Atom *) new_list->first_atom;

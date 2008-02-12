@@ -1685,7 +1685,7 @@ fail_now:
 						}
 						else {
 							CON_MUTEX_UNLOCK(&con_stack->mutex);
-							Con_Obj *obj = CON_APPLY_PUMP();
+							Con_Obj *obj = Con_Builtins_VM_Atom_apply_pump(thread, true);
 							CON_MUTEX_LOCK(&con_stack->mutex);
 							if (obj == NULL) {
 								continue;

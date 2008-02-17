@@ -175,7 +175,7 @@ func get_std_libraries(comp_link):
     
     libraries := []
 
-    // Find libcompiler.cvl.
+    // Find Compiler.cvl.
 
     cnd_dirs := [File::join_names(bin_dir, "..", "lib", "converge-" + Sys::version), \
       File::join_names(bin_dir, "..", "lib", "converge"), \
@@ -188,7 +188,7 @@ func get_std_libraries(comp_link):
     exhausted:
         comp_link.warning("Can't find Compiler.cvl.")
 
-    // Find libconverge.cvl
+    // Find Stdlib.cvl
 
     cnd_dirs := [File::join_names(bin_dir, "..", "lib", "converge-" + Sys::version), \
       File::join_names(bin_dir, "..", "lib", "converge"), \

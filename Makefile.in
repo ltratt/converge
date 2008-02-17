@@ -11,7 +11,6 @@ else
 	cd lib && ${MAKE} ${MFLAGS}
 	cd compiler && ${MAKE} ${MFLAGS}
 endif
-	cd examples && ${MAKE} ${MFLAGS}
 	cd manuals && ${MAKE} ${MFLAGS}
 
 install: all

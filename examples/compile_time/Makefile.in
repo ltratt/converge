@@ -33,3 +33,5 @@ clean:
 
 distclean: clean
 	rm -f Makefile
+
+regress: all

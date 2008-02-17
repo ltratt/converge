@@ -20,4 +20,6 @@ distclean: clean
 	rm -f Makefile
 
 regress:
+	cd compile_time && ${MAKE} ${MFLAGS} regress
 	cd dsls && ${MAKE} ${MFLAGS} regress
+	cd metaclasses && ${MAKE} ${MFLAGS} regress

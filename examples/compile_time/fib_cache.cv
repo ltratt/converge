@@ -1,0 +1,83 @@
+// Copyright (c) 2008 Laurence Tratt <laurie@tratt.net>
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to
+// deal in the Software without restriction, including without limitation the
+// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+// sell copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+// IN THE SOFTWARE.
+
+
+//
+// This is a simple example of how to pre-compute the first n entries of the Fibonacci sequence at
+// compile-time using the standard definition of the Fibonacci function. Since fib(n) is very slow
+// when n is bigger than about 15, pre-computing these numbers can lead to a huge efficiency gain
+// at run-time (depending on the machine between a factor of 400x-500x).
+//
+// If you want to see the difference in action, just run this file twice: on the first time it'll
+// take a while to compile and print out the first 30 numbers in the Fibonacci sequence. On the
+// second run it'll print them out virtually straight away.
+//
+
+
+import CEI, Sys
+
+
+
+
+//
+// The classic definition of the Fibonacci sequence.
+//
+
+func fib(n):
+
+    if n == 0:
+        return 0
+    elif n == 1:
+        return 1
+    else:
+        return fib(n - 1) + fib(n - 2)
+
+
+
+//
+// Returns the Fibonacci sequence as a list from 0 to n.
+//
+
+func fibs_upto(n):
+
+    fibs := []
+    i := 0
+    while i < n:
+        fibs.append(fib(i))
+        i += 1
+
+    return fibs
+
+
+
+//
+// Calculate the Fibonacci sequence at compile-time up-to 30, and "lift" the result so that it's
+// translated from a list of numbers into an ITree list of ITree ints (i.e. we convert the list of
+// numbers into it's abstract syntax tree equivalent).
+//
+
+cfibs := $<CEI::lift(fibs_upto(30))>
+
+
+
+func main():
+
+    Sys::println(cfibs)
+    

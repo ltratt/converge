@@ -425,8 +425,10 @@ class Compiler:
 
         while 1:
             again := 0 // Set to 1 to force another round of the loop.
-            for mod_id, t := self.mk_done_bc_mods.iter():
-                mod_src_path, bc_mod := t
+            mod_ids := []
+            for mod_ids.append(self.mk_done_bc_mods.iter_keys())
+            for mod_id := mod_ids.iter():
+                mod_src_path, bc_mod := self.mk_done_bc_mods[mod_id]
 
                 if included_mod_ids.find(mod_id):
                     continue

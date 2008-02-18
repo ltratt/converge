@@ -9,36 +9,14 @@ condocsdir = ${datadir}/doc/converge-@CONVERGE_VERSION@
 INSTALL = @INSTALL@
 
 
-MANUALS = modules_cvd/Array.cvd modules_cvd/Builtins.cvd modules_cvd/CEI.cvd \
-	modules_cvd/CPK.Earley.DSL.cvd modules_cvd/Exceptions.cvd modules_cvd/File.cvd \
-	modules_cvd/Functional.cvd modules_cvd/Maths.cvd modules_cvd/PCRE.cvd \
-	modules_cvd/Platform.Env.cvd modules_cvd/Platform.Properties.cvd modules_cvd/Platform.Exec.cvd \
-	modules_cvd/Platform.Host.cvd modules_cvd/Random.cvd modules_cvd/Sort.cvd modules_cvd/Sys.cvd \
-	modules_cvd/Strings.cvd modules_cvd/VM.cvd modules_cvd/XML.Nodes.cvd modules_cvd/XML.XDM.cvd \
-	modules_cvd/XML.XHTML.cvd
-
-
-%.cvb: %.cv
-	${CONVERGE_VM} ${CONVERGEC} -o $@ $<
-
-
-all: cvd_to_html
-	${CONVERGE_VM} cvd_to_html -o modules_html ${subst /,@CON_DIR_SEP@,${MANUALS}}
+all:
+	cd modules && ${MAKE} ${MFLAGS}
 
 install:
-	${INSTALL} -d ${DESTDIR}${bindir}
-	${INSTALL} -c -m 555 cvd_to_html ${DESTDIR}${bindir}
-ifeq (@PLATFORM@, MinGW)
-	${INSTALL} -c -m 555 ../platform/MinGW/cvd_to_html.bat ${DESTDIR}${bindir}
-endif
-	${INSTALL} -d ${DESTDIR}${condocsdir}/modules_html
-	${INSTALL} -c -m 444 modules_html/*.html ${DESTDIR}${condocsdir}/modules_html
-
-cvd_to_html: cvd_to_html.cvb ${CONVERGE_LIB}
-	${CONVERGE_VM} ${CONVERGEL} -o cvd_to_html cvd_to_html.cvb
+	cd modules && ${MAKE} ${MFLAGS} install
 
 clean:
-	rm -f cvd_to_html cvd_to_html.cvb modules_html/*.html
+	cd modules && ${MAKE} ${MFLAGS} clean
 
 distclean: clean
 	rm -f Makefile

@@ -357,6 +357,12 @@ class QQ_Mode:
             if ITree::IRename.instantiated(rename_):
                 rename_from := rename_.from
                 rename_as := rename_.as_
+
+                if ITree::IVar.instantiated(rename_.from):
+                    // If we're renaming a lexically scoped variable, ensure that it exists before
+                    // we allow the renaming to occur.
+                    self._get_var_offset(rename_.from.name, rename_.from.src_infos)
+
                 if ITree::IVar.instantiated(rename_.from) & ITree::IVar.instantiated(rename_.as_):
                     renames[rename_.as_.name] := rename_.from.name
                 else:

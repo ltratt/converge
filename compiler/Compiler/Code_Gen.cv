@@ -568,6 +568,10 @@ class Code_Gen:
         
         renames := Dict{}
         for rename_ := node.renames.iter():
+            if ITree::IVar.instantiated(rename_.from):
+                // If we're renaming a variable, ensure that it exists before we allowing the
+                // renaming to occur.
+                self._get_var_offsets(rename_.from.name, rename_.from.src_infos)
             renames[rename_.as_.name] := rename_.from
         
         self._add_vars(bound_vars, renames, node.internal_import_vars)

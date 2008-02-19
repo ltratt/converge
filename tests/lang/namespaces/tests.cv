@@ -35,6 +35,9 @@ tests := $<<Lang_Test::tests>>:
     "ns4.cv"
     
     "ns5.cv"
+    
+    "ns6.cv":
+        ctime exception "Unknown variable 'x'."
 
     "qq1.cv":
         rtime exception "Unassigned_Var_Exception"
@@ -48,6 +51,9 @@ tests := $<<Lang_Test::tests>>:
     "qq5.cv"
     
     "qq6.cv"
+    
+    "qq7.cv":
+        ctime exception "Unknown variable 'x'."
 
 
 

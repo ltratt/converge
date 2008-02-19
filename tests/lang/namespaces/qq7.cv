@@ -1,0 +1,16 @@
+//
+// Check that inside quasi-quotes we can't rename a variable which doesn't exist.
+//
+
+
+import CEI, Sys
+
+
+
+func main():
+
+    [|
+        func ():
+            rename x as y
+            pass
+    |]

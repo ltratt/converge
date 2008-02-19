@@ -282,6 +282,7 @@ class IIf:
         if not else_body is null:
             self.bound_vars.extend(else_body.bound_vars)
             self.import_vars.extend(else_body.import_vars)
+            self.qq_bound_vars.extend(else_body.qq_bound_vars)
             self.free_vars.extend(else_body.free_vars)
             _merge_mod_id_lookups(self.mod_id_lookups, else_body.mod_id_lookups)
 

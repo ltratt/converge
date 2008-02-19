@@ -13,11 +13,14 @@ INSTALL = @INSTALL@
 	${CONVERGE_VM} ${CONVERGEC} -o $@ $<
 
 
-all: fib_cache nested powers printf
+all: ani_funcs fib_cache nested powers printf
 
 install: all
 	${INSTALL} -d ${DESTDIR}${conexamplesdir}/compile_time
 	${INSTALL} -c -m 444 fib_cache.cv nested.cv powers.cv printf.cv ${DESTDIR}${conexamplesdir}/compile_time
+
+ani_funcs: ani_funcs.cvb
+	${CONVERGE_VM} ${CONVERGEL} -o ani_funcs ani_funcs.cvb
 
 fib_cache: fib_cache.cvb
 	${CONVERGE_VM} ${CONVERGEL} -o fib_cache fib_cache.cvb
@@ -32,7 +35,7 @@ printf: printf.cvb
 	${CONVERGE_VM} ${CONVERGEL} -o printf printf.cvb
 
 clean:
-	rm -f fib_cache nested powers printf *.cvb
+	rm -f ani_funcs fib_cache nested powers printf *.cvb
 
 distclean: clean
 	rm -f Makefile

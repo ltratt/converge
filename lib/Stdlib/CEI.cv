@@ -109,10 +109,10 @@ func lift(obj, src_infos := null):
 
 
 //
-// This function creates all the factory functions for ITree elements.
+// Create all the factory functions for ITree elements.
 //
 
-func _ibuilder():
+$c<func () {
 
     builders := []
     for name, defn := ITree.iter_defns():
@@ -138,6 +138,4 @@ func _ibuilder():
         |])
     
     return builders
-
-
-$c<_ibuilder()>
+}()>

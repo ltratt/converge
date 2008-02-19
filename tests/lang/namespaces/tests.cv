@@ -46,6 +46,8 @@ tests := $<<Lang_Test::tests>>:
     "qq4.cv"
 
     "qq5.cv"
+    
+    "qq6.cv"
 
 
 

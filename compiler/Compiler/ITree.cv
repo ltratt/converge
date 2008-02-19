@@ -1321,14 +1321,14 @@ class IExpr_Seq:
         self.import_vars := Set{}
         self.qq_bound_vars := Set{}
         self.mod_id_lookups := Dict{}
-        for expr := self.exprs.iter():
+        for expr := exprs.iter():
             self.bound_vars.extend(expr.bound_vars)
             self.import_vars.extend(expr.import_vars)
             self.qq_bound_vars.extend(expr.qq_bound_vars)
             _merge_mod_id_lookups(self.mod_id_lookups, expr.mod_id_lookups)
 
         self.free_vars := Set{}
-        for expr := self.exprs.iter():
+        for expr := exprs.iter():
             self.free_vars.extend(expr.free_vars)
 
 

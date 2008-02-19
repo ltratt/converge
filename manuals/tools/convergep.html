@@ -1,0 +1,48 @@
+<!--#include virtual="../header.inc" -->
+
+<h1><code>convergep</code></h1>
+
+<code>convergep</code> is a simple tool which reads in a Converge file and pretty-prints its parse tree. This can be useful when performing compile-time meta-programming to see the structure of an input file. An example execution is as follows:
+
+<pre>
+$ convergep hello.cv
+top_level
+  -> defn
+    -> import
+      -> <IMPORT import>
+      -> import_name
+        -> <ID Sys>
+      -> import_as
+  -> <NEWLINE>
+  -> defn
+    -> func_defn
+      -> func_type
+        -> <FUNC func>
+      -> func_name
+        -> <ID main>
+      -> <(>
+      -> func_params
+      -> <)>
+      -> <:>
+      -> <INDENT>
+      -> func_decls
+      -> expr_body
+        -> expr
+          -> application
+            -> expr
+              -> module_lookup
+                -> name
+                  -> <ID Sys>
+                -> <::>
+                -> name
+                  -> <ID println>
+            -> <(>
+            -> expr
+              -> string
+                -> <STRING Hello world!>
+            -> <)>
+      -> <DEDENT>
+$
+</pre>
+
+<!--#include virtual="../footer.inc" -->

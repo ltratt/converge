@@ -1,0 +1,684 @@
+<!--#include virtual="../header.inc" -->
+
+<h1>Quick introduction to Converge</h1>
+
+This document is intended to give programmers familiar with other programming languages a quick introduction to Converge, essentially pointing out those things that may be different from other languages; it is not intended to be a complete, thorough reference manual. After reading this document you will probably want to read the <a href="../current/modules_html/modsindex.html">modules reference manual</a> which documents the standard library, or the <a href="../ctmp">guide to compile-time meta-programming</a> which documents Converge's macro-like facilities.
+
+
+<h2>Concrete syntax</h2>
+
+Since the direct interaction with Converge is through its concrete syntax in the form of source code in a text editor, let us establish the general rules for representing Converge code. Converge is syntactically similar to Python. This means it relies on indentation to show code blocks rather than using curly brackets <code>{ ... }</code> or <code>begin ... end</code> keywords. All indentation in Converge <em>must</em> be in the form of spaces; no other form of whitespace is acceptable. Conventionally 4 space characters form one level of indentation; however you may use any number of space characters to indicate indentation provided you are consistent within your own code.
+
+
+<hr>
+
+
+<h2>Hello world!</h2>
+
+Let's start with the traditional <code>Hello world!</code> program:
+
+<pre class="indented-code">
+import Sys
+
+func main():
+    Sys::println("Hello world!")
+</pre>
+
+As expected, when this program is run it prints out <code>Hello world!</code>.
+
+<p>Note how the body of the <code>main</code> function is indented from its <code>func main():</code> definition. The name of this function is also significant. When a program is run, Converge looks for a function called <code>main</code> and executes that function. If no such function exists, an exception is thrown. <code>Sys</code> is a built-in module. To lookup module definitions such as the <code>println</code> function one uses the <code>::</code> operator.
+
+
+<hr>
+
+
+<h2>Running programs</h2>
+
+Converge programs are compiled to bytecode, and the Converge Virtual Machine (VM) executes this bytecode. Converge uses a traditional compiling and linking scheme similar to many C compilers, where individual source files are converted into object files and linked to produce a Converge executable. Large projects may find it convenient to make use of the documentation of the <a href="../tools/">individual compiler tools</a>. However most simpler projects can make use of Converge's auto-make functionality. If the code fragment from the previous section is placed into a file <code>hello.cv</code>, it can be compiled and run automatically as follows:
+
+<pre class="indented-code">
+$ converge hello.cv
+Hello world!
+$ 
+</pre>
+
+In other words, when the VM is passed a source script, it automatically compiles dependencies, links, and executes the file. It also caches the results of the compilation so that subsequent runs are much quicker. It is often instructive to see what steps are being taken prior to the file being run. The <code>-v</code> switch to the VM shows the auto-make steps in operation:
+
+<pre class="indented-code">
+$ converge -v hello.cv
+===> Compiling /tmp/hello.cv...
+===> Finished compiling /tmp/hello.cv.
+===> Linking.
+Hello world!
+$
+</pre>
+
+Converge's auto-make facility ensures that all files in a project are upto date; its chief limitation is that it sometimes has to compile individual files multiple times to ensure that this is the case, even when a user may know that this is not strictly necessary. In such cases, it may be more efficient to use the <a href="../tools/">individual compiler tools</a>.
+
+<p>If you encounter <q>strange</q> compilation problems (perhaps after moving files from one machine to another), converge can be instructed via the <code>-f</code> switch to ignore all your cached bytecode files and perform compilation from scratch, updating all cached bytecode files. Although this is rarely needed, it can be useful on occasion.
+
+<hr>
+
+
+<h2>Functions and scoping</h2>
+
+
+<h3>Function arguments</h3>
+
+Functions can accept zero or more arguments in the standard way. The general form of a function is thus:
+
+<p><code class="indented-code">
+func m(a<sub>i</sub>, ..., a<sub>n</sub>, a<sub>j</sub> := &lt;<em>default value</em>&gt<sub>j</sub>;, ... a<sub>m</sub> := &lt;<em>default value</em>&gt<sub>m</sub>, *v)
+</code>
+
+<p>where <em>i</em>, <em>j</em> &gt;= 0 and <code>v</code> is optional. Put another way, this means that (optionally) normal arguments are (optionally) followed by arguments with default values and (optionally) completed by a final 'var args' variable.
+
+<p>The caller of a function must specify values for all normal arguments. Arguments with default values for which no value is specified by the caller will have their default value evaluated and assigned to that arg. All remaining arguments are put into a list and assigned to <code>v</code>.
+
+<p>For example a <code>printf</code> like function would be specified as follows:
+
+<pre class="indented-code">
+func printf(format, *var_args):
+    ...
+</pre>
+
+An <code>fprintf</code> style function which defaults to using standard out might look as follows:
+
+<pre class="indented-code">
+func fprintf(format, stream := Sys::stdout, *var_args):
+    ...
+</pre>
+
+Default values are evaluated each time a value is not passed to a particular argument. This is substantially different than the mechanism found in Python. Note that Converge has no concept of function overloading based on e.g. function arity.
+
+
+<h3>Lexical scoping</h3>
+
+Converge is lexically scoped. The following program will thus print <code>0</code> then <code>1</code> then <code>1</code>.
+
+<pre class="indented-code">
+func main():
+    x := 0
+    Sys::println(x)
+    func f2():
+        Sys::println(x)
+    x := 1
+    f2()
+    Sys::println(x)
+</pre>
+
+Assignment of a variable in a block causes that variable to be made local to the block. The following program will thus print <code>0</code> then <code>0</code> then <code>0</code>.
+
+<pre class="indented-code">
+func main():
+    x := 0
+    Sys::println(x)
+    func f2():
+        x := 1
+    Sys::println(x)
+    f2()
+    Sys::println(x)
+</pre>
+
+In order to assign to a variable in an outer block, the <code>nonlocal</code> statement at the beginning of a function punches a hole up to an appropriate layer. The following program will thus print <code>0</code> then <code>0</code> then <code>1</code>.
+
+<pre class="indented-code">
+func main():
+    x := 0
+    Sys::println(x)
+    func f2():
+        nonlocal x
+        x := 1
+    Sys::println(x)
+    f2()
+    Sys::println(x)
+</pre>
+
+Note that class elements are deliberately excluded from the standard scoping mechanism so that the following is invalid:
+
+<pre class="indented-code">
+class Dog:
+    type := "Dog"
+
+    func get_type(self):
+        return type
+</pre>
+
+As the above suggests, the first parameter of a bound function will always be set to the <q>self</q> object. Conventionally this parameter is always called <code>self</code>. Via this variable the current objects slots can be accessed:
+
+<pre class="indented-code">
+class Dog:
+    type := "Dog"
+
+    func get_type(self):
+        return self.type
+</pre>
+
+
+<h3>Functions as <q>lambdas</q></h3>
+
+Converge does not provide any special type of a function for <q>small functions</q> such as a specialised lambda form. However sometimes the indentation syntax of Converge can be inconvenient when passing functions containing only a few expressions as arguments to another function. In such cases one can use the alternative curly bracket syntax as follows:
+
+<pre class="indented-code">
+Functional::map(func (x) { return x.to_str() }, list)
+</pre>
+
+
+<hr>
+
+
+<h2>Objects and Classes</h2>
+
+
+<h3>Objects</h3>
+
+Converge is, at the lowest level, a prototype based object orientated system: everything is an object and every part of an object can be altered at will. Objects are said to consist of slots, each of which has a name and a value. Slots are accessed via the <code>.</code> (dot) operator.
+
+
+<h3>Classes</h3>
+
+While the conceptually simple prototype based view of the world has many advantages, classes are provided as an important convenience. As this might suggest, classes are not a base feature of the Converge VM which understands only objects; however for practical reasons Converge provides syntax to specify classes, and objects are generally created via class instantiation.
+
+<p>A simple definition of a class is as follows:
+
+<pre class="indented-code">
+class Animal:
+    func init(self, name):
+        self.name := name
+
+    func get_name(self):
+        return self.name
+
+    func set_name(self, name):
+        self.name := name
+</pre>
+
+New objects can be created via the <code>new</code> slot of a class:
+
+<pre class="indented-code">
+fido := Animal.new()
+</pre>
+The resulting object can then have its slots accessed and assigned in the standard fashion:
+<pre class="indented-code">
+fido.set_name("Fido")
+Sys::println(fido.get_name())
+fido.name := "Lido"
+</pre>
+
+When an object is first created, its <code>new</code> slot is called to set-up the object; it is common to override the default action provided by <code>new</code> as in the above example.
+
+<p>Functions within a class are slightly different to normal top-level functions; when they are extracted from an object they are <em>bound</em> to that object. The distinguished variable <code>self</code> is automatically assigned to the bound object. In all other respects bound and unbound functions are identical.
+
+
+<h3>Subclasses</h3>
+
+A class can specify that it has one or more superclasses by specifying the superclass(es) name(s) as follows:
+
+<pre class="indented-code">
+class Dog(Animal):
+    ...
+</pre>
+
+If more than one superclass is specified, then any naming conflicts between two classes are resolved in favour of the class specified later in the superclass list.
+
+
+<h3>Types</h3>
+
+As well as specifying a reusable unit of code, classes also specify types that can be used to classify objects. Classes provide two important functions which can check whether a given object has a relationship to it. <code>C.instantiated(o)</code> succeeds if <code>o</code> was created by <code>C</code>'s <code>new</code> function. <code>C.conformed_by(o)</code> succeeds if <code>o</code> has a matching slot for every slot defined in <code>C</code> (note that <code>o</code> may have been created by a different class but still conform to <code>C</code>).
+
+
+<hr>
+
+
+<h2>Modules</h2>
+
+
+<h3>File layout</h3>
+
+The conventional structure of a Converge module is imports followed by constant definitions, classes and functions. As in Python, all parts of a module are <em>executed</em> when it is imported. Thus ordering of elements within the file is often important.
+
+<p>For example whilst the following module is correct:
+
+<pre class="indented-code">
+class Animal:
+    ...
+
+class Dog(Animal):
+    ...
+</pre>
+
+reversing the two classes would be incorrect because the creation of <code>Dog</code> would attempt to access the <code>Animal</code> variable before it has had a class assigned to it.
+
+<p>However notice that it is only at the top-level that the ordering of elements is important. For example the following module is perfectly valid because by the time the <code>new_dog</code> function can be called lexical scoping will have ensured that <code>Dog</code> will have been assigned a value:
+
+<pre class="indented-code">
+func new_dog():
+    return Dog()
+
+class Animal:
+    ...
+
+class Dog(Animal):
+    ...
+</pre>
+
+
+<h3>Accessing module definitions</h3>
+
+Until this point we have used the <code>::</code> operator to access definitions within a foreign module. It should be noted that modules are also normal objects and that a modules' normal slots can be accessed via the standard <code>.</code> (dot) operator as any other object.
+
+
+<hr>
+
+
+<h2>Packages and importing</h2>
+
+Converge programs are often organized into packages. Packages are directories which are collections of modules and sub-packages. Packages can be nested to an arbitrary depth.
+
+
+<h3>Importing modules</h3>
+
+The <code>import</code> statement imports an element into a modules namespace. By default the imported element is assigned to a variable which has the name of the final part of the <code>import</code> statement e.g. <code>import A::B::C</code> will bring into existence a variable <code>C</code> and assigns to it the value of the element <code>A::B::C</code>. This behaviour can be altered by using the <code>as <em>X</em></code> suffix. e.g. <code>import A::B::C as D</code> will bring into existence a variable <code>D</code> and assigns to it the value of the element <code>A::B::C</code>.
+
+<p>Converge needs to be able to determine at compile-time exactly which modules are imported by the <code>import</code> statement. To facilitate this, the variable created by an <code>import</code> statement can not be assigned to. In other words this is illegal:
+
+<pre class="indented-code">
+import A::B::C as D
+
+...
+
+D := 4
+</pre>
+
+
+<hr>
+
+
+<h2>Standard types</h2>
+
+Converge provides standard types such as lists, dictionaries, sets and strings:
+
+<pre class="indented-code">
+list := [1, 2, 3]
+set := Set{3, 2, 1}
+dict := Dict{"a" : 1, "c" : 3, "b" : 2}
+str := "123"
+</pre>
+
+
+<h3>Lists</h3>
+
+Lists support the full <em>slice notation</em>:
+
+<pre class="indented-code">
+list := [1, 2, 3, 4]
+Sys::println(list[1])      // prints 1
+Sys::println(list[0 : 2])  // prints [1, 2]
+Sys::println(list[-1])     // prints 4
+Sys::println(list[1 : -1]) // prints [2, 3]
+list[3] := 10
+Sys::println(list[-2])     // prints 10
+list[1 : -1] := [5, 6, 7]
+Sys::println(list)         // prints[1, 5, 6, 7, 4]
+</pre>
+
+Indexes start from zero. Negative indexes count <em>n</em> elements from the end of the list.
+
+
+<h3>Sets</h3>
+
+Sets do not support the slice notation.
+
+
+<h3>Dictionaries</h3>
+
+Dictionaries support some of the slice notation:
+
+<pre class="indented-code">
+dict := Dict{"a" : 1, "c" : 3, "b" : 2}
+Sys::println(dict["a"])    // prints 1
+dict["b"] := 10
+Sys::println(dict["b"])    // prints 10
+</pre>
+
+
+<h3>Strings</h3>
+
+Converge strings are immutable and thus only support the lookup aspects of the slice notation:
+
+<pre class="indented-code">
+str := "1234"
+Sys::println(str[1])      // prints "1"
+Sys::println(str[0 : 2])  // prints "12"
+Sys::println(str[-1])     // prints "4"
+Sys::println(str[1 : -1]) // prints "23"
+</pre>
+
+
+<h3>Integers</h3>
+
+Converge integers are immutable.
+
+
+<hr>
+
+
+<h2>Expressions</h2>
+
+At its core, Converge is an expression based language based on Icon. As has been seen earlier in the document, simple statements work in Converge much as one would expect. This section mostly documents deviations from the expected norm.
+
+
+<h3>Assignment</h3>
+
+Assignment is performed via the <code>:=</code> operator to differentiate it from the equality operator <code>==</code>. Assignment returns the value of its right hand side. The following fragment prints <code>10</code>:
+
+<pre class="indented-code">
+Sys::println(i := 10)
+</pre>
+
+Syntactic sugar is available for addition <code>+=</code>, multiplication <code>*=</code> and division <code>/=</code> e.g.:
+
+<pre class="indented-code">
+i += 2
+</pre>
+
+The above is pure syntactic sugar for:
+
+<pre class="indented-code">
+i := i + 2
+</pre>
+
+Since assignment is an expression, assignments can be chained. The following fragment assigns <code>10</code> to both <code>x</code> and <code>y</code>:
+
+<pre class="indented-code">
+x := y := 10
+</pre>
+
+Assignment can be used to <emph>unpack</emph> sequence types. The following fragment prints <code>10</code> then <code>20</code>:
+
+<pre class="indented-code">
+x, y := [10, 20]
+Sys::println(x)
+Sys::println(y)
+</pre>
+
+The number of unpacking variables must equal exactly the size of the list being unpacked or a run-time exception will be raised.
+
+
+<h3>Success and failure</h3>
+
+Converge does not have built-in boolean logic, since it provides alternative ways of achieving the expected observable behaviour of boolean logic.
+
+<p>Expressions in Converge can <em>succeed</em> or <em>fail</em>. When an expression succeeds it produces a value; when it fails, various outcomes are possible. A simple example of an expression that succeeds is:
+
+<pre class="indented-code">
+x := 5 < 10
+</pre>
+
+This is in fact two expressions. Firstly the expression <code>5 < 10</code> succeeds and produces the value 10. The assignment of <code>10</code> to <code>x</code> succeeds and similarly produces the value <code>10</code>. In the presence of an if statement the following results in the expected behaviour, printing <code>Correct</code>:
+
+<pre class="indented-code">
+if 5 < 10 then:
+    Sys::println("Correct")
+else:
+    Sys::println("Should never get here")
+</pre>
+
+If the expression in the <code>if</code> fails then the following fragment similarly produces the expected behaviour:
+
+<pre class="indented-code">
+if 10 < 5 then:
+    Sys::println("Should never get here.")
+else:
+    Sys::println("Correct.")
+</pre>
+
+Essentially, the comparison <code>10 < 5</code> fails, which causes control to branch immediately to the <code>else</code> branch of the <code>if</code> statement.
+
+
+<h3>Generators</h3>
+
+Expressions in Converge can sometimes generate multiple values. In such a case, the failure of an expression is not necessarily immediately; instead the generator can be resumed to see if the new value it produces causes the expression to succeed. When all of a generators values are exhausted with no match, then the overall expression fails.
+
+<p>Generators are generally used with the <code>for</code> statement which will pump a generator for values until it produces no more. The following fragment prints all elements in the list <code>l</code>:
+
+<pre class="indented-code">
+l := [1, 3, 5, 8]
+for e := l.iter():
+    Sys::println(e)
+</pre>
+
+Functions can be made to produce multiple values (rather than simply <code>return</code>'ing a value) with the <code>yield</code> expression. For example the following function will generate all values from <code>m</code> up to but excluding <code>n</code>:
+
+<pre class="indented-code">
+func range(m, n):
+    while m < n:
+        yield m
+        m += 1
+    
+    fail
+</pre>
+
+The <code>fail</code> statement causes the function to both return and to transmit failure to its caller.
+
+
+<h3>Boolean <q>and</q> and <q>or</q></h3>
+
+Converge's conjunction <code>&amp;</code> operator can be used as the traditional <q>and</q> operator and the alternation operator <code>|</code> as the traditional <q>or</q> operator.
+
+<p>The following condition succeeds only if both comparisons succeed:
+
+<pre class="indented-code">
+if i < j & i > 100:
+    ...
+</pre>
+
+<p>Similarly the following succeeds if either the first comparison succeeds, if it is not, the second comparison succeeds (note that this evaluation is, as expected, lazy so that if the first comparison succeeds the second is not evaluated):
+
+<pre class="indented-code">
+if i < j | i > 100:
+    ...
+</pre>
+
+
+<h3>Conjunction and alternation</h3>
+
+The conjunction and alternation operators are in fact part of the general machinery surrounding generators and can be used to control backtracking. It is important to note that control does not back up to arbitrary levels; in fact, backtracking is limited to <em>bound</em> expressions. For example, the condition of an <code>if</code> statement is a bound expression, so the failure of the condition does not cause control to escape back beyond the <code>if</code> statement. Significantly, each separate line in a source file is automatically a bound expression, so if the expression on one line fails, control does not backtrack to previous lines.
+
+Alternation is a special kind of generator which successively generates each of its values. For example, the following prints <code>1</code> then <code>2</code>:
+
+<pre class="indented-code">
+for i := 1 | 2:
+    Sys::println(i)
+</pre>
+
+
+<h3>Binary operators</h3>
+
+Comparisons (equality, greater than etc.) and other binary operators (add, divide etc.) are defined by functions within objects. The functions' names are the same as the standard infix operators <code>==</code>, <code>+</code> etc. The infix operators are simply syntactic sugar for calling these functions, and thus one can redefine their meaning by providing different definitions of the infix functions within objects. As well as the standard mathematic binary operators, the <code>is</code> operator can be used to test two objects for identity equality.
+
+
+<hr>
+
+
+<h2>Control structures</h2>
+
+Converge contains a standard complement of control structures.
+
+<h3>The <code>if</code> control structure</h3>
+
+<pre class="indented-code">
+if <em>&lt;condition&gt;</em> then:
+    ...
+elif <em>&lt;condition&gt;</em> then:
+    ...
+...
+else:
+    ...
+</pre>
+
+Zero or more <code>elif</code> blocks can be specified. A maximum of one <code>else</code> block can be specified.
+
+
+<h3>The <code>ndif</code> control structure</h3>
+
+<pre class="indented-code">
+ndif <em>&lt;condition&gt;</em> then:
+    ...
+elif <em>&lt;condition&gt;</em> then:
+    ...
+...
+</pre>
+
+Zero or more <code>elif</code> blocks can be specified.
+
+<p><code>ndif</code> is the <q>no default if</q> structure; in other words, a run-time exception is raised if none of the clauses' conditions succeeds. Since the <q>default</q> action is therefore to raise an exception, <code>ndif</code> statements can not contain an <code>else</code> clause.
+
+
+
+<h3>The <code>for</code> control structure</h3>
+
+<code>for</code> evaluates <code><em>expression</em></code> and, if it is a generator, pumps it until it fails. If the loop terminates naturally through the exhaustion of <code><em>expression</em></code>, the optional <code>exhausted</code> block is executed. If the loop is terminated through a <code>break</code> command, the optional <code>broken</code> block is executed. Both <code>exhausted</code> and <code>broken</code> blocks may optionally be specified on a <code>for</code> structure.
+
+<pre class="indented-code">
+for <em>&lt;expression&gt;</em>:
+    ...
+exhausted:
+    ...
+broken:
+    ...
+</pre>
+
+
+<h3>The <code>while</code> control structure</h3>
+
+<code>while</code> repeatedly evaluates <code><em>expression</em></code> until it fails. If the loop terminates naturally through <code><em>expression</em></code> failing, the optional <code>exhausted</code> block is executed. If the loop is terminated through a <code>break</code> command, the optional <code>broken</code> block is executed. Both <code>exhausted</code> and <code>broken</code> blocks may be specified on a <code>while</code> structure.
+
+<pre class="indented-code">
+while <em>&lt;expression&gt;</em>:
+    ...
+exhausted:
+    ...
+broken:
+    ...
+</pre>
+
+Note that <code>while</code> differs from <code>for</code> in that <code><em>expression</em></code> is reevaluated on each loop. This means that the following fragment will loop infinitely printing <code>1</code>:
+
+<pre class="indented-code">
+l := [1, 2, 3, 4]
+while i := l.iter():
+    Sys::println(i)
+</pre>
+
+since the <code>iter</code> generator will be recreated anew on each loop which is probably not what was intended.
+
+
+<h3><code>break</code> and <code>continue</code></h3>
+
+<code>break</code> causes the innermost loop to be terminated immediately. <code>continue</code> causes the innermost loop to attempt its next iteration immediately.
+
+<p>It is illegal to use <code>break</code> or <code>continue</code> outside of loops.
+
+
+<h3><code>try</code> ... <code>catch</code></h3>
+
+Evaluate a block, and catch exceptions that occur during its evaluation:
+
+<pre class="indented-code">
+try:
+    ...
+catch <em>&lt;Exception<sub>1</sub>&gt;</em> to <em>&lt;v<sub>1</sub>&gt;</em>:
+    ...
+catch to <em>&lt;v<sub>n</sub>&gt;</em>:
+    ...
+</pre>
+
+One or more <code>catch</code>'s must be present. Zero or more <code>catch</code>'s catching specific exceptions may be specified. The final <code>catch</code> may optionally not catch a specific exception at which point it will catch all exceptions that occur.
+
+
+
+<hr>
+
+
+<h2>More on classes</h2>
+
+
+<h3>The class hierarchy</h3>
+
+Converge follows an ObjVLisp style of classes, metaclasses and objects. Every object is, by convention, an <em>instance</em> of a particular class. <code>Object</code> is the base class from which all other classes ultimately extend. If a class does not specify a superclass, then <code>Object</code> is automatically made its one and only superclass.
+
+
+<h3>Meta-object protocol</h3>
+
+An objects behaviour with respect to accessing and setting slots can be controlled via these functions whose default behaviour is as follows:
+
+<p><table>
+<tr>
+<td>
+<code>find_slot(name)</code>
+</td>
+<td>
+Returns the value of the slot <code>name</code> if it exists. Fails if <code>name</code> name does not exist.
+</td>
+</tr>
+<tr>
+<td>
+<code>get_slot(name)</code>
+</td>
+<td>
+Returns the value of the slot <code>name</code>. Throws an exception if <code>name</code> does not exist.
+</td>
+</tr>
+<tr>
+<td>
+<code>set_slot(name, value)</code>
+</td>
+<td>
+Sets the value of the slot <code>name</code> to <code>value</code>.
+</td>
+</tr>
+</table>
+
+
+<h3>Classes and metaclasses</h3>
+
+All classes are instances of <code>Class</code> or one of its subclasses. Thus the classes we have seen earlier in this document have elided the <code>metaclass</code> which defaults to <code>Class</code>:
+
+<pre class="indented-code">
+class Animal metaclass Class:
+    ...
+</pre>
+
+New metaclasses can be defined and used thus:
+
+<pre class="indented-code">
+class Singleton(Class):
+    func new(self):
+        if not self.find_slot("instance"):
+            self.instance := exbi Class.new()
+        return self.instance
+
+class M metaclass Singleton:
+    ...
+</pre>
+
+Sub-classes of <code>Class</code> generally need to override the <code>new</code> method which is invoked when a class is instantiated, and is expected to return a new object.
+
+
+<hr>
+
+
+<h2>Memory management</h2>
+
+Converge supports full garbage collection. Users do not need to concern themselves with trivial memory management issues, although as with any such system one should be aware of inadvertently creating long-lived memory cycles which may mean that memory can not be garbage collected.
+
+
+<hr>
+
+
+<h2>Compile-time meta-programming</h2>
+
+Compile-time meta-programming allows the programmer to interact with the compiler at compile-time and perform tasks such as code generation. A separate document describes <a href="../ctmp">compile-time meta-programming</a>.
+
+<!--#include virtual="../footer.inc" -->

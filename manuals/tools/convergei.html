@@ -1,0 +1,39 @@
+<!--#include virtual="../header.inc" -->
+
+<h1>Interactive Converge</h1>
+
+Converge can be run in an interactive loop via the <code>convergei</code> program. This is automatically invoked if the VM is started with no arguments. The <q>...</q> characters denote the prompt, and other lines output from the interactive session.
+
+<pre>
+$ converge
+Converge current
+>>> 2 + 3    
+5
+>>>
+</pre>
+
+<code>convergei</code> can be exited either by typing Ctrl-D, or by importing the <code>Sys</code> module and calling <code>Sys::exit(<em>code</em>)</code> where <code><em>code</em></code> is a number such as 0.
+
+<p>After each expression, Converge prints out the return value of the expression if it succeeded, or prints nothing if it failed.
+
+<pre>
+>>> 18 > 7
+7
+>>> 7 > 18
+>>>
+</pre>
+
+<p><code>convergei</code> is aware of Converge's syntax and can be used to define functions and other compound statements. When it detects a ":" or "\" at the end of a line, it goes into continuation mode (marked by the <q>...</q> characters), which is terminated by a blank line:
+
+<pre>
+>>> func f(x):
+...     y := x * 2
+...     return y
+... 
+&lt;Object@0x4c3a5c10&gt;
+>>> f(3)
+6
+>>>
+</pre>
+
+<!--#include virtual="../footer.inc" -->

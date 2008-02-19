@@ -1,0 +1,169 @@
+<!--#include virtual="../header.inc" -->
+
+<h1>Converge compiler tools</h1>
+
+Converge programs are compiled to bytecode, and the Converge Virtual Machine (VM) executes this bytecode. Converge uses a traditional compiling and linking scheme similar to many C compilers, where individual source files are converted into object files and linked to produce a Converge executable. Large projects may find it convenient to make use of the individual compiler tools; however most simpler projects work well with Converge's auto-make functionality.
+
+
+<hr>
+
+<h2>Using the auto-make facility</h2>
+
+If we assume a simple hello world program is contained in <code>hello.cv</code>, it can be compiled and run automatically as follows:
+
+<pre class="indented-code">
+$ converge hello.cv
+Hello world!
+$ 
+</pre>
+
+In other words, when the VM is passed a source script, it automatically compiles dependencies, links, and executes the file. It also caches the results of the compilation so that subsequent runs are much quicker. It is often instructive to see what steps are being taken prior to the file being run. The <code>-v</code> switch to the VM shows the auto-make steps in operation:
+
+<pre class="indented-code">
+$ converge -v hello.cv
+===> Compiling /tmp/hello.cv...
+===> Finished compiling /tmp/hello.cv.
+===> Linking.
+Hello world!
+$
+</pre>
+
+If no changes are made to the file or its dependencies, then subsequent runs of the VM execute the program directly without re-compiling any unneeded aspects.
+
+<pre class="indented-code">
+$ converge -v hello.cv
+Hello world!
+$
+</pre>
+
+Converge's auto-make facility ensures that all files in a project are upto date; its chief limitation is that it sometimes has to compile individual files multiple times to ensure that this is the case, even when a user may know that this is not strictly necessary.
+
+<p>As auto-make runs, it attempts to write cached bytecode files to the local disk. These can on occasion be the cause of <q>strange</q> compilation problems (perhaps after moving files from one machine to another, or time shifts on your local machine). In such cases, converge can be instructed via the <code>-f</code> switch to ignore all cached bytecode files and perform compilation from scratch, updating all cached bytecode files. This is the equivalent of running <code>make clean && make</code> for projects built using <code>make</code>. Using the <code>-f</code> switch in the running example will always involve output along the lines of the following:
+<pre class="indented-code">
+$ converge -f -v hello.cv
+===> Compiling /tmp/hello.cv...
+===> Finished compiling /tmp/hello.cv.
+===> Linking.
+Hello world!
+$
+</pre>
+
+
+<hr>
+
+<h2>Using <code>convergec</code> and <code>convergel</code> separately</h2>
+
+Effectively what auto-make does is to call the following commands:
+
+<pre class="indented-code">
+$ convergec -o hello.cvb hello.cv
+$ convergel -o hello hello.cvb
+</pre>
+
+<code>converegec</code> is the name of the Converge compiler; <code>convergel</code> is the name of the Converge linker. Both are written in Converge itself, hence the need to invoke the Converge virtual machine to execute them.
+
+<p>The linked program can then be run as follows:
+
+<pre class="indented-code">
+$ converge hello
+Hello world!
+$
+</pre>
+
+If the underlying platform supports it, then the Converge executable is marked as executable and can be run directly:
+
+<pre class="indented-code">
+$ ./hello
+Hello world!
+$
+</pre>
+
+<hr>
+
+<h2>The Converge compiler <code>convergec</code></h2>
+
+<p><code>convergec</code> has two functions, firstly as a <q>traditional</q> compiler, and secondly as the auto-make front end.
+
+
+<h3>Traditional compilation</h3>
+
+<code>convergec</code> produces <code>.cvb</code> files from <code>.cv</code> source files or packages. Each <code>.cvb</code> file represents a single module or package. <code>convergec</code> accepts the following command-line parameters:
+
+<pre class="indented-code">
+convergec [-I &lt;directory&gt | library;] -o &lt;output&gt; &lt;input&gt;
+</pre>
+
+The <code>-I</code> switch specifies a directory or library (<code>.cvl</code> file) to be included in the import path. Multiple <code>-I</code> switches can be specified; the includes will be searched in the order they are defined on the command line.
+
+<p>Indicative executions of <code>convergec</code> to compile a module and package respectively are as follows:
+
+<pre class="indented-code">
+$ convergec -o M.cvb M.cv
+$ convergec -o P.cvb P
+</pre>
+
+
+<h3>Auto-make front end</h3>
+
+If the <code>-m</code> switch is passed, <code>convergec</code> enters auto-make mode. It attempts to compile the input module, and all out of date dependencies, before linking them together and saving an executable into the output file (note that it does not run the resulting executable). <code>-I</code> switches may be used as in the traditional mode.
+
+<pre class="indented-code">
+convergec -m [-I &lt;directory&gt;] -o &lt;output&gt; &lt;input&gt;
+</pre>
+
+<hr>
+
+
+<h2>The Converge linker <code>convergel</code></h2>
+
+<code>convergel</code> has two related functions. It can combine one or more <code>.cvb</code> and <code>.cvl</code> files into a Converge executable. It can also combine one or more <code>.cvb</code> files into a Converge library (<code>.cvl</code>) file.
+
+
+
+<h3>Creating a Converge executable</h3>
+
+<p><code>convergel</code> can combine one or more <code>.cvb</code> files into a converge executable. In this case <code>convergel</code> can be invoked thus:
+
+<pre class="indented-code">
+convergel -o &lt;output&gt; &lt;input&gt; [... &lt;input&gt;]
+</pre>
+
+The first input file must be a <code>.cvb</code> file; it is known as the <em>main module</em>. When the executable is run, the main module is searched for an function called <code>main</code> which is then executed. During linking, the main module's dependencies must be listed in the form of <code>.cvb</code> or <code>.cvl</code> files on the command line <em>after</em> the main module has been listed. These subsequent files must contain all the files which the main module and its dependencies import.
+
+<p>As a trivial example, imagine we have a file <code>hello.cv</code>:
+
+<pre class="indented-code">
+import Sys
+import World
+
+func main():
+    Sys::println("Hello " + World::world() + "!")
+</pre>
+
+and a second file <code>world.cv</code>:
+
+<pre class="indented-code">
+func world():
+    return "world"
+</pre>
+
+then the following sequence would be needed to produce a functioning executable:
+
+<pre class="indented-code">
+$ converge convergec -o hello.cvb hello.cv
+$ converge convergec -o world.cvb world.cv
+$ converge convergel -o hello hello.cvb world.cvb
+</pre>
+
+If the underlying platform supports it, then the Converge executable is marked as executable and can be run directly.
+
+
+<h3>Creating a Converge library</h3>
+
+<p><code>convergel</code> can <q>bundle</q> a package into a single <code>.cvl</code> library. This makes distributing pre-compiled binaries trivial (and marginally speeds up compilation, which no longer needs to continually trek through directories looking for matching files). The <code>-l</code> switch tells <code>convergel</code> to create a library. In similar fashion to normal linking, the first input file must be the top level package the library represents; all of its sub-modules and sub-packages must then be specified on the command line.
+
+<pre class="indented-code">
+convergel -l -o &lt;output.cvl&gt; &lt;top_level_pkg.cvb&gt; [... &lt;file.cvb&gt;]
+</pre>
+
+<!--#include virtual="../footer.inc" -->

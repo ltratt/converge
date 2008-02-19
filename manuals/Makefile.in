@@ -31,8 +31,16 @@ install:
 ifeq (@PLATFORM@, MinGW)
 	${INSTALL} -c -m 555 ../platform/MinGW/cvd_to_html.bat ${DESTDIR}${bindir}
 endif
+	${INSTALL} -d ${DESTDIR}${condocsdir}
+	${INSTALL} -c -m 444 index.html header.inc footer.inc ${DESTDIR}${condocsdir}
+	${INSTALL} -d ${DESTDIR}${condocsdir}/ctmp
+	${INSTALL} -c -m 444 ctmp/*.html ${DESTDIR}${condocsdir}/ctmp
 	${INSTALL} -d ${DESTDIR}${condocsdir}/modules_html
 	${INSTALL} -c -m 444 modules_html/*.html ${DESTDIR}${condocsdir}/modules_html
+	${INSTALL} -d ${DESTDIR}${condocsdir}/quick_intro
+	${INSTALL} -c -m 444 quick_intro/*.html ${DESTDIR}${condocsdir}/quick_intro
+	${INSTALL} -d ${DESTDIR}${condocsdir}/tools
+	${INSTALL} -c -m 444 tools/*.html ${DESTDIR}${condocsdir}/tools
 
 cvd_to_html: cvd_to_html.cvb ${CONVERGE_LIB}
 	${CONVERGE_VM} ${CONVERGEL} -o cvd_to_html cvd_to_html.cvb

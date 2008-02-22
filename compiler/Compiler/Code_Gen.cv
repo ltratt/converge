@@ -1184,9 +1184,19 @@ class Code_Gen:
         
         for target := node.targets.iter():
             if node.type == ITree::ADD_ASSIGN:
-                self._instructions.append(self._target.Instr_Add.new(node.src_infos))
+                self._instructions.append(self._target.Instr_Add.new(target.src_infos))
             elif node.type == ITree::SUB_ASSIGN:
-                self._instructions.append(self._target.Instr_Sub.new(node.src_infos))
+                self._instructions.append(self._target.Instr_Sub.new(target.src_infos))
+            elif node.type == ITree::MUL_ASSIGN:
+                self._instructions.append(self._target.Instr_Pull.new(target.src_infos, 1))
+                self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(target.src_infos, "*"))
+                self._instructions.append(self._target.Instr_Pull.new(target.src_infos, 1))
+                self._instructions.append(self._target.Instr_Apply.new(target.src_infos, 1))
+            elif node.type == ITree::DIV_ASSIGN:
+                self._instructions.append(self._target.Instr_Pull.new(target.src_infos, 1))
+                self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(target.src_infos, "/"))
+                self._instructions.append(self._target.Instr_Pull.new(target.src_infos, 1))
+                self._instructions.append(self._target.Instr_Apply.new(target.src_infos, 1))
 
             ndif ITree::IVar.instantiated(target):
                 self._add_assign_to_var(target.name, target.src_infos)

@@ -1265,22 +1265,26 @@ class Code_Gen:
     
     func _t_ibinary(self, node):
 
-        self._preorder(node.lhs)
-        
         if node.type == ITree::BINARY_ADD:
-            slot_name := "+"
+            self._preorder(node.lhs)
+            self._preorder(node.rhs)
+            self._instructions.append(self._target.Instr_Add.new(node.src_infos))
         elif node.type == ITree::BINARY_SUB:
-            slot_name := "-"
-        elif node.type == ITree::BINARY_MUL:
-            slot_name := "*"
-        elif node.type == ITree::BINARY_DIV:
-            slot_name := "/"
-        elif node.type == ITree::BINARY_MOD:
-            slot_name := "%"
+            self._preorder(node.lhs)
+            self._preorder(node.rhs)
+            self._instructions.append(self._target.Instr_Sub.new(node.src_infos))
+        else:
+            self._preorder(node.lhs)
+            ndif node.type == ITree::BINARY_MUL:
+                slot_name := "*"
+            elif node.type == ITree::BINARY_DIV:
+                slot_name := "/"
+            elif node.type == ITree::BINARY_MOD:
+                slot_name := "%"
 
-        self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(node.src_infos, slot_name))
-        self._preorder(node.rhs)
-        self._instructions.append(self._target.Instr_Apply.new(node.src_infos, 1))
+            self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(node.src_infos, slot_name))
+            self._preorder(node.rhs)
+            self._instructions.append(self._target.Instr_Apply.new(node.src_infos, 1))
 
 
 

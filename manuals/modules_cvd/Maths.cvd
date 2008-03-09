@@ -4,7 +4,7 @@
 Returns the object with the highest value in <code>objs</code>.
 </function>
 
-<function name="max">
+<function name="min">
 <vararg name="objs" />
 Returns the object with the lowest value in <code>objs</code>.
 </function>

@@ -99,7 +99,7 @@ posix=0
 mingw=0
 operating_system=`uname -s`
 case $operating_system in
-	OpenBSD | FreeBSD | NetBSD | Linux | Darwin | CYGWIN_NT*)
+	OpenBSD | FreeBSD | NetBSD | Linux | Darwin | SunOS | CYGWIN_NT*)
 		AC_MSG_RESULT(POSIX)
 		posix=1
 		AC_DEFINE(CON_PLATFORM_POSIX, [], [Define if you are running on a POSiX platform. Note that you can can only define one CON_PLATFORM_* variable.])
@@ -648,7 +648,18 @@ int main()
 	
 	return 0;
 }], [AC_MSG_RESULT(-D_POSIX_C_SOURCE)
-	extra_cflags="$extra_cflags -D_POSIX_C_SOURCE"], [AC_MSG_ERROR(unable to find sigsetjmp)])])
+	extra_cflags="$extra_cflags -D_POSIX_C_SOURCE"], [CFLAGS="-std=c99 $extra_cflags -D__EXTENSIONS__"
+	AC_TRY_RUN([
+#include <setjmp.h>
+
+int main()
+{
+	JMP_BUF return_env;
+	sigsetjmp(return_env, 0);
+	
+	return 0;
+}], [AC_MSG_RESULT(-D__EXTENSIONS__)
+	extra_cflags="$extra_cflags -D__EXTENSIONS__"], [AC_MSG_ERROR(unable to find sigsetjmp)])])])
 fi
 
 

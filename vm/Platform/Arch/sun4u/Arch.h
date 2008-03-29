@@ -1,4 +1,4 @@
-// Copyright (c) 2003-2006 King's College London, created by Laurence Tratt
+// Copyright (c) 2008 Laurence Tratt
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to
@@ -19,12 +19,15 @@
 // IN THE SOFTWARE.
 
 
-#if defined(CON_ARCH_X86)
-#	include "Platform/Arch/x86/Arch.h"
-#elif defined(CON_ARCH_X86_64)
-#	include "Platform/Arch/x86_64/Arch.h"
-#elif defined(CON_ARCH_SUN4U)
-#	include "Platform/Arch/sun4u/Arch.h"
-#else
-#	error "Unknown architecture"
+#ifndef _CON_PLATFORM_SUN4U_H
+#define _CON_PLATFORM_SUN4U_H
+
+#include <stddef.h>
+
+#include "Core.h"
+
+#define CON_ARCH_GET_STACKP(var) __asm__("mov %0, %%i6" : "=r" (var))
+
+Con_Int Con_Arch_align(Con_Obj *, Con_Int);
+
 #endif

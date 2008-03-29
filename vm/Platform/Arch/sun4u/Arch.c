@@ -1,4 +1,4 @@
-// Copyright (c) 2003-2006 King's College London, created by Laurence Tratt
+// Copyright (c) 2008 Laurence Tratt
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to
@@ -19,12 +19,18 @@
 // IN THE SOFTWARE.
 
 
-#if defined(CON_ARCH_X86)
-#	include "Platform/Arch/x86/Arch.h"
-#elif defined(CON_ARCH_X86_64)
-#	include "Platform/Arch/x86_64/Arch.h"
-#elif defined(CON_ARCH_SUN4U)
-#	include "Platform/Arch/sun4u/Arch.h"
-#else
-#	error "Unknown architecture"
-#endif
+#include "Config.h"
+
+#include "Core.h"
+
+#include "Platform/Arch/sun4u/Arch.h"
+
+
+
+Con_Int Con_Arch_align(Con_Obj *thread, Con_Int addr)
+{
+	if (addr % sizeof(void *) == 0)
+		return addr;
+	else
+		return (addr - (addr % sizeof(void *))) + sizeof(void *);
+}

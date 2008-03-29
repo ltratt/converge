@@ -61,8 +61,6 @@ Con_Obj *Con_Module_C_Earley_Parser_init(Con_Obj *thread, Con_Obj *identifier)
 
 Con_Obj *Con_Module_C_Earley_Parser_import(Con_Obj *thread, Con_Obj *c_earley_parser_mod)
 {
-	// Array.Array
-	
 	Con_Obj *parser_class = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("Parser"), Con_Builtins_List_Atom_new_va(thread, CON_BUILTIN(CON_BUILTIN_OBJECT_CLASS), NULL), c_earley_parser_mod);
 	CON_SET_MOD_DEFN(c_earley_parser_mod, "Parser", parser_class);
 	

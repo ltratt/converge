@@ -494,7 +494,7 @@ void Con_Builtins_VM_Atom_pre_get_slot_apply_pump(Con_Obj *thread, Con_Obj *obj,
 // this function.
 //
 
-void _Con_Builtins_VM_Atom_apply_pump_restore_c_stack(Con_Obj *thread, u_char *c_stack_bottom, u_char *suspended_c_stack, size_t suspended_c_stack_size, JMP_BUF suspended_env, int twice_more)
+void _Con_Builtins_VM_Atom_apply_pump_restore_c_stack(Con_Obj *thread, u_char *c_stack_current, u_char *suspended_c_stack, size_t suspended_c_stack_size, JMP_BUF suspended_env, int twice_more)
 {
 	// This function is partly inspired by Dan Piponi's suggestion:
 	//
@@ -515,18 +515,18 @@ void _Con_Builtins_VM_Atom_apply_pump_restore_c_stack(Con_Obj *thread, u_char *c
 	u_char *c_stackp;
 	CON_ARCH_GET_STACKP(c_stackp);
 #	ifdef CON_C_STACK_GROWS_DOWN
-	if (c_stackp > c_stack_bottom) {
+	if (c_stackp > c_stack_current) {
 #		ifdef HAVE_ALLOCA
 		// Use alloca in order to ensure that there's enough space on the stack to restore the
 		// suspended stack.
 		
-		alloca(c_stackp - c_stack_bottom);
+		alloca(c_stackp - c_stack_current);
 #		endif
 		
-		_Con_Builtins_VM_Atom_apply_pump_restore_c_stack(thread, c_stack_bottom, suspended_c_stack, suspended_c_stack_size, suspended_env, 2);
+		_Con_Builtins_VM_Atom_apply_pump_restore_c_stack(thread, c_stack_current, suspended_c_stack, suspended_c_stack_size, suspended_env, 2);
 	}
 #	else
-	XXX
+    CON_XXX;
 #	endif
 	
 	// At this point, we know there is definitely enough space to restore the C stack; however if
@@ -535,9 +535,9 @@ void _Con_Builtins_VM_Atom_apply_pump_restore_c_stack(Con_Obj *thread, u_char *c
 	// space for this function to execute in.
 	
 	if (twice_more > 0)
-		_Con_Builtins_VM_Atom_apply_pump_restore_c_stack(thread, c_stack_bottom, suspended_c_stack, suspended_c_stack_size, suspended_env, twice_more - 1);
+		_Con_Builtins_VM_Atom_apply_pump_restore_c_stack(thread, c_stack_current, suspended_c_stack, suspended_c_stack_size, suspended_env, twice_more - 1);
 	
-	memmove(c_stack_bottom, suspended_c_stack, suspended_c_stack_size);
+	memmove(c_stack_current, suspended_c_stack, suspended_c_stack_size);
 
 #	if defined(__CYGWIN__)
 	// XXX
@@ -652,7 +652,7 @@ Con_Obj *Con_Builtins_VM_Atom_apply_pump(Con_Obj *thread, bool remove_finished_g
 #ifdef CON_C_STACK_GROWS_DOWN
 			_Con_Builtins_VM_Atom_apply_pump_restore_c_stack(thread, old_c_stack_start - suspended_c_stack_size, suspended_c_stack, suspended_c_stack_size, suspended_env, 2);
 #else
-			XXX
+            CON_XXX;
 #endif
 			// unlock lock?
 			CON_XXX;
@@ -711,10 +711,9 @@ void Con_Builtins_VM_Atom_yield(Con_Obj *thread, Con_Obj *obj)
 
 #ifdef CON_C_STACK_GROWS_DOWN
 	ptrdiff_t calculated_suspended_c_stack_size = c_stack_start - c_stack_end;
-	u_char* c_stack_bottom = c_stack_end;
-	assert(c_stack_end == (c_stack_start - calculated_suspended_c_stack_size));
+	u_char* c_stack_current = c_stack_end;
 #else
-	XXX
+    CON_XXX;
 #endif
 
 	if (suspended_c_stack == NULL) {
@@ -738,7 +737,7 @@ void Con_Builtins_VM_Atom_yield(Con_Obj *thread, Con_Obj *obj)
 	if (setjmp(suspended_env) == 0) {
 #	endif
 		// Suspend the C stack.
-		memmove(suspended_c_stack, c_stack_bottom, suspended_c_stack_size);
+		memmove(suspended_c_stack, c_stack_current, suspended_c_stack_size);
 		Con_Builtins_Con_Stack_Atom_update_generator_frame(thread, con_stack, suspended_c_stack, suspended_c_stack_size, suspended_env);
 		CON_MUTEX_UNLOCK(&con_stack->mutex);
 #		ifdef CON_HAVE_SIGSETJMP

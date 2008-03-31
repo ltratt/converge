@@ -1005,9 +1005,7 @@ func b_8_12_12(b_8, b1_12, b2_12):
 
 func b_aligned_string(s):
 
-    aligned_str := Array::Array.new(ARRAY_TYPE, s + ("\0" * (align(s.len()) - s.len())))
-    
-    return aligned_str
+    return s + ("\0" * (align(s.len()) - s.len()))
 
 
 

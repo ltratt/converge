@@ -63,9 +63,9 @@ Con_Obj *Con_Module_C_Platform_Properties_import(Con_Obj *thread, Con_Obj *prope
 
 	CON_SET_MOD_DEFN(properties_mod, "LITTLE_ENDIAN", CON_NEW_INT(0));
 	CON_SET_MOD_DEFN(properties_mod, "BIG_ENDIAN", CON_NEW_INT(1));
-#	if CON_BYTEORDER == CON_LITTLE_ENDIAN
+#	ifdef CON_LITTLE_ENDIAN
 	CON_SET_MOD_DEFN(properties_mod, "endianness", CON_GET_MOD_DEFN(properties_mod, "LITTLE_ENDIAN"));
-#	elif CON_BYTEORDER == CON_BIG_ENDIAN
+#	else
 	CON_SET_MOD_DEFN(properties_mod, "endianness", CON_GET_MOD_DEFN(properties_mod, "BIG_ENDIAN"));
 #	endif
 

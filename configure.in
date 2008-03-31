@@ -209,9 +209,8 @@ case $machine_type in
 	*) AC_MSG_ERROR([Unknown machine type "$machine_type"]);;
 esac
 
-AH_TEMPLATE(CON_BYTEORDER, [Whether this is a big endian (CON_BIG_ENDIAN) or little endian (CON_LITTLE_ENDIAN) machine.])
-AC_C_BIGENDIAN([AC_DEFINE(CON_BYTEORDER, CON_BIG_ENDIAN)],
-	[AC_DEFINE(CON_BYTEORDER, CON_LITTLE_ENDIAN)])
+AH_TEMPLATE(CON_LITTLE_ENDIAN, [Define if this machine is little endian; otherwise big endian is assumed.])
+AC_C_BIGENDIAN([], [AC_DEFINE(CON_LITTLE_ENDIAN)])
 
 AC_CHECK_SIZEOF(int)
 AC_CHECK_SIZEOF(long)
@@ -743,6 +742,13 @@ int main()
 
 AC_CHECK_FUNC(strlcat, [], [AC_SUBST(PLATFORM_STRLCAT, Platform/strlcat.o)])
 AC_CHECK_FUNC(strlcpy, [], [AC_SUBST(PLATFORM_STRLCPY, Platform/strlcpy.o)])
+
+
+# htole32 and friends, endian conversion functions
+
+AH_TEMPLATE(CON_NEED_ENDIAN_H,
+  [Define if your OS does not define endian-related functions such as letoh32.])
+AC_CHECK_DECL(letoh32 letoh64 htobe16 htobe32 htobe64 betoh16 betoh32 betoh64 , [], [AC_DEFINE(CON_NEED_ENDIAN_H)])
 
 
 ####################################################################################################

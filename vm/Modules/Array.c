@@ -29,6 +29,10 @@
 #include "Object.h"
 #include "Shortcuts.h"
 
+#ifdef CON_NEED_ENDIAN_H
+#include "Platform/endian.h"
+#endif
+
 #include "Builtins/Atom_Def_Atom.h"
 #include "Builtins/Class/Atom.h"
 #include "Builtins/Con_Stack/Atom.h"
@@ -44,7 +48,7 @@
 
 
 
-typedef enum {_CON_MODULES_ARRAY_TYPE_INT32, _CON_MODULES_ARRAY_TYPE_INT64, _CON_MODULES_ARRAY_TYPE_DOUBLE} _Con_Module_Array_Type;
+typedef enum {_CON_MODULES_ARRAY_TYPE_INT32_LITTLE_ENDIAN, _CON_MODULES_ARRAY_TYPE_INT32_BIG_ENDIAN, _CON_MODULES_ARRAY_TYPE_INT64_LITTLE_ENDIAN, _CON_MODULES_ARRAY_TYPE_INT64_BIG_ENDIAN, _CON_MODULES_ARRAY_TYPE_DOUBLE} _Con_Module_Array_Type;
 
 typedef struct {
 	CON_ATOM_HEAD
@@ -159,7 +163,10 @@ void _Con_Module_Array_Array_Atom_gc_scan(Con_Obj *thread, Con_Obj *obj, Con_Ato
 // type must be one of the following:
 //   'i' : array of integers (native size, as determined by host platform)
 //   'i32' : array of 32-bit integers
-//   'i64' : array of 32-bit integers
+//   'i64' : array of 64-bit integers
+//   'ibe" : array of little indian integers (native size, as determined by host platform)
+//   'i32be' : array of big endian 32-bit integers
+//   'i64be' : array of 64-bit integers
 //
 
 Con_Obj *_Con_Module_Array_Array_new(Con_Obj *thread)
@@ -181,21 +188,45 @@ Con_Obj *_Con_Module_Array_Array_new(Con_Obj *thread)
 	if (CON_C_STRING_EQ("i", type)) {
 		// Native integer size this architecture / OS.
 #		if SIZEOF_CON_INT == 4
-		array_atom->type = _CON_MODULES_ARRAY_TYPE_INT32;
+#       ifdef CON_LITTLE_ENDIAN
+		array_atom->type = _CON_MODULES_ARRAY_TYPE_INT32_LITTLE_ENDIAN;
+#       else
+		array_atom->type = _CON_MODULES_ARRAY_TYPE_INT32_BIG_ENDIAN;
+#       endif
 		array_atom->entry_size = sizeof(int32_t);
 #		elif SIZEOF_CON_INT == 8
-		array_atom->type = _CON_MODULES_ARRAY_TYPE_INT64;
+#       ifdef CON_LITTLE_ENDIAN
+		array_atom->type = _CON_MODULES_ARRAY_TYPE_INT64_LITTLE_ENDIAN;
+#       else
+		array_atom->type = _CON_MODULES_ARRAY_TYPE_INT64_BIG_ENDIAN;
+#       endif
 		array_atom->entry_size = sizeof(int64_t);
 #		else
 		CON_XXX;
 #		endif
 	}
 	else if (CON_C_STRING_EQ("i32", type)) {
-		array_atom->type = _CON_MODULES_ARRAY_TYPE_INT32;
+#       ifdef CON_LITTLE_ENDIAN
+		array_atom->type = _CON_MODULES_ARRAY_TYPE_INT32_LITTLE_ENDIAN;
+#       else
+		array_atom->type = _CON_MODULES_ARRAY_TYPE_INT32_BIG_ENDIAN;
+#       endif
+		array_atom->entry_size = sizeof(int32_t);
+	}
+	else if (CON_C_STRING_EQ("i32be", type)) {
+		array_atom->type = _CON_MODULES_ARRAY_TYPE_INT32_BIG_ENDIAN;
 		array_atom->entry_size = sizeof(int32_t);
 	}
 	else if (CON_C_STRING_EQ("i64", type)) {
-		array_atom->type = _CON_MODULES_ARRAY_TYPE_INT64;
+#       ifdef CON_LITTLE_ENDIAN
+		array_atom->type = _CON_MODULES_ARRAY_TYPE_INT64_LITTLE_ENDIAN;
+#       else
+		array_atom->type = _CON_MODULES_ARRAY_TYPE_INT64_BIG_ENDIAN;
+#       endif
+		array_atom->entry_size = sizeof(int64_t);
+	}
+	else if (CON_C_STRING_EQ("i64be", type)) {
+		array_atom->type = _CON_MODULES_ARRAY_TYPE_INT64_BIG_ENDIAN;
 		array_atom->entry_size = sizeof(int64_t);
 	}
 	else if (CON_C_STRING_EQ("f", type)) {
@@ -279,16 +310,30 @@ Con_Obj *_Con_Module_Array_Array_append_func(Con_Obj *thread)
 	CON_UNPACK_ARGS("UO", array_atom_def, &self, &o);
 	
 	_Con_Module_Array_Array_Atom *array_atom = CON_GET_ATOM(self, array_atom_def);
-	
-	if (array_atom->type == _CON_MODULES_ARRAY_TYPE_INT32) {
+
+	if (array_atom->type == _CON_MODULES_ARRAY_TYPE_INT32_LITTLE_ENDIAN || array_atom->type == _CON_MODULES_ARRAY_TYPE_INT32_BIG_ENDIAN) {
 		int32_t val = Con_Numbers_Number_to_Con_Int(thread, o);
+#ifdef CON_LITTLE_ENDIAN
+        if (array_atom->type == _CON_MODULES_ARRAY_TYPE_INT32_BIG_ENDIAN)
+            val = htobe32(val);
+#else
+        if (array_atom->type == _CON_MODULES_ARRAY_TYPE_INT32_LITTLE_ENDIAN)
+            val = htole32(val);
+#endif
 		CON_MUTEX_LOCK(&self->mutex);
 		Con_Memory_make_array_room(thread, (void **) &array_atom->entries, &self->mutex, &array_atom->num_entries_allocated, &array_atom->num_entries, 1, array_atom->entry_size);
 		((int32_t *) array_atom->entries)[array_atom->num_entries++] = val;
 		CON_MUTEX_UNLOCK(&self->mutex);
 	}
-	else if (array_atom->type == _CON_MODULES_ARRAY_TYPE_INT64) {
+	else if (array_atom->type == _CON_MODULES_ARRAY_TYPE_INT64_LITTLE_ENDIAN || array_atom->type == _CON_MODULES_ARRAY_TYPE_INT64_BIG_ENDIAN) {
 		int64_t val = Con_Numbers_Number_to_Con_Int(thread, o);
+#ifdef CON_LITTLE_ENDIAN
+        if (array_atom->type == _CON_MODULES_ARRAY_TYPE_INT64_BIG_ENDIAN)
+            val = htobe64(val);
+#else
+        if (array_atom->type == _CON_MODULES_ARRAY_TYPE_INT64_LITTLE_ENDIAN)
+            val = htole64(val);
+#endif
 		CON_MUTEX_LOCK(&self->mutex);
 		Con_Memory_make_array_room(thread, (void **) &array_atom->entries, &self->mutex, &array_atom->num_entries_allocated, &array_atom->num_entries, 1, array_atom->entry_size);
 		((int64_t *) array_atom->entries)[array_atom->num_entries++] = val;
@@ -411,28 +456,37 @@ Con_Obj *_Con_Module_Array_Array_get_func(Con_Obj *thread)
 	Con_Int i_val = Con_Numbers_Number_to_Con_Int(thread, i_obj);
 	
 	Con_Obj *rtn;
-	if (array_atom->type == _CON_MODULES_ARRAY_TYPE_INT32) {
+	if (array_atom->type == _CON_MODULES_ARRAY_TYPE_INT32_LITTLE_ENDIAN || array_atom->type == _CON_MODULES_ARRAY_TYPE_INT32_BIG_ENDIAN) {
 		CON_MUTEX_LOCK(&self->mutex);
 		Con_Int val = ((int32_t *) array_atom->entries)[Con_Misc_translate_index(thread, &self->mutex, i_val, array_atom->num_entries)];
-		CON_MUTEX_UNLOCK(&self->mutex);
-		rtn = CON_NEW_INT(val);
-	}
-	else if (array_atom->type == _CON_MODULES_ARRAY_TYPE_INT64) {
-		CON_MUTEX_LOCK(&self->mutex);
-#		if SIZEOF_CON_INT == 4
-		int64_t val64 = ((int64_t *) array_atom->entries)[Con_Misc_translate_index(thread, &self->mutex, i_val, array_atom->num_entries)];
-		if ((val64 & 0xFFFFFFFF00000000) != 0) {
-			printf("eek\n");
-			//CON_XXX;
-		}
-		Con_Int val = (Con_Int) val64;
-#		elif SIZEOF_CON_INT == 8
-		Con_Int val = ((int64_t *) array_atom->entries)[Con_Misc_translate_index(thread, &self->mutex, i_val, array_atom->num_entries)];
+#		ifdef CON_LITTLE_ENDIAN
+        if (array_atom->type == _CON_MODULES_ARRAY_TYPE_INT32_BIG_ENDIAN)
+            val = betoh32(val);
 #		else
-		CON_XXX;
+        if (array_atom->type == _CON_MODULES_ARRAY_TYPE_INT32_LITTLE_ENDIAN)
+            val = letoh32(val);
 #		endif
 		CON_MUTEX_UNLOCK(&self->mutex);
 		rtn = CON_NEW_INT(val);
+	}
+	else if (array_atom->type == _CON_MODULES_ARRAY_TYPE_INT64_LITTLE_ENDIAN || array_atom->type ==  _CON_MODULES_ARRAY_TYPE_INT64_BIG_ENDIAN) {
+#		if SIZEOF_CON_INT == 4
+		CON_XXX;
+#		elif SIZEOF_CON_INT == 8
+		CON_MUTEX_LOCK(&self->mutex);
+		Con_Int val = ((int64_t *) array_atom->entries)[Con_Misc_translate_index(thread, &self->mutex, i_val, array_atom->num_entries)];
+#		ifdef CON_LITTLE_ENDIAN
+        if (array_atom->type == _CON_MODULES_ARRAY_TYPE_INT64_BIG_ENDIAN)
+            val = betoh64(val);
+#		else
+        if (array_atom->type == _CON_MODULES_ARRAY_TYPE_INT64_LITTLE_ENDIAN)
+            val = letoh64(val);
+#		endif // CON_LITTLE_ENDIAN
+		CON_MUTEX_UNLOCK(&self->mutex);
+		rtn = CON_NEW_INT(val);
+#		else
+		CON_XXX;
+#		endif
 	}
 	else
 		CON_XXX;
@@ -519,26 +573,35 @@ Con_Obj *_Con_Module_Array_Array_iter_func(Con_Obj *thread)
 		}
 
 		Con_Obj *entry;
-		if (array_atom->type == _CON_MODULES_ARRAY_TYPE_INT32) {
+		if (array_atom->type == _CON_MODULES_ARRAY_TYPE_INT32_LITTLE_ENDIAN || array_atom->type == _CON_MODULES_ARRAY_TYPE_INT32_BIG_ENDIAN) {
 			Con_Int val = ((int32_t *) array_atom->entries)[i];
+#ifdef CON_LITTLE_ENDIAN
+            if (array_atom->type == _CON_MODULES_ARRAY_TYPE_INT32_BIG_ENDIAN)
+                val = betoh32(val);
+#else
+            if (array_atom->type == _CON_MODULES_ARRAY_TYPE_INT32_LITTLE_ENDIAN)
+                val = letoh32(val);
+#endif
 			CON_MUTEX_UNLOCK(&self->mutex);
 			entry = CON_NEW_INT(val);
 		}
-		else if (array_atom->type == _CON_MODULES_ARRAY_TYPE_INT64) {
+		else if (array_atom->type == _CON_MODULES_ARRAY_TYPE_INT64_LITTLE_ENDIAN || array_atom->type == _CON_MODULES_ARRAY_TYPE_INT64_BIG_ENDIAN) {
 #			if SIZEOF_CON_INT == 4
-			int64_t val64 = ((int64_t *) array_atom->entries)[i];
-			if ((val64 & 0xFFFFFFFF00000000) != 0) {
-				printf("eek\n");
-				//CON_XXX;
-			}
-			Con_Int val = (Con_Int) val64;
+            CON_XXX;
 #			elif SIZEOF_CON_INT == 8
 			Con_Int val = ((int64_t *) array_atom->entries)[i];
+#			ifdef CON_LITTLE_ENDIAN
+            if (array_atom->type == _CON_MODULES_ARRAY_TYPE_INT64_BIG_ENDIAN)
+                val = betoh64(val);
+#			else
+            if (array_atom->type == _CON_MODULES_ARRAY_TYPE_INT64_LITTLE_ENDIAN)
+                val = letoh64(val);
+#			endif // CON_LITTLE_ENDIAN
+			CON_MUTEX_UNLOCK(&self->mutex);
+			entry = CON_NEW_INT(val);
 #			else
 			CON_XXX;
 #			endif
-			CON_MUTEX_UNLOCK(&self->mutex);
-			entry = CON_NEW_INT(val);
 		}
 		else if (array_atom->type == _CON_MODULES_ARRAY_TYPE_DOUBLE) {
 			double val = ((double *) array_atom->entries)[i];
@@ -642,14 +705,28 @@ Con_Obj *_Con_Module_Array_Array_set_func(Con_Obj *thread)
 	
 	Con_Int i_val = Con_Numbers_Number_to_Con_Int(thread, i_obj);
 	
-	if (array_atom->type == _CON_MODULES_ARRAY_TYPE_INT32) {
+	if (array_atom->type == _CON_MODULES_ARRAY_TYPE_INT32_LITTLE_ENDIAN || array_atom->type ==  _CON_MODULES_ARRAY_TYPE_INT32_BIG_ENDIAN) {
 		int32_t val = Con_Numbers_Number_to_Con_Int(thread, o);
+#ifdef CON_LITTLE_ENDIAN
+        if (array_atom->type == _CON_MODULES_ARRAY_TYPE_INT32_BIG_ENDIAN)
+            val = htobe32(val);
+#else
+        if (array_atom->type == _CON_MODULES_ARRAY_TYPE_INT32_LITTLE_ENDIAN)
+            val = htole32(val);
+#endif
 		CON_MUTEX_LOCK(&self->mutex);
 		((int32_t *) array_atom->entries)[Con_Misc_translate_index(thread, &self->mutex, i_val, array_atom->num_entries)] = val;
 		CON_MUTEX_UNLOCK(&self->mutex);
 	}
-	else if (array_atom->type == _CON_MODULES_ARRAY_TYPE_INT64) {
+    else if (array_atom->type == _CON_MODULES_ARRAY_TYPE_INT64_LITTLE_ENDIAN || array_atom->type == _CON_MODULES_ARRAY_TYPE_INT64_BIG_ENDIAN) {
 		int64_t val = Con_Numbers_Number_to_Con_Int(thread, o);
+#ifdef CON_LITTLE_ENDIAN
+        if (array_atom->type == _CON_MODULES_ARRAY_TYPE_INT64_BIG_ENDIAN)
+            val = htobe64(val);
+#else
+        if (array_atom->type == _CON_MODULES_ARRAY_TYPE_INT64_LITTLE_ENDIAN)
+            val = htole64(val);
+#endif
 		CON_MUTEX_LOCK(&self->mutex);
 		((int64_t *) array_atom->entries)[Con_Misc_translate_index(thread, &self->mutex, i_val, array_atom->num_entries)] = val;
 		CON_MUTEX_UNLOCK(&self->mutex);

@@ -169,9 +169,9 @@ class BC_Mod:
         self._imports := Array::Array.new(self._target.ARRAY_TYPE)
         for imp_mod_id, imp_src_path := imports.iter():
             self._imports.append(imp_mod_id.len())
-            self._imports.extend(self._target.b_aligned_string(imp_mod_id))
+            self._imports.extend_from_string(self._target.b_aligned_string(imp_mod_id))
             self._imports.append(imp_src_path.len())
-            self._imports.extend(self._target.b_aligned_string(imp_src_path))
+            self._imports.extend_from_string(self._target.b_aligned_string(imp_src_path))
         self._num_imports := imports.len()
 
 
@@ -226,7 +226,7 @@ class BC_Mod:
         for var_name, var_num := top_level_vars_map.iter():
             self._top_level_vars_map.append(var_num)
             self._top_level_vars_map.append(var_name.len())
-            self._top_level_vars_map.extend(self._target.b_aligned_string(var_name))
+            self._top_level_vars_map.extend_from_string(self._target.b_aligned_string(var_name))
         self._num_top_level_vars := top_level_vars_map.len()
 
 
@@ -283,7 +283,7 @@ class BC_Mod:
             ar.append(defns.len())
             for defn := defns.iter():
                 ar.append(defn.len())
-                ar.extend(self._target.b_aligned_string(defn))
+                ar.extend_from_string(self._target.b_aligned_string(defn))
             ar.append(src_infos.len())
             ar.extend(src_infos.flattened())
         
@@ -347,19 +347,19 @@ class BC_Mod:
         // Module name
         
         module[self._target.MODULE_BYTECODE_NAME] := module.len_bytes()
-        module.extend(self._target.b_aligned_string(self._name))
+        module.extend_from_string(self._target.b_aligned_string(self._name))
         module[self._target.MODULE_BYTECODE_NAME_SIZE] := self._name.len()
         
         // Identifier
         
         module[self._target.MODULE_BYTECODE_ID] := module.len_bytes()
-        module.extend(self._target.b_aligned_string(self._mod_id))
+        module.extend_from_string(self._target.b_aligned_string(self._mod_id))
         module[self._target.MODULE_BYTECODE_ID_SIZE] := self._mod_id.len()
 
         // Src path
         
         module[self._target.MODULE_BYTECODE_SRC_PATH] := module.len_bytes()
-        module.extend(self._target.b_aligned_string(self._src_path))
+        module.extend_from_string(self._target.b_aligned_string(self._src_path))
         module[self._target.MODULE_BYTECODE_SRC_PATH_SIZE] := self._src_path.len()
 
         // Instructions bytecode

@@ -138,11 +138,11 @@ class BC_Pkg:
         for defn_name, t := entries.iter():
             mod_id, src_path := t
             self._entries.append(defn_name.len())
-            self._entries.extend(self._target.b_aligned_string(defn_name))
+            self._entries.extend_from_string(self._target.b_aligned_string(defn_name))
             self._entries.append(mod_id.len())
-            self._entries.extend(self._target.b_aligned_string(mod_id))
+            self._entries.extend_from_string(self._target.b_aligned_string(mod_id))
             self._entries.append(src_path.len())
-            self._entries.extend(self._target.b_aligned_string(src_path))
+            self._entries.extend_from_string(self._target.b_aligned_string(src_path))
         self._num_entries := entries.len()
 
 
@@ -167,19 +167,19 @@ class BC_Pkg:
         // Package name
         
         pkg[self._target.PKG_BYTECODE_NAME] := pkg.len_bytes()
-        pkg.extend(self._target.b_aligned_string(self._name))
+        pkg.extend_from_string(self._target.b_aligned_string(self._name))
         pkg[self._target.PKG_BYTECODE_NAME_SIZE] := self._name.len()
         
         // Identifier
         
         pkg[self._target.PKG_BYTECODE_ID] := pkg.len_bytes()
-        pkg.extend(self._target.b_aligned_string(self._mod_id))
+        pkg.extend_from_string(self._target.b_aligned_string(self._mod_id))
         pkg[self._target.PKG_BYTECODE_ID_SIZE] := self._mod_id.len()
 
         // Src path
         
         pkg[self._target.PKG_BYTECODE_SRC_PATH] := pkg.len_bytes()
-        pkg.extend(self._target.b_aligned_string(self._src_path))
+        pkg.extend_from_string(self._target.b_aligned_string(self._src_path))
         pkg[self._target.PKG_BYTECODE_SRC_PATH_SIZE] := self._src_path.len()
 
         // Entries

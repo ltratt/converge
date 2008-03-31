@@ -26,7 +26,7 @@
 
 #include "Core.h"
 
-#define CON_ARCH_GET_STACKP(var) __asm__("mov %0, %%i6" : "=r" (var))
+#define CON_ARCH_GET_STACKP(var) __asm__("mov %%sp, %0" : "=r" (var))
 
 Con_Int Con_Arch_align(Con_Obj *, Con_Int);
 

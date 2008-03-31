@@ -521,9 +521,9 @@ void _Con_Builtins_VM_Atom_apply_pump_restore_c_stack(Con_Obj *thread, u_char *c
 		// suspended stack.
 		
 		alloca(c_stackp - c_stack_current);
-#		endif
-		
+#		else
 		_Con_Builtins_VM_Atom_apply_pump_restore_c_stack(thread, c_stack_current, suspended_c_stack, suspended_c_stack_size, suspended_env, 2);
+#       endif
 	}
 #	else
     CON_XXX;
@@ -691,6 +691,8 @@ Con_Obj *Con_Builtins_VM_Atom_apply_pump(Con_Obj *thread, bool remove_finished_g
 // not always call Con_Builtins_VM_yield.
 //
 
+void _Con_Builtins_VM_Atom_yield_ss(Con_Obj *, u_char *, u_char **, Con_Int *);
+
 void Con_Builtins_VM_Atom_yield(Con_Obj *thread, Con_Obj *obj)
 {
 	assert(obj != NULL);
@@ -703,32 +705,8 @@ void Con_Builtins_VM_Atom_yield(Con_Obj *thread, Con_Obj *obj)
 	JMP_BUF return_env;
 	CON_MUTEX_LOCK(&con_stack->mutex);
 	Con_Builtins_Con_Stack_Atom_prepare_to_return_from_generator(thread, con_stack, &c_stack_start, &suspended_c_stack, &suspended_c_stack_size, &return_env);
-	
-	u_char *c_stack_end;
-	CON_ARCH_GET_STACKP(c_stack_end);
-	
-	Con_Builtins_Con_Stack_Atom_push_object(thread, con_stack, obj);
-
-#ifdef CON_C_STACK_GROWS_DOWN
-	ptrdiff_t calculated_suspended_c_stack_size = c_stack_start - c_stack_end;
-	u_char* c_stack_current = c_stack_end;
-#else
-    CON_XXX;
-#endif
-
-	if (suspended_c_stack == NULL) {
-		// This is the first time we've suspended the C stack, so allocate suitable memory.
-		suspended_c_stack_size = calculated_suspended_c_stack_size;
-		CON_MUTEX_UNLOCK(&con_stack->mutex);
-		suspended_c_stack = Con_Memory_malloc(thread, calculated_suspended_c_stack_size, CON_MEMORY_CHUNK_CONSERVATIVE);
-		CON_MUTEX_LOCK(&con_stack->mutex);
-	}
-	else {
-		// Since we've suspended the C stack on a previous call to yield, there's no need to allocate
-		// new memory, but do a quick sanity check that the old and new stack size are one and the
-		// same; if they aren't, this scheme will no longer work.
-		assert(calculated_suspended_c_stack_size == suspended_c_stack_size);
-	}
+    
+    Con_Builtins_Con_Stack_Atom_push_object(thread, con_stack, obj);
 
 	JMP_BUF suspended_env;
 #	ifdef CON_HAVE_SIGSETJMP
@@ -736,8 +714,7 @@ void Con_Builtins_VM_Atom_yield(Con_Obj *thread, Con_Obj *obj)
 #	else
 	if (setjmp(suspended_env) == 0) {
 #	endif
-		// Suspend the C stack.
-		memmove(suspended_c_stack, c_stack_current, suspended_c_stack_size);
+		_Con_Builtins_VM_Atom_yield_ss(thread, c_stack_start, &suspended_c_stack, &suspended_c_stack_size);
 		Con_Builtins_Con_Stack_Atom_update_generator_frame(thread, con_stack, suspended_c_stack, suspended_c_stack_size, suspended_env);
 		CON_MUTEX_UNLOCK(&con_stack->mutex);
 #		ifdef CON_HAVE_SIGSETJMP
@@ -747,6 +724,44 @@ void Con_Builtins_VM_Atom_yield(Con_Obj *thread, Con_Obj *obj)
 #		endif
 	}
 }
+
+
+
+//
+// This routine actually saves the stack; by calling this we ensure that we save the complete 
+//
+
+void _Con_Builtins_VM_Atom_yield_ss(Con_Obj *thread, u_char *c_stack_start, u_char **suspended_c_stack, Con_Int *suspended_c_stack_size)
+{
+	Con_Obj *con_stack = Con_Builtins_Thread_Atom_get_con_stack(thread);
+
+	u_char *c_stack_end;
+	CON_ARCH_GET_STACKP(c_stack_end);
+
+#ifdef CON_C_STACK_GROWS_DOWN
+	ptrdiff_t calculated_suspended_c_stack_size = c_stack_start - c_stack_end;
+	u_char* c_stack_current = c_stack_end;
+#else
+    CON_XXX;
+#endif
+
+	if (*suspended_c_stack == NULL) {
+		// This is the first time we've suspended the C stack, so allocate suitable memory.
+		*suspended_c_stack_size = calculated_suspended_c_stack_size;
+		CON_MUTEX_UNLOCK(&con_stack->mutex);
+		*suspended_c_stack = Con_Memory_malloc(thread, calculated_suspended_c_stack_size, CON_MEMORY_CHUNK_CONSERVATIVE);
+		CON_MUTEX_LOCK(&con_stack->mutex);
+	}
+	else {
+		// Since we've suspended the C stack on a previous call to yield, there's no need to allocate
+		// new memory, but do a quick sanity check that the old and new stack size are one and the
+		// same; if they aren't, this scheme will no longer work.
+		assert(calculated_suspended_c_stack_size == *suspended_c_stack_size);
+	}
+	// Suspend the C stack.
+	memmove(*suspended_c_stack, c_stack_current, *suspended_c_stack_size);
+}
+
 
 
 

@@ -42,7 +42,7 @@ extern "C"
 void *alloca (size_t);
 #endif
 
-#if CON_HAVE_UCONTEXT_H
+#if CON_USE_UCONTEXT_H
 #include <ucontext.h>
 #endif
 
@@ -79,7 +79,7 @@ void *alloca (size_t);
 void _Con_Builtins_VM_Atom_gc_scan_func(Con_Obj *, Con_Obj *, Con_Atom *);
 
 Con_Obj *_Con_Builtins_VM_Atom_apply(Con_Obj *, Con_Obj *, Con_Int, Con_Obj *, bool);
-#if CON_HAVE_UCONTEXT_H
+#if CON_USE_UCONTEXT_H
 void _Con_Builtins_VM_Atom_apply_pump_restore_c_stack(Con_Obj *, u_char *, u_char *, size_t, ucontext_t, int);
 #else
 void _Con_Builtins_VM_Atom_apply_pump_restore_c_stack(Con_Obj *, u_char *, u_char *, size_t, JMP_BUF, int);
@@ -502,7 +502,7 @@ void Con_Builtins_VM_Atom_pre_get_slot_apply_pump(Con_Obj *thread, Con_Obj *obj,
 // this function.
 //
 
-#if CON_HAVE_UCONTEXT_H
+#if CON_USE_UCONTEXT_H
 void _Con_Builtins_VM_Atom_apply_pump_restore_c_stack(Con_Obj *thread, u_char *c_stack_current, u_char *suspended_c_stack, size_t suspended_c_stack_size, ucontext_t suspended_env, int twice_more)
 #else
 void _Con_Builtins_VM_Atom_apply_pump_restore_c_stack(Con_Obj *thread, u_char *c_stack_current, u_char *suspended_c_stack, size_t suspended_c_stack_size, JMP_BUF suspended_env, int twice_more)
@@ -551,7 +551,7 @@ void _Con_Builtins_VM_Atom_apply_pump_restore_c_stack(Con_Obj *thread, u_char *c
 	
 	memmove(c_stack_current, suspended_c_stack, suspended_c_stack_size);
 
-#if CON_HAVE_UCONTEXT_H
+#if CON_USE_UCONTEXT_H
 	setcontext(&suspended_env);
 #else
 #	if defined(__CYGWIN__)
@@ -576,7 +576,7 @@ void _Con_Builtins_VM_Atom_apply_pump_restore_c_stack(Con_Obj *thread, u_char *c
 #	else
 	longjmp(suspended_env, 1);
 #	endif
-#endif // CON_HAVE_UCONTEXT_H
+#endif // CON_USE_UCONTEXT_H
 }
 
 
@@ -610,7 +610,7 @@ Con_Obj *Con_Builtins_VM_Atom_apply_pump(Con_Obj *thread, bool remove_finished_g
 
 	Con_Obj *return_obj;
 
-#if CON_HAVE_UCONTEXT_H
+#if CON_USE_UCONTEXT_H
 	volatile int ucp_rtn = 0;
 	ucontext_t return_env;
 	getcontext(&return_env);
@@ -670,7 +670,7 @@ Con_Obj *Con_Builtins_VM_Atom_apply_pump(Con_Obj *thread, bool remove_finished_g
 			
 			u_char *old_c_stack_start, *suspended_c_stack;
 			Con_Int suspended_c_stack_size;
-#if CON_HAVE_UCONTEXT_H
+#if CON_USE_UCONTEXT_H
 			ucontext_t suspended_env;
 #else
 			JMP_BUF suspended_env;
@@ -731,7 +731,7 @@ void Con_Builtins_VM_Atom_yield(Con_Obj *thread, Con_Obj *obj)
 	u_char *c_stack_start;
 	u_char *suspended_c_stack;
 	Con_Int suspended_c_stack_size;
-#if CON_HAVE_UCONTEXT_H
+#if CON_USE_UCONTEXT_H
 	ucontext_t return_env;
 #else
 	JMP_BUF return_env;
@@ -741,7 +741,7 @@ void Con_Builtins_VM_Atom_yield(Con_Obj *thread, Con_Obj *obj)
     
     Con_Builtins_Con_Stack_Atom_push_object(thread, con_stack, obj);
 
-#if CON_HAVE_UCONTEXT_H
+#if CON_USE_UCONTEXT_H
 	volatile int ucontext_rtn = 0;
 	ucontext_t suspended_env;
 	getcontext(&suspended_env);
@@ -758,7 +758,7 @@ void Con_Builtins_VM_Atom_yield(Con_Obj *thread, Con_Obj *obj)
 		_Con_Builtins_VM_Atom_yield_ss(thread, c_stack_start, &suspended_c_stack, &suspended_c_stack_size);
 		Con_Builtins_Con_Stack_Atom_update_generator_frame(thread, con_stack, suspended_c_stack, suspended_c_stack_size, &suspended_env);
 		CON_MUTEX_UNLOCK(&con_stack->mutex);
-#if CON_HAVE_UCONTEXT_H
+#if CON_USE_UCONTEXT_H
 		setcontext(&return_env);
 #elif CON_HAVE_SIGSETJMP
 		siglongjmp(return_env, 1);
@@ -900,7 +900,7 @@ void Con_Builtins_VM_Atom_raise(Con_Obj *thread, Con_Obj *exception)
 		// We now need to check to see whether the current continuation defines an exception frame.
 		
 		bool has_exception_frame;
-#if CON_HAVE_UCONTEXT_H
+#if CON_USE_UCONTEXT_H
 		ucontext_t exception_env;
 #else
 		JMP_BUF exception_env;
@@ -941,7 +941,7 @@ void Con_Builtins_VM_Atom_raise(Con_Obj *thread, Con_Obj *exception)
 			
 			// ...and then jump to its handler.
 			
-#if CON_HAVE_UCONTEXT_H
+#if CON_USE_UCONTEXT_H
 			setcontext(&exception_env);
 #else
 			longjmp(exception_env, 1);
@@ -1417,7 +1417,7 @@ Con_Obj *_Con_Builtins_VM_Atom_execute(Con_Obj *thread)
 						new_pc.pc.bytecode_offset -= CON_INSTR_DECODE_ADD_EXCEPTION_FRAME_OFFSET(instruction);
 					else
 						new_pc.pc.bytecode_offset += CON_INSTR_DECODE_ADD_EXCEPTION_FRAME_OFFSET(instruction);
-#if CON_HAVE_UCONTEXT_H
+#if CON_USE_UCONTEXT_H
 					ucontext_t except_env;
 					volatile int ucontext_rtn = 0;
 					getcontext(&except_env);

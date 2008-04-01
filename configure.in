@@ -664,8 +664,10 @@ fi
 
 # <ucontext.h>
 
-AH_TEMPLATE(CON_HAVE_UCONTEXT_H, [Define if you have ucontext.h.])
-AC_CHECK_HEADER(ucontext.h, [AC_DEFINE(CON_HAVE_UCONTEXT_H)])
+AH_TEMPLATE(CON_USE_UCONTEXT_H, [Define if you have ucontext.h and want to use it instead of raw sigjmp/longjmp. ucontext is more portable but sigjmp/longjmp can be significantly faster.])
+AC_CHECK_HEADER(ucontext.h, [
+	AC_ARG_WITH(ucontext, AC_HELP_STRING(--with-ucontext, uses ucontext functionality instead of setjmp/longjmp), [AC_DEFINE(CON_USE_UCONTEXT_H)], [])
+	])
 
 
 # err

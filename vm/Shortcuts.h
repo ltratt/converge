@@ -72,7 +72,7 @@
 // Exceptions
 //
 
-#if CON_HAVE_UCONTEXT_H
+#if CON_USE_UCONTEXT_H
 #	define CON_TRY { \
 		volatile int _ucontext_rtn = 0; \
 		ucontext_t _con_except_env; \

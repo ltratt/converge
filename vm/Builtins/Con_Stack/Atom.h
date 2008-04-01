@@ -23,6 +23,10 @@
 #define _CON_ATOMS_BUILTINS_CON_STACK_ATOM_H
 
 #include "Core.h"
+
+#if CON_HAVE_UCONTEXT_H
+#include <ucontext.h>
+#endif
 #include <setjmp.h>
 
 
@@ -39,7 +43,11 @@ typedef struct {
 	Con_Obj *func, *closure;
 	Con_PC pc;
 	Con_Int prev_gfp, prev_ffp, prev_xfp, prev_cfp;
+#if CON_HAVE_UCONTEXT_H
+	ucontext_t return_env;
+#else
 	JMP_BUF return_env;
+#endif
 	Con_PC resumption_pc;
 	u_char *c_stack_start; // Real address.
 	bool return_as_generator;
@@ -54,7 +62,11 @@ typedef struct {
 	Con_Int con_stack_start; // Real start offset.
 	u_char *suspended_con_stack; // Address of copy.
 	Con_Int suspended_con_stack_size; // Size of copy.
+#if CON_HAVE_UCONTEXT_H
+	ucontext_t suspended_env;
+#else
 	JMP_BUF suspended_env;
+#endif
 	Con_Int suspended_gfp, suspended_ffp, suspended_xfp, suspended_cfp, suspended_stackp;
 	
 	bool returned;
@@ -73,7 +85,11 @@ typedef struct {
 
 typedef struct {
 	Con_Int prev_ffp, prev_gfp, prev_xfp;
+#if CON_HAVE_UCONTEXT_H
+	ucontext_t exception_env;
+#else
 	JMP_BUF exception_env;
+#endif
 	Con_PC except_pc;
 } Con_Builtins_Con_Stack_Class_Exception_Frame;
 
@@ -113,12 +129,22 @@ void Con_Builtins_Con_Stack_Atom_remove_continuation_frame(Con_Obj *, Con_Obj *)
 bool Con_Builtins_Con_Stack_Atom_continuation_return_as_generator(Con_Obj *, Con_Obj *);
 bool Con_Builtins_Con_Stack_Atom_continuation_has_generator_frame(Con_Obj *, Con_Obj *);
 void Con_Builtins_Con_Stack_Atom_read_continuation_frame(Con_Obj *, Con_Obj *, Con_Obj **, Con_Obj **, Con_PC *);
-void Con_Builtins_Con_Stack_Atom_update_continuation_frame(Con_Obj *, Con_Obj *, u_char *, JMP_BUF);
+#if CON_HAVE_UCONTEXT_H
+void Con_Builtins_Con_Stack_Atom_update_continuation_frame(Con_Obj *, Con_Obj *, u_char *, ucontext_t *);
+#else
+void Con_Builtins_Con_Stack_Atom_update_continuation_frame(Con_Obj *, Con_Obj *, u_char *, JMP_BUF *);
+#endif
 void Con_Builtins_Con_Stack_Atom_update_continuation_frame_pc(Con_Obj *, Con_Obj *, Con_PC);
 
+#if CON_HAVE_UCONTEXT_H
+void Con_Builtins_Con_Stack_Atom_prepare_to_return_from_generator(Con_Obj *, Con_Obj *, u_char **, u_char **, Con_Int *, ucontext_t *);
+void Con_Builtins_Con_Stack_Atom_update_generator_frame(Con_Obj *, Con_Obj *, u_char *, Con_Int, ucontext_t *);
+void Con_Builtins_Con_Stack_Atom_prepare_generator_frame_reexecution(Con_Obj *, Con_Obj *, u_char **, u_char **, Con_Int *, ucontext_t *);
+#else
 void Con_Builtins_Con_Stack_Atom_prepare_to_return_from_generator(Con_Obj *, Con_Obj *, u_char **, u_char **, Con_Int *, JMP_BUF *);
-void Con_Builtins_Con_Stack_Atom_update_generator_frame(Con_Obj *, Con_Obj *, u_char *, Con_Int, JMP_BUF);
+void Con_Builtins_Con_Stack_Atom_update_generator_frame(Con_Obj *, Con_Obj *, u_char *, Con_Int, JMP_BUF *);
 void Con_Builtins_Con_Stack_Atom_prepare_generator_frame_reexecution(Con_Obj *, Con_Obj *, u_char **, u_char **, Con_Int *, JMP_BUF *);
+#endif
 void Con_Builtins_Con_stack_Atom_add_generator_eyield_frame(Con_Obj *, Con_Obj *, Con_PC);
 void Con_Builtins_Con_Stack_Atom_read_generator_frame(Con_Obj *, Con_Obj *, bool *, Con_PC *);
 void Con_Builtins_Con_Stack_Atom_set_generator_returned(Con_Obj *, Con_Obj *);
@@ -130,8 +156,13 @@ void Con_Builtins_Con_Stack_Atom_add_failure_fail_up_frame(Con_Obj *, Con_Obj *)
 void Con_Builtins_Con_Stack_Atom_read_failure_frame(Con_Obj *, Con_Obj *, bool *, bool *, Con_PC *);
 void Con_Builtins_Con_Stack_Atom_remove_failure_frame(Con_Obj *, Con_Obj *);
 
-void Con_Builtins_Con_Stack_Atom_add_exception_frame(Con_Obj *, Con_Obj *, JMP_BUF, Con_PC);
+#if CON_HAVE_UCONTEXT_H
+void Con_Builtins_Con_Stack_Atom_add_exception_frame(Con_Obj *, Con_Obj *, ucontext_t *, Con_PC);
+void Con_Builtins_Con_Stack_Atom_read_exception_frame(Con_Obj *, Con_Obj *, bool *, ucontext_t *, Con_PC *);
+#else
+void Con_Builtins_Con_Stack_Atom_add_exception_frame(Con_Obj *, Con_Obj *, JMP_BUF *, Con_PC);
 void Con_Builtins_Con_Stack_Atom_read_exception_frame(Con_Obj *, Con_Obj *, bool *, JMP_BUF *, Con_PC *);
+#endif
 void Con_Builtins_Con_Stack_Atom_remove_exception_frame(Con_Obj *, Con_Obj *);
 
 void Con_Builtins_Con_Stack_Atom_push_n_object(Con_Obj *, Con_Obj *, Con_Obj *, Con_Int);

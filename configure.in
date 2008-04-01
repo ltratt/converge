@@ -662,6 +662,12 @@ int main()
 fi
 
 
+# <ucontext.h>
+
+AH_TEMPLATE(CON_HAVE_UCONTEXT_H, [Define if you have ucontext.h.])
+AC_CHECK_HEADER(ucontext.h, [AC_DEFINE(CON_HAVE_UCONTEXT_H)])
+
+
 # err
 
 AH_TEMPLATE(CON_HAVE_NATIVE_ERR,

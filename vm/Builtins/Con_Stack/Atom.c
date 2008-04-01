@@ -421,7 +421,11 @@ void Con_Builtins_Con_Stack_Atom_read_continuation_frame(Con_Obj *thread, Con_Ob
 // into.
 //
 
-void Con_Builtins_Con_Stack_Atom_update_continuation_frame(Con_Obj *thread, Con_Obj *con_stack, u_char *c_stack_start, JMP_BUF return_env)
+#if CON_HAVE_UCONTEXT_H
+void Con_Builtins_Con_Stack_Atom_update_continuation_frame(Con_Obj *thread, Con_Obj *con_stack, u_char *c_stack_start, ucontext_t *return_env)
+#else
+void Con_Builtins_Con_Stack_Atom_update_continuation_frame(Con_Obj *thread, Con_Obj *con_stack, u_char *c_stack_start, JMP_BUF *return_env)
+#endif
 {
 	CON_ASSERT_MUTEX_LOCKED(&con_stack->mutex);
 
@@ -431,7 +435,11 @@ void Con_Builtins_Con_Stack_Atom_update_continuation_frame(Con_Obj *thread, Con_
 	Con_Builtins_Con_Stack_Class_Continuation_Frame *continuation_frame = (Con_Builtins_Con_Stack_Class_Continuation_Frame *) (con_stack_atom->stack + con_stack_atom->cfp - sizeof(Con_Builtins_Con_Stack_Class_Continuation_Frame) - sizeof(Con_Builtins_Con_Stack_Class_Type));
 	
 	continuation_frame->c_stack_start = c_stack_start;
+#if CON_HAVE_UCONTEXT_H
+	memmove(&continuation_frame->return_env, return_env, sizeof(ucontext_t));
+#else
 	memmove(continuation_frame->return_env, return_env, sizeof(JMP_BUF));
+#endif
 }
 
 
@@ -479,7 +487,11 @@ void Con_Builtins_Con_Stack_Atom_update_continuation_frame_pc(Con_Obj *thread, C
 // generator frame and continuation frame.
 //
 
+#if CON_HAVE_UCONTEXT_H
+void Con_Builtins_Con_Stack_Atom_prepare_to_return_from_generator(Con_Obj *thread, Con_Obj *con_stack, u_char **c_stack_start, u_char **suspended_c_stack, Con_Int *suspended_c_stack_size, ucontext_t *return_env)
+#else
 void Con_Builtins_Con_Stack_Atom_prepare_to_return_from_generator(Con_Obj *thread, Con_Obj *con_stack, u_char **c_stack_start, u_char **suspended_c_stack, Con_Int *suspended_c_stack_size, JMP_BUF *return_env)
+#endif
 {
 	CON_ASSERT_MUTEX_LOCKED(&con_stack->mutex);
 
@@ -499,7 +511,11 @@ void Con_Builtins_Con_Stack_Atom_prepare_to_return_from_generator(Con_Obj *threa
 	*c_stack_start = continuation_frame->c_stack_start;
 	*suspended_c_stack = generator_frame->suspended_c_stack;
 	*suspended_c_stack_size = generator_frame->suspended_c_stack_size;
+#if CON_HAVE_UCONTEXT_H
+	memmove(return_env, &continuation_frame->return_env, sizeof(ucontext_t));
+#else
 	memmove(return_env, continuation_frame->return_env, sizeof(JMP_BUF));
+#endif
 
 	if (generator_frame->suspended_con_stack_size < suspended_con_stack_size) {
 		if (generator_frame->suspended_con_stack_size == 0) {
@@ -564,7 +580,11 @@ void Con_Builtins_Con_Stack_Atom_prepare_to_return_from_generator(Con_Obj *threa
 // Update the current 'normal' generator frames knowledge of the suspended C stack.
 //
 
-void Con_Builtins_Con_Stack_Atom_update_generator_frame(Con_Obj *thread, Con_Obj *con_stack, u_char *suspended_c_stack, Con_Int suspended_c_stack_size, JMP_BUF suspended_env)
+#if CON_HAVE_UCONTEXT_H
+void Con_Builtins_Con_Stack_Atom_update_generator_frame(Con_Obj *thread, Con_Obj *con_stack, u_char *suspended_c_stack, Con_Int suspended_c_stack_size, ucontext_t *suspended_env)
+#else
+void Con_Builtins_Con_Stack_Atom_update_generator_frame(Con_Obj *thread, Con_Obj *con_stack, u_char *suspended_c_stack, Con_Int suspended_c_stack_size, JMP_BUF *suspended_env)
+#endif
 {
 	CON_ASSERT_MUTEX_LOCKED(&con_stack->mutex);
 
@@ -576,7 +596,11 @@ void Con_Builtins_Con_Stack_Atom_update_generator_frame(Con_Obj *thread, Con_Obj
 
 	generator_frame->suspended_c_stack = suspended_c_stack;
 	generator_frame->suspended_c_stack_size = suspended_c_stack_size;
+#if CON_HAVE_UCONTEXT_H
+	memmove(&generator_frame->suspended_env, suspended_env, sizeof(ucontext_t));
+#else
 	memmove(generator_frame->suspended_env, suspended_env, sizeof(JMP_BUF));
+#endif
 }
 
 
@@ -590,7 +614,11 @@ void Con_Builtins_Con_Stack_Atom_update_generator_frame(Con_Obj *thread, Con_Obj
 // generator frame and continuation frame.
 //
 
+#if CON_HAVE_UCONTEXT_H
+void Con_Builtins_Con_Stack_Atom_prepare_generator_frame_reexecution(Con_Obj *thread, Con_Obj *con_stack, u_char **c_stack_start, u_char **suspended_c_stack, Con_Int *suspended_c_stack_size, ucontext_t *suspended_env)
+#else
 void Con_Builtins_Con_Stack_Atom_prepare_generator_frame_reexecution(Con_Obj *thread, Con_Obj *con_stack, u_char **c_stack_start, u_char **suspended_c_stack, Con_Int *suspended_c_stack_size, JMP_BUF *suspended_env)
+#endif
 {
 	CON_ASSERT_MUTEX_LOCKED(&con_stack->mutex);
 
@@ -628,7 +656,11 @@ void Con_Builtins_Con_Stack_Atom_prepare_generator_frame_reexecution(Con_Obj *th
 
 	*suspended_c_stack = generator_frame->suspended_c_stack;
 	*suspended_c_stack_size = generator_frame->suspended_c_stack_size;
+#if CON_HAVE_UCONTEXT_H
+	memmove(suspended_env, &generator_frame->suspended_env, sizeof(ucontext_t));
+#else
 	memmove(suspended_env, generator_frame->suspended_env, sizeof(JMP_BUF));
+#endif
 	*c_stack_start = continuation_frame->c_stack_start;
 }
 
@@ -918,10 +950,14 @@ void Con_Builtins_Con_Stack_Atom_remove_failure_frame(Con_Obj *thread, Con_Obj *
 //
 
 //
-// Add a failure frame, which will fail to 'fail_to_pc'.
+// Add an exception frame, which will fail to 'fail_to_pc'.
 //
 
-void Con_Builtins_Con_Stack_Atom_add_exception_frame(Con_Obj *thread, Con_Obj *con_stack, JMP_BUF exception_env, Con_PC except_pc)
+#if CON_HAVE_UCONTEXT_H
+void Con_Builtins_Con_Stack_Atom_add_exception_frame(Con_Obj *thread, Con_Obj *con_stack, ucontext_t *exception_env, Con_PC except_pc)
+#else
+void Con_Builtins_Con_Stack_Atom_add_exception_frame(Con_Obj *thread, Con_Obj *con_stack, JMP_BUF *exception_env, Con_PC except_pc)
+#endif
 {
 	CON_ASSERT_MUTEX_LOCKED(&con_stack->mutex);
 
@@ -930,7 +966,11 @@ void Con_Builtins_Con_Stack_Atom_add_exception_frame(Con_Obj *thread, Con_Obj *c
 	ENSURE_ROOM(sizeof(Con_Builtins_Con_Stack_Class_Exception_Frame) + sizeof(Con_Builtins_Con_Stack_Class_Type));
 
 	Con_Builtins_Con_Stack_Class_Exception_Frame *exception_frame = (Con_Builtins_Con_Stack_Class_Exception_Frame *) (con_stack_atom->stack + con_stack_atom->stackp);
+#if CON_HAVE_UCONTEXT_H
+	memmove(&exception_frame->exception_env, exception_env, sizeof(ucontext_t));
+#else
 	memmove(exception_frame->exception_env, exception_env, sizeof(JMP_BUF));
+#endif
 	exception_frame->except_pc = except_pc;
 	exception_frame->prev_ffp = con_stack_atom->ffp;
 	exception_frame->prev_gfp = con_stack_atom->gfp;
@@ -953,7 +993,11 @@ void Con_Builtins_Con_Stack_Atom_add_exception_frame(Con_Obj *thread, Con_Obj *c
 // 'exception_env'.
 //
 
+#if CON_HAVE_UCONTEXT_H
+void Con_Builtins_Con_Stack_Atom_read_exception_frame(Con_Obj *thread, Con_Obj *con_stack, bool *has_exception_frame, ucontext_t *exception_env, Con_PC *except_pc)
+#else
 void Con_Builtins_Con_Stack_Atom_read_exception_frame(Con_Obj *thread, Con_Obj *con_stack, bool *has_exception_frame, JMP_BUF *exception_env, Con_PC *except_pc)
+#endif
 {
 	CON_ASSERT_MUTEX_LOCKED(&con_stack->mutex);
 
@@ -969,7 +1013,11 @@ void Con_Builtins_Con_Stack_Atom_read_exception_frame(Con_Obj *thread, Con_Obj *
 	Con_Builtins_Con_Stack_Class_Exception_Frame *exception_frame = (Con_Builtins_Con_Stack_Class_Exception_Frame *) (con_stack_atom->stack + con_stack_atom->xfp - sizeof(Con_Builtins_Con_Stack_Class_Exception_Frame) - sizeof(Con_Builtins_Con_Stack_Class_Type));
 
 	*has_exception_frame = true;
+#if CON_HAVE_UCONTEXT_H
+	memmove(exception_env, &exception_frame->exception_env, sizeof(ucontext_t));
+#else
 	memmove(exception_env, exception_frame->exception_env, sizeof(JMP_BUF));
+#endif
 	*except_pc = exception_frame->except_pc;
 } 
 

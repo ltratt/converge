@@ -72,29 +72,58 @@
 // Exceptions
 //
 
-#define CON_TRY { \
-	JMP_BUF _con_except_env; \
-	if (setjmp(_con_except_env) == 0) { \
-		{ \
-			Con_Obj *con_stack = Con_Builtins_Thread_Atom_get_con_stack(thread); \
-			Con_PC except_pc; \
-			except_pc.type = PC_TYPE_NULL; \
-			CON_MUTEX_LOCK(&con_stack->mutex); \
-			Con_Builtins_Con_Stack_Atom_add_exception_frame(thread, con_stack, _con_except_env, except_pc); \
-			CON_MUTEX_UNLOCK(&con_stack->mutex); \
-		}
+#if CON_HAVE_UCONTEXT_H
+#	define CON_TRY { \
+		volatile int _ucontext_rtn = 0; \
+		ucontext_t _con_except_env; \
+		getcontext(&_con_except_env); \
+		if (_ucontext_rtn == 0) { \
+			{ \
+				_ucontext_rtn = 1; \
+				Con_Obj *con_stack = Con_Builtins_Thread_Atom_get_con_stack(thread); \
+				Con_PC except_pc; \
+				except_pc.type = PC_TYPE_NULL; \
+				CON_MUTEX_LOCK(&con_stack->mutex); \
+				Con_Builtins_Con_Stack_Atom_add_exception_frame(thread, con_stack, &_con_except_env, except_pc); \
+				CON_MUTEX_UNLOCK(&con_stack->mutex); \
+			}
 
-#define CON_CATCH(v) {\
-			Con_Obj *con_stack = Con_Builtins_Thread_Atom_get_con_stack(thread); \
-			CON_MUTEX_LOCK(&con_stack->mutex); \
-			Con_Builtins_Con_Stack_Atom_remove_exception_frame(thread, con_stack); \
-			CON_MUTEX_UNLOCK(&con_stack->mutex); \
-		} \
-	} else { \
-		(v) = Con_Builtins_VM_Atom_get_current_exception(thread); \
-		Con_Builtins_VM_Atom_reset_current_exception(thread); \
+#	define CON_CATCH(v) {\
+				Con_Obj *con_stack = Con_Builtins_Thread_Atom_get_con_stack(thread); \
+				CON_MUTEX_LOCK(&con_stack->mutex); \
+				Con_Builtins_Con_Stack_Atom_remove_exception_frame(thread, con_stack); \
+				CON_MUTEX_UNLOCK(&con_stack->mutex); \
+			} \
+		} else { \
+			(v) = Con_Builtins_VM_Atom_get_current_exception(thread); \
+			Con_Builtins_VM_Atom_reset_current_exception(thread); \
 
-#define CON_TRY_END } }
+#	define CON_TRY_END } }
+#else
+#	define CON_TRY { \
+		JMP_BUF _con_except_env; \
+		if (setjmp(_con_except_env) == 0) { \
+			{ \
+				Con_Obj *con_stack = Con_Builtins_Thread_Atom_get_con_stack(thread); \
+				Con_PC except_pc; \
+				except_pc.type = PC_TYPE_NULL; \
+				CON_MUTEX_LOCK(&con_stack->mutex); \
+				Con_Builtins_Con_Stack_Atom_add_exception_frame(thread, con_stack, _con_except_env, except_pc); \
+				CON_MUTEX_UNLOCK(&con_stack->mutex); \
+			}
+
+#	define CON_CATCH(v) {\
+				Con_Obj *con_stack = Con_Builtins_Thread_Atom_get_con_stack(thread); \
+				CON_MUTEX_LOCK(&con_stack->mutex); \
+				Con_Builtins_Con_Stack_Atom_remove_exception_frame(thread, con_stack); \
+				CON_MUTEX_UNLOCK(&con_stack->mutex); \
+			} \
+		} else { \
+			(v) = Con_Builtins_VM_Atom_get_current_exception(thread); \
+			Con_Builtins_VM_Atom_reset_current_exception(thread); \
+
+#	define CON_TRY_END } }
+#endif
 
 
 

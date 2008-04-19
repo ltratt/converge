@@ -1431,7 +1431,12 @@ Con_Obj *_Con_Builtins_VM_Atom_execute(Con_Obj *thread)
 					if (setjmp(except_env) == 0) {
 #	endif
 #endif
+
+#if CON_USE_UCONTEXT_H
 						Con_Builtins_Con_Stack_Atom_add_exception_frame(thread, con_stack, &except_env, new_pc);
+#else
+						Con_Builtins_Con_Stack_Atom_add_exception_frame(thread, con_stack, except_env, new_pc);
+#endif
 						pc.pc.bytecode_offset += sizeof(Con_Int);
 						Con_Builtins_Con_Stack_Atom_update_continuation_frame_pc(thread, con_stack, pc);
 					}

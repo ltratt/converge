@@ -160,7 +160,7 @@ void Con_Builtins_Con_Stack_Atom_remove_failure_frame(Con_Obj *, Con_Obj *);
 void Con_Builtins_Con_Stack_Atom_add_exception_frame(Con_Obj *, Con_Obj *, ucontext_t *, Con_PC);
 void Con_Builtins_Con_Stack_Atom_read_exception_frame(Con_Obj *, Con_Obj *, bool *, ucontext_t *, Con_PC *);
 #else
-void Con_Builtins_Con_Stack_Atom_add_exception_frame(Con_Obj *, Con_Obj *, JMP_BUF *, Con_PC);
+void Con_Builtins_Con_Stack_Atom_add_exception_frame(Con_Obj *, Con_Obj *, JMP_BUF, Con_PC);
 void Con_Builtins_Con_Stack_Atom_read_exception_frame(Con_Obj *, Con_Obj *, bool *, JMP_BUF *, Con_PC *);
 #endif
 void Con_Builtins_Con_Stack_Atom_remove_exception_frame(Con_Obj *, Con_Obj *);

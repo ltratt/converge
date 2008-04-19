@@ -956,7 +956,7 @@ void Con_Builtins_Con_Stack_Atom_remove_failure_frame(Con_Obj *thread, Con_Obj *
 #if CON_USE_UCONTEXT_H
 void Con_Builtins_Con_Stack_Atom_add_exception_frame(Con_Obj *thread, Con_Obj *con_stack, ucontext_t *exception_env, Con_PC except_pc)
 #else
-void Con_Builtins_Con_Stack_Atom_add_exception_frame(Con_Obj *thread, Con_Obj *con_stack, JMP_BUF *exception_env, Con_PC except_pc)
+void Con_Builtins_Con_Stack_Atom_add_exception_frame(Con_Obj *thread, Con_Obj *con_stack, JMP_BUF exception_env, Con_PC except_pc)
 #endif
 {
 	CON_ASSERT_MUTEX_LOCKED(&con_stack->mutex);

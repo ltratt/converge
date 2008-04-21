@@ -42,6 +42,7 @@
 #include "Builtins/VM/Atom.h"
 
 
+Con_Obj *_Con_Builtins_Dict_Class_new_object(Con_Obj *);
 
 Con_Obj *_Con_Builtins_Dict_Class_to_str_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Dict_Class_del_func(Con_Obj *);
@@ -72,7 +73,7 @@ void Con_Builtins_Dict_Class_bootstrap(Con_Obj *thread)
 	slots_atom->next_atom = NULL;
 	
 	Con_Builtins_Slots_Atom_Def_init_atom(thread, slots_atom);
-	Con_Builtins_Class_Atom_init_atom(thread, class_atom, CON_NEW_STRING("Dict"), NULL, CON_BUILTIN(CON_BUILTIN_OBJECT_CLASS), NULL);
+	Con_Builtins_Class_Atom_init_atom(thread, class_atom, CON_NEW_STRING("Dict"), CON_NEW_UNBOUND_C_FUNC(_Con_Builtins_Dict_Class_new_object, "Dict_new", CON_BUILTIN(CON_BUILTIN_NULL_OBJ)), CON_BUILTIN(CON_BUILTIN_OBJECT_CLASS), NULL);
 	
 	Con_Memory_change_chunk_type(thread, dict_class, CON_MEMORY_CHUNK_OBJ);
 
@@ -88,6 +89,34 @@ void Con_Builtins_Dict_Class_bootstrap(Con_Obj *thread)
 	CON_SET_FIELD(dict_class, "scopy", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Dict_Class_scopy_func, "scopy", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), dict_class));
 	CON_SET_FIELD(dict_class, "iter_vals", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Dict_Class_iter_vals_func, "iter_vals", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), dict_class));
 }
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// func List_new
+//
+
+Con_Obj *_Con_Builtins_Dict_Class_new_object(Con_Obj *thread)
+{
+	Con_Obj *class_, *var_args;
+	CON_UNPACK_ARGS("Ov", &class_, &var_args);
+	
+	Con_Obj *new_dict = Con_Object_new_from_class(thread, sizeof(Con_Obj) + sizeof(Con_Builtins_Dict_Atom) + sizeof(Con_Builtins_Slots_Atom), class_);
+	Con_Builtins_Dict_Atom *dict_atom = (Con_Builtins_Dict_Atom *) new_dict->first_atom;
+	Con_Builtins_Slots_Atom *slots_atom = (Con_Builtins_Slots_Atom *) (dict_atom + 1);
+	dict_atom->next_atom = (Con_Atom *) slots_atom;
+	slots_atom->next_atom = NULL;
+	
+	Con_Builtins_Dict_Atom_init_atom(thread, dict_atom);
+	Con_Builtins_Slots_Atom_Def_init_atom(thread, slots_atom);
+	
+	Con_Memory_change_chunk_type(thread, new_dict, CON_MEMORY_CHUNK_OBJ);
+
+	CON_GET_SLOT_APPLY(CON_GET_SLOT(new_dict, "init"), "apply", var_args);
+
+	return new_dict;
+}
+
 
 
 

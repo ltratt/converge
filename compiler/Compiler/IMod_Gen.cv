@@ -109,10 +109,11 @@ class IMod_Gen:
             //            ::= "$" splice_type "<<" expr ">>" "<<" "DSL_BLOCK" ">>"
             dsl_block := ITree::IString.new(node[1][7].value, extra_src_infos + node[1][7].src_infos)
 
-            assert node[1][1].src_infos.len() == 1
-            src_path := ITree::IString.new(node[1][1].src_infos[0][0], extra_src_infos + node[1][1].src_infos)
+            assert node[1][7].src_infos.len() == 1
+            src_path := ITree::IString.new(node[1][7].src_infos[0][0], extra_src_infos + node[1][1].src_infos)
             src_offset := ITree::IInt.new(node[1][7].src_infos[0][1], extra_src_infos + node[1][1].src_infos)
-            src_infos := ITree::IList.new([ITree::IList.new([src_path, src_offset], extra_src_infos + node[1][1].src_infos)], extra_src_infos + node[1][1].src_infos)
+            src_len := ITree::IInt.new(node[1][7].src_infos[0][2], extra_src_infos + node[1][1].src_infos)
+            src_infos := ITree::IList.new([ITree::IList.new([src_path, src_offset, src_len], extra_src_infos + node[1][1].src_infos)], extra_src_infos + node[1][1].src_infos)
             
             expr := ITree::IApplication.new(self._preorder(node[1][4], extra_src_infos), [dsl_block, src_infos], extra_src_infos + node[1][1].src_infos)
 
@@ -255,7 +256,7 @@ class IMod_Gen:
             self._defns.extend(self._preorder(node[i], extra_src_infos))
             i += 2
 
-        return ITree::IModule.new(self._compiler.src_module_name, self._defns, extra_src_infos + [[self._mod_id, null]])
+        return ITree::IModule.new(self._compiler.src_module_name, self._defns, extra_src_infos + [[self._mod_id, null, 0]])
 
 
 
@@ -838,8 +839,9 @@ class IMod_Gen:
             if node[1].value == SRC_INFO_VAR:
                 assert node[1].src_infos.len() == 1
                 src_path := ITree::IString.new(node[1].src_infos[0][0], extra_src_infos + node[1].src_infos)
-                src_infos := ITree::IInt.new(node[1].src_infos[0][1], extra_src_infos + node[1].src_infos)
-                return ITree::IList.new([ITree::IList.new([src_path, src_infos], extra_src_infos + node[1].src_infos)], extra_src_infos + node[1].src_infos)
+                src_offset := ITree::IInt.new(node[1].src_infos[0][1], extra_src_infos + node[1].src_infos)
+                src_len := ITree::IInt.new(node[1].src_infos[0][2], extra_src_infos + node[1].src_infos)
+                return ITree::IList.new([ITree::IList.new([src_path, src_offset, src_len], extra_src_infos + node[1].src_infos)], extra_src_infos + node[1].src_infos)
             else:
                 return ITree::IVar.new(node[1].value, extra_src_infos + node[1].src_infos)
         elif node.len() == 3:

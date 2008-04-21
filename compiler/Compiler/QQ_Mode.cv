@@ -152,8 +152,8 @@ class QQ_Mode:
     func _qq(self, node_type, args, node_src_infos):
 
         src_infos := []
-        for src_file, src_offset := node_src_infos.iter():
-            src_infos.append(ITree::IList.new([ITree::IString.new(src_file, node_src_infos), ITree::IInt.new(src_offset, node_src_infos)], node_src_infos))
+        for src_file, src_offset, len := node_src_infos.iter():
+            src_infos.append(ITree::IList.new([ITree::IString.new(src_file, node_src_infos), ITree::IInt.new(src_offset, node_src_infos), ITree::IInt.new(len, node_src_infos)], node_src_infos))
         
         full_src_infos := ITree::IList.new(src_infos, node_src_infos)
         if not self._extra_src_infos_var is null:

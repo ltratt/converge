@@ -215,10 +215,10 @@ func link_max_pkgs(linker, mods):
 func _tn_src_infos(src_infos, mod):
 
     new_src_infos := []
-    for mod_num, offset := src_infos.iter():
+    for mod_num, offset, len := src_infos.iter():
         if mod_num == -1:
-            new_src_infos.append([mod.get_mod_id(), offset])
+            new_src_infos.append([mod.get_mod_id(), offset, len])
         else:
-            new_src_infos.append([mod.get_imports()[mod_num][0], offset])
+            new_src_infos.append([mod.get_imports()[mod_num][0], offset, len])
 
     return new_src_infos

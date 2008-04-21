@@ -139,23 +139,27 @@ class _Parser:
                 continue
 
             if m := _RE_ID.match(grammar, i):
-                tokens.append(Token::Token.new("NONTERM", m[0], [[null, i]]))
-                i += m[0].len()
+                l := m[0].len()
+                tokens.append(Token::Token.new("NONTERM", m[0], [[null, i, l]]))
+                i += l
                 continue
 
             if m := _RE_TOKEN.match(grammar, i):
-                tokens.append(Token::Token.new("TERM", m[1], [[null, i]]))
-                i += m[0].len()
+                l := m[0].len()
+                tokens.append(Token::Token.new("TERM", m[1], [[null, i, l]]))
+                i += l
                 continue
 
             if m := _RE_SYMBOLS.match(grammar, i):
-                tokens.append(Token::Token.new(m[0].upper_cased(), m[0], [[null, i]]))
-                i += m[0].len()
+                l := m[0].len()
+                tokens.append(Token::Token.new(m[0].upper_cased(), m[0], [[null, i, l]]))
+                i += l
                 continue
 
             if m := _RE_INT.match(grammar, i):
-                tokens.append(Token::Token.new("INT", m[0], [[null, i]]))
-                i += m[0].len()
+                l := m[0].len()
+                tokens.append(Token::Token.new("INT", m[0], [[null, i, l]]))
+                i += l
                 continue
 
             self._error(Strings::format("Unknown character '%s'.", grammar[i]))

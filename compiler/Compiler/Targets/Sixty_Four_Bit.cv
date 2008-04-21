@@ -26,6 +26,7 @@ import Array, Exceptions, Maths
 
 WORDSIZE := 8
 ARRAY_TYPE := "i64"
+ARRAY_TYPE_32BIT := "i32"
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -881,41 +882,86 @@ class Instr_Module_Lookup(Instruction):
 // Src infos
 //
 
-// These are encoded as follows:
-//   bits 0-2  : num of instructions covered
-//   bit  3    : if set, the next src info covers this instruction
-//   bits 4-13 : import num
-//   bits 14-32: src byte offset
+// These are encoded as two 32 bit words:
+//   bits 0-3  : num of instructions covered
+//   bit  4    : if set, the next src info covers this instruction
+//   bits 5-31 : src byte offset
+//   bits 32-44: import num
+//   bits 44-64: len
 
 func encode_src_infos(all_src_infos):
 
-    src_infos_array := Array::Array.new("i32")
+    src_infos_array := Array::Array.new(ARRAY_TYPE_32BIT)
     for num_instructions, src_infos := all_src_infos.iter():
         i := 0
         while i < num_instructions:
-            repeat := Maths::min(num_instructions - i, 7)
             for j := 0.iter_to(src_infos.len()):
-                import_num, src_offset := src_infos[j]
-                if import_num == -1:
-                    encoded_src_info := repeat.or(16368).or(src_offset.lsl(14))
-                else:
-                    encoded_src_info := repeat.or(import_num.lsl(4)).or(src_offset.lsl(14))
+                // XXX: At no point in the following do we check for overflow of any kind.
+
+                import_num, src_offset, len := src_infos[j]
+
+                // Bits 0-3
+
+                enc_src_info1 := Maths::min(num_instructions - i, 15)
+
+                // Bit 4
 
                 if j + 1 < src_infos.len():
-                    encoded_src_info := encoded_src_info.or(8)
+                    enc_src_info1 := enc_src_info1.or(1.lsl(4))
 
-                src_infos_array.append(encoded_src_info)
+                // Bits 5-31
+
+                enc_src_info1 := enc_src_info1.or(src_offset.lsl(5))
+
+                // Bits 32-44
+
+                if import_num == -1:
+                    enc_src_info2 := (1.lsl(44 - 32) - 1)
+                else:
+                    enc_src_info2 := import_num
+
+                // Bits 44-64
+
+                enc_src_info2 := enc_src_info2.or(len.lsl(12))
+
+                src_infos_array.append(enc_src_info1)
+                src_infos_array.append(enc_src_info2)
             i += 7
     
-    serialized := src_infos_array.serialize()
-    
-    return serialized + "\0" * (align(serialized.len()) - serialized.len())
+    return src_infos_array.serialize()
 
 
 
 func decode_src_infos(src_infos_array):
 
-    raise "XXX"
+    ser := src_infos_array.serialize()
+    src_infos_array := Array::Array.new(ARRAY_TYPE_32BIT)
+    src_infos_array.extend_from_string(ser)
+
+    all_src_infos := []
+    i := 0
+    for 1:
+        src_info := []
+        while 1:
+            word1 := src_infos_array[i]
+            word2 := src_infos_array[i + 1]
+            num_instructions := word1.and(1.lsl(4) - 1)
+            next_src_info := word1.and(1.lsl(4))
+            src_offset := word1.and((1.lsl(31 - 5) - 1).lsl(5)).lsr(5)
+            import_num := word2.and(1.lsl(44 - 32) - 1)
+            if import_num == 1.lsl(44 - 32) - 1:
+                import_num := -1
+            len := word2.and((1.lsl(64 - 44) - 1).lsl(12)).lsr(12)
+
+            src_info.append([import_num, src_offset, len])
+            
+            i += 2
+            
+            if next_src_info == 0:
+                break
+        all_src_infos.append([num_instructions, src_info])
+    
+    return all_src_infos
 
 
 
@@ -1015,6 +1061,7 @@ class Target:
 
     WORDSIZE := WORDSIZE
     ARRAY_TYPE := ARRAY_TYPE
+    ARRAY_TYPE_32BIT := ARRAY_TYPE_32BIT
     MODULE_BYTECODE_HEADER := MODULE_BYTECODE_HEADER
     MODULE_BYTECODE_VERSION := MODULE_BYTECODE_VERSION
     MODULE_BYTECODE_NAME := MODULE_BYTECODE_NAME

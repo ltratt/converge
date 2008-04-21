@@ -394,42 +394,47 @@ Con_Obj *Con_Builtins_Module_Atom_pc_to_src_locations(Con_Obj *thread, Con_PC pc
 	Con_Int src_info_pos = 0;
 	Con_Int src_info_num = 0;
 	while (1) {
-		Con_Int src_info = MODULE_GET_32BIT(MODULE_GET_WORD(CON_BYTECODE_MODULE_SRC_POSITIONS) + src_info_pos * sizeof(uint32_t));
+		Con_Int src_info1 = MODULE_GET_32BIT(MODULE_GET_WORD(CON_BYTECODE_MODULE_SRC_POSITIONS) + src_info_pos * sizeof(uint32_t));
 
-		if (src_info_num + (src_info & 0x000007) > instruction_num)
+		if (src_info_num + (src_info1 & ((1 << 4) - 1)) > instruction_num)
 			break;
 
-		src_info_num += src_info & 0x000007;
+		src_info_num += src_info1 & ((1 << 4) - 1);
 
-		while (src_info & (1 << 3)) {
-			src_info_pos += 1;
-			src_info = MODULE_GET_32BIT(MODULE_GET_WORD(CON_BYTECODE_MODULE_SRC_POSITIONS) + src_info_pos * sizeof(uint32_t));
+		while (src_info1 & (1 << 4)) {
+			src_info_pos += 2;
+			src_info1 = MODULE_GET_32BIT(MODULE_GET_WORD(CON_BYTECODE_MODULE_SRC_POSITIONS) + src_info_pos * sizeof(uint32_t));
 		}
-		src_info_pos += 1;
+		src_info_pos += 2;
 	}
 
 	Con_Obj *imports = module_atom->imports;
 	Con_Obj *self_file_name = module_atom->identifier;
 	while (1) {
-		uint32_t src_info = MODULE_GET_32BIT(MODULE_GET_WORD(CON_BYTECODE_MODULE_SRC_POSITIONS) + src_info_pos * sizeof(uint32_t));
+		uint32_t src_info1 = MODULE_GET_32BIT(MODULE_GET_WORD(CON_BYTECODE_MODULE_SRC_POSITIONS) + src_info_pos * sizeof(uint32_t));
+		uint32_t src_info2 = MODULE_GET_32BIT(MODULE_GET_WORD(CON_BYTECODE_MODULE_SRC_POSITIONS) + (src_info_pos + 1) * sizeof(uint32_t));
 		CON_MUTEX_UNLOCK(&module->mutex);
 		Con_Obj *entry = Con_Builtins_List_Atom_new_sized(thread, 2);
 
-		if ((src_info & 0x3FF0) >> 4 == (1 << 10) - 1)
+#       define IMPORT_NUM_MASK ((1 << 12) - 1)
+
+        if ((src_info2 & IMPORT_NUM_MASK) == IMPORT_NUM_MASK)
 			CON_GET_SLOT_APPLY(entry, "append", self_file_name);
 		else {
-			Con_Obj *import_file_name = CON_GET_SLOT_APPLY(imports, "get", CON_NEW_INT((src_info & 0x3FF0) >> 4));
+			Con_Obj *import_file_name = CON_GET_SLOT_APPLY(imports, "get", CON_NEW_INT(src_info2 & IMPORT_NUM_MASK));
 			CON_GET_SLOT_APPLY(entry, "append", import_file_name);
 		}
-		CON_GET_SLOT_APPLY(entry, "append", CON_NEW_INT(src_info >> 14));
+
+		CON_GET_SLOT_APPLY(entry, "append", CON_NEW_INT((src_info1 >> 5) & ((1 << (31 - 5)) - 1)));
+		CON_GET_SLOT_APPLY(entry, "append", CON_NEW_INT(src_info2 >> 12));
 
 		CON_GET_SLOT_APPLY(src_locations, "append", entry);
 		CON_MUTEX_LOCK(&module->mutex);
 
-		if (!(src_info & (1 << 3)))
+		if (!(src_info1 & (1 << 4)))
 			break;
 
-		src_info_pos += 1;
+		src_info_pos += 2;
 	}
 	
 	return src_locations;

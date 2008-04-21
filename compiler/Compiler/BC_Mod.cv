@@ -262,11 +262,12 @@ class BC_Mod:
                 defns.append(self._decode_string(self._mod_lookups, i, defn_len))
                 i += self._target.align(defn_len)
             src_infos := []
-            num_src_infos := self._mod_lookups[i / self._target.WORDSIZE]
+            len_src_infos := self._mod_lookups[i / self._target.WORDSIZE]
             i += self._target.WORDSIZE
-            for 0.iter_to(num_src_infos):
-                src_infos.append([self._mod_lookups[i / self._target.WORDSIZE], self._mod_lookups[(i + self._target.WORDSIZE) / self._target.WORDSIZE]])
-                i += 2 * self._target.WORDSIZE
+            enc_src_infos := self._target.decode_src_infos(self._mod_lookups[i / self._target.WORDSIZE : (i + len_src_infos) / self._target.WORDSIZE])
+            assert enc_src_infos.len() == 1
+            src_infos := enc_src_infos[0][1]
+            i += len_src_infos
             mod_lookups.append([mod_num, defns, src_infos])
         
         self._cached_mod_lookups := mod_lookups
@@ -284,8 +285,9 @@ class BC_Mod:
             for defn := defns.iter():
                 ar.append(defn.len())
                 ar.extend_from_string(self._target.b_aligned_string(defn))
-            ar.append(src_infos.len())
-            ar.extend(src_infos.flattened())
+            enc_src_infos := self._target.encode_src_infos([[1, src_infos]])
+            ar.append(enc_src_infos.len())
+            ar.extend_from_string(enc_src_infos)
         
         self._mod_lookups := ar
         self._num_mod_lookups := mod_lookups.len()

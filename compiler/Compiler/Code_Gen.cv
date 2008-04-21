@@ -240,7 +240,7 @@ class Code_Gen:
     func _tn_src_infos(self, src_infos):
 
         tn_src_infos := []
-        for mod_id, src_offset := src_infos.iter():
+        for mod_id, src_offset, len := src_infos.iter():
             if mod_id == self._mod_id:
                 import_num := -1
             else:
@@ -250,9 +250,9 @@ class Code_Gen:
                     self._imports[mod_id] := [import_num, mod_id]
 
             if src_offset is null:
-                tn_src_infos.append([import_num, -1])
+                tn_src_infos.append([import_num, -1, len])
             else:
-                tn_src_infos.append([import_num, src_offset])
+                tn_src_infos.append([import_num, src_offset, len])
         
         return tn_src_infos
 

@@ -539,7 +539,7 @@ Con_Obj *_Con_Module_Exception_backtrace_func(Con_Obj *thread)
 	CON_MUTEX_LOCK(&exception->mutex);
 
 	// Iterate over the call chain in reverse order, printing out each entry.
-	Con_Obj *file_mod = Con_Modules_get_stdlib(thread, CON_STDLIB_FILE);
+	Con_Obj *file_mod = Con_Modules_import(thread, Con_Modules_get_stdlib(thread, CON_STDLIB_FILE));
 	Con_Obj *exists_func = CON_GET_MOD_DEFN(file_mod, "exists");
 	for (Con_Int i = exception_atom->num_call_chain_entries - 1; i >= 0; i -= 1) {
 		Con_Builtins_Exception_Class_Call_Chain_Entry *call_chain_entry = &exception_atom->call_chain[i];

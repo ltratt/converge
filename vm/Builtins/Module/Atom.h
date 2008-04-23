@@ -46,10 +46,6 @@ typedef struct {
 	Con_Obj **constants;               // Can be NULL if num_constants == 0
 } Con_Builtins_Module_Atom;
 
-typedef struct {
-	const u_char *key;
-	Con_Obj *val;
-} Con_Builtins_Module_Atom_C_Entry;
 
 
 void Con_Builtins_Module_Atom_bootstrap(Con_Obj *);

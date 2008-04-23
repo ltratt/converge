@@ -100,7 +100,7 @@ Con_Obj *Con_Builtins_Module_Atom_new_c(Con_Obj *thread, Con_Obj *identifier, Co
 	module_atom->imports = Con_Builtins_List_Atom_new_sized(thread, 0);
 	module_atom->container = container;
 	module_atom->num_constants = 0;
-	module_atom->constants_create_offsets = 0;
+	module_atom->constants_create_offsets = NULL;
 	module_atom->constants = NULL;
 	
 	Con_Slots_init(thread, &module_atom->top_level_vars);
@@ -544,6 +544,7 @@ void _Con_Builtins_Module_Class_gc_scan_func(Con_Obj *thread, Con_Obj *obj, Con_
 	Con_Memory_gc_push(thread, module_atom->imports);
 	if (module_atom->init_func != NULL)
 		Con_Memory_gc_push(thread, module_atom->init_func);
+	Con_Memory_gc_push(thread, module_atom->container);
 	Con_Slots_gc_scan_slots(thread, &module_atom->top_level_vars);
 	
 	if (module_atom->constants_create_offsets != NULL)

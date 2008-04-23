@@ -765,6 +765,9 @@ void Con_Memory_gc_scan_conservative(Con_Obj *thread, void *start_addr, size_t s
 {
 	Con_Memory_Store *mem_store = Con_Builtins_VM_Atom_get_mem_store(thread);
 
+    if (size % sizeof(Con_Int) != 0)
+    	size = (size / sizeof(Con_Int)) * sizeof(Con_Int);
+
 	Con_Int *current_addr = start_addr;
 	void *end_addr = ((u_char *) start_addr) + size;
 	while ((void *) current_addr < end_addr) {

@@ -169,7 +169,7 @@ Con_Obj *_Con_Builtins_Class_Class_new_object(Con_Obj *thread)
 
 	Con_Memory_change_chunk_type(thread, new_class, CON_MEMORY_CHUNK_OBJ);
 	
-	CON_GET_SLOT_APPLY(CON_GET_SLOT(new_class, "init"), "apply", Con_Builtins_List_Atom_new_va(thread, name, supers, container));
+	CON_GET_SLOT_APPLY(CON_GET_SLOT(new_class, "init"), "apply", Con_Builtins_List_Atom_new_va(thread, name, supers, container, NULL));
 	
 	return new_class;
 }

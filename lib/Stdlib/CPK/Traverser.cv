@@ -31,7 +31,7 @@ class Traverser:
         if not Builtins::List.conformed_by(node):
             fail
             
-        name := "_t_" + node[0]
+        name := "_t_" + node.name
         if self.find_slot(name):
             return self.get_slot(name)(node)
         else:
@@ -44,7 +44,7 @@ class Liberal_Traverser(Traverser):
 
     func _default(self, node):
     
-        for c := node[1 : ].iter():
+        for c := node[0 : ].iter():
             self.preorder(c)
 
         return null

@@ -25,9 +25,11 @@
 
 #include "Core.h"
 #include "Misc.h"
+#include "Modules.h"
 #include "Numbers.h"
 #include "Object.h"
 #include "Shortcuts.h"
+#include "Std_Modules.h"
 
 #include "Builtins/Atom_Def_Atom.h"
 #include "Builtins/Class/Atom.h"
@@ -234,7 +236,7 @@ parse_func_parse_Tree_Alternatives *_Con_Module_C_Earley_Parser_Parser_parse_fun
 void _Con_Module_C_Earley_Parser_Parser_parse_func_add_alternative(Con_Obj *, parse_func_Parser_State *, parse_func_parse_Tree_Alternatives **, parse_func_parse_Tree_Alternatives **, parse_func_parse_Tree_Alternatives **, Con_Int, Con_Int, Con_Int, Con_Int, parse_func_parse_Tree *);
 void _Con_Module_C_Earley_Parser_Parser_parse_func_extend_alternatives(Con_Obj *, parse_func_Parser_State *, parse_func_parse_Tree_Alternatives *, parse_func_parse_Tree_Alternatives *);
 void _Con_Module_C_Earley_Parser_Parser_parse_func_resolve_tree_ambiguities(Con_Obj *, parse_func_Parser_State *, parse_func_parse_Tree_Alternatives *);
-Con_Obj *_Con_Module_C_Earley_Parser_Parser_parse_func_tree_to_list(Con_Obj *, parse_func_Parser_State *, parse_func_parse_Tree *);
+Con_Obj *_Con_Module_C_Earley_Parser_Parser_parse_func_tree_to_list(Con_Obj *, parse_func_Parser_State *, parse_func_parse_Tree *, Con_Int *);
 Con_Int _Con_Module_C_Earley_Parser_Parser_parse_calc_max_depth(Con_Obj *, parse_func_Parser_State *, parse_func_parse_Tree *);
 Con_Int _Con_Module_C_Earley_Parser_Parser_parse_calc_precedence(Con_Obj *, parse_func_Parser_State *, parse_func_parse_Tree *, Con_Int);
 
@@ -334,8 +336,10 @@ Con_Obj *_Con_Module_C_Earley_Parser_Parser_parse_func(Con_Obj *thread)
 	assert(alternatives.entry.alternative.tree->entries[0].entry.tree != NULL);
 	
 	// Turn the parse tree into a nested list (removing the D0 node at the very top).
-	
-	return _Con_Module_C_Earley_Parser_Parser_parse_func_tree_to_list(thread, parser, alternatives.entry.alternative.tree->entries[0].entry.tree);
+
+    Con_Int tok_i = 0;
+
+	return _Con_Module_C_Earley_Parser_Parser_parse_func_tree_to_list(thread, parser, alternatives.entry.alternative.tree->entries[0].entry.tree, &tok_i);	
 }
 
 
@@ -1167,25 +1171,137 @@ Con_Int _Con_Module_C_Earley_Parser_Parser_parse_calc_precedence(Con_Obj *thread
 
 
 
-//
-// Convert a parse tree to a more friendly Converge nested list.
-//
-
-Con_Obj *_Con_Module_C_Earley_Parser_Parser_parse_func_tree_to_list(Con_Obj *thread, parse_func_Parser_State *parser, parse_func_parse_Tree *tree)
+Con_Obj *_Con_Module_C_Earley_Parser_Parser_parse_func_tree_to_list2(Con_Obj *thread, parse_func_Parser_State *parser, parse_func_parse_Tree *tree, Con_Int *tok_i)
 {
-	Con_Obj *list = Con_Builtins_List_Atom_new_sized(thread, tree->num_entries + 1);
-	CON_GET_SLOT_APPLY(list, "append", parser->rule_names[_GET_PRODUCTION_INT(tree->p, _COMPILED_PRODUCTION_PARENT_RULE)]);
-	
+    Con_Int orig_tok_i = *tok_i;
+
+//    Con_Obj *tree_mod = Con_Modules_get_stdlib(thread, CON_STDLIB_CPK_TREE);
+//    Con_Obj *new_tree = CON_GET_SLOT_APPLY(CON_GET_MOD_DEFN(tree_mod, "Tree"), "new");
+Con_Obj *new_tree = Con_Builtins_List_Atom_new_sized(thread, tree->num_entries + 1);;
+    Con_Obj *rule_name = parser->rule_names[_GET_PRODUCTION_INT(tree->p, _COMPILED_PRODUCTION_PARENT_RULE)];
+	CON_GET_SLOT_APPLY(new_tree, "append", rule_name);
+    
 	// Note that entries in parse tree nodes are stored in reverse order, so we have to unpack them
 	// in reverse order.
 	
-	for (Con_Int x = tree->num_entries - 1; x >= 0; x -= 1) {
-		parse_func_parse_Tree_Entry *entry = &tree->entries[x];
-		if (entry->type == PARSE_TREE_TOKEN)
-			CON_GET_SLOT_APPLY(list, "append", entry->entry.token);
-		else
-			CON_GET_SLOT_APPLY(list, "append", _Con_Module_C_Earley_Parser_Parser_parse_func_tree_to_list(thread, parser, entry->entry.tree));
+	for (Con_Int i = tree->num_entries - 1; i >= 0; i -= 1) {
+		parse_func_parse_Tree_Entry *entry = &tree->entries[i];
+		if (entry->type == PARSE_TREE_TOKEN) {
+            *tok_i += 1;
+			CON_GET_SLOT_APPLY(new_tree, "append", entry->entry.token);
+        }
+		else {
+            Con_Obj *sub_tree = _Con_Module_C_Earley_Parser_Parser_parse_func_tree_to_list(thread, parser, entry->entry.tree, tok_i);
+			CON_GET_SLOT_APPLY(new_tree, "append", sub_tree);
+        }
 	}
+
+    Con_Obj *new_src_file, *new_src_offset, *new_src_len;
+
+    if (orig_tok_i == parser->num_tokens) {
+        Con_Obj *first_src_infos = CON_GET_SLOT(parser->tokens[orig_tok_i - 1].token, "src_infos");  
+        if (!CON_GET_SLOT_APPLY_NO_FAIL(CON_GET_SLOT_APPLY(first_src_infos, "len"), "==", CON_NEW_INT(1)))
+            CON_XXX;
+        Con_Obj *first_src_info = CON_GET_SLOT_APPLY(first_src_infos, "get", CON_NEW_INT(0));
+        Con_Obj *first_src_offset = CON_GET_SLOT_APPLY(first_src_info, "get", CON_NEW_INT(1));
+        Con_Obj *first_src_len = CON_GET_SLOT_APPLY(first_src_info, "get", CON_NEW_INT(2));
+
+        new_src_file = CON_GET_SLOT_APPLY(first_src_info, "get", CON_NEW_INT(0));
+        new_src_offset = CON_ADD(first_src_offset, first_src_len);
+    }
+    else {
+        Con_Obj *first_src_infos = CON_GET_SLOT(parser->tokens[orig_tok_i].token, "src_infos");  
+        if (!CON_GET_SLOT_APPLY_NO_FAIL(CON_GET_SLOT_APPLY(first_src_infos, "len"), "==", CON_NEW_INT(1)))
+            CON_XXX;
+        Con_Obj *first_src_info = CON_GET_SLOT_APPLY(first_src_infos, "get", CON_NEW_INT(0));
+
+        new_src_file = CON_GET_SLOT_APPLY(first_src_info, "get", CON_NEW_INT(0));
+        new_src_offset = CON_GET_SLOT_APPLY(first_src_info, "get", CON_NEW_INT(1));
+    }
+
+    if (tok_i == 0)
+        new_src_len = CON_NEW_INT(0);
+    else {
+        Con_Obj *last_src_infos = CON_GET_SLOT(parser->tokens[*tok_i - 1].token, "src_infos");    
+        if (!CON_GET_SLOT_APPLY_NO_FAIL(CON_GET_SLOT_APPLY(last_src_infos, "len"), "==", CON_NEW_INT(1)))
+            CON_XXX;
+        Con_Obj *last_src_info = CON_GET_SLOT_APPLY(last_src_infos, "get", CON_NEW_INT(0));
+        Con_Obj *last_src_offset = CON_GET_SLOT_APPLY(last_src_info, "get", CON_NEW_INT(1));
+        Con_Obj *last_src_len = CON_GET_SLOT_APPLY(last_src_info, "get", CON_NEW_INT(2));
+
+        new_src_len = CON_SUBTRACT(CON_ADD(last_src_offset, last_src_len), new_src_offset);
+    }
+
+    Con_Obj *new_src_info = Con_Builtins_List_Atom_new_va(thread, new_src_file, new_src_offset, new_src_len, NULL);
+    CON_SET_SLOT(new_tree, "src_infos", Con_Builtins_List_Atom_new_va(thread, new_src_info, NULL));
+
+	return new_tree;
+}
+
+
+Con_Obj *_Con_Module_C_Earley_Parser_Parser_parse_func_tree_to_list(Con_Obj *thread, parse_func_Parser_State *parser, parse_func_parse_Tree *tree, Con_Int *tok_i)
+{
+    Con_Int orig_tok_i = *tok_i;
+
+    Con_Obj *children = Con_Builtins_List_Atom_new_sized(thread, tree->num_entries);
+    
+	// Note that entries in parse tree nodes are stored in reverse order, so we have to unpack them
+	// in reverse order.
 	
-	return list;
+	for (Con_Int i = tree->num_entries - 1; i >= 0; i -= 1) {
+		parse_func_parse_Tree_Entry *entry = &tree->entries[i];
+		if (entry->type == PARSE_TREE_TOKEN) {
+            *tok_i += 1;
+			CON_GET_SLOT_APPLY(children, "append", entry->entry.token);
+        }
+		else {
+            Con_Obj *sub_tree = _Con_Module_C_Earley_Parser_Parser_parse_func_tree_to_list(thread, parser, entry->entry.tree, tok_i);
+			CON_GET_SLOT_APPLY(children, "append", sub_tree);
+        }
+	}
+
+    Con_Obj *new_src_file, *new_src_offset, *new_src_len;
+
+    if (orig_tok_i == parser->num_tokens) {
+        Con_Obj *first_src_infos = CON_GET_SLOT(parser->tokens[orig_tok_i - 1].token, "src_infos");  
+        if (!CON_GET_SLOT_APPLY_NO_FAIL(CON_GET_SLOT_APPLY(first_src_infos, "len"), "==", CON_NEW_INT(1)))
+            CON_XXX;
+        Con_Obj *first_src_info = CON_GET_SLOT_APPLY(first_src_infos, "get", CON_NEW_INT(0));
+        Con_Obj *first_src_offset = CON_GET_SLOT_APPLY(first_src_info, "get", CON_NEW_INT(1));
+        Con_Obj *first_src_len = CON_GET_SLOT_APPLY(first_src_info, "get", CON_NEW_INT(2));
+
+        new_src_file = CON_GET_SLOT_APPLY(first_src_info, "get", CON_NEW_INT(0));
+        new_src_offset = CON_ADD(first_src_offset, first_src_len);
+    }
+    else {
+        Con_Obj *first_src_infos = CON_GET_SLOT(parser->tokens[orig_tok_i].token, "src_infos");  
+        if (!CON_GET_SLOT_APPLY_NO_FAIL(CON_GET_SLOT_APPLY(first_src_infos, "len"), "==", CON_NEW_INT(1)))
+            CON_XXX;
+        Con_Obj *first_src_info = CON_GET_SLOT_APPLY(first_src_infos, "get", CON_NEW_INT(0));
+
+        new_src_file = CON_GET_SLOT_APPLY(first_src_info, "get", CON_NEW_INT(0));
+        new_src_offset = CON_GET_SLOT_APPLY(first_src_info, "get", CON_NEW_INT(1));
+    }
+
+    if (tok_i == 0)
+        new_src_len = CON_NEW_INT(0);
+    else {
+        Con_Obj *last_src_infos = CON_GET_SLOT(parser->tokens[*tok_i - 1].token, "src_infos");    
+        if (!CON_GET_SLOT_APPLY_NO_FAIL(CON_GET_SLOT_APPLY(last_src_infos, "len"), "==", CON_NEW_INT(1)))
+            CON_XXX;
+        Con_Obj *last_src_info = CON_GET_SLOT_APPLY(last_src_infos, "get", CON_NEW_INT(0));
+        Con_Obj *last_src_offset = CON_GET_SLOT_APPLY(last_src_info, "get", CON_NEW_INT(1));
+        Con_Obj *last_src_len = CON_GET_SLOT_APPLY(last_src_info, "get", CON_NEW_INT(2));
+
+        new_src_len = CON_SUBTRACT(CON_ADD(last_src_offset, last_src_len), new_src_offset);
+    }
+
+    Con_Obj *new_src_info = Con_Builtins_List_Atom_new_va(thread, new_src_file, new_src_offset, new_src_len, NULL);
+    Con_Obj *new_src_infos = Con_Builtins_List_Atom_new_va(thread, new_src_info, NULL);
+
+    Con_Obj *rule_name = parser->rule_names[_GET_PRODUCTION_INT(tree->p, _COMPILED_PRODUCTION_PARENT_RULE)];
+    Con_Obj *tree_mod = Con_Modules_get_stdlib(thread, CON_STDLIB_CPK_TREE);
+    Con_Obj *root = CON_GET_SLOT_APPLY(CON_GET_MOD_DEFN(tree_mod, "Non_Term"), "new", rule_name, children, new_src_infos);
+
+	return root;
 }

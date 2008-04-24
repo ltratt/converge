@@ -83,7 +83,7 @@ class _Test_Translator(Traverser::Strict_Traverser):
         // tests ::= file ( "NEWLINE" file )*
 
         itests := []
-        i := 1
+        i := 0
         while i < node.len():
             itests.append(self._preorder(node[i]))
             i += 2
@@ -148,10 +148,10 @@ class _Test_Translator(Traverser::Strict_Traverser):
         // file ::= "STRING"
         //      ::= "STRING" ":" "INDENT" detail ( "NEWLINE" detail )* "DEDENT"
 
-        path := CEI::istring(node[1].value, node[1].src_infos)
+        path := CEI::istring(node[0].value, node[0].src_infos)
 
         details := []
-        i := 4
+        i := 3
         while i < node.len():
             details.append(self._preorder(node[i]))
             i += 2
@@ -164,13 +164,13 @@ class _Test_Translator(Traverser::Strict_Traverser):
 
         // detail ::= mode type
 
-        mode_node := node[1][1]
+        mode_node := node[0][0]
         ndif mode_node.type == "CTIME":
             imode := [| _MODE_CTIME |]
         elif mode_node.type == "RTIME":
             imode := [| _MODE_RTIME |]
 
-        return [| [${imode}, ${self._preorder(node[2])}] |]
+        return [| [${imode}, ${self._preorder(node[1])}] |]
 
 
 
@@ -179,7 +179,7 @@ class _Test_Translator(Traverser::Strict_Traverser):
         // type ::= warning
         //      ::= exception
 
-        return self._preorder(node[1])
+        return self._preorder(node[0])
 
 
 
@@ -187,9 +187,9 @@ class _Test_Translator(Traverser::Strict_Traverser):
 
         // exception ::= "EXCEPTION" "STRING"
 
-        iex_name := CEI::istring(node[2].value, node[2].src_infos)
+        iex_name := CEI::istring(node[1].value, node[1].src_infos)
 
-        return [<node[1].src_infos>| _Detail_Exception.new(${iex_name}) |]
+        return [<node[0].src_infos>| _Detail_Exception.new(${iex_name}) |]
 
 
 

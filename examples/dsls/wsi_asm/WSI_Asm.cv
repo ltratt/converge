@@ -114,20 +114,20 @@ class Ab_Translator(Traverser::Strict_Traverser):
 
         self._labels := Dict{}
         mem_i := 0
-        for i := 1.iter_to(node.len(), 2):
-            aol_node := node[i][1]
-            if aol_node[0] == "action":
+        for i := 0.iter_to(node.len(), 2):
+            aol_node := node[i][0]
+            if aol_node.name == "action":
                 mem_i += 1
             else:
                 // label ::= "ID" ":"
-                name := aol_node[1].value
+                name := aol_node[0].value
                 self._labels[name] := mem_i
         
         memory := []
 
-        for i := 1.iter_to(node.len(), 2):
-            aol_node := node[i][1]
-            if aol_node[0] == "label":
+        for i := 0.iter_to(node.len(), 2):
+            aol_node := node[i][0]
+            if aol_node.name == "label":
                 continue
 
             memory.append(self._t_action(aol_node))
@@ -148,63 +148,63 @@ class Ab_Translator(Traverser::Strict_Traverser):
         //          | swi
         //          | branch
         
-        ndif node.len() == 4:
+        ndif node.len() == 3:
             // A ::= register ":=" expr
-            reg := self._t_register(node[1])
-            expr := self._t_expr(node[3])
-            actions := [<node[2].src_infos>|
+            reg := self._t_register(node[0])
+            expr := self._t_expr(node[2])
+            actions := [<node[1].src_infos>|
                 $c{reg} := $c{expr}
                 &vm.registers[_PC_REG] += 1
             |]
-        elif node.len() == 6:
+        elif node.len() == 5:
             // action ::= "[" register "]" ":=" expr
-            reg := self._t_register(node[2])
-            expr := self._t_expr(node[5])
-            actions := [<node[4].src_infos>|
+            reg := self._t_register(node[1])
+            expr := self._t_expr(node[4])
+            actions := [<node[3].src_infos>|
                 &vm.memory[$c{reg}] := $c{expr}
                 &vm.registers[_PC_REG] += 1
             |]
-        elif node.len() == 3 & node[1].type == "CALL":
+        elif node.len() == 2 & node[0].type == "CALL":
             // action ::= "CALL" addr
-            addr := self._t_addr(node[2])
-            actions := [<node[1].src_infos>|
+            addr := self._t_addr(node[1])
+            actions := [<node[0].src_infos>|
                 // Push PC + 1 onto the stack and jump to 'addr'
                 &vm.memory[&vm.registers[_ST_REG]] := &vm.registers[_PC_REG] + 1
                 &vm.registers[_ST_REG] -= 1
                 &vm.registers[_PC_REG] := ${addr}
             |]
-        elif node.len() == 2 & not Builtins::List.instantiated(node[1]):
+        elif node.len() == 1 & not Builtins::List.instantiated(node[0]):
             // action ::= "RTN"
-            actions := [<node[1].src_infos>|
+            actions := [<node[0].src_infos>|
                 // Pop the rtn PC from the stack and jump to it
                 &vm.registers[_ST_REG] += 1
                 &vm.registers[_PC_REG] := &vm.memory[&vm.registers[_ST_REG]]
             |]
-        elif node.len() == 3 & node[1].type == "PUSH":
+        elif node.len() == 2 & node[0].type == "PUSH":
             // action ::= "PUSH" register
-            reg := self._t_register(node[2])
-            actions := [<node[1].src_infos>|
+            reg := self._t_register(node[1])
+            actions := [<node[0].src_infos>|
                 &vm.memory[&vm.registers[_ST_REG]] := $c{reg}
                 &vm.registers[_ST_REG] -= 1
                 &vm.registers[_PC_REG] += 1
             |]
-        elif node.len() == 3 & node[1].type == "POP":
+        elif node.len() == 2 & node[0].type == "POP":
             // action ::= "POP" register
-            reg := self._t_register(node[2])
-            actions := [<node[1].src_infos>|
+            reg := self._t_register(node[1])
+            actions := [<node[0].src_infos>|
                 &vm.registers[_ST_REG] += 1
                 $c{reg} := &vm.memory[&vm.registers[_ST_REG]]
                 &vm.registers[_PC_REG] += 1
             |]
-        elif node.len() == 2 & node[1][0] == "swi":
+        elif node.len() == 1 & node[0].name == "swi":
             // action ::= swi
-            actions := [<node[1][1].src_infos>|
-                $c{self._t_swi(node[1])}
+            actions := [<node[0][0].src_infos>|
+                $c{self._t_swi(node[0])}
                 &vm.registers[_PC_REG] += 1
             |]
-        elif node.len() == 2 & node[1][0] == "branch":
+        elif node.len() == 1 & node[0].name == "branch":
             // action ::= branch
-            actions := [self._t_branch(node[1])]
+            actions := [self._t_branch(node[0])]
 
         return [|
             func (&vm):
@@ -217,16 +217,16 @@ class Ab_Translator(Traverser::Strict_Traverser):
 
         // swi ::= "SWI" "ID"
 
-        swi := node[2].value
+        swi := node[1].value
         if swi == "exit":
-            return [<node[1].src_infos>| Sys::exit(0) |]
+            return [<node[0].src_infos>| Sys::exit(0) |]
         elif swi == "printi":
-            return [<node[1].src_infos>|
+            return [<node[0].src_infos>|
                 val := &vm.registers[0]
                 Sys::println(val)
             |]
         elif swi == "inputi":
-            return [<node[1].src_infos>|
+            return [<node[0].src_infos>|
                 Sys::print("> ")
                 Sys::stdout.flush()
                 input := Sys::stdin.readln().stripped()
@@ -235,7 +235,7 @@ class Ab_Translator(Traverser::Strict_Traverser):
             |]
         else:
             msg := Strings::format("Unknown SWI '%s'.", swi)
-            CEI::error(msg, node[1].src_infos)
+            CEI::error(msg, node[0].src_infos)
 
 
 
@@ -245,10 +245,10 @@ class Ab_Translator(Traverser::Strict_Traverser):
         //          | "JMP" addr
         
         addr := self._t_addr(node[-1])
-        if node.len() == 5:
+        if node.len() == 4:
             // branch ::= "IF" cond "JMP" addr
-            cond := self._t_cond(node[2])
-            return [<node[1].src_infos>|
+            cond := self._t_cond(node[1])
+            return [<node[0].src_infos>|
                 if $c{cond}:
                     &vm.registers[_PC_REG] := ${addr}
                 else:
@@ -256,7 +256,7 @@ class Ab_Translator(Traverser::Strict_Traverser):
             |]
         else:
             // branch ::= "JMP" addr
-            return [<node[1].src_infos>| &vm.registers[_PC_REG] := ${addr} |]
+            return [<node[0].src_infos>| &vm.registers[_PC_REG] := ${addr} |]
 
 
 
@@ -264,8 +264,8 @@ class Ab_Translator(Traverser::Strict_Traverser):
     
         // reg ::= R0 | R1 ...
         
-        reg := CEI::iint(Builtins::Int.new(node[1].value[1 : ]))
-        return [<node[1].src_infos>| &vm.registers[${reg}] |]
+        reg := CEI::iint(Builtins::Int.new(node[0].value[1 : ]))
+        return [<node[0].src_infos>| &vm.registers[${reg}] |]
 
 
 
@@ -276,31 +276,31 @@ class Ab_Translator(Traverser::Strict_Traverser):
         //        | register op "INT"
         //        | "[" register "]"
 
-        ndif node.len() == 2 & node[1][0] == "register":
+        ndif node.len() == 1 & node[0].name == "register":
             // expr ::= register
-            return self._t_register(node[1])
-        elif node.len() == 2 & node[1][0] == "addr":
+            return self._t_register(node[0])
+        elif node.len() == 1 & node[0].name == "addr":
             // expr ::= addr
-            return self._t_addr(node[1])
-        elif node.len() == 4 & Builtins::List.instantiated(node[1]):
+            return self._t_addr(node[0])
+        elif node.len() == 3 & Builtins::List.instantiated(node[0]):
             // expr ::= register op register
             //        | register op "INT"
-            lhs := self._t_register(node[1])
-            if Builtins::List.instantiated(node[3]):
+            lhs := self._t_register(node[0])
+            if Builtins::List.instantiated(node[2]):
                 // expr ::= register op register
-                rhs := self._t_register(node[3])
+                rhs := self._t_register(node[2])
             else:
                 // expr ::= register op "INT"
-                rhs := CEI::iint(Builtins::Int.new(node[3].value))
-            op := node[2][1].type
+                rhs := CEI::iint(Builtins::Int.new(node[2].value))
+            op := node[1][0].type
             ndif op == "+":
-                return [<node[2][1].src_infos>| $c{lhs} + $c{rhs} |]
+                return [<node[1][0].src_infos>| $c{lhs} + $c{rhs} |]
             elif op == "-":
-                return [<node[2][1].src_infos>| $c{lhs} - $c{rhs} |]
-        elif node.len() == 4:
+                return [<node[1][0].src_infos>| $c{lhs} - $c{rhs} |]
+        elif node.len() == 3:
             // expr ::= "[" register "]"
-            reg := self._t_register(node[2])
-            return [<node[1].src_infos>| &vm.memory[$c{reg}] |]
+            reg := self._t_register(node[1])
+            return [<node[0].src_infos>| &vm.memory[$c{reg}] |]
 
 
 
@@ -309,22 +309,22 @@ class Ab_Translator(Traverser::Strict_Traverser):
         // cond ::= register cmp register
         //        | register cmp addr
         
-        lhs := self._t_register(node[1])
-        rhs := self._preorder(node[3])
+        lhs := self._t_register(node[0])
+        rhs := self._preorder(node[2])
         
-        cmp := node[2][1].type
+        cmp := node[1][0].type
         ndif cmp == "==":
-            return [<node[2][1].src_infos>| $c{lhs} == $c{rhs} |]
+            return [<node[1][0].src_infos>| $c{lhs} == $c{rhs} |]
         elif cmp == "!=":
-            return [<node[2][1].src_infos>| $c{lhs} != $c{rhs} |]
+            return [<node[1][0].src_infos>| $c{lhs} != $c{rhs} |]
         elif cmp == ">":
-            return [<node[2][1].src_infos>| $c{lhs} > $c{rhs} |]
+            return [<node[1][0].src_infos>| $c{lhs} > $c{rhs} |]
         elif cmp == ">=":
-            return [<node[2][1].src_infos>| $c{lhs} >= $c{rhs} |]
+            return [<node[1][0].src_infos>| $c{lhs} >= $c{rhs} |]
         elif cmp == "<":
-            return [<node[2][1].src_infos>| $c{lhs} < $c{rhs} |]
+            return [<node[1][0].src_infos>| $c{lhs} < $c{rhs} |]
         elif cmp == "<=":
-            return [<node[2][1].src_infos>| $c{lhs} <= $c{rhs} |]
+            return [<node[1][0].src_infos>| $c{lhs} <= $c{rhs} |]
 
 
 
@@ -333,14 +333,14 @@ class Ab_Translator(Traverser::Strict_Traverser):
         // addr ::= "INT"
         //        | "ID"
         
-        addr_node := node[1]
+        addr_node := node[0]
         if addr_node.type == "INT":
             return CEI::iint(Builtins::Int.new(addr_node.value))
         else:
             label := addr_node.value
             if not addr := self._labels.find(label):
                 msg := Strings::format("Unknown label '%s'.", label)
-                CEI::error(msg, node[1].src_infos)
+                CEI::error(msg, node[0].src_infos)
             return CEI::iint(self._labels[addr_node.value])
                         
     

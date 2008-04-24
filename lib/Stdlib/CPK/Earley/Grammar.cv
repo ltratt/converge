@@ -184,8 +184,8 @@ class _Parser:
 
         self._ordered_rule_names := ["$$start$$"]
         self._rule_names_map := Dict{"$$start$$" : 0}
-        for rule_node := node.iter(1):
-            rule_name := rule_node[1].value
+        for rule_node := node.iter(0):
+            rule_name := rule_node[0].value
             if self._rule_names_map.find(rule_name):
                 self._error(Strings::format("Duplicate rule name '%s'.", rule_name))
             self._ordered_rule_names.append(rule_name)
@@ -193,7 +193,7 @@ class _Parser:
 
         start_alt := [0, 0, 2, _COMPILED_RULE_REF, self._rule_names_map[self._start_rule]]
         rules := Dict{0 : [start_alt]}
-        for rule_node := node.iter(1):
+        for rule_node := node.iter(0):
             name, alts := self._t_rule(rule_node)
             mapped_name := self._rule_names_map[name]
             rules[mapped_name] := alts
@@ -206,10 +206,10 @@ class _Parser:
 
         // rule ::= "NONTERM" "::=" alt ( "|" alt )*
 
-        name := node[1].value
+        name := node[0].value
         alts := []
         rule_num := self._rule_names_map[name]
-        i := 3
+        i := 2
         while i < node.len():
             alts.append(self._t_alt(node[i], rule_num))
             i += 2
@@ -224,18 +224,18 @@ class _Parser:
         //       | precedence
 
         prec_node := node[-1]
-        if prec_node.len() == 1:
+        if prec_node.len() == 0:
             // precedence ::=
             prec := 0
         else:
             // precedence ::= "%PRECEDENCE" "INT"
-            prec := Builtins::Int.new(prec_node[2].value)
+            prec := Builtins::Int.new(prec_node[1].value)
 
-        if node.len() == 1:
+        if node.len() == 0:
             // alt ::=
             return [prec, rule_num, 0]
 
-        symbols := self._t_symbols(node[1])
+        symbols := self._t_symbols(node[0])
 
         return [prec, rule_num, symbols.len()] + symbols
 
@@ -246,29 +246,29 @@ class _Parser:
         // symbols ::= ( symbol )*
 
         symbols := []
-        for symbol_node := node.iter(1):
-            snt := symbol_node[1].type
+        for symbol_node := node.iter(0):
+            snt := symbol_node[0].type
             if snt == "NONTERM":
                 // symbol ::= "NONTERM"
-                symbols.extend([_COMPILED_RULE_REF, self._rule_names_map[symbol_node[1].value]])
+                symbols.extend([_COMPILED_RULE_REF, self._rule_names_map[symbol_node[0].value]])
             elif snt == "TERM":
                 // symbol ::= "TERM"
-                symbols.extend([_COMPILED_TOKEN, self._tokens_map[symbol_node[1].value]])
+                symbols.extend([_COMPILED_TOKEN, self._tokens_map[symbol_node[0].value]])
             else:
                 // symbol ::= "(" symbols ")*"
                 //          | "(" symbols ")+"
                 //          | "(" symbols ")?"
-                sub_symbols := self._t_symbols(symbol_node[2])
-                ndif symbol_node[3].type == ")*":
+                sub_symbols := self._t_symbols(symbol_node[1])
+                ndif symbol_node[2].type == ")*":
                     symbols.extend([_COMPILED_OPEN_KLEENE_STAR_GROUP, -1])
                     symbols.extend(sub_symbols)
                     symbols.extend([_COMPILED_CLOSE_KLEENE_STAR_GROUP, -1])
-                elif symbol_node[3].type == ")+":
+                elif symbol_node[2].type == ")+":
                     symbols.extend(sub_symbols)
                     symbols.extend([_COMPILED_OPEN_KLEENE_STAR_GROUP, -1])
                     symbols.extend(sub_symbols)
                     symbols.extend([_COMPILED_CLOSE_KLEENE_STAR_GROUP, -1])
-                elif symbol_node[3].type == ")?":
+                elif symbol_node[2].type == ")?":
                     symbols.extend([_COMPILED_OPEN_OPTIONAL_GROUP, -1])
                     symbols.extend(sub_symbols)
                     symbols.extend([_COMPILED_CLOSE_OPTIONAL_GROUP, -1])

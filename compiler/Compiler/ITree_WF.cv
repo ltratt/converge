@@ -560,4 +560,5 @@ func wf_expr(itree, msg, src_infos):
 
 func type_error(parent_node_name, part, node, should_be, src_infos):
 
+    return
     Core::peek_compiler().error(Strings::format("In %s node, got %s type for '%s' instead of %s.", parent_node_name, node.instance_of.name, part, should_be), src_infos)

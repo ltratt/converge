@@ -53,21 +53,23 @@ class Transition:
 class SM_Translator(Traverser::Strict_Traverser):
 
     func generate(self, node):
-
+    
         return self._preorder(node)
 
 
 
     func _t_system(self, node):
 
+        // system ::= element ( "NEWLINE" element )*
+
         sts := [] // States
         tns := [] // Transitions
 
-        i := 1
+        i := 0
         while i < node.len():
-            ndif node[i][1][0] == "state":
+            ndif node[i][0].name == "state":
                 sts.append(self._preorder(node[i]))
-            elif node[i][1][0] == "transition":
+            elif node[i][0].name == "transition":
                 tns.append(self._preorder(node[i]))
             i += 2
 
@@ -110,7 +112,7 @@ class SM_Translator(Traverser::Strict_Traverser):
         // element ::= state
         //         ::= transition
 
-        return self._preorder(node[1])
+        return self._preorder(node[0])
 
 
 
@@ -118,7 +120,7 @@ class SM_Translator(Traverser::Strict_Traverser):
 
         // state ::= "STATE" "ID"
 
-        return CEI::lift(node[2].value)
+        return CEI::lift(node[1].value)
 
 
 
@@ -128,7 +130,7 @@ class SM_Translator(Traverser::Strict_Traverser):
 
         event := self._preorder(node[-1])
 
-        return [| Transition.new($c{CEI::istring(node[3].value)}, $c{CEI::istring(node[5].value)}, $c{event}) |]
+        return [| Transition.new($c{CEI::istring(node[2].value)}, $c{CEI::istring(node[4].value)}, $c{event}) |]
 
 
 
@@ -137,10 +139,10 @@ class SM_Translator(Traverser::Strict_Traverser):
         // event ::= ":" "ID"
         //       ::=
 
-        if node.len() == 1:
+        if node.len() == 0:
             return [| "" |]
         else:
-            return CEI::istring(node[2].value)
+            return CEI::istring(node[1].value)
 
 
 

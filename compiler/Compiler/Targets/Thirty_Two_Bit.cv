@@ -935,7 +935,7 @@ func encode_src_infos(all_src_infos):
 
                 src_infos_array.append(enc_src_info1)
                 src_infos_array.append(enc_src_info2)
-            i += 7
+            i += 15
     
     return src_infos_array.serialize()
 

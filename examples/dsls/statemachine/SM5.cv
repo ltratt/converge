@@ -108,6 +108,8 @@ class SM_Translator(Traverser::Strict_Traverser):
 
 
     func _t_system(self, node):
+    
+        // system ::= element ( "NEWLINE" element )*
 
         sts := [] // States
         tns := [] // Transitions
@@ -115,19 +117,19 @@ class SM_Translator(Traverser::Strict_Traverser):
         self._var_names := Set{} // Variable names as strings
         self._free_names := Dict{} // Maps variable names (as strings) to fresh names (as strings)
 
-        i := 1
+        i := 0
         while i < node.len():
-            ndif node[i][1][0] == "state":
+            ndif node[i][0].name == "state":
                 sts.append(self._preorder(node[i]))
-            elif node[i][1][0] == "transition":
+            elif node[i][0].name == "transition":
                 tns.append(self._preorder(node[i]))
-            elif node[i][1][0] == "var_def":
+            elif node[i][0].name == "var_def":
                 // var_def ::= "ID" ":=" const
-                var_def := node[i][1]
-                key := CEI::istring(var_def[1].value)
-                val := self._preorder(var_def[3])
+                var_def := node[i][0]
+                key := CEI::istring(var_def[0].value)
+                val := self._preorder(var_def[2])
                 vars.append(CEI::idict_elem(key, val))
-                self._var_names.add(var_def[1].value)
+                self._var_names.add(var_def[0].value)
             i += 2
 
         renames := []
@@ -195,7 +197,7 @@ class SM_Translator(Traverser::Strict_Traverser):
 
     func _t_element(self, node):
 
-        return self._preorder(node[1])
+        return self._preorder(node[0])
 
 
 
@@ -203,7 +205,7 @@ class SM_Translator(Traverser::Strict_Traverser):
 
         // state ::= "STATE" "ID"
 
-        return CEI::istring(node[2].value)
+        return CEI::istring(node[0].value)
 
 
 
@@ -214,24 +216,24 @@ class SM_Translator(Traverser::Strict_Traverser):
         //                 ::=
 
         tail_node := node[-1]
-        if tail_node.len() == 1:
+        if tail_node.len() == 0:
             // transition_tail ::=
             event := [| "" |]
             guard := [| func (&sm) { return 1 } |]
             action := [| func (&sm) { pass } |]
         else:
             // transition_tail ::= ":" event guard action
-            event := self._preorder(tail_node[2])
+            event := self._preorder(tail_node[1])
             guard := [|
                 func (&sm):
-                    if $c{self._preorder(tail_node[3])}:
+                    if $c{self._preorder(tail_node[2])}:
                         return 1
                     else:
                         fail
             |]
-            action := [| func (&sm) { $c{self._preorder(tail_node[4])} } |]
+            action := [| func (&sm) { $c{self._preorder(tail_node[3])} } |]
 
-        return [| Transition.new(${CEI::istring(node[2].value)}, ${CEI::istring(node[4].value)}, ${CEI::istring(node[6].value)}, ${event}, $c{guard}, $c{action}) |]
+        return [| Transition.new(${CEI::istring(node[1].value)}, ${CEI::istring(node[3].value)}, ${CEI::istring(node[5].value)}, ${event}, $c{guard}, $c{action}) |]
 
 
 
@@ -240,10 +242,10 @@ class SM_Translator(Traverser::Strict_Traverser):
         // event ::= "ID"
         //       ::=
 
-        if node.len() == 1:
+        if node.len() == 0:
             return [| "" |]
         else:
-            return CEI::istring(node[1].value)
+            return CEI::istring(node[0].value)
 
 
 
@@ -252,10 +254,10 @@ class SM_Translator(Traverser::Strict_Traverser):
         // guard ::= "[" B "]"
         //       ::=
 
-        if node.len() == 1:
+        if node.len() == 0:
             return [| 1 |]
         else:
-            return self._preorder(node[2])
+            return self._preorder(node[1])
 
 
     func _t_action(self, node):
@@ -263,10 +265,10 @@ class SM_Translator(Traverser::Strict_Traverser):
         // action ::= "/" C
         //        ::=
 
-        if node.len() == 1:
+        if node.len() == 0:
             return [| pass |]
         else:
-            return self._preorder(node[2])
+            return self._preorder(node[1])
 
 
 
@@ -284,32 +286,32 @@ class SM_Translator(Traverser::Strict_Traverser):
         //   ::= "ID"
         //   ::= E
 
-        if node.len() == 4:
-            lhs := self._preorder(node[1])
-            op := node[2]
-            rhs := self._preorder(node[3])
-            ndif node[2].type == "AND":
+        if node.len() == 3:
+            lhs := self._preorder(node[0])
+            op := node[1]
+            rhs := self._preorder(node[2])
+            ndif node[1].type == "AND":
                 return [<op.src_infos>| $c{lhs} & $c{rhs} |]
-            elif node[2].type == "OR":
+            elif node[1].type == "OR":
                 return [<op.src_infos>| $c{lhs} | $c{rhs} |]
-            elif node[2].type == "==":
+            elif node[1].type == "==":
                 return [<op.src_infos>| $c{lhs} == $c{rhs} |]
-            elif node[2].type == "!=":
+            elif node[1].type == "!=":
                 return [<op.src_infos>| $c{lhs} != $c{rhs} |]
-            elif node[2].type == ">":
+            elif node[1].type == ">":
                 return [<op.src_infos>| $c{lhs} > $c{rhs} |]
-            elif node[2].type == ">=":
+            elif node[1].type == ">=":
                 return [<op.src_infos>| $c{lhs} >= $c{rhs} |]
-            elif node[2].type == "<":
+            elif node[1].type == "<":
                 return [<op.src_infos>| $c{lhs} < $c{rhs} |]
-            elif node[2].type == "<=":
+            elif node[1].type == "<=":
                 return [<op.src_infos>| $c{lhs} <= $c{rhs} |]
-        elif node.len() == 3:
+        elif node.len() == 2:
             // B ::= "NOT" B
-            return [| not $c{self._preorder(node[2])} |]
+            return [| not $c{self._preorder(node[1])} |]
         else:
             // B ::= E
-            return self._preorder(node[1])
+            return self._preorder(node[0])
 
 
 
@@ -317,7 +319,7 @@ class SM_Translator(Traverser::Strict_Traverser):
 
         // C ::= A ( ";" A )*
 
-        i := 1
+        i := 0
         actions := []
         while i < node.len():
             actions.append(self._preorder(node[i]))
@@ -332,12 +334,12 @@ class SM_Translator(Traverser::Strict_Traverser):
         // A ::= "ID" ":=" E
         //   ::= E
 
-        if node.len() == 4:
-            if not self._var_names.find(node[1].value):
-                CEI::error(Strings::format("Unknown state-machine variable '%s'.", node[1].value), node[1].src_infos)
-            return [| &sm.set_var(${CEI::lift(node[1].value)}, $c{self._preorder(node[3])}) |]
+        if node.len() == 3:
+            if not self._var_names.find(node[0].value):
+                CEI::error(Strings::format("Unknown state-machine variable '%s'.", node[0].value), node[0].src_infos)
+            return [| &sm.set_var(${CEI::lift(node[0].value)}, $c{self._preorder(node[2])}) |]
         else:
-            return self._preorder(node[1])
+            return self._preorder(node[0])
 
 
 
@@ -351,19 +353,19 @@ class SM_Translator(Traverser::Strict_Traverser):
         //   ::= const
         //   ::= apply
 
-        if node.len() == 4:
-            lhs := self._preorder(node[1])
-            rhs := self._preorder(node[3])
-            if node[2].type == "+":
-                return [<node[2].src_infos>| $c{lhs} + $c{rhs} |]
-            elif node[2].type == "-":
-                return [<node[2].src_infos>| $c{lhs} - $c{rhs} |]
-            elif node[2].type == "*":
-                return [<node[2].src_infos>| $c{lhs} * $c{rhs} |]
-            elif node[2].type == "/":
-                return [<node[2].src_infos>| $c{lhs} / $c{rhs} |]
+        if node.len() == 3:
+            lhs := self._preorder(node[0])
+            rhs := self._preorder(node[2])
+            if node[1].type == "+":
+                return [<node[1].src_infos>| $c{lhs} + $c{rhs} |]
+            elif node[1].type == "-":
+                return [<node[1].src_infos>| $c{lhs} - $c{rhs} |]
+            elif node[1].type == "*":
+                return [<node[1].src_infos>| $c{lhs} * $c{rhs} |]
+            elif node[1].type == "/":
+                return [<node[1].src_infos>| $c{lhs} / $c{rhs} |]
         else:
-            return self._preorder(node[1])
+            return self._preorder(node[0])
 
 
 
@@ -371,9 +373,9 @@ class SM_Translator(Traverser::Strict_Traverser):
 
         // var_lookup ::= "ID"
 
-        if not self._var_names.find(node[1].value):
-            CEI::error(Strings::format("Unknown state-machine variable '%s'.", node[1].value), node[1].src_infos)
-        return [<node[1].src_infos>| &sm.get_var(${CEI::istring(node[1].value)}) |]
+        if not self._var_names.find(node[0].value):
+            CEI::error(Strings::format("Unknown state-machine variable '%s'.", node[0].value), node[0].src_infos)
+        return [<node[0].src_infos>| &sm.get_var(${CEI::istring(node[0].value)}) |]
 
 
 
@@ -381,20 +383,20 @@ class SM_Translator(Traverser::Strict_Traverser):
 
         // apply ::= "ID" "(" args ")"
 
-        args := self._preorder(node[3])
+        args := self._preorder(node[2])
 
-        if node[1].value == "input":
+        if node[0].value == "input":
             return [| Sys::stdin.readln() |]
         else:
-            func_name := node[1].value
+            func_name := node[0].value
             if not rn_func_name := self._free_names.find(func_name):
                 rn_func_name := CEI::fresh_name()
                 self._free_names[func_name] := rn_func_name
  
-            func_var := CEI::ivar(rn_func_name, node[1].src_infos)
-            args := self._preorder(node[3])
+            func_var := CEI::ivar(rn_func_name, node[0].src_infos)
+            args := self._preorder(node[2])
 
-            return CEI::iapplication(func_var, args, node[2].src_infos)
+            return CEI::iapplication(func_var, args, node[1].src_infos)
 
 
 
@@ -404,7 +406,7 @@ class SM_Translator(Traverser::Strict_Traverser):
         //       ::=
 
         args := []
-        i := 1
+        i := 0
         while i < node.len():
             args.append(self._preorder(node[i]))
             i += 2
@@ -419,10 +421,10 @@ class SM_Translator(Traverser::Strict_Traverser):
         // const ::= "INT"
         //       ::= "STRING"
 
-        ndif node[1].type == "INT":
-            return CEI::lift(Builtins::Int.new(node[1].value), node[1].src_infos)
-        elif node[1].type == "STRING":
-            return CEI::lift(node[1].value, node[1].src_infos)
+        ndif node[0].type == "INT":
+            return CEI::lift(Builtins::Int.new(node[0].value), node[0].src_infos)
+        elif node[0].type == "STRING":
+            return CEI::lift(node[0].value, node[0].src_infos)
 
 
 

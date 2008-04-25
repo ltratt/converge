@@ -27,7 +27,7 @@
 //
 
 
-import Builtins, Exceptions, Strings, Sys, VM
+import Builtins, CPK::Tree, Exceptions, Strings, Sys, VM
 import Code_Gen, Core, BC_Mod, ITree, ITree_Rename, ITree_WF, Lift
 
 
@@ -292,7 +292,7 @@ class IMod_Gen:
             targets := []
             i := 0
             while node[i].name == "name":
-                if node[i].len() == 1 & not Builtins::List.conformed_by(node[i][0]):
+                if node[i].len() == 1 & not Tree::Non_Term.instantiated(node[i][0]):
                     // name ::= "ID"
                     targets.append(ITree::IVar.new(node[i][0].value, extra_src_infos + node[i][0].src_infos))
                 elif node[i].len() == 2:
@@ -395,7 +395,7 @@ class IMod_Gen:
         while i < node[6].len():
             // class_fields ::= class_field { "NEWLINE" class_field }*
             field_node := node[6][i]
-            if field_node.len() == 1 & not Builtins::List.conformed_by(field_node[0]):
+            if field_node.len() == 1 & not Tree::Non_Term.instantiated(field_node[0]):
                 // class_field ::= "PASS"
                 fields.append(ITree::IPass.new(field_node[0].src_infos))
             elif field_node.len() == 1 & field_node[0].name == "class_defn":
@@ -457,7 +457,7 @@ class IMod_Gen:
         if node[1].len() == 0:
             // func_name ::=
             func_name := null
-        elif Builtins::List.conformed_by(node[1][0]):
+        elif Tree::Non_Term.instantiated(node[1][0]):
             // func_name ::= name
             func_name := self._preorder(node[1][0], extra_src_infos)
         else:
@@ -499,7 +499,7 @@ class IMod_Gen:
                         else:
                             param_default := null
                         var_def := params_node[i]
-                        if params_node[i].len() == 1 & not Builtins::List.conformed_by(params_node[i][0]):
+                        if params_node[i].len() == 1 & not Tree::Non_Term.instantiated(params_node[i][0]):
                             // name ::= "ID"
                             params.append(ITree::IParam.new(ITree::IVar.new(params_node[i][0].value, extra_src_infos + params_node[i][0].src_infos), param_default, extra_src_infos + params_node[i][0].src_infos))
                         elif params_node[i].len() == 1:
@@ -668,7 +668,7 @@ class IMod_Gen:
         //    ::= "IF" expr "{" "INDENT" expr_seq "DEDENT" "NEWLINE" "}" ( if_elif )* if_else
         
         clauses := [ITree::IClause.new(self._preorder(node[1], extra_src_infos), self._preorder(node[4]), extra_src_infos + node[0].src_infos)]
-        if Builtins::List.conformed_by(node[6]):
+        if Tree::Non_Term.instantiated(node[6]):
             // if ::= "IF" expr ":" "INDENT" expr_seq "DEDENT" ( if_elif )* if_else
             i := 6
         else:
@@ -698,7 +698,7 @@ class IMod_Gen:
         //      ::= "NDIF" expr "{" "INDENT" expr_seq "DEDENT" "NEWLINE" "}" ( if_elif )*
         
         clauses := [ITree::IClause.new(self._preorder(node[1], extra_src_infos), self._preorder(node[4]), extra_src_infos + node[0].src_infos)]
-        if node.len() == 6 | Builtins::List.conformed_by(node[6]):
+        if node.len() == 6 | Tree::Non_Term.instantiated(node[6]):
             // ndif ::= "NDIF" expr ":" "INDENT" expr_seq "DEDENT" ( if_elif )*
             i := 6
         else:
@@ -806,7 +806,7 @@ class IMod_Gen:
         //      ::= splice
         //      ::= insert
         
-        if node.len() == 1 & not Builtins::List.conformed_by(node[0]):
+        if node.len() == 1 & not Tree::Non_Term.instantiated(node[0]):
             // name ::= "ID"
             if node[0].value == SRC_INFO_VAR:
                 raise "XXX"
@@ -838,7 +838,7 @@ class IMod_Gen:
         // var_lookup ::= "ID"
         //            ::= "&" "ID"
         
-        if node.len() == 1 & not Builtins::List.conformed_by(node[0]):
+        if node.len() == 1 & not Tree::Non_Term.instantiated(node[0]):
             // name ::= "ID"
             name_node := node[0]
             if name_node.value == SRC_INFO_VAR:
@@ -875,7 +875,7 @@ class IMod_Gen:
         //             ::= expr "." splice
         //             ::= expr "." insert
         
-        if Builtins::List.conformed_by(node[2]):
+        if Tree::Non_Term.instantiated(node[2]):
             // slot_lookup ::= expr "." splice
             //             ::= expr "." insert
             raise "XXX"
@@ -906,7 +906,7 @@ class IMod_Gen:
         
         elems := []
         i := 1
-        while i < node.len() & Builtins::List.conformed_by(node[i]):
+        while i < node.len() & Tree::Non_Term.instantiated(node[i]):
             elems.append(self._preorder(node[i], extra_src_infos))
             i += 2
         
@@ -921,7 +921,7 @@ class IMod_Gen:
         
         elems := []
         i := 1
-        while i < node.len() & Builtins::List.conformed_by(node[i]):
+        while i < node.len() & Tree::Non_Term.instantiated(node[i]):
             key := self._preorder(node[i], extra_src_infos)
             val := self._preorder(node[i + 2], extra_src_infos)
             elem := ITree::IDict_Elem.new(key, val, node[i + 1].src_infos)
@@ -939,7 +939,7 @@ class IMod_Gen:
         
         elems := []
         i := 1
-        while i < node.len() & Builtins::List.conformed_by(node[i]):
+        while i < node.len() & Tree::Non_Term.instantiated(node[i]):
             elems.append(self._preorder(node[i], extra_src_infos))
             i += 2
         
@@ -954,7 +954,7 @@ class IMod_Gen:
         
         params := []
         i := 2
-        while i < node.len() & Builtins::List.conformed_by(node[i]):
+        while i < node.len() & Tree::Non_Term.instantiated(node[i]):
             params.append(self._preorder(node[i], extra_src_infos))
             i += 2
 
@@ -981,7 +981,7 @@ class IMod_Gen:
             // slice ::= expr "[" expr ":" expr "]"
             lower_bound := self._preorder(node[2], extra_src_infos)
             upper_bound := self._preorder(node[4], extra_src_infos)
-        elif node.len() == 5 & not Builtins::List.conformed_by(node[2]):
+        elif node.len() == 5 & not Tree::Non_Term.instantiated(node[2]):
             // slice ::= expr "[" ":" expr "]"
             lower_bound := null
             upper_bound := self._preorder(node[3], extra_src_infos)

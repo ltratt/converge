@@ -20,6 +20,7 @@
 
 
 import Builtins, Exceptions, Strings, Sys
+import Tree
 
 
 
@@ -28,7 +29,7 @@ class Traverser:
 
     func _preorder(self, node):
 
-        if not Builtins::List.conformed_by(node):
+        if not Tree::Non_Term.instantiated(node):
             fail
             
         name := "_t_" + node.name

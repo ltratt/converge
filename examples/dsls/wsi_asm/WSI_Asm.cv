@@ -19,7 +19,7 @@
 // IN THE SOFTWARE.
 
 
-import Builtins, CEI, CPK::Earley::DSL, CPK::Traverser, Exceptions, Strings, Sys
+import Builtins, CEI, CPK::Earley::DSL, CPK::Traverser, CPK::Tree, Exceptions, Strings, Sys
 
 
 
@@ -173,7 +173,7 @@ class Ab_Translator(Traverser::Strict_Traverser):
                 &vm.registers[_ST_REG] -= 1
                 &vm.registers[_PC_REG] := ${addr}
             |]
-        elif node.len() == 1 & not Builtins::List.instantiated(node[0]):
+        elif node.len() == 1 & not Tree::Non_Term.instantiated(node[0]):
             // action ::= "RTN"
             actions := [<node[0].src_infos>|
                 // Pop the rtn PC from the stack and jump to it
@@ -282,11 +282,11 @@ class Ab_Translator(Traverser::Strict_Traverser):
         elif node.len() == 1 & node[0].name == "addr":
             // expr ::= addr
             return self._t_addr(node[0])
-        elif node.len() == 3 & Builtins::List.instantiated(node[0]):
+        elif node.len() == 3 & Tree::Non_Term.instantiated(node[0]):
             // expr ::= register op register
             //        | register op "INT"
             lhs := self._t_register(node[0])
-            if Builtins::List.instantiated(node[2]):
+            if Tree::Non_Term.instantiated(node[2]):
                 // expr ::= register op register
                 rhs := self._t_register(node[2])
             else:

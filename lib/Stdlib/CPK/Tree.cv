@@ -24,7 +24,7 @@ import Builtins, Strings, Sys
 
 
 
-class Non_Term(Builtins::List):
+class Non_Term:
 
     func init(self, name, children, src_infos):
     

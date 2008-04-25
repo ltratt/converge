@@ -102,12 +102,30 @@ Con_Obj *Con_Modules_get_stdlib(Con_Obj *thread, const char *ptl_mod_id)
 		Con_Obj *modules = CON_GET_SLOT(Con_Builtins_Thread_Atom_get_vm(thread), "modules");
 		CON_PRE_GET_SLOT_APPLY_PUMP(modules, "iter_keys");
 		while (1) {
-			Con_Obj *key = CON_APPLY_PUMP();
-			if (key == NULL)
+			Con_Obj *orig_key = CON_APPLY_PUMP();
+			if (orig_key == NULL)
 				break;
 
-			if (CON_GET_SLOT_APPLY_NO_FAIL(key, "suffixed_by", ptl_mod_id_obj) != NULL)
-				return Con_Modules_get(thread, key);
+            // XXX. The next two operations are pure evil and are basically a poor-man's
+            // bootstrapping. They're intended to convert between module IDs across different
+            // platforms. The potential problems with the below are fairly obvious, although
+            // unlikely to actually manifest themselves in real life.
+
+#ifndef CON_FILENAMES_CASE_SENSITIVE
+            Con_Obj *cmp_key = CON_GET_SLOT_APPLY(orig_key, "lower_cased");
+#else
+            Con_Obj *cmp_key = orig_key;
+#endif
+
+            if (strcmp(CON_DIR_SEP, "/") == 0)
+                cmp_key = CON_GET_SLOT_APPLY(cmp_key, "replaced", CON_NEW_STRING("\\"), CON_NEW_STRING("/"));
+            else if (strcmp(CON_DIR_SEP, "\\") == 0)
+                cmp_key = CON_GET_SLOT_APPLY(cmp_key, "replaced", CON_NEW_STRING("/"), CON_NEW_STRING("\\"));
+            else
+                CON_XXX;
+
+			if (CON_GET_SLOT_APPLY_NO_FAIL(cmp_key, "suffixed_by", ptl_mod_id_obj) != NULL)
+				return Con_Modules_get(thread, orig_key);
 		}
 		
 		CON_XXX;

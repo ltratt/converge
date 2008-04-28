@@ -80,13 +80,13 @@ func pp_tree(list, indent_level := 0):
         output.append("\n")
         output.append(_INDENT * (indent_level + 1))
         output.append("-> ")
-        if Builtins::List.conformed_by(elem):
+        if Non_Term.instantiated(elem):
             output.append(pp_tree(elem, indent_level + 1))
         else:
             if elem.value is null:
                 output.extend(["<", elem.type, ">"])
             else:
                 output.extend(["<", elem.type, " ", elem.value, ">"])
-        //output.append(" " + elem.src_infos.to_str())
+            //output.append(" " + elem.src_infos.to_str())
         
     return Strings::join(output, "")

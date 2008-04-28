@@ -1283,8 +1283,10 @@ Con_Obj *_Con_Module_C_Earley_Parser_Parser_parse_func_tree_to_list(Con_Obj *thr
         new_src_offset = CON_GET_SLOT_APPLY(first_src_info, "get", CON_NEW_INT(1));
     }
 
-    if (tok_i == 0)
+    if (*tok_i == orig_tok_i) {
+        // No tokens were consumed, so we fix the span as 0.
         new_src_len = CON_NEW_INT(0);
+    }
     else {
         Con_Obj *last_src_infos = CON_GET_SLOT(parser->tokens[*tok_i - 1].token, "src_infos");    
         if (!CON_GET_SLOT_APPLY_NO_FAIL(CON_GET_SLOT_APPLY(last_src_infos, "len"), "==", CON_NEW_INT(1)))

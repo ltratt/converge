@@ -911,7 +911,7 @@ func encode_src_infos(all_src_infos):
 
                 // Bits 0-3
 
-                enc_src_info1 := Maths::min(num_instructions - i, 7)
+                enc_src_info1 := Maths::min(num_instructions - i, 15)
 
                 // Bit 4
 

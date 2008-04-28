@@ -164,8 +164,11 @@ class Tokenizer:
             
             if m[0].len() > self._indents[-1]:
                 // Indents are easy: they always result in a single INDENT token being added.
-                
-                self.tokens.append(Token.new("INDENT", null, [[self._src_path, self._src_offset + i, m[0].len()]]))
+
+                assert self.tokens[-1].src_infos.len() == 1
+                last_src_info := self.tokens[-1].src_infos[0]
+                indent_src_infos := [[self._src_path, last_src_info[1] + last_src_info[2], 0]]
+                self.tokens.append(Token.new("INDENT", null, indent_src_infos))
                 self._indents.append(m[0].len())
                 i += m[0].len()
                 
@@ -228,10 +231,13 @@ class Tokenizer:
                     // Catch the indentation level falling below the base level.
                     self.error("Indentation can not fall below base level", i)
                 
+                assert self.tokens[-1].src_infos.len() == 1
+                last_src_info := self.tokens[-1].src_infos[0]
+                dedent_src_infos := [[self._src_path, last_src_info[1] + last_src_info[2], 0]]
                 while m[0].len() < self._indents[-1]:
                     // For however many levels of indentation we have decreased by, a DEDENT token is
                     // generated.
-                    self.tokens.append(Token.new("DEDENT", null, [[self._src_path, self._src_offset + i, 0]]))
+                    self.tokens.append(Token.new("DEDENT", null, dedent_src_infos))
                     self._indents.del(-1)
                 continue
             elif m[0].len() == self._indents[-1] & self.tokens.len() > 0:
@@ -260,7 +266,10 @@ class Tokenizer:
                         n := RE_COMMENT.match(self._str, i + m[0].len())
                     continue
                 else:
-                    self.tokens.append(Token.new("NEWLINE", null, [[self._src_path, self._src_offset + i, 1]]))
+                    assert self.tokens[-1].src_infos.len() == 1
+                    last_src_info := self.tokens[-1].src_infos[0]
+                    indent_src_infos := [[self._src_path, last_src_info[1] + last_src_info[2], 0]]
+                    self.tokens.append(Token.new("NEWLINE", null, indent_src_infos))
             
             while i < self._str.len():
                 // This inner while loop is the part that tokenizes actual characters. It always
@@ -445,7 +454,7 @@ class Tokenizer:
                         self.error(Strings::format("Unterminated string"), string_start)
                     
                     s := Strings::join(string, "")
-                    self.tokens.append(Token.new("STRING", s, [[self._src_path, self._src_offset + i, s.len()]]))
+                    self.tokens.append(Token.new("STRING", s, [[self._src_path, self._src_offset + string_start, i - string_start]]))
                     
                     continue
                 
@@ -453,8 +462,11 @@ class Tokenizer:
                 
                 self.error(Strings::format("Unknown char '%s'", self._str[i]), i)
         
+        assert self.tokens[-1].src_infos.len() == 1
+        last_src_info := self.tokens[-1].src_infos[0]
+        dedent_src_infos := [[self._src_path, last_src_info[1] + last_src_info[2], 0]]
         while self._indents.len() > 1:
-            self.tokens.append(Token.new("DEDENT", null, [[self._src_path, self._src_offset + i, 0]]))
+            self.tokens.append(Token.new("DEDENT", null, dedent_src_infos))
             self._indents.del(-1)
                 
                         

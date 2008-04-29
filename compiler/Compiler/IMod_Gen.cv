@@ -1295,7 +1295,7 @@ class IMod_Gen:
         while i < node.len():
             expr_node := node[i]
             if expr_node[0].name == "splice":
-                splice_node := expr_node[1]
+                splice_node := expr_node[0]
                 expr := self._eval_splice(splice_node, extra_src_infos)
                 if Builtins::List.conformed_by(expr):
                     for e := expr.iter():

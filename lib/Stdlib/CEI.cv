@@ -116,7 +116,7 @@ $c<func () {
 
     builders := []
     for name, defn := ITree.iter_defns():
-        if name[0] != "I" | not Builtins::Class.instantiated(defn):
+        if name[0] != "I" | name == "IRoot" | not Builtins::Class.instantiated(defn):
             continue
         num_params := ITree::IInt.new(defn.get_field("init").num_params, __SRC_INFO__)
         builders.append([|

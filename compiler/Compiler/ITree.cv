@@ -64,7 +64,13 @@ INSERT_CAPTURING := 1
 
 
 
-class IModule:
+class IRoot:
+    pass
+
+
+
+
+class IModule(IRoot):
     
     func init(self, module_name, defns, src_infos):
     
@@ -93,7 +99,7 @@ class IModule:
 // Definitions
 //
 
-class IClass_Defn:
+class IClass_Defn(IRoot):
 
     func init(self, name, supers, metaclass_, fields, src_infos):
 
@@ -148,7 +154,7 @@ class IClass_Defn:
 
 
 
-class IFunc_Defn:
+class IFunc_Defn(IRoot):
 
     func init(self, is_bound, name, params, var_arg, nonlocals, renames, body, src_infos):
 
@@ -256,7 +262,7 @@ class IFunc_Defn:
 // Expressions
 //
 
-class IIf:
+class IIf(IRoot):
 
     // 'clauses' is a list of 'IClause's.
     // 'else_body' can be null.
@@ -298,7 +304,7 @@ class IIf:
 
 
 
-class INDIf:
+class INDIf(IRoot):
 
     // 'clauses' is a list of 'IClause's.
 
@@ -330,7 +336,7 @@ class INDIf:
 
 
 
-class IVar:
+class IVar(IRoot):
 
     func init(self, name, src_infos):
     
@@ -352,7 +358,7 @@ class IVar:
 
 
 
-class IImport:
+class IImport(IRoot):
 
     func init(self, mod_path, var_name, src_infos):
 
@@ -375,7 +381,7 @@ class IImport:
 
 
 
-class IWhile:
+class IWhile(IRoot):
 
     func init(self, condition, body, exhausted_body, broken_body, src_infos):
     
@@ -423,7 +429,7 @@ class IWhile:
 
 
 
-class IFor:
+class IFor(IRoot):
 
     func init(self, condition, body, exhausted_body, broken_body, src_infos):
     
@@ -477,7 +483,7 @@ class IFor:
 
 
 
-class ITry:
+class ITry(IRoot):
 
     func init(self, body, catches, src_infos):
     
@@ -509,7 +515,7 @@ class ITry:
 
 
 
-class IInt:
+class IInt(IRoot):
 
     func init(self, val, src_infos):
 
@@ -531,7 +537,7 @@ class IInt:
 
 
 
-class IFloat:
+class IFloat(IRoot):
 
     func init(self, val, src_infos):
 
@@ -553,7 +559,7 @@ class IFloat:
 
 
 
-class IString:
+class IString(IRoot):
 
     func init(self, val, src_infos):
 
@@ -575,7 +581,7 @@ class IString:
 
 
 
-class ISlot_Lookup:
+class ISlot_Lookup(IRoot):
 
     func init(self, target, slot_name, src_infos):
     
@@ -600,7 +606,7 @@ class ISlot_Lookup:
 
 
 
-class IModule_Lookup:
+class IModule_Lookup(IRoot):
 
     func init(self, names, src_infos):
     
@@ -626,7 +632,7 @@ class IModule_Lookup:
 
 
 
-class IList:
+class IList(IRoot):
 
     func init(self, elems, src_infos):
     
@@ -656,7 +662,7 @@ class IList:
 
 
 
-class IDict:
+class IDict(IRoot):
 
     func init(self, elems, src_infos):
     
@@ -686,7 +692,7 @@ class IDict:
 
 
 
-class ISet:
+class ISet(IRoot):
 
     func init(self, elems, src_infos):
     
@@ -716,7 +722,7 @@ class ISet:
 
 
 
-class IApplication:
+class IApplication(IRoot):
 
     func init(self, target, args, src_infos):
     
@@ -748,7 +754,7 @@ class IApplication:
 
 
 
-class IGet:
+class IGet(IRoot):
 
     func init(self, target, index, src_infos):
     
@@ -775,7 +781,7 @@ class IGet:
 
 
 
-class ISlice:
+class ISlice(IRoot):
 
     func init(self, target, lower_bound, upper_bound, src_infos):
     
@@ -815,7 +821,7 @@ class ISlice:
 
 
 
-class IEXBI:
+class IEXBI(IRoot):
 
     func init(self, target, field_name, src_infos):
 
@@ -840,7 +846,7 @@ class IEXBI:
 
 
 
-class IReturn:
+class IReturn(IRoot):
 
     // expr can be null.
 
@@ -873,7 +879,7 @@ class IReturn:
 
 
 
-class IYield:
+class IYield(IRoot):
 
     func init(self, expr, src_infos):
     
@@ -897,7 +903,7 @@ class IYield:
 
 
 
-class IFail:
+class IFail(IRoot):
 
     func init(self, src_infos):
     
@@ -918,7 +924,7 @@ class IFail:
 
 
 
-class IRaise:
+class IRaise(IRoot):
 
     func init(self, expr, src_infos):
     
@@ -942,7 +948,7 @@ class IRaise:
 
 
 
-class IAssert:
+class IAssert(IRoot):
 
     func init(self, expr, src_infos):
     
@@ -966,7 +972,7 @@ class IAssert:
 
 
 
-class IBreak:
+class IBreak(IRoot):
 
     func init(self, src_infos):
     
@@ -987,7 +993,7 @@ class IBreak:
 
 
 
-class IContinue:
+class IContinue(IRoot):
 
     func init(self, src_infos):
     
@@ -1008,7 +1014,7 @@ class IContinue:
 
 
 
-class IConjunction:
+class IConjunction(IRoot):
 
     func init(self, exprs, src_infos):
     
@@ -1038,7 +1044,7 @@ class IConjunction:
 
 
 
-class IAlternation:
+class IAlternation(IRoot):
 
     func init(self, exprs, src_infos):
     
@@ -1068,7 +1074,7 @@ class IAlternation:
 
 
 
-class IAssignment:
+class IAssignment(IRoot):
 
     func init(self, type, targets, expr, src_infos):
         
@@ -1111,7 +1117,7 @@ class IAssignment:
 
 
 
-class INot:
+class INot(IRoot):
 
     func init(self, expr, src_infos):
     
@@ -1135,7 +1141,7 @@ class INot:
 
 
 
-class IBinary:
+class IBinary(IRoot):
 
     func init(self, type, lhs, rhs, src_infos):
         
@@ -1163,7 +1169,7 @@ class IBinary:
 
 
 
-class IComparison:
+class IComparison(IRoot):
 
     func init(self, type, lhs, rhs, src_infos):
         
@@ -1191,7 +1197,7 @@ class IComparison:
 
 
 
-class IPass:
+class IPass(IRoot):
 
     func init(self, src_infos):
     
@@ -1212,7 +1218,7 @@ class IPass:
 
 
 
-class IInsert:
+class IInsert(IRoot):
 
     func init(self, type, expr, src_infos):
     
@@ -1238,7 +1244,7 @@ class IInsert:
 
 
 
-class IQuasi_Quotes:
+class IQuasi_Quotes(IRoot):
 
     func init(self, body, extra_src_infos, src_infos):
     
@@ -1282,7 +1288,7 @@ class IQuasi_Quotes:
 
 
 
-class IMod_Id_Import:
+class IMod_Id_Import(IRoot):
 
     func init(self, mod_id, src_path, src_infos):
     
@@ -1310,7 +1316,7 @@ class IMod_Id_Import:
 // "Virtual" elements
 //
 
-class IExpr_Seq:
+class IExpr_Seq(IRoot):
 
     func init(self, exprs, src_infos):
     
@@ -1342,7 +1348,7 @@ class IExpr_Seq:
 
 
 
-class IParam:
+class IParam(IRoot):
 
     func init(self, var, default, src_infos):
     
@@ -1377,7 +1383,7 @@ class IParam:
 
 
 
-class IRename:
+class IRename(IRoot):
 
     func init(self, from, as_, src_infos):
     
@@ -1419,7 +1425,7 @@ class IRename:
 
 
 
-class IDict_Elem:
+class IDict_Elem(IRoot):
 
     func init(self, key, val, src_infos):
 
@@ -1446,7 +1452,7 @@ class IDict_Elem:
 
 
 
-class IClause:
+class IClause(IRoot):
 
     func init(self, condition, body, src_infos):
     
@@ -1473,7 +1479,7 @@ class IClause:
 
 
 
-class ICatch:
+class ICatch(IRoot):
 
     func init(self, expr, var, body, src_infos):
     

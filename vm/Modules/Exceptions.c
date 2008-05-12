@@ -587,6 +587,7 @@ Con_Obj *_Con_Module_Exception_backtrace_func(Con_Obj *thread)
 					
 				Con_Obj *mod_id = CON_GET_SLOT_APPLY(src_location, "get", CON_NEW_INT(0));
 				Con_Obj *src_offset = CON_GET_SLOT_APPLY(src_location, "get", CON_NEW_INT(1));
+                Con_Obj *src_len = CON_GET_SLOT_APPLY(src_location, "get", CON_NEW_INT(2));
 				Con_Obj *mod = Con_Modules_get(thread, mod_id);
 				Con_Obj *src_path = CON_GET_SLOT(mod, "src_path");
 
@@ -609,12 +610,8 @@ Con_Obj *_Con_Module_Exception_backtrace_func(Con_Obj *thread)
 				entry = CON_ADD(entry, CON_GET_SLOT_APPLY(CON_NEW_INT(line), "to_str"));
 				entry = CON_ADD(entry, CON_NEW_STRING(", column "));
 				entry = CON_ADD(entry, CON_GET_SLOT_APPLY(CON_NEW_INT(column), "to_str"));
-				// These next two lines are commented out because there's not always a direct link
-				// between a src_info and the executing information. For the time being, rather than
-				// sometimes printing out incorrect function names, we simply avoid printing
-				// anything.
-				//entry = CON_ADD(entry, CON_NEW_STRING(", in "));
-				//entry = CON_ADD(entry, CON_GET_SLOT_APPLY(func, "path", pc.module));
+				entry = CON_ADD(entry, CON_NEW_STRING(", length "));
+				entry = CON_ADD(entry, CON_GET_SLOT_APPLY(src_len, "to_str"));
 				entry = CON_ADD(entry, CON_NEW_STRING("\n"));
 				
 				j += 1;

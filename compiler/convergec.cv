@@ -562,17 +562,18 @@ class Compiler:
                         raise "XXX"
                     line, col := mod.src_offset_to_line_column(src_info[1])
                 
+                len := src_info[2]
                 if src_infos.len() == 1 & other_files == 0:
-                    Sys::stderr.write(Strings::format("Line %d, column %d: ", line, col))
+                    Sys::stderr.write(Strings::format("Line %d, column %d, length %d: ", line, col, len))
                 else:
                     if other_files == 0:
-                        Sys::stderr.writeln(Strings::format("  Line %d, column %d", line, col))
+                        Sys::stderr.writeln(Strings::format("  Line %d, column %d, length %d", line, col, len))
                     else:
                         if local_src_path := self._mod_id_to_local_src_path(src_info[0]):
-                            entry := Strings::format("""  File "%s", line %d, column %d""", local_src_path, line, col)
+                            entry := Strings::format("""  File "%s", line %d, column %d, length %d""", local_src_path, line, col, len)
                             Sys::stderr.writeln(entry)
                         else:
-                            entry := Strings::format("""  Mod id "%s", line %d, column %d""", src_info[0], line, col)
+                            entry := Strings::format("""  Mod id "%s", line %d, column %d, length %d""", src_info[0], line, col)
                             Sys::stderr.writeln(entry)
 
             Sys::stderr.writeln(msg)

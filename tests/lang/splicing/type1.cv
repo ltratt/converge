@@ -1,0 +1,6 @@
+func main():
+    // Check that all the valid splice types exist.
+
+    $<[| 1 |]>
+    $c<[| 1 |]>
+    $p<[| 1 |]>

@@ -97,7 +97,7 @@ class IMod_Gen:
                 st := ITree::SPLICE_PRAGMA
             else:
                 msg := Strings::format("Unknown splice type '%s'.", type_str)
-                self._compiler.error(msg, st_node[0].src_infos)
+                self._compiler.error(msg, node.src_infos)
         else:
             st := ITree::SPLICE_DEFAULT
         
@@ -116,10 +116,10 @@ class IMod_Gen:
             src_len := ITree::IInt.new(dsl_node.src_infos[0][2], extra_src_infos + node[0][0].src_infos)
             src_infos := ITree::IList.new([ITree::IList.new([src_path, src_offset, src_len], extra_src_infos + node[0][0].src_infos)], extra_src_infos + node[0][0].src_infos)
             
-            expr := ITree::IApplication.new(self._preorder(node[0][3], extra_src_infos), [dsl_block, src_infos], extra_src_infos + node[0][0].src_infos)
+            expr := ITree::IApplication.new(self._preorder(node[0][3], extra_src_infos), [dsl_block, src_infos], extra_src_infos + node.src_infos)
 
         splice_name := Core::fresh_name()
-        splice_var := ITree::IVar.new(splice_name, extra_src_infos + node[0][0].src_infos)
+        splice_var := ITree::IVar.new(splice_name, extra_src_infos + node.src_infos)
 
         // Determine all the definitions we've currently processed into ITree's.
 
@@ -164,9 +164,9 @@ class IMod_Gen:
             if defns_to_include.find(i):
                 defns.append(self._defns[i])
 
-        tmp_func := ITree::IFunc_Defn.new(0, splice_var, [], null, [], [], ITree::IExpr_Seq.new([ITree::IReturn.new(expr, extra_src_infos + node[0][0].src_infos)], expr.src_infos), extra_src_infos + node[0][0].src_infos)
-        tmp_defns := defns + [ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(splice_name, extra_src_infos + node[0][0].src_infos)], tmp_func, extra_src_infos + node[0][0].src_infos)]
-        tmp_imodule := ITree::IModule.new(splice_name, tmp_defns, extra_src_infos + node[0][0].src_infos)
+        tmp_func := ITree::IFunc_Defn.new(0, splice_var, [], null, [], [], ITree::IExpr_Seq.new([ITree::IReturn.new(expr, extra_src_infos + node.src_infos)], expr.src_infos), extra_src_infos + node.src_infos)
+        tmp_defns := defns + [ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(splice_name, extra_src_infos + node.src_infos)], tmp_func, extra_src_infos + node.src_infos)]
+        tmp_imodule := ITree::IModule.new(splice_name, tmp_defns, extra_src_infos + node.src_infos)
 
         ITree_WF::wf(tmp_imodule)
 
@@ -182,7 +182,7 @@ class IMod_Gen:
             bc_mod := bc_mod_stack.pop()
             for imp_mod_id, imp_src_path := bc_mod.get_imports().iter():
                 if not known_mod_ids.find(imp_mod_id):
-                    imp_bc_mod := self._compiler.get_bc_mod(imp_mod_id, imp_src_path, node[0][0].src_infos)
+                    imp_bc_mod := self._compiler.get_bc_mod(imp_mod_id, imp_src_path, node.src_infos)
                     mods_to_add.append(Builtins::Module.new(imp_bc_mod.serialize()))
                     bc_mod_stack.append(imp_bc_mod)
                     known_mod_ids.add(imp_mod_id)
@@ -209,12 +209,12 @@ class IMod_Gen:
         if st == ITree::SPLICE_PRAGMA:
             // Pragmas are nice and easy to deal with as we ignore the splices return value and
             // return a simple "pass" statement.
-            return ITree::IPass.new(node[0][0].src_infos)
+            return ITree::IPass.new(node.src_infos)
 
         if got_val == 0:
-            self._compiler.error("Splice did not return a value.", expr.src_infos)
+            self._compiler.error("Splice did not return a value.", node.src_infos)
         if out_itree is null:
-            self._compiler.error("Splice returned null.", expr.src_infos)
+            self._compiler.error("Splice returned null.", node.src_infos)
 
         if node[0].name == "expr_splice":
             // expr_splice  ::= "$" splice_type "<" expr ">"
@@ -225,10 +225,20 @@ class IMod_Gen:
             if Builtins::List.instantiated(out_itree):
                 tmp := []
                 for itree := out_itree.iter():
-                    tmp.append(itree.extended_src_infos(node[0][0].src_infos))
+                    if not ITree::IRoot.instantiated(itree):
+                        msg := Strings::format( \
+                          "Splice returned list including '%s' instead of 'IRoot'", \
+                          out_itree.instance_of.name)
+                        Core::peek_compiler().error(msg, node.src_infos)
+                    tmp.append(itree.extended_src_infos(node.src_infos))
                 out_itree := tmp
             else:
-                out_itree := out_itree.extended_src_infos(node[0][0].src_infos)
+                if not ITree::IRoot.instantiated(out_itree):
+                    msg := Strings::format( \
+                      "Splice returned '%s' instead of '[IRoot, List(IRoot)]'", \
+                      out_itree.instance_of.name)
+                    Core::peek_compiler().error(msg, node.src_infos)
+                out_itree := out_itree.extended_src_infos(node.src_infos)
 
         if st == ITree::SPLICE_DEFAULT:
             out_itree := ITree_Rename::rename_fresh(out_itree)
@@ -1158,7 +1168,7 @@ class IMod_Gen:
         elif op_node.type == "-":
             type := ITree::BINARY_SUB
         
-        return ITree::IBinary.new(type, self._preorder(node[0], extra_src_infos), self._preorder(node[2], extra_src_infos), extra_src_infos + op_node.src_infos)
+        return ITree::IBinary.new(type, self._preorder(node[0], extra_src_infos), self._preorder(node[2], extra_src_infos), extra_src_infos + node.src_infos)
 
 
 

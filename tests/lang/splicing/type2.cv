@@ -1,0 +1,4 @@
+func main():
+    // Check that invalid splice types can't be specified.
+
+    $r<[| 1| ]>

@@ -1,0 +1,6 @@
+func main():
+    // Check that valid values can be returned from splices.
+
+    $<[| x := 2 |]>
+    $c<[| x := 2 |]>
+    $p<null>

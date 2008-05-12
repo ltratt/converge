@@ -1,0 +1,18 @@
+include @abs_top_srcdir@/Makefile.inc
+
+
+TESTS = ns1 ns2 ns3 ns4 ns5 ns6 qq1 qq2 qq3 qq4 qq5 qq6 qq7
+
+
+all:
+	${CONVERGE_VM} ${CONVERGEC} -I .. -m tests.cv
+
+clean:
+	${foreach test,${TESTS},rm -f ${test} ${test}.cvb}
+	rm -f tests.cvb tests
+
+distclean: clean
+	rm -f Makefile
+
+regress: all
+	${CONVERGE_VM} tests

@@ -1,0 +1,4 @@
+func main():
+    // Check that invalid values can't be returned from a splice.
+
+    $c<2>

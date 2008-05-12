@@ -6,14 +6,18 @@ OBJ_FILES = Lang_Test.cvb
 
 all: 
 	cd namespaces && ${MAKE} ${MFLAGS}
+	cd splicing && ${MAKE} ${MFLAGS}
 
 clean:
 	cd namespaces && ${MAKE} ${MFLAGS} clean
+	cd splicing && ${MAKE} ${MFLAGS} clean
 	rm -f ${OBJ_FILES}
 
 distclean: clean
 	cd namespaces && ${MAKE} ${MFLAGS} distclean
+	cd splicing && ${MAKE} ${MFLAGS} distclean
 	rm -f Makefile
 
 regress:
 	cd namespaces && ${MAKE} ${MFLAGS} regress
+	cd splicing && ${MAKE} ${MFLAGS} regress

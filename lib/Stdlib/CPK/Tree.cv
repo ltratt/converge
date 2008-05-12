@@ -75,7 +75,7 @@ _INDENT := "  "
 func pp_tree(list, indent_level := 0):
 
     output := [list.name]
-    //output.append(" " + list.src_infos.to_str())
+    output.append(" " + list.src_infos.to_str())
     for elem := list.iter(0):
         output.append("\n")
         output.append(_INDENT * (indent_level + 1))
@@ -87,6 +87,6 @@ func pp_tree(list, indent_level := 0):
                 output.extend(["<", elem.type, ">"])
             else:
                 output.extend(["<", elem.type, " ", elem.value, ">"])
-            //output.append(" " + elem.src_infos.to_str())
+            output.append(" " + elem.src_infos.to_str())
         
     return Strings::join(output, "")

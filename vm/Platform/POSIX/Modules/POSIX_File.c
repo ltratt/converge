@@ -83,6 +83,7 @@ Con_Obj *_Con_Module_POSIX_File_File_Class_fileno_func(Con_Obj *);
 Con_Obj *_Con_Module_POSIX_File_File_Class_flush_func(Con_Obj *);
 Con_Obj *_Con_Module_POSIX_File_File_Class_read_func(Con_Obj *);
 Con_Obj *_Con_Module_POSIX_File_File_Class_readln_func(Con_Obj *);
+Con_Obj *_Con_Module_POSIX_File_File_Class_seek_func(Con_Obj *);
 Con_Obj *_Con_Module_POSIX_File_File_Class_write_func(Con_Obj *);
 Con_Obj *_Con_Module_POSIX_File_File_Class_writeln_func(Con_Obj *);
 
@@ -129,6 +130,7 @@ Con_Obj *Con_Module_POSIX_File_import(Con_Obj *thread, Con_Obj *posix_file_mod)
 	CON_SET_FIELD(file_class, "flush", CON_NEW_BOUND_C_FUNC(_Con_Module_POSIX_File_File_Class_flush_func, "flush", posix_file_mod, file_class));
 	CON_SET_FIELD(file_class, "read", CON_NEW_BOUND_C_FUNC(_Con_Module_POSIX_File_File_Class_read_func, "read", posix_file_mod, file_class));
 	CON_SET_FIELD(file_class, "readln", CON_NEW_BOUND_C_FUNC(_Con_Module_POSIX_File_File_Class_readln_func, "readln", posix_file_mod, file_class));
+    CON_SET_FIELD(file_class, "seek", CON_NEW_BOUND_C_FUNC(_Con_Module_POSIX_File_File_Class_seek_func, "see", posix_file_mod, file_class));
 	CON_SET_FIELD(file_class, "write", CON_NEW_BOUND_C_FUNC(_Con_Module_POSIX_File_File_Class_write_func, "write", posix_file_mod, file_class));
 	CON_SET_FIELD(file_class, "writeln", CON_NEW_BOUND_C_FUNC(_Con_Module_POSIX_File_File_Class_writeln_func, "writeln", posix_file_mod, file_class));
 	
@@ -387,6 +389,31 @@ Con_Obj *_Con_Module_POSIX_File_File_Class_readln_func(Con_Obj *thread)
 	}
 
 	return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
+}
+
+
+
+//
+// 'seek(off)' sets the read position of the file to the absolute position i.
+//
+
+Con_Obj *_Con_Module_POSIX_File_File_Class_seek_func(Con_Obj *thread)
+{
+	Con_Obj *file_atom_def = CON_GET_MOD_DEFN(Con_Builtins_VM_Atom_get_functions_module(thread), "File_Atom_Def");
+
+	Con_Obj *off_obj, *self_obj;
+	CON_UNPACK_ARGS("UN", file_atom_def, &self_obj, &off_obj);
+	
+	_Con_Module_POSIX_File_Atom *file_atom = CON_GET_ATOM(self_obj, file_atom_def);
+
+	if (file_atom->file == NULL)
+		CON_RAISE_EXCEPTION("File_Exception", CON_NEW_STRING("File previously closed."));
+
+    Con_Int off = Con_Numbers_Number_to_Con_Int(thread, off_obj);
+    if (fseek(file_atom->file, off, SEEK_SET) != 0)
+        CON_XXX;
+
+	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 }
 
 

@@ -24,6 +24,10 @@ File objects support the following functions:
 Closes the file. Note that although the file will be closed when the file object is garbage collected, it is often good manners (and the release of a burden on the OS) to close files once they are finished with.
 </function>
 
+<function name="File#fileno">
+Returns the underlying file descriptor.
+</function>
+
 <function name="File#read">
 <argument name="size" type="Int">null</argument>
 Reads <code>size</code> bytes from the file. If <code>size</code> is <code>null</code>, the full contents of the file are returned.

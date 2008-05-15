@@ -79,6 +79,7 @@ Con_Obj *Con_Module_POSIX_File_Module_import(Con_Obj *thread, Con_Obj *);
 Con_Obj *_Con_Module_POSIX_File_File_new_func(Con_Obj *);
 
 Con_Obj *_Con_Module_POSIX_File_File_Class_close_func(Con_Obj *);
+Con_Obj *_Con_Module_POSIX_File_File_Class_fileno_func(Con_Obj *);
 Con_Obj *_Con_Module_POSIX_File_File_Class_flush_func(Con_Obj *);
 Con_Obj *_Con_Module_POSIX_File_File_Class_read_func(Con_Obj *);
 Con_Obj *_Con_Module_POSIX_File_File_Class_readln_func(Con_Obj *);
@@ -124,6 +125,7 @@ Con_Obj *Con_Module_POSIX_File_import(Con_Obj *thread, Con_Obj *posix_file_mod)
 	CON_SET_MOD_DEFN(posix_file_mod, "File", file_class);
 	
 	CON_SET_FIELD(file_class, "close", CON_NEW_BOUND_C_FUNC(_Con_Module_POSIX_File_File_Class_close_func, "close", posix_file_mod, file_class));
+	CON_SET_FIELD(file_class, "fileno", CON_NEW_BOUND_C_FUNC(_Con_Module_POSIX_File_File_Class_fileno_func, "fileno", posix_file_mod, file_class));
 	CON_SET_FIELD(file_class, "flush", CON_NEW_BOUND_C_FUNC(_Con_Module_POSIX_File_File_Class_flush_func, "flush", posix_file_mod, file_class));
 	CON_SET_FIELD(file_class, "read", CON_NEW_BOUND_C_FUNC(_Con_Module_POSIX_File_File_Class_read_func, "read", posix_file_mod, file_class));
 	CON_SET_FIELD(file_class, "readln", CON_NEW_BOUND_C_FUNC(_Con_Module_POSIX_File_File_Class_readln_func, "readln", posix_file_mod, file_class));
@@ -262,6 +264,26 @@ Con_Obj *_Con_Module_POSIX_File_File_Class_close_func(Con_Obj *thread)
 	file_atom->file = NULL;
 	
 	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
+}
+
+
+
+//
+// 'fileno()'.
+//
+
+Con_Obj *_Con_Module_POSIX_File_File_Class_fileno_func(Con_Obj *thread)
+{
+	Con_Obj *file_atom_def = CON_GET_MOD_DEFN(Con_Builtins_VM_Atom_get_functions_module(thread), "File_Atom_Def");
+
+	Con_Obj *self_obj;
+	CON_UNPACK_ARGS("U", file_atom_def, &self_obj);
+	
+	_Con_Module_POSIX_File_Atom *file_atom = CON_GET_ATOM(self_obj, file_atom_def);
+	
+	int fd = fileno(file_atom->file);
+	
+	return CON_NEW_INT(fd);
 }
 
 

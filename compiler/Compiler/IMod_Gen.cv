@@ -107,16 +107,16 @@ class IMod_Gen:
         else:
             // dsl_splice ::= "$" splice_type "<<" expr ">>" ":" "DSL_BLOCK"
             //            ::= "$" splice_type "<<" expr ">>" "<<" "DSL_BLOCK" ">>"
-            dsl_node := node[0][6]
-            dsl_block := ITree::IString.new(dsl_node.value, extra_src_infos + dsl_node.src_infos)
+            dsl_node := node[0]
+            dsl_block := ITree::IString.new(dsl_node[6].value, extra_src_infos + dsl_node.src_infos)
 
             assert dsl_node.src_infos.len() == 1
             src_path := ITree::IString.new(dsl_node.src_infos[0][0], extra_src_infos + node[0][0].src_infos)
             src_offset := ITree::IInt.new(dsl_node.src_infos[0][1], extra_src_infos + node[0][0].src_infos)
-            src_len := ITree::IInt.new(dsl_node.src_infos[0][2], extra_src_infos + node[0][0].src_infos)
-            src_infos := ITree::IList.new([ITree::IList.new([src_path, src_offset, src_len], extra_src_infos + node[0][0].src_infos)], extra_src_infos + node[0][0].src_infos)
+            src_len := ITree::IInt.new(dsl_node.src_infos[0][2], extra_src_infos + dsl_node.src_infos)
+            src_infos := ITree::IList.new([ITree::IList.new([src_path, src_offset, src_len], extra_src_infos + node[0][0].src_infos)], extra_src_infos + dsl_node.src_infos)
             
-            expr := ITree::IApplication.new(self._preorder(node[0][3], extra_src_infos), [dsl_block, src_infos], extra_src_infos + node.src_infos)
+            expr := ITree::IApplication.new(self._preorder(dsl_node[3], extra_src_infos), [dsl_block, src_infos], extra_src_infos + node.src_infos)
 
         splice_name := Core::fresh_name()
         splice_var := ITree::IVar.new(splice_name, extra_src_infos + node.src_infos)
@@ -301,11 +301,11 @@ class IMod_Gen:
             // defn ::= name ( "," name )* ":=" expr
             targets := []
             i := 0
-            while node[i].name == "name":
-                if node[i].len() == 1 & not Tree::Non_Term.instantiated(node[i][0]):
+            while (name_node := node[i]).name == "name":
+                if name_node.len() == 1 & not Tree::Non_Term.instantiated(name_node[0]):
                     // name ::= "ID"
-                    targets.append(ITree::IVar.new(node[i][0].value, extra_src_infos + node[i][0].src_infos))
-                elif node[i].len() == 2:
+                    targets.append(ITree::IVar.new(name_node[0].value, extra_src_infos + name_node.src_infos))
+                elif name_node.len() == 2:
                     // name ::= "&" "ID"
                     raise "XXX"
                 else:
@@ -313,13 +313,14 @@ class IMod_Gen:
                     //      ::= insert
                     raise "XXX"
                 i += 2
-            return [ITree::IAssignment.new(ITree::STD_ASSIGN, targets, self._preorder(node[-1], extra_src_infos), extra_src_infos + node[-2].src_infos)]
+            return [ITree::IAssignment.new(ITree::STD_ASSIGN, targets, self._preorder(node[-1], extra_src_infos), extra_src_infos + node.src_infos)]
         elif node[0].name == "splice":
             // defn ::= splice
-            defn := self._eval_splice(node[0], extra_src_infos)
+            splice_node := node[0]
+            defn := self._eval_splice(splice_node, extra_src_infos)
             if Builtins::List.conformed_by(defn):
                 for d := defn.iter():
-                    ITree_WF::wf_expr(d, "splice result", extra_src_infos + node[0][0][0].src_infos)
+                    ITree_WF::wf_expr(d, "splice result", extra_src_infos + splice_node.src_infos)
                 return defn
             elif ITree::IPass.instantiated(defn):
                 return [defn]
@@ -327,7 +328,7 @@ class IMod_Gen:
                 // Note that we only execute this clause if the expression returned wasn't a
                 // "pass" statement; if it was, we let it sail on harmlessly by.
 
-                ITree_WF::wf_expr(defn, "splice result", extra_src_infos + node[0][0][0].src_infos)
+                ITree_WF::wf_expr(defn, "splice result", extra_src_infos + splice_node.src_infos)
 
                 return [defn]
         elif node[0].name == "insert":
@@ -347,10 +348,12 @@ class IMod_Gen:
         i := 1
         while i < node.len():
             // import_name ::= "ID" ( "::" "ID" )*
-            mod_path_list := [node[i][0].value]
+            name_node := node[i]
+            
+            mod_path_list := [name_node[0].value]
             j := 1
-            while j < node[i].len() & node[i][j].type == "::":
-                mod_path_list.append(node[i][j + 1].value)
+            while j < name_node.len() & name_node[j].type == "::":
+                mod_path_list.append(name_node[j + 1].value)
                 j += 2
 
             if node[i + 1].len() == 2:
@@ -358,9 +361,9 @@ class IMod_Gen:
                 import_as := node[i + 1][1].value
             else:
                 // import_as ::=
-                import_as := node[i][-1].value
+                import_as := name_node[-1].value
 
-            import_ := ITree::IImport.new(Strings::join(mod_path_list, "::"), import_as, extra_src_infos + node[0].src_infos)
+            import_ := ITree::IImport.new(Strings::join(mod_path_list, "::"), import_as, extra_src_infos + node.src_infos)
             
             imports.append(import_)
             i += 3
@@ -407,24 +410,24 @@ class IMod_Gen:
             field_node := node[6][i]
             if field_node.len() == 1 & not Tree::Non_Term.instantiated(field_node[0]):
                 // class_field ::= "PASS"
-                fields.append(ITree::IPass.new(field_node[0].src_infos))
+                fields.append(ITree::IPass.new(field_node.src_infos))
             elif field_node.len() == 1 & field_node[0].name == "class_defn":
                 // class_field ::= class_defn
                 class_defn := field_node[0]
                 if class_defn[1].len() == 0:
                     // class_name ::=
-                    self._compiler.error("Classes as class fields can not be anonymous.", class_defn[0].src_infos)
+                    self._compiler.error("Classes as class fields can not be anonymous.", class_defn.src_infos)
                 fields.append(self._preorder(class_defn, extra_src_infos))
             elif field_node.len() == 1 & field_node[0].name == "func_defn":
                 // class_field ::= func_def
                 func_defn := field_node[0]
                 if func_defn[1].len() == 0:
                     // func_name ::=
-                    self._compiler.error("Functions as class fields can not be anonymous.", func_defn[0][0].src_infos)
+                    self._compiler.error("Functions as class fields can not be anonymous.", func_defn.src_infos)
                 fields.append(self._preorder(func_defn, extra_src_infos))
             elif field_node.len() == 3 & field_node[0].name == "name":
                 // class_field ::= name ":=" expr
-                fields.append(ITree::IAssignment.new(ITree::STD_ASSIGN, [self._preorder(field_node[0], extra_src_infos)], self._preorder(field_node[2], extra_src_infos), extra_src_infos + field_node[1].src_infos))
+                fields.append(ITree::IAssignment.new(ITree::STD_ASSIGN, [self._preorder(field_node[0], extra_src_infos)], self._preorder(field_node[2], extra_src_infos), extra_src_infos + field_node.src_infos))
             elif field_node.len() == 1:
                 // class_field ::= splice
                 sp := self._eval_splice(field_node[0], extra_src_infos)
@@ -435,7 +438,7 @@ class IMod_Gen:
             i += 2
         self._nesting.pop()
 
-        return ITree::IClass_Defn.new(class_name, supers, metaclass_, fields, extra_src_infos + node[1].src_infos)
+        return ITree::IClass_Defn.new(class_name, supers, metaclass_, fields, extra_src_infos + node.src_infos)
 
 
 
@@ -451,25 +454,27 @@ class IMod_Gen:
         //               "DEDENT" "NEWLINE" "}"
         //           ::= func_type func_name "(" func_params ")" "{" expr "}"
 
-        if node[0][0].type == "FUNC":
+        type_node := node[0][0]
+        if type_node.type == "FUNC":
             // func_type ::= "FUNC"
             if self._nesting.len() == 0 | self._nesting[-1] != _NEST_CLASS:
                 is_bound := 0
             else:
                 is_bound := 1
-        elif node[0][0].type == "BOUND_FUNC":
+        elif type_node.type == "BOUND_FUNC":
             // func_type ::= "BOUND_FUNC"
             is_bound := 1
-        elif node[0][0].type == "UNBOUND_FUNC":
+        elif type_node.type == "UNBOUND_FUNC":
             // func_type ::= "UNBOUND_FUNC"
             is_bound := 0
 
-        if node[1].len() == 0:
+        name_node := node[1]
+        if name_node.len() == 0:
             // func_name ::=
             func_name := null
-        elif Tree::Non_Term.instantiated(node[1][0]):
+        elif Tree::Non_Term.instantiated(name_node[0]):
             // func_name ::= name
-            func_name := self._preorder(node[1][0], extra_src_infos)
+            func_name := self._preorder(name_node[0], extra_src_infos)
         else:
             //           ::= "+"
             //           ::= "-"
@@ -481,48 +486,49 @@ class IMod_Gen:
             //           ::= "!="
             //           ::= ">="
             //           ::= "<="
-            func_name := ITree::IVar.new(node[1][0].type, node[1][0].src_infos)
+            func_name := ITree::IVar.new(name_node[0].type, name_node.src_infos)
 
         self._nesting.append(_NEST_FUNC)
         params := []
-        if node[3].len() > 0:
+        params_node := node[3]
+        if params_node.len() > 0:
             // func_params ::= func_params_elems "," func_varargs
             //             ::= func_params_elems
             //             ::= func_varargs
             var_args := null
-            if node[3][0].name == "func_params_elems":
+            if params_node[0].name == "func_params_elems":
                 // func_params_elems  ::= name func_param_default { "," name func_param_default }*
                 //                    ::= splice
                 //                    ::= insert
-                params_node := node[3][0]
-                if params_node.len() == 1:
+                elems_node := params_node[0]
+                if elems_node.len() == 1:
                     // func_params_elems ::= splice
                     //                   ::= insert
                     raise "XXX"
                 else:
                     // func_params_elems  ::= name func_param_default { "," name func_param_default }*
                     i := 0
-                    while i < params_node.len():
-                        if params_node[i + 1].len() > 1:
+                    while i < elems_node.len():
+                        if elems_node[i + 1].len() > 1:
                             // func_param_default ::= ":=" expr
-                            param_default := self._preorder(params_node[i + 1][1], extra_src_infos)
+                            param_default := self._preorder(elems_node[i + 1][1], extra_src_infos)
                         else:
                             param_default := null
-                        var_def := params_node[i]
-                        if params_node[i].len() == 1 & not Tree::Non_Term.instantiated(params_node[i][0]):
+                        var_def := elems_node[i]
+                        if elems_node[i].len() == 1 & not Tree::Non_Term.instantiated(elems_node[i][0]):
                             // name ::= "ID"
-                            params.append(ITree::IParam.new(ITree::IVar.new(params_node[i][0].value, extra_src_infos + params_node[i][0].src_infos), param_default, extra_src_infos + params_node[i][0].src_infos))
-                        elif params_node[i].len() == 1:
+                            params.append(ITree::IParam.new(ITree::IVar.new(elems_node[i][0].value, extra_src_infos + elems_node[i].src_infos), param_default, extra_src_infos + elems_node[i].src_infos))
+                        elif elems_node[i].len() == 1:
                             // name ::= splice
                             //      ::= insert
-                            if params_node[i][0].name == "splice":
+                            if elems_node[i][0].name == "splice":
                                 raise "XXX"
                             else:
-                                params.append(self._preorder(params_node[i]))
+                                params.append(self._preorder(elems_node[i]))
                         else:
                             // name ::= "&" "ID"
                             
-                            src_infos := extra_src_infos + var_def[1].src_infos
+                            src_infos := extra_src_infos + var_def.src_infos
                             
                             itree_mod_imp := ITree::IMod_Id_Import.new(ITree.mod_id, ITree.src_path, src_infos)
 
@@ -540,14 +546,14 @@ class IMod_Gen:
                             
                             params.append(ITree::IInsert.new(ITree::INSERT_CAPTURING, param, []))
                         i += 3
-            if node[3][-1].name == "func_varargs":
+            if params_node[-1].name == "func_varargs":
                 // func_varargs ::= "*" name
                 //              ::= "*" splice
                 //              ::= "*" insert
-                varargs_node := node[3][-1]
+                varargs_node := params_node[-1]
                 if varargs_node[1].name == "name":
                     // func_varargs ::= "*" name
-                    var_args := ITree::IVar.new(varargs_node[1][0].value, extra_src_infos + varargs_node[1][0].src_infos)
+                    var_args := ITree::IVar.new(varargs_node[1][0].value, extra_src_infos + varargs_node.src_infos)
                 elif varargs_node[1].name == "splice":
                     // func_varargs ::= "*" splice
                     raise "XXX"
@@ -565,12 +571,13 @@ class IMod_Gen:
             body := ITree::IExpr_Seq.new([self._preorder(node[6])], extra_src_infos + node[5].src_infos)
         else:
             i := 0
-            while i < node[7].len():
+            decls_node := node[7]
+            while i < decls_node.len():
                 // func_decls ::= func_decl { "NEWLINE" func_decl }*
                 // func_decl  ::= func_decl_nonlocals
                 //            ::= func_decl_rename
 
-                decl := node[7][i][0]
+                decl := decls_node[i][0]
                 if decl.name == "func_decl_nonlocals":
                     // func_decl_nonlocals ::= "NONLOCAL" name ( "," name )* "NEWLINE"
                     j := 1
@@ -594,7 +601,7 @@ class IMod_Gen:
                             splice := rename_[0]
                             rename_ := self._eval_splice(splice, extra_src_infos)
                             if not (ITree::IRename.instantiated(rename_) & ITree_WF::wf(rename_)):
-                                ITree_WF::type_error("IRename", "splice result", extra_src_infos + splice[0][0].src_infos)
+                                ITree_WF::type_error("IRename", "splice result", extra_src_infos + splice.src_infos)
                             renames.append(rename_)
                         else:
                             // func_decl_rename_elem ::= insert
@@ -607,7 +614,7 @@ class IMod_Gen:
 
         self._nesting.pop()
         
-        return ITree::IFunc_Defn.new(is_bound, func_name, params, var_args, nonlocals, renames, body, extra_src_infos + node[0][0].src_infos)
+        return ITree::IFunc_Defn.new(is_bound, func_name, params, var_args, nonlocals, renames, body, extra_src_infos + node.src_infos)
 
 
 
@@ -661,14 +668,15 @@ class IMod_Gen:
         //      ::= quasi_quotes
         //      ::= brackets
 
-        if node[0].name == "import":
-            imports := self._preorder(node[0], extra_src_infos)
+        expr_node := node[0]
+        if expr_node.name == "import":
+            imports := self._preorder(expr_node, extra_src_infos)
             if imports.len() == 0:
                 return imports[0]
             else:
-                return ITree::IConjunction.new(imports, extra_src_infos + node[0][0].src_infos)
+                return ITree::IConjunction.new(imports, extra_src_infos + node.src_infos)
         else:
-            return self._preorder(node[0], extra_src_infos)
+            return self._preorder(expr_node, extra_src_infos)
 
 
 
@@ -677,17 +685,17 @@ class IMod_Gen:
         // if ::= "IF" expr ":" "INDENT" expr_seq "DEDENT" ( if_elif )* if_else
         //    ::= "IF" expr "{" "INDENT" expr_seq "DEDENT" "NEWLINE" "}" ( if_elif )* if_else
         
-        clauses := [ITree::IClause.new(self._preorder(node[1], extra_src_infos), self._preorder(node[4]), extra_src_infos + node[0].src_infos)]
+        clauses := [ITree::IClause.new(self._preorder(node[1], extra_src_infos), self._preorder(node[4]), extra_src_infos + node[1].src_infos)]
         if Tree::Non_Term.instantiated(node[6]):
             // if ::= "IF" expr ":" "INDENT" expr_seq "DEDENT" ( if_elif )* if_else
             i := 6
         else:
             // if ::= "IF" expr "{" "INDENT" expr_seq "DEDENT" "NEWLINE" "}" ( if_elif )* if_else
             i := 8
-        while node[i].name == "if_elif":
+        while (elif_node := node[i]).name == "if_elif":
             // if_elif ::= "NEWLINE" "ELIF" expr ":" "INDENT" expr_seq "DEDENT"
             //         ::= "NEWLINE" "ELIF" expr "{" "INDENT" expr_seq "DEDENT" "NEWLINE" "}"
-            clauses.append(ITree::IClause.new(self._preorder(node[i][2], extra_src_infos), self._preorder(node[i][5]), extra_src_infos + node[i][1].src_infos))
+            clauses.append(ITree::IClause.new(self._preorder(elif_node[2], extra_src_infos), self._preorder(elif_node[5]), extra_src_infos + elif_node[2].src_infos))
             i += 1
         
         if node[-1].len() > 1:
@@ -698,7 +706,7 @@ class IMod_Gen:
             // if_else ::=
             else_body := null
 
-        return ITree::IIf.new(clauses, else_body, extra_src_infos + node[1].src_infos)
+        return ITree::IIf.new(clauses, else_body, extra_src_infos + node.src_infos)
 
 
 
@@ -707,20 +715,20 @@ class IMod_Gen:
         // ndif ::= "NDIF" expr ":" "INDENT" expr_seq "DEDENT" ( if_elif )*
         //      ::= "NDIF" expr "{" "INDENT" expr_seq "DEDENT" "NEWLINE" "}" ( if_elif )*
         
-        clauses := [ITree::IClause.new(self._preorder(node[1], extra_src_infos), self._preorder(node[4]), extra_src_infos + node[0].src_infos)]
+        clauses := [ITree::IClause.new(self._preorder(node[1], extra_src_infos), self._preorder(node[4]), extra_src_infos + node[1].src_infos)]
         if node.len() == 6 | Tree::Non_Term.instantiated(node[6]):
             // ndif ::= "NDIF" expr ":" "INDENT" expr_seq "DEDENT" ( if_elif )*
             i := 6
         else:
             // ndif ::= "NDIF" expr "{" "INDENT" expr_seq "DEDENT" "NEWLINE" "}" ( if_elif )*
             i := 8
-        while i < node.len() & node[i].name == "if_elif":
+        while i < node.len() & (elif_node := node[i]).name == "if_elif":
             // if_elif ::= "NEWLINE" "ELIF" expr ":" "INDENT" expr_seq "DEDENT"
             //         ::= "NEWLINE" "ELIF" expr "{" "INDENT" expr_seq "DEDENT" "NEWLINE" "}"
-            clauses.append(ITree::IClause.new(self._preorder(node[i][2], extra_src_infos), self._preorder(node[i][5]), extra_src_infos + node[i][1].src_infos))
+            clauses.append(ITree::IClause.new(self._preorder(elif_node[2], extra_src_infos), self._preorder(elif_node[5]), extra_src_infos + elif_node.src_infos))
             i += 1
 
-        return ITree::INDIf.new(clauses, extra_src_infos + node[0].src_infos)
+        return ITree::INDIf.new(clauses, extra_src_infos + node.src_infos)
 
 
 
@@ -736,6 +744,7 @@ class IMod_Gen:
                 exhausted_body := self._preorder(node[6][4])
             else:
                 exhausted_body := null
+
             if node[7].len() > 0:
                 broken_body := self._preorder(node[7][4])
             else:
@@ -744,7 +753,7 @@ class IMod_Gen:
             // while ::= "WHILE" expr
             expr_seq := exhausted_body := broken_body := null
         
-        return ITree::IWhile.new(self._preorder(node[1], extra_src_infos), expr_seq, exhausted_body, broken_body, extra_src_infos + node[0].src_infos)
+        return ITree::IWhile.new(self._preorder(node[1], extra_src_infos), expr_seq, exhausted_body, broken_body, extra_src_infos + node.src_infos)
 
 
 
@@ -770,7 +779,7 @@ class IMod_Gen:
             exhausted_body := null
             broken_body := null
         
-        return ITree::IFor.new(self._preorder(node[1], extra_src_infos), body, exhausted_body, broken_body, extra_src_infos + node[0].src_infos)
+        return ITree::IFor.new(self._preorder(node[1], extra_src_infos), body, exhausted_body, broken_body, extra_src_infos + node.src_infos)
 
 
 
@@ -784,17 +793,18 @@ class IMod_Gen:
         i := 5
         while i < node.len():
             // try_catch ::= "NEWLINE" "CATCH" expr try_catch_var ":" "INDENT" expr_seq "DEDENT"
-            catch_expr := self._preorder(node[i][2])
-            if node[i][3].len() > 0:
+            catch_node := node[i]
+            catch_expr := self._preorder(catch_node[2])
+            if catch_node[3].len() > 0:
                 // try_catch_var ::= "INTO" name
-                catch_var := self._preorder(node[i][3][1])
+                catch_var := self._preorder(catch_node[3][1])
             else:
                 catch_var := null
-            catch_body := self._preorder(node[i][6])
-            catches.append(ITree::ICatch.new(catch_expr, catch_var, catch_body, node[i][1].src_infos))
+            catch_body := self._preorder(catch_node[6])
+            catches.append(ITree::ICatch.new(catch_expr, catch_var, catch_body, catch_node.src_infos))
             i += 1
         
-        return ITree::ITry.new(body, catches, extra_src_infos + node[0].src_infos)
+        return ITree::ITry.new(body, catches, extra_src_infos + node.src_infos)
 
 
 
@@ -803,10 +813,11 @@ class IMod_Gen:
         // number ::= "INT"
         //        ::= "FLOAT"
     
-        if node[0].type == "INT":
-            return ITree::IInt.new(Builtins::Int.new(node[0].value), extra_src_infos + node[0].src_infos)
-        elif node[0].type == "FLOAT":
-            return ITree::IFloat.new(Builtins::Float.new(node[0].value), extra_src_infos + node[0].src_infos)
+        num_node := node[0]
+        if num_node.type == "INT":
+            return ITree::IInt.new(Builtins::Int.new(num_node.value), extra_src_infos + node.src_infos)
+        elif num_node.type == "FLOAT":
+            return ITree::IFloat.new(Builtins::Float.new(num_node.value), extra_src_infos + node.src_infos)
 
 
     func _t_name(self, node, extra_src_infos):
@@ -821,10 +832,10 @@ class IMod_Gen:
             if node[0].value == SRC_INFO_VAR:
                 raise "XXX"
             else:
-                return ITree::IVar.new(node[0].value, extra_src_infos + node[0].src_infos)
+                return ITree::IVar.new(node[0].value, extra_src_infos + node.src_infos)
         elif node.len() == 2:
             // name ::= "&" "ID"
-            src_infos := extra_src_infos + node[0].src_infos
+            src_infos := extra_src_infos + node.src_infos
             itree_mod_imp := ITree::IMod_Id_Import.new(ITree.mod_id, ITree.src_path, src_infos)
             ivar := ITree::IModule_Lookup.new([itree_mod_imp, ITree::IVar.new("IVar", src_infos)], src_infos)
             ivar_new := ITree::ISlot_Lookup.new(ivar, "new", src_infos)
@@ -833,7 +844,7 @@ class IMod_Gen:
         elif node[0].name == "splice":
             // name ::= splice
             splice_node := node[0]
-            name := self._eval_splice(splice_node, splice_node[0][0].src_infos)
+            name := self._eval_splice(splice_node, splice_node.src_infos)
             if not (ITree::IVar.instantiated(name) & ITree_WF::wf(name)):
                 raise "XXX"
             return name
@@ -861,11 +872,11 @@ class IMod_Gen:
                 return ITree::IVar.new(name_node.value, extra_src_infos + name_node.src_infos)
         elif node.len() == 2:
             // name ::= "&" "ID"
-            src_infos := extra_src_infos + node[1].src_infos
+            src_infos := extra_src_infos + node.src_infos
             itree_mod_imp := ITree::IMod_Id_Import.new(ITree.mod_id, ITree.src_path, src_infos)
             ivar := ITree::IModule_Lookup.new([itree_mod_imp, ITree::IVar.new("IVar", src_infos)], src_infos)
             ivar_new := ITree::ISlot_Lookup.new(ivar, "new", src_infos)
-            var := ITree::IApplication.new(ivar_new, [ITree::IString.new(node[1].value, src_infos), Lift::lift(src_infos)], node[1].src_infos)
+            var := ITree::IApplication.new(ivar_new, [ITree::IString.new(node[1].value, src_infos), Lift::lift(src_infos)], node.src_infos)
             
             return ITree::IInsert.new(ITree::INSERT_CAPTURING, var, [])
 
@@ -875,7 +886,7 @@ class IMod_Gen:
     
         // string ::= "STRING"
         
-        return ITree::IString.new(node[0].value, extra_src_infos + node[0].src_infos)
+        return ITree::IString.new(node[0].value, extra_src_infos + node.src_infos)
 
 
 
@@ -891,7 +902,7 @@ class IMod_Gen:
             raise "XXX"
         else:
             // slot_lookup ::= expr "." "ID"
-            return ITree::ISlot_Lookup.new(self._preorder(node[0], extra_src_infos), node[2].value, extra_src_infos + node[1].src_infos)
+            return ITree::ISlot_Lookup.new(self._preorder(node[0], extra_src_infos), node[2].value, extra_src_infos + node.src_infos)
         
         
         
@@ -905,7 +916,7 @@ class IMod_Gen:
             names.append(self._preorder(node[i], extra_src_infos))
             i += 2
 
-        return ITree::IModule_Lookup.new(names, extra_src_infos + node[1].src_infos)
+        return ITree::IModule_Lookup.new(names, extra_src_infos + node.src_infos)
 
 
 
@@ -920,7 +931,7 @@ class IMod_Gen:
             elems.append(self._preorder(node[i], extra_src_infos))
             i += 2
         
-        return ITree::IList.new(elems, extra_src_infos + node[0].src_infos)
+        return ITree::IList.new(elems, extra_src_infos + node.src_infos)
 
 
 
@@ -938,7 +949,7 @@ class IMod_Gen:
             elems.append(elem)
             i += 4
         
-        return ITree::IDict.new(elems, extra_src_infos + node[1].src_infos)
+        return ITree::IDict.new(elems, extra_src_infos + node.src_infos)
 
 
 
@@ -953,7 +964,7 @@ class IMod_Gen:
             elems.append(self._preorder(node[i], extra_src_infos))
             i += 2
         
-        return ITree::ISet.new(elems, extra_src_infos + node[0].src_infos)
+        return ITree::ISet.new(elems, extra_src_infos + node.src_infos)
 
 
 
@@ -968,7 +979,7 @@ class IMod_Gen:
             params.append(self._preorder(node[i], extra_src_infos))
             i += 2
 
-        return ITree::IApplication.new(self._preorder(node[0], extra_src_infos), params, extra_src_infos + node[1].src_infos)
+        return ITree::IApplication.new(self._preorder(node[0], extra_src_infos), params, extra_src_infos + node.src_infos)
 
 
 
@@ -976,7 +987,7 @@ class IMod_Gen:
     
         // get ::= expr "[" expr "]"
         
-        return ITree::IGet.new(self._preorder(node[0], extra_src_infos), self._preorder(node[2], extra_src_infos), extra_src_infos + node[1].src_infos)
+        return ITree::IGet.new(self._preorder(node[0], extra_src_infos), self._preorder(node[2], extra_src_infos), extra_src_infos + node.src_infos)
 
 
 
@@ -1003,7 +1014,7 @@ class IMod_Gen:
             lower_bound := null
             upper_bound := null
         
-        return ITree::ISlice.new(self._preorder(node[0], extra_src_infos), lower_bound, upper_bound, extra_src_infos + node[1].src_infos)
+        return ITree::ISlice.new(self._preorder(node[0], extra_src_infos), lower_bound, upper_bound, extra_src_infos + node.src_infos)
 
 
 
@@ -1011,7 +1022,7 @@ class IMod_Gen:
 
         // exbi ::= "EXBI" expr "." "ID"
 
-        return ITree::IEXBI.new(self._preorder(node[1], extra_src_infos), node[3].value, extra_src_infos + node[0].src_infos)
+        return ITree::IEXBI.new(self._preorder(node[1], extra_src_infos), node[3].value, extra_src_infos + node.src_infos)
 
 
     
@@ -1025,7 +1036,7 @@ class IMod_Gen:
         else:
             expr := null
         
-        return ITree::IReturn.new(expr, extra_src_infos + node[0].src_infos)
+        return ITree::IReturn.new(expr, extra_src_infos + node.src_infos)
 
 
 
@@ -1033,7 +1044,7 @@ class IMod_Gen:
     
         // yield ::= "YIELD" expr
         
-        return ITree::IYield.new(self._preorder(node[1], extra_src_infos), extra_src_infos + node[0].src_infos)
+        return ITree::IYield.new(self._preorder(node[1], extra_src_infos), extra_src_infos + node.src_infos)
 
 
 
@@ -1041,7 +1052,7 @@ class IMod_Gen:
     
         // fail ::= "FAIL"
         
-        return ITree::IFail.new(extra_src_infos + node[0].src_infos)
+        return ITree::IFail.new(extra_src_infos + node.src_infos)
 
 
 
@@ -1049,7 +1060,7 @@ class IMod_Gen:
     
         // raise ::= "RAISE" expr
         
-        return ITree::IRaise.new(self._preorder(node[1], extra_src_infos), extra_src_infos + node[0].src_infos)
+        return ITree::IRaise.new(self._preorder(node[1], extra_src_infos), extra_src_infos + node.src_infos)
 
 
 
@@ -1057,7 +1068,7 @@ class IMod_Gen:
     
         // assert ::= "ASSERT" expr
         
-        return ITree::IAssert.new(self._preorder(node[1], extra_src_infos), extra_src_infos + node[0].src_infos)
+        return ITree::IAssert.new(self._preorder(node[1], extra_src_infos), extra_src_infos + node.src_infos)
 
 
 
@@ -1065,7 +1076,7 @@ class IMod_Gen:
     
         // break ::= "BREAK"
         
-        return ITree::IBreak.new(extra_src_infos + node[0].src_infos)
+        return ITree::IBreak.new(extra_src_infos + node.src_infos)
 
 
 
@@ -1073,7 +1084,7 @@ class IMod_Gen:
     
         // continue ::= "CONTINUE"
         
-        return ITree::IContinue.new(extra_src_infos + node[0].src_infos)
+        return ITree::IContinue.new(extra_src_infos + node.src_infos)
 
 
 
@@ -1087,7 +1098,7 @@ class IMod_Gen:
             exprs.append(self._preorder(node[i], extra_src_infos))
             i += 2
         
-        return ITree::IConjunction.new(exprs, extra_src_infos + node[1].src_infos)
+        return ITree::IConjunction.new(exprs, extra_src_infos + node.src_infos)
 
 
 
@@ -1101,7 +1112,7 @@ class IMod_Gen:
             exprs.append(self._preorder(node[i], extra_src_infos))
             i += 2
         
-        return ITree::IAlternation.new(exprs, extra_src_infos + node[1].src_infos)
+        return ITree::IAlternation.new(exprs, extra_src_infos + node.src_infos)
 
 
 
@@ -1111,15 +1122,16 @@ class IMod_Gen:
         
         targets := []
         i := 0
-        while node[i].name == "assignment_target":
+        while (tgt_node := node[i]).name == "assignment_target":
             // assignment_target ::= name
             //                   ::= slot_lookup
             //                   ::= lookup
             //                   ::= slice
-            if node[i][0].name == "name":
-                targets.append(self._preorder(node[i][0], extra_src_infos))
+            
+            if tgt_node[0].name == "name":
+                targets.append(self._preorder(tgt_node[0], extra_src_infos))
             else:
-                targets.append(self._preorder(node[i][0], extra_src_infos))
+                targets.append(self._preorder(tgt_node[0], extra_src_infos))
             i += 2
             
         expr := self._preorder(node[-1], extra_src_infos)
@@ -1140,7 +1152,7 @@ class IMod_Gen:
             //                 ::= "-="
             type := ITree::SUB_ASSIGN
         
-        return ITree::IAssignment.new(type, targets, expr, extra_src_infos + node[-2][0].src_infos)
+        return ITree::IAssignment.new(type, targets, expr, extra_src_infos + node.src_infos)
 
 
 
@@ -1148,7 +1160,7 @@ class IMod_Gen:
     
         // not ::= "NOT" expr
         
-        return ITree::INot.new(self._preorder(node[1], extra_src_infos), extra_src_infos + node[0].src_infos)
+        return ITree::INot.new(self._preorder(node[1], extra_src_infos), extra_src_infos + node.src_infos)
 
 
 
@@ -1199,7 +1211,7 @@ class IMod_Gen:
             // comparison_op ::= >
             type := ITree::GE_COMPARISON
 
-        return ITree::IComparison.new(type, self._preorder(node[0], extra_src_infos), self._preorder(node[2], extra_src_infos), extra_src_infos + op_node.src_infos)
+        return ITree::IComparison.new(type, self._preorder(node[0], extra_src_infos), self._preorder(node[2], extra_src_infos), extra_src_infos + node.src_infos)
 
 
 
@@ -1207,7 +1219,7 @@ class IMod_Gen:
     
         // pass ::= "PASS"
     
-        return ITree::IPass.new(extra_src_infos + node[0].src_infos)
+        return ITree::IPass.new(extra_src_infos + node.src_infos)
 
 
 
@@ -1235,7 +1247,7 @@ class IMod_Gen:
         //        ::= dsl_splice
 
         result := self._eval_splice(node, extra_src_infos)
-        ITree_WF::wf_expr(result, "splice", extra_src_infos + node[0][0].src_infos)
+        ITree_WF::wf_expr(result, "splice", extra_src_infos + node.src_infos)
         
         return result
 
@@ -1253,13 +1265,13 @@ class IMod_Gen:
                 it := ITree::INSERT_CAPTURING
             else:
                 msg := Strings::format("Unknown insert type '%s'.", type_itr)
-                self._compiler.error(msg, it_node[0].src_infos)
+                self._compiler.error(msg, it_node.src_infos)
         else:
             it := ITree::INSERT_DEFAULT
 
         expr := self._preorder(node[3], extra_src_infos)
 
-        return ITree::IInsert.new(it, expr, extra_src_infos + node[0].src_infos)
+        return ITree::IInsert.new(it, expr, extra_src_infos + node.src_infos)
 
 
 
@@ -1284,7 +1296,7 @@ class IMod_Gen:
             // quasi_quotes_customize ::= "[" "<" expr ">" "|"
             qq_extra_src_infos := self._preorder(node[0][2], extra_src_infos)
 
-        sqq := ITree::IQuasi_Quotes.new(body, qq_extra_src_infos, extra_src_infos + node[0][0].src_infos)
+        sqq := ITree::IQuasi_Quotes.new(body, qq_extra_src_infos, extra_src_infos + node.src_infos)
 
         ITree_WF::wf(sqq)
 
@@ -1309,13 +1321,13 @@ class IMod_Gen:
                 expr := self._eval_splice(splice_node, extra_src_infos)
                 if Builtins::List.conformed_by(expr):
                     for e := expr.iter():
-                        ITree_WF::wf_expr(e, "splice result", extra_src_infos + splice_node[0][0].src_infos)
+                        ITree_WF::wf_expr(e, "splice result", extra_src_infos + splice_node.src_infos)
                     exprs.extend(expr)
                 elif not ITree::IPass.instantiated(expr):
                     // Note that we only execute this clause if the expression returned wasn't a
                     // "pass" statement; if it was, we let it sail on harmlessly by.
 
-                    ITree_WF::wf_expr(expr, "splice result", extra_src_infos + splice_node[0][0].src_infos)
+                    ITree_WF::wf_expr(expr, "splice result", extra_src_infos + splice_node.src_infos)
                     exprs.append(expr)
             elif expr_node[0].name == "import":
                 exprs.extend(self._t_import(expr_node[0], extra_src_infos))

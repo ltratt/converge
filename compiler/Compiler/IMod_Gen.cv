@@ -111,9 +111,9 @@ class IMod_Gen:
             dsl_block := ITree::IString.new(dsl_node[6].value, extra_src_infos + dsl_node.src_infos)
 
             assert dsl_node.src_infos.len() == 1
-            src_path := ITree::IString.new(dsl_node.src_infos[0][0], extra_src_infos + node[0][0].src_infos)
-            src_offset := ITree::IInt.new(dsl_node.src_infos[0][1], extra_src_infos + node[0][0].src_infos)
-            src_len := ITree::IInt.new(dsl_node.src_infos[0][2], extra_src_infos + dsl_node.src_infos)
+            src_path := ITree::IString.new(dsl_node[6].src_infos[0][0], extra_src_infos + node[0][0].src_infos)
+            src_offset := ITree::IInt.new(dsl_node[6].src_infos[0][1], extra_src_infos + node[0][0].src_infos)
+            src_len := ITree::IInt.new(dsl_node[6].src_infos[0][2], extra_src_infos + dsl_node.src_infos)
             src_infos := ITree::IList.new([ITree::IList.new([src_path, src_offset, src_len], extra_src_infos + node[0][0].src_infos)], extra_src_infos + dsl_node.src_infos)
             
             expr := ITree::IApplication.new(self._preorder(dsl_node[3], extra_src_infos), [dsl_block, src_infos], extra_src_infos + node.src_infos)

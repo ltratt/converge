@@ -57,4 +57,4 @@ class Strict_Traverser(Traverser):
 
     func _default(self, node):
     
-        raise Exceptions::User_Exception.new(Strings::format("Unknown node '%s'.", node[0]))
+        raise Exceptions::User_Exception.new(Strings::format("Unknown node '%s'.", node.name))

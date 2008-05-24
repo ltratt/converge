@@ -19,6 +19,8 @@
 // IN THE SOFTWARE.
 
 
+// Bytecode files
+
 #define CON_BYTECODE_HEADER 0 * sizeof(Con_Int)
 #define CON_BYTECODE_VERSION 2 * sizeof(Con_Int)
 #define CON_BYTECODE_NUMBER_OF_MODULES 3 * sizeof(Con_Int)
@@ -62,6 +64,15 @@
 
 #define CON_BYTECODE_IMPORT_TYPE_BUILTIN 0
 #define CON_BYTECODE_IMPORT_TYPE_USER_MOD 1
+
+
+// Libraries
+
+#define CON_LIBRARY_BYTECODE_HEADER 0 * sizeof(Con_Int)
+#define CON_LIBRARY_BYTECODE_FORMAT_VERSION 2 * sizeof(Con_Int)
+#define CON_LIBRARY_BYTECODE_NUM_MODULES 3 * sizeof(Con_Int)
+#define CON_LIBRARY_BYTECODE_MODULE_OFFSETS 4 * sizeof(Con_Int)
+
 
 // 32-bit little endian instructions
 

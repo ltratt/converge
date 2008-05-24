@@ -68,6 +68,11 @@
 
 #define BYTES_TO_FIND_EXEC 1024
 
+#define COMPILER_CND_DIRS {".." CON_DIR_SEP ".." "converge-" CON_VERSION CON_DIR_SEP, \
+    ".." CON_DIR_SEP "compiler" CON_DIR_SEP, NULL}
+#define STDLIB_CND_DIRS {".." CON_DIR_SEP ".." "converge-" CON_VERSION CON_DIR_SEP, \
+    ".." CON_DIR_SEP "lib" CON_DIR_SEP, NULL}
+
 
 #ifdef CON_DEFINE___PROGNAME
 extern char* __progname;
@@ -78,6 +83,7 @@ char *__progname;
 int main_do(int, char **, u_char *);
 void usage(void);
 char *find_con_exec(const char *, const char *);
+void import_con_lib(Con_Obj *, const char *, const char**, const char *);
 ssize_t find_bytecode_start(u_char *, size_t);
 void make_mode(char *, u_char **, size_t *, char *, int, bool);
 
@@ -309,6 +315,11 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 	main_module_identifier = Con_Bytecode_add_executable(thread, bytecode + bytecode_start);
 	free(bytecode);
 	bytecode = NULL;
+    
+    const char *stdlib_cnd_dirs[] = STDLIB_CND_DIRS;
+    import_con_lib(thread, "Stdlib.cvl", stdlib_cnd_dirs, vm_path);
+    const char *compiler_cnd_dirs[] = COMPILER_CND_DIRS;
+    import_con_lib(thread, "Compiler.cvl", compiler_cnd_dirs, vm_path);
 	
 	CON_TRY {
 		main_module = Con_Modules_import(thread, Con_Modules_get(thread, main_module_identifier));
@@ -441,6 +452,82 @@ char *find_con_exec(const char *name, const char *vm_path)
 	}
 	
 	return prog_path;
+}
+
+
+
+//
+// Return a malloc'd string of the canonicalised path of the Converge executeable 'name'. 'vm_path'
+// should be the canonicalised pathname of the VM so that this function has some chance of finding
+// other executeables.
+//
+
+void import_con_lib(Con_Obj *thread, const char *leaf, const char** cnd_dirs, const char *vm_path)
+{
+	if (vm_path == NULL)
+        return;
+    
+    char *lib_path = NULL;
+    char *cnd = malloc(PATH_MAX);
+    char *canon_cnd = malloc(PATH_MAX);
+    int i;
+    for (i = 0; cnd_dirs[i] != NULL; i += 1) {
+        if (strlcpy(cnd, vm_path, PATH_MAX) > PATH_MAX)
+            CON_XXX;
+        int j;
+        for (j = strlen(cnd) - 1; j >= 0
+          && strlen(cnd) - j >= strlen(CON_DIR_SEP)
+          && memcmp(cnd + j, CON_DIR_SEP, strlen(CON_DIR_SEP)) != 0
+          ; j -= 1) {}
+        if (memcmp(cnd + j, CON_DIR_SEP, strlen(CON_DIR_SEP)) == 0) {
+            if (strlcpy(cnd + j + strlen(CON_DIR_SEP), cnd_dirs[i],
+                PATH_MAX - j - strlen(CON_DIR_SEP)) >= PATH_MAX - j - strlen(CON_DIR_SEP))
+                CON_XXX;
+            j += strlen(cnd_dirs[i]) + strlen(CON_DIR_SEP);
+        }
+        else {
+            if (strlcpy(cnd + j, cnd_dirs[i], PATH_MAX - j) > (size_t) (PATH_MAX - j));
+            j += strlen(cnd_dirs[i]);
+        }
+        if (strlcpy(cnd + j, leaf, PATH_MAX - j) > (size_t) (PATH_MAX - j))
+            CON_XXX;
+        struct stat tmp_stat;
+        if (realpath(cnd, canon_cnd) != NULL && stat(canon_cnd, &tmp_stat) == 0)
+            break;
+    }
+    free(cnd);
+    if (cnd_dirs[i] == NULL)
+        free(canon_cnd);
+    else {
+        lib_path = canon_cnd;
+    }
+    
+    if (lib_path == NULL)
+        return;
+
+	struct stat st;
+	if (stat(lib_path, &st) == -1) {
+		err(1, ": trying to stat '%s'", lib_path);
+	}
+
+	FILE *lib_file = fopen(lib_path, "rb");
+	if (lib_file == NULL) {
+		err(1, ": unable to open '%s", lib_path);
+		exit(1);
+	}
+
+	size_t lib_size = st.st_size;
+	u_char *bc = malloc(lib_size);
+	fread(bc, 1, lib_size, lib_file);
+
+	if (fclose(lib_file) != 0) {
+		err(1, ": error closing '%s'", lib_path);
+		exit(1);
+	}
+    
+    Con_Bytecode_add_lib(thread, bc);
+    
+    free(bc);
 }
 
 

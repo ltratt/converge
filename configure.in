@@ -327,7 +327,9 @@ fi
 # Package / header file checks & module inclusions
 #
 
-CFLAGS="$extra_cflags"
+CFLAGS="-std=c99 $extra_cflags"
+
+# PCRE
 
 AC_PATH_PROG(pcre_config, pcre-config, fail)
 if [[ "$pcre_config" = "fail" ]]; then
@@ -564,6 +566,7 @@ int main()
 	AC_DEFINE(STAT_ST_MTIMESPEC_TYPE_STRUCT_TIMESPEC, [], [Define if you stat.STAT_ST_MTIMESPEC is of type struct timespec.])],
 	[AC_TRY_RUN([
 #include <sys/stat.h>
+#include <time.h>
 
 int main()
 {

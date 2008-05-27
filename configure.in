@@ -751,8 +751,10 @@ int main()
 
 # strlcat / strcpy
 
-AC_CHECK_FUNC(strlcat, [], [AC_SUBST(PLATFORM_STRLCAT, Platform/strlcat.o)])
-AC_CHECK_FUNC(strlcpy, [], [AC_SUBST(PLATFORM_STRLCPY, Platform/strlcpy.o)])
+AH_TEMPLATE(CON_HAVE_STRL_FAMILY, [Define if your OS defines strlcat, strlcpy et al.])
+AC_CHECK_FUNC(strlcat, [AC_DEFINE(CON_HAVE_STRL_FAMILY)],
+  [AC_SUBST(PLATFORM_STRLCAT, Platform/strlcat.o)
+  AC_SUBST(PLATFORM_STRLCPY, Platform/strlcpy.o)])
 
 
 # htole32 and friends, endian conversion functions

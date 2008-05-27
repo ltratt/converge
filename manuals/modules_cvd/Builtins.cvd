@@ -335,6 +335,10 @@ Returns the number of characters in the string.
 Returns a copy of this string with all characters converted to lower case.
 </function>
 
+<function name="lstripped">
+Returns a copy of this string with all whitespace (tabs, spaces, newlines) removed from its left hand side.
+</function>
+
 <function name="prefixed_by">
 <argument name="s" />
 <argument name="i">0</argument>
@@ -344,6 +348,10 @@ Succeeds if the string starting at position <code>i</code> matches <code>s</code
 <function name="rfind_index">
 <argument name="s" type="Object" />
 Successively generates, in reverse order, the starting index of each substring which matches <code>s</code>.
+</function>
+
+<function name="stripped">
+Returns a copy of this string with all whitespace (tabs, spaces, newlines) removed from both its left and right hand side.
 </function>
 
 <function name="suffixed_by">

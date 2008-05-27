@@ -60,6 +60,7 @@ Con_Obj *_Con_Builtins_String_Class_len_func(Con_Obj *);
 Con_Obj *_Con_Builtins_String_Class_prefixed_by_func(Con_Obj *);
 Con_Obj *_Con_Builtins_String_Class_replaced_func(Con_Obj *);
 Con_Obj *_Con_Builtins_String_Class_rfind_index_func(Con_Obj *);
+Con_Obj *_Con_Builtins_String_Class_lstripped_func(Con_Obj *);
 Con_Obj *_Con_Builtins_String_Class_stripped_func(Con_Obj *);
 Con_Obj *_Con_Builtins_String_Class_suffixed_by_func(Con_Obj *);
 Con_Obj *_Con_Builtins_String_Class_lower_cased_func(Con_Obj *);
@@ -103,6 +104,7 @@ void Con_Builtins_String_Class_bootstrap(Con_Obj *thread)
 	CON_SET_FIELD(string_class, "prefixed_by", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_prefixed_by_func, "prefixed_by", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
 	CON_SET_FIELD(string_class, "rfind_index", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_rfind_index_func, "rfind_index", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
 	CON_SET_FIELD(string_class, "replaced", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_replaced_func, "replaced", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
+    CON_SET_FIELD(string_class, "lstripped", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_lstripped_func, "lstripped", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
 	CON_SET_FIELD(string_class, "stripped", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_stripped_func, "stripped", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
 	CON_SET_FIELD(string_class, "suffixed_by", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_suffixed_by_func, "suffixed_by", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
 	CON_SET_FIELD(string_class, "lower_cased", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_lower_cased_func, "lower_cased", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
@@ -596,6 +598,33 @@ Con_Obj *_Con_Builtins_String_Class_replaced_func(Con_Obj *thread)
 		return self_obj;
 	else
 		return Con_Builtins_String_Atom_new_no_copy(thread, new_str_mem, new_str_mem_pos, CON_STR_UTF_8);
+}
+
+
+
+//
+//
+//
+
+Con_Obj *_Con_Builtins_String_Class_lstripped_func(Con_Obj *thread)
+{
+	Con_Obj *self_obj;
+	CON_UNPACK_ARGS("S", &self_obj);
+	
+	Con_Builtins_String_Atom *self_string_atom = CON_GET_ATOM(self_obj, CON_BUILTIN(CON_BUILTIN_STRING_ATOM_DEF_OBJECT));
+	
+	if (self_string_atom->encoding != CON_STR_UTF_8)
+		CON_XXX;
+	
+	Con_Int l = 0;
+	while (l < self_string_atom->size) {
+		if (self_string_atom->str[l] == ' ' || self_string_atom->str[l] == '\t' || self_string_atom->str[l] == '\n' || self_string_atom->str[l] == '\r')
+			l += 1;
+		else
+			break;
+	}
+	
+	return Con_Builtins_String_Atom_new_no_copy(thread, self_string_atom->str + l, self_string_atom->size - l, self_string_atom->encoding);
 }
 
 

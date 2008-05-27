@@ -128,7 +128,7 @@ Con_Obj *Con_Modules_get_stdlib(Con_Obj *thread, const char *ptl_mod_id)
 				return Con_Modules_get(thread, orig_key);
 		}
 		
-		CON_XXX;
+        CON_RAISE_EXCEPTION("Import_Exception", ptl_mod_id_obj);
 	}
 }
 

@@ -92,7 +92,7 @@ Con_Obj *Con_Builtins_Module_Atom_new_c(Con_Obj *thread, Con_Obj *identifier, Co
 	module_atom->state = CON_MODULE_UNINITIALIZED;
 	module_atom->identifier = identifier;
 	module_atom->name = name;
-	module_atom->src_path = identifier;
+	module_atom->src_path = CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 	module_atom->module_bytecode = NULL;
 	module_atom->module_bytecode_offset = -1;
 	module_atom->closure = NULL;

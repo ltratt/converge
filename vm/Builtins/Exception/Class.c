@@ -34,6 +34,7 @@
 #include "Builtins/Exception/Class.h"
 #include "Builtins/Func/Atom.h"
 #include "Builtins/List/Atom.h"
+#include "Builtins/Module/Atom.h"
 #include "Builtins/Slots_Atom_Def.h"
 #include "Builtins/String/Atom.h"
 #include "Builtins/Thread/Atom.h"
@@ -45,6 +46,7 @@ Con_Obj *_Con_Builtins_Exception_Class_new_object(Con_Obj *);
 
 Con_Obj *_Con_Builtins_Exception_Class_init_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Exception_Class_to_str_func(Con_Obj *);
+Con_Obj *_Con_Builtins_Exception_Class_iter_call_chain_func(Con_Obj *);
 
 
 
@@ -69,8 +71,15 @@ void Con_Builtins_Exception_Class_bootstrap(Con_Obj *thread)
 
 	Con_Memory_change_chunk_type(thread, exception_class, CON_MEMORY_CHUNK_OBJ);
 	
-	CON_SET_FIELD(exception_class, "init", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Exception_Class_init_func, "init", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), exception_class));
-	CON_SET_FIELD(exception_class, "to_str", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Exception_Class_to_str_func, "to_str", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), exception_class));
+	CON_SET_FIELD(exception_class, "init", CON_NEW_BOUND_C_FUNC(
+      _Con_Builtins_Exception_Class_init_func, "init",
+      CON_BUILTIN(CON_BUILTIN_NULL_OBJ), exception_class));
+	CON_SET_FIELD(exception_class, "to_str", CON_NEW_BOUND_C_FUNC(
+      _Con_Builtins_Exception_Class_to_str_func, "to_str",
+      CON_BUILTIN(CON_BUILTIN_NULL_OBJ), exception_class));
+	CON_SET_FIELD(exception_class, "iter_call_chain", CON_NEW_BOUND_C_FUNC(
+      _Con_Builtins_Exception_Class_iter_call_chain_func, "to_str",
+      CON_BUILTIN(CON_BUILTIN_NULL_OBJ), exception_class));
 }
 
 
@@ -143,4 +152,35 @@ Con_Obj *_Con_Builtins_Exception_Class_to_str_func(Con_Obj *thread)
 	// Format the output as '<self.name>: <self.msg>'.
 	
 	return CON_ADD(CON_ADD(CON_GET_SLOT(CON_GET_SLOT(self, "instance_of"), "name"), CON_NEW_STRING(": ")), CON_GET_SLOT(self, "msg"));
+}
+
+
+
+//
+// 'iter_call_chain()'.
+//
+
+Con_Obj *_Con_Builtins_Exception_Class_iter_call_chain_func(Con_Obj *thread)
+{
+	Con_Obj *self;
+	CON_UNPACK_ARGS("O", &self);
+
+    Con_Builtins_Exception_Atom *exception_atom = CON_GET_ATOM(self,
+      CON_BUILTIN(CON_BUILTIN_EXCEPTION_ATOM_DEF_OBJECT));
+	for (Con_Int i = 0; i < exception_atom->num_call_chain_entries; i += 1) {
+		Con_Builtins_Exception_Class_Call_Chain_Entry *call_chain_entry = &exception_atom->call_chain[i];
+		Con_Obj *func = call_chain_entry->func;
+		Con_PC pc = call_chain_entry->pc;
+        
+        Con_Obj *src_infos;
+        if (pc.type == PC_TYPE_C_FUNCTION)
+            src_infos = CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
+        else
+            src_infos = Con_Builtins_Module_Atom_pc_to_src_locations(thread, pc);
+        
+        Con_Obj *tmp = Con_Builtins_List_Atom_new_va(thread, func, src_infos, NULL);
+        CON_YIELD(tmp);
+    }
+
+	return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
 }

@@ -54,6 +54,7 @@
 #include "Object.h"
 #include "Shortcuts.h"
 #include "Slots.h"
+#include "Std_Modules.h"
 #include "Version.h"
 
 #include "Builtins/Con_Stack/Atom.h"
@@ -334,7 +335,9 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 		if (CON_GET_SLOT_APPLY_NO_FAIL(CON_GET_MOD_DEFN(CON_BUILTIN(CON_BUILTIN_EXCEPTIONS_MODULE), "System_Exit_Exception"), "instantiated", exception) != NULL)
 			exit_code = Con_Numbers_Number_to_Con_Int(thread, CON_GET_SLOT(exception, "code"));
 		else {
-			backtrace = CON_APPLY(CON_GET_MOD_DEFN(CON_BUILTIN(CON_BUILTIN_EXCEPTIONS_MODULE), "backtrace"), exception);
+			backtrace = CON_APPLY(CON_GET_MOD_DEFN(
+              Con_Modules_import(thread, Con_Modules_get_stdlib(thread, CON_STDLIB_BACKTRACE)),
+              "plain"), exception);
 			fprintf(stderr, "%s\n", Con_Builtins_String_Atom_to_c_string(thread, backtrace));
 			backtrace = NULL;
 			exit_code = 1;

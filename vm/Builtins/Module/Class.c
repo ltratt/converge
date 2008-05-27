@@ -30,6 +30,7 @@
 #include "Numbers.h"
 #include "Object.h"
 #include "Shortcuts.h"
+#include "Target.h"
 
 #include "Builtins/Class/Atom.h"
 #include "Builtins/Closure/Atom.h"
@@ -53,6 +54,7 @@ Con_Obj *_Con_Builtins_Module_Class_get_defn_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Module_Class_set_defn_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Module_Class_get_slot_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Module_Class_iter_defns_func(Con_Obj *);
+Con_Obj *_Con_Builtins_Module_Class_iter_newlines_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Module_Class_path_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Module_Class_src_offset_to_line_column_func(Con_Obj *);
 
@@ -79,6 +81,7 @@ void Con_Builtins_Module_Class_bootstrap(Con_Obj *thread)
 	
 	CON_SET_FIELD(module_class, "to_str", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Module_Class_to_str_func, "to_str", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), module_class));
 	CON_SET_FIELD(module_class, "iter_defns", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Module_Class_iter_defns_func, "iter_defns", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), module_class));
+	CON_SET_FIELD(module_class, "iter_newlines", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Module_Class_iter_newlines_func, "iter_newlines", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), module_class));
 	CON_SET_FIELD(module_class, "get_defn", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Module_Class_get_defn_func, "get_defn", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), module_class));
 	CON_SET_FIELD(module_class, "set_defn", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Module_Class_set_defn_func, "set_defn", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), module_class));
 	CON_SET_FIELD(module_class, "get_slot", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Module_Class_get_slot_func, "get_slot", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), module_class));
@@ -288,4 +291,23 @@ Con_Obj *_Con_Builtins_Module_Class_src_offset_to_line_column_func(Con_Obj *thre
 	Con_Builtins_Module_Atom_src_offset_to_line_column(thread, self, Con_Numbers_Number_to_Con_Int(thread, src_offset), &line, &col);
 
 	return Con_Builtins_List_Atom_new_va(thread, CON_NEW_INT(line), CON_NEW_INT(col), NULL);
+}
+
+
+
+Con_Obj *_Con_Builtins_Module_Class_iter_newlines_func(Con_Obj *thread)
+{
+	Con_Obj *self, *src_offset;
+	CON_UNPACK_ARGS("M", &self, &src_offset);
+
+    Con_Builtins_Module_Atom *module_atom = CON_GET_ATOM(self, CON_BUILTIN(CON_BUILTIN_MODULE_ATOM_DEF_OBJECT));
+
+#	define MODULE_GET_WORD(x) (*(Con_Int*) (module_atom->module_bytecode + (x)))
+
+	for (Con_Int i = 0; i < MODULE_GET_WORD(CON_BYTECODE_MODULE_NUM_NEWLINES); i += 1) {
+		Con_Int newline = MODULE_GET_WORD(MODULE_GET_WORD(CON_BYTECODE_MODULE_NEWLINES) + i * sizeof(Con_Int));
+        CON_YIELD(CON_NEW_INT(newline));
+	}
+
+	return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
 }

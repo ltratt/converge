@@ -60,13 +60,11 @@ Con_Obj *_Con_Module_Exception_Slot_Exception_init_func(Con_Obj *);
 Con_Obj *_Con_Module_Exception_Type_Exception_init_func(Con_Obj *);
 Con_Obj *_Con_Module_Exception_Unpack_Exception_init_func(Con_Obj *);
 
-Con_Obj *_Con_Module_Exception_backtrace_func(Con_Obj *);
-
 
 
 Con_Obj *Con_Module_Exceptions_init(Con_Obj *thread, Con_Obj *identifier)
 {
-	const char* defn_names[] = {"Exception", "Internal_Exception", "User_Exception", "System_Exit_Exception", "VM_Exception", "Apply_Exception", "Assert_Exception", "Bounds_Exception", "Field_Exception", "Import_Exception", "Indices_Exception", "Key_Exception", "Mod_Defn_Exception", "NDIf_Exception", "Number_Exception", "Parameters_Exception", "Signal_Exception", "Slot_Exception", "Type_Exception", "Unpack_Exception", "Unassigned_Var_Exception", "IO_Exception", "File_Exception", "backtrace", NULL};
+	const char* defn_names[] = {"Exception", "Internal_Exception", "User_Exception", "System_Exit_Exception", "VM_Exception", "Apply_Exception", "Assert_Exception", "Bounds_Exception", "Field_Exception", "Import_Exception", "Indices_Exception", "Key_Exception", "Mod_Defn_Exception", "NDIf_Exception", "Number_Exception", "Parameters_Exception", "Signal_Exception", "Slot_Exception", "Type_Exception", "Unpack_Exception", "Unassigned_Var_Exception", "IO_Exception", "File_Exception", NULL};
 
 	return Con_Builtins_Module_Atom_new_c(thread, identifier, CON_NEW_STRING("Exceptions"), defn_names, CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
 }
@@ -207,10 +205,6 @@ Con_Obj *Con_Module_Exceptions_import(Con_Obj *thread, Con_Obj *exceptions_mod)
 	
 	Con_Obj *file_exception = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("File_Exception"), Con_Builtins_List_Atom_new_va(thread, io_exception, NULL), exceptions_mod);
 	CON_SET_MOD_DEFN(exceptions_mod, "File_Exception", file_exception);
-	
-	// func backtrace
-	
-	CON_SET_MOD_DEFN(exceptions_mod, "backtrace", CON_NEW_UNBOUND_C_FUNC(_Con_Module_Exception_backtrace_func, "backtrace", exceptions_mod));
 	
 	return exceptions_mod;
 }
@@ -501,135 +495,4 @@ Con_Obj *_Con_Module_Exception_Unpack_Exception_init_func(Con_Obj *thread)
 	CON_SET_SLOT(self, "msg", msg);
 	
 	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
-}
-
-
-
-//
-// 'backtrace(exception)' returns a string representation of 'exception', including a backtrace.
-//
-//
-
-Con_Obj *_Con_Module_Exception_backtrace_func(Con_Obj *thread)
-{
-	Con_Obj *exception;
-	CON_UNPACK_ARGS("E", &exception);
-	
-	Con_Builtins_Exception_Atom *exception_atom = CON_FIND_ATOM(exception, CON_BUILTIN(CON_BUILTIN_EXCEPTION_ATOM_DEF_OBJECT));
-
-	// The backtrace that this function creates really consists of a backtrace followed by appending
-	// exception.to_str.
-	
-	// So first create the backtrace.
-
-#	ifdef CON_THREADS_SINGLE_THREADED
-	Con_Obj *output = CON_NEW_STRING("Traceback (most recent call at bottom):\n");
-#	else
-	// In a multi-threaded world, we have to be very clear about which exception raised the thread
-	// that is being reported.
-	
-	Con_Obj *output = CON_NEW_STRING("Traceback from exception raised in thread ");
-	CON_MUTEX_LOCK(&exception->mutex);
-	Con_Obj *exception_thread = exception_atom->exception_thread;
-	CON_MUTEX_UNLOCK(&exception->mutex);
-	output = CON_ADD(output, CON_GET_SLOT_APPLY(exception_thread, "to_str"));
-	output = CON_ADD(output, CON_NEW_STRING(" (most recent call at bottom):\n"));
-#endif
-
-	CON_MUTEX_LOCK(&exception->mutex);
-
-	// Iterate over the call chain in reverse order, printing out each entry.
-	Con_Obj *file_mod = Con_Modules_import(thread, Con_Modules_get_stdlib(thread, CON_STDLIB_FILE));
-	Con_Obj *exists_func = CON_GET_MOD_DEFN(file_mod, "exists");
-	for (Con_Int i = exception_atom->num_call_chain_entries - 1; i >= 0; i -= 1) {
-		Con_Builtins_Exception_Class_Call_Chain_Entry *call_chain_entry = &exception_atom->call_chain[i];
-		Con_Obj *func = call_chain_entry->func;
-		Con_PC pc = call_chain_entry->pc;
-		Con_Int num_call_chain_entries = exception_atom->num_call_chain_entries;
-		CON_MUTEX_UNLOCK(&exception->mutex);
-		Con_Obj *entry = CON_NEW_STRING("  ");
-		entry = CON_ADD(entry, CON_GET_SLOT_APPLY(CON_NEW_INT(num_call_chain_entries - i), "to_str"));
-		entry = CON_ADD(entry, CON_NEW_STRING(": "));
-		if (pc.type == PC_TYPE_C_FUNCTION) {
-			// When the PC is a C function, we can really only print out the function's path.
-			
-			entry = CON_ADD(entry, CON_NEW_STRING("(internal), in "));
-			entry = CON_ADD(entry, CON_GET_SLOT_APPLY(func, "path", CON_BUILTIN(CON_BUILTIN_NULL_OBJ)));
-			entry = CON_ADD(entry, CON_NEW_STRING("\n"));
-		}
-		else if (pc.type == PC_TYPE_BYTECODE) {
-			// When the PC points to a bytecode location, we can be much more sophisticated. A single
-			// bytecode location points to one or more source code locations. Because of this we
-			// format the output as e.g.:
-			//
-			// Traceback (most recent call at bottom):
-			//   1: File "/home/ltratt/src/converge/test/t1.cv", line 32, column 3, in main
-			//   2: File "/home/ltratt/src/converge/test/mri.cv", line 5, column 3, in f
-			//      File "/home/ltratt/src/converge/test/t1.cv", line 5, column 3, in f
-			//   3: File "/home/ltratt/src/converge/test/t1.cv", line 8, column 5, in g
-			//   4: get_slot (internal)
-			//   5: get_slot (internal)
-			// Exception: Unknown slot 'w'.
-		
-			Con_Obj *src_locations = Con_Builtins_Module_Atom_pc_to_src_locations(thread, pc);
-			
-			int j = 0;
-			CON_PRE_GET_SLOT_APPLY_PUMP(src_locations, "iter");
-			while (true) {
-				Con_Obj *src_location = CON_APPLY_PUMP();
-				if (src_location == NULL)
-					break;
-					
-				if (j > 0) {
-					entry = CON_ADD(entry, CON_NEW_STRING("     "));
-					entry = CON_ADD(entry, CON_GET_SLOT_APPLY(CON_NEW_STRING(" "), "*", CON_NEW_INT(j / 10)));
-				}
-					
-				Con_Obj *mod_id = CON_GET_SLOT_APPLY(src_location, "get", CON_NEW_INT(0));
-				Con_Obj *src_offset = CON_GET_SLOT_APPLY(src_location, "get", CON_NEW_INT(1));
-                Con_Obj *src_len = CON_GET_SLOT_APPLY(src_location, "get", CON_NEW_INT(2));
-				Con_Obj *mod = Con_Modules_get(thread, mod_id);
-				Con_Obj *src_path = CON_GET_SLOT(mod, "src_path");
-
-				// We now try to see if src_path is really a file on the local machine; if it is, we
-				// assume (not necessarily correctly) that it corresponds to mod_id and print out the
-				// file name. If we don't find src_path we print out the module id instead.
-
-				if (CON_APPLY_NO_FAIL(exists_func, src_path) != NULL) {
-					entry = CON_ADD(entry, CON_NEW_STRING("File \""));
-					entry = CON_ADD(entry, src_path);
-				}
-				else {
-					entry = CON_ADD(entry, CON_NEW_STRING("Mod id \""));
-					entry = CON_ADD(entry, mod_id);
-				}
-
-				Con_Int line, column;
-				Con_Builtins_Module_Atom_src_offset_to_line_column(thread, mod, Con_Numbers_Number_to_Con_Int(thread, src_offset), &line, &column);
-				entry = CON_ADD(entry, CON_NEW_STRING("\", line "));
-				entry = CON_ADD(entry, CON_GET_SLOT_APPLY(CON_NEW_INT(line), "to_str"));
-				entry = CON_ADD(entry, CON_NEW_STRING(", column "));
-				entry = CON_ADD(entry, CON_GET_SLOT_APPLY(CON_NEW_INT(column), "to_str"));
-				entry = CON_ADD(entry, CON_NEW_STRING(", length "));
-				entry = CON_ADD(entry, CON_GET_SLOT_APPLY(src_len, "to_str"));
-				entry = CON_ADD(entry, CON_NEW_STRING("\n"));
-				
-				j += 1;
-			}
-		}
-		else
-			CON_XXX;
-
-		output = CON_ADD(output, entry);
-		
-		CON_MUTEX_LOCK(&exception->mutex);
-	}
-
-	CON_MUTEX_UNLOCK(&exception->mutex);
-	
-	// Append 'exception.to_str' to the backtrace.
-	
-	output = CON_ADD(output, CON_GET_SLOT_APPLY(exception, "to_str"));
-	
-	return output;
 }

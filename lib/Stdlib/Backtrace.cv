@@ -1,0 +1,102 @@
+// Copyright (c) 2008 Laurence Tratt
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to
+// deal in the Software without restriction, including without limitation the
+// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+// sell copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+// IN THE SOFTWARE.
+
+
+import Exceptions, File, Strings, VM
+
+
+
+
+func plain(ex):
+
+    cc := []
+    for cc.append(ex.iter_call_chain())
+
+    out := ["Traceback (most recent call at bottom):\n"]
+    i := 1
+    for func_, src_infos := cc.riter():
+        out.append(Strings::format("  %d: ", i))
+        if src_infos is null:
+            out.append(Strings::format("(internal), in %s\n", func_.path(null)))
+        else:
+            j := 0
+            for mod_id, src_off, src_len := src_infos.iter():
+                if not mod := VM::find_module(mod_id):
+                    raise "XXX"
+                
+                if j > 0:
+                    out.append("     ")
+                    out.append(" " * (j / 10))
+                
+                // If there's no file which matches mod.src_path we only print out the module ID.
+                //
+                // Note that this is slightly shaky because there is a small chance that the file
+                // pointed to by mod.src_path isn't the same on the local machine as the file used
+                // to compile the module. In practical terms, this isn't worth worrying about, and
+                // the utility to the user of printing out the filename far exceeds this
+                // considerations.
+                
+                if File::exists(mod.src_path):
+                    out.append("File \"")
+                    out.append(mod.src_path)
+                else:
+                    out.append("Mod ID \"")
+                    out.append(mod_id)
+
+                newlines := []
+                for newlines.append(mod.iter_newlines())
+
+                line := 0
+                while line < newlines.len():
+                    if src_off < newlines[line]:
+                        break
+                    line += 1
+                ls_off := newlines[line - 1] // Line start offset
+                assert line < newlines.len()
+                col := src_off - ls_off
+                le_off := newlines[line] - 1
+
+                out.append(Strings::format("\", line %d, column %d, length %d", line, col, src_len))
+                out.append("\n")
+
+                // We now try and print out the appropriate line of source code.
+                //
+                // If this fails, d is set to null; otherwise d is the line of source code.
+
+                try:
+                    f := File::open(mod.src_path, "r")
+                    f.seek(ls_off)
+                    d := f.read(le_off - ls_off)
+                    f.close()
+                catch Exceptions::IO_Exception:
+                    d := null
+
+                if d != null:
+                    out.append("       ")
+                    out.append(" " * (j / 10))
+                    out.append(d.lstripped())
+                    out.append("\n")
+                
+                j += 1
+        i += 1
+
+    out.append(ex.to_str())
+
+    return Strings::join(out, "")

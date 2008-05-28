@@ -438,7 +438,7 @@ Con_Obj *_Con_Module_POSIX_File_File_Class_write_func(Con_Obj *thread)
 	if (s_string_atom->encoding != CON_STR_UTF_8)
 		CON_XXX;
 
-	if (fwrite(s_string_atom->str, s_string_atom->size, 1, file_atom->file) < 1)
+	if (s_string_atom->size > 0 && fwrite(s_string_atom->str, s_string_atom->size, 1, file_atom->file) < 1)
 		_Con_Module_POSIX_File_error_no_path(thread, errno);
 
 	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
@@ -466,8 +466,10 @@ Con_Obj *_Con_Module_POSIX_File_File_Class_writeln_func(Con_Obj *thread)
 	if (s_string_atom->encoding != CON_STR_UTF_8)
 		CON_XXX;
 
-	if ((fwrite(s_string_atom->str, s_string_atom->size, 1, file_atom->file) < 1) ||
-		(fwrite("\n", 1, 1, file_atom->file) < 1))
+	if (s_string_atom->size > 0 && fwrite(s_string_atom->str, s_string_atom->size, 1, file_atom->file) < 1)
+        _Con_Module_POSIX_File_error_no_path(thread, errno);
+	
+    if (fwrite("\n", 1, 1, file_atom->file) < 1) 
 		_Con_Module_POSIX_File_error_no_path(thread, errno);
 
 	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);

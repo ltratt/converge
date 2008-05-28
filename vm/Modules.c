@@ -90,12 +90,30 @@ Con_Obj *Con_Modules_get(Con_Obj *thread, Con_Obj *mod_id)
 
 
 
+//
+// 'Con_Modules_get_stdlib'
+//
+// Hohoho. Con_Modules_get_stdlib can get called by main.c outside of a continuation. This causes
+// all sorts of problems because it violates some of CON_APPLY_PUMP's assumptions. So we hack around
+// this by creating a temporary function which we call to do the pumping.
+//
+
+Con_Obj *_Con_Modules_get_stdlib_hack(Con_Obj *);
+
 Con_Obj *Con_Modules_get_stdlib(Con_Obj *thread, const char *ptl_mod_id)
 {
-	assert(strlen(ptl_mod_id) > strlen(CON_DIR_SEP));
-	
-	Con_Obj *ptl_mod_id_obj = Con_Builtins_String_Atom_new_copy(thread, (u_char *) ptl_mod_id, strlen(ptl_mod_id), CON_STR_UTF_8);
-	if (memcmp(ptl_mod_id, CON_DIR_SEP, strlen(CON_DIR_SEP)) != 0) {
+    Con_Obj *w = CON_NEW_BOUND_C_FUNC(_Con_Modules_get_stdlib_hack, "woo", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
+    return CON_APPLY(w, Con_Builtins_String_Atom_new_copy(thread, ptl_mod_id, strlen(ptl_mod_id), CON_STR_UTF_8));
+}
+
+
+Con_Obj *_Con_Modules_get_stdlib_hack(Con_Obj *thread)
+{
+    Con_Obj *ptl_mod_id_obj;
+    CON_UNPACK_ARGS("S", &ptl_mod_id_obj);
+
+	//if (memcmp(ptl_mod_id, CON_DIR_SEP, strlen(CON_DIR_SEP)) != 0) {
+    if (CON_GET_SLOT_APPLY_NO_FAIL(ptl_mod_id_obj, "suffixed_by", CON_NEW_STRING(CON_DIR_SEP)) != NULL) {
 		return Con_Modules_get(thread, ptl_mod_id_obj);
 	}
 	else {

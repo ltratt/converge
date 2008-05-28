@@ -101,5 +101,4 @@ func main():
         catch Exceptions::System_Exit_Exception into e:
             Sys::exit(e.code)
         catch Exceptions::Exception into e:
-            Sys::stderr.writeln(Backtrace::plain(e))
-            Sys::stderr.flush()
+            Backtrace::print_best(e)

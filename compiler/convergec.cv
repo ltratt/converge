@@ -19,7 +19,7 @@
 // IN THE SOFTWARE.
 
 
-import Builtins, Exceptions, File, Parse_Args, Platform::Properties, Strings, Sys, Time, VM
+import Builtins, Curses, Exceptions, File, Parse_Args, Platform::Properties, Strings, Sys, Time, VM
 import Compiler::Code_Gen, Compiler::Core, Compiler::BC_Exec, Compiler::BC_Lib, Compiler::BC_Mod, Compiler::Parser, Compiler::BC_Pkg, Compiler::IMod_Gen, Compiler::Link, Compiler::Targets, Compiler::Tokenizer
 
 
@@ -32,7 +32,7 @@ class Compiler:
     //
 
     func from_cmd_line(self):
-    
+
         options := []
         options.append(Parse_Args::Opt_Spec.new("output", "o", Parse_Args::MANDATORY, Parse_Args::TYPE_ANY, Parse_Args::FREQUENCY_ZERO_OR_ONE))
         options.append(Parse_Args::Opt_Spec.new("includes", "I", Parse_Args::MANDATORY, Parse_Args::TYPE_ANY, Parse_Args::FREQUENCY_ZERO_OR_MORE))
@@ -42,6 +42,14 @@ class Compiler:
         options.append(Parse_Args::Opt_Spec.new("target", "T", Parse_Args::MANDATORY, Parse_Args::TYPE_ANY, Parse_Args::FREQUENCY_ZERO_OR_ONE))
         options.append(Parse_Args::Opt_Spec.new("verbose", "v", Parse_Args::NONE, Parse_Args::TYPE_ANY, Parse_Args::FREQUENCY_ZERO_OR_MORE))
         
+        self._use_curses := 1
+        try:
+            Curses::setupterm(null, Sys::stderr)
+            Curses::tigetstr("sgr0")
+        catch Curses::Curses_Exception:
+            // If we can't initialise curses, we ignore the error and resort to "plain" output.
+            self._use_curses := 0
+
         self.mk_mode := 0
         self.mk_fresh := 0
         self.output_path := null
@@ -528,53 +536,70 @@ class Compiler:
 
 
     func _print_msg(self, pre_msg, msg, src_infos := null):
-    
+
         if not src_infos is null:
             assert src_infos.len() > 0
 
-            // If any of the src infos reference a file other than the original file being compiled,
-            // then other_files will be set to 1. This then changes the way we format error messages.
-
-            other_files := 0
-            head_compiler := Core::head_compiler()
-            for src_info := src_infos.iter():
-                if src_info[0] != head_compiler.mod_id:
-                    other_files := 1
-                    break
-
-            if src_infos.len() == 1 & other_files == 0:
-                Sys::stderr.write(Strings::format("%s: ", pre_msg))
-            else:
-                Sys::stderr.writeln(Strings::format("%s:", pre_msg))
+            Sys::stderr.writeln(Strings::format("%s:", pre_msg))
 
             for src_info := src_infos.iter():
                 if src_info[0] == self.mod_id:
-                    src_offset := src_info[1]
                     newlines := self.tokenizer.newlines
-                    line := 0
-                    while line < newlines.len():
-                        if src_offset < newlines[line]:
-                            break
-                        line += 1
-                    col := src_offset - newlines[line - 1]
                 else:
                     if not mod := VM::find_module(src_info[0]):
                         raise "XXX"
-                    line, col := mod.src_offset_to_line_column(src_info[1])
+                    newlines := []
+                    for newlines.append(mod.iter_newlines())
                 
-                len := src_info[2]
-                if src_infos.len() == 1 & other_files == 0:
-                    Sys::stderr.write(Strings::format("Line %d, column %d, length %d: ", line, col, len))
-                else:
-                    if other_files == 0:
-                        Sys::stderr.writeln(Strings::format("  Line %d, column %d, length %d", line, col, len))
-                    else:
-                        if local_src_path := self._mod_id_to_local_src_path(src_info[0]):
-                            entry := Strings::format("""  File "%s", line %d, column %d, length %d""", local_src_path, line, col, len)
-                            Sys::stderr.writeln(entry)
+                src_offset := src_info[1]
+                line := 0
+                while line < newlines.len():
+                    if src_offset < newlines[line]:
+                        break
+                    line += 1
+                ls_off := newlines[line - 1] // Line start offset
+                assert line < newlines.len()
+                col := src_offset - ls_off
+                le_off := newlines[line] - 1
+                
+                src_len := src_info[2]
+                if local_src_path := self._mod_id_to_local_src_path(src_info[0]):
+                    // We now try and print out the appropriate line of source code.
+                    //
+                    // If this fails, d is set to null; otherwise d is the line of source code.
+
+                    try:
+                        f := File::open(local_src_path, "r")
+                        f.seek(ls_off)
+                        d := f.read(le_off - ls_off)
+                        f.close()
+                    catch Exceptions::IO_Exception:
+                        d := null
+
+                    // If we didn't read the contents of the file, or if we read in less bytes than we
+                    // expected, we don't add the contents of this file to the backtrace.
+
+                    if not d is null & d.len() == le_off - ls_off:
+                        Sys::stderr.write("       ")
+                        if self._use_curses == 1:
+                            dls := d.lstripped()
+                            dls_diff := d.len() - dls.len()
+                            Sys::stderr.write(dls[ : col - dls_diff])
+                            Sys::stderr.write(Curses::tigetstr("smul"))
+                            if src_len > le_off - ls_off - col:
+                                Sys::stderr.writeln(Strings::format("%s%s...%s", \
+                                  dls[col - dls_diff : ], Curses::tigetstr("bold"), \
+                                  Curses::tigetstr("sgr0")))
+                            else:
+                                Sys::stderr.writeln(Strings::format("%s%s%s", \
+                                  dls[col - dls_diff : col - dls_diff + src_len], \
+                                  Curses::tigetstr("sgr0"), dls[col - dls_diff + src_len : ]))
                         else:
-                            entry := Strings::format("""  Mod id "%s", line %d, column %d, length %d""", src_info[0], line, col)
-                            Sys::stderr.writeln(entry)
+                            Sys::stderr.writeln(d.lstripped())
+                else:
+                    entry := Strings::format("""  Mod id "%s", line %d, column %d, length %d:""", \
+                      src_info[0], line, col, src_len)
+                    Sys::stderr.writeln(entry)
 
             Sys::stderr.writeln(msg)
         else:
@@ -588,7 +613,10 @@ class Compiler:
     //
 
     func _mod_id_to_local_src_path(self, mod_id):
-    
+
+        if mod := VM::find_module(mod_id):
+            return mod.src_path
+
         for compiler := Core::iter_compilers():
             if compiler.mod_id == mod_id:
                 return compiler.src_path

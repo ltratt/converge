@@ -19,12 +19,12 @@
 // IN THE SOFTWARE.
 
 
-import Exceptions, File, Strings, VM
+import Curses, Exceptions, File, Strings, Sys, VM
 
 
 
 
-func plain(ex):
+func backtrace(ex, use_curses):
 
     cc := []
     for cc.append(ex.iter_call_chain())
@@ -43,7 +43,6 @@ func plain(ex):
                 
                 if j > 0:
                     out.append("     ")
-                    out.append(" " * (j / 10))
                 
                 // If there's no file which matches mod.src_path we only print out the module ID.
                 //
@@ -72,7 +71,7 @@ func plain(ex):
                 assert line < newlines.len()
                 col := src_off - ls_off
                 le_off := newlines[line] - 1
-
+                
                 out.append(Strings::format("\", line %d, column %d, length %d", line, col, src_len))
                 out.append("\n")
 
@@ -88,11 +87,26 @@ func plain(ex):
                 catch Exceptions::IO_Exception:
                     d := null
 
-                if d != null:
+                // If we didn't read the contents of the file, or if we read in less bytes than we
+                // expected, we don't add the contents of this file to the backtrace.
+
+                if not d is null & d.len() == le_off - ls_off:
                     out.append("       ")
-                    out.append(" " * (j / 10))
-                    out.append(d.lstripped())
-                    out.append("\n")
+                    if use_curses == 1:
+                        dls := d.lstripped()
+                        dls_diff := d.len() - dls.len()
+                        out.append(dls[ : col - dls_diff])
+                        out.append(Curses::tigetstr("smul"))
+                        if src_len > le_off - ls_off - col:
+                            out.append(Strings::format("%s%s...%s\n", dls[col - dls_diff : ], \
+                              Curses::tigetstr("bold"), Curses::tigetstr("sgr0")))
+                        else:
+                            out.append(Strings::format("%s%s%s\n", \
+                              dls[col - dls_diff : col - dls_diff + src_len], \
+                              Curses::tigetstr("sgr0"), dls[col - dls_diff + src_len : ]))
+                    else:
+                        out.append(d.lstripped())
+                        out.append("\n")
                 
                 j += 1
         i += 1
@@ -100,3 +114,14 @@ func plain(ex):
     out.append(ex.to_str())
 
     return Strings::join(out, "")
+
+
+
+func print_best(ex, file := Sys::stderr):
+
+    try:
+        Curses::setupterm(null, file)
+        Curses::tigetstr("sgr0")
+        file.writeln(backtrace(ex, 1))
+    catch Curses::Curses_Exception:
+        file.writeln(backtrace(ex, 0))

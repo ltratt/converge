@@ -468,6 +468,11 @@ class Tokenizer:
         while self._indents.len() > 1:
             self.tokens.append(Token.new("DEDENT", null, dedent_src_infos))
             self._indents.del(-1)
+
+        // We add a 'dummy' newline at the end of the file so that all line calculations can be made
+        // without any special cases.
+
+        self.newlines.append(self._src_offset + str.len() + 1)
                 
                         
 

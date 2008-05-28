@@ -337,8 +337,7 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 		else {
 			backtrace = CON_APPLY(CON_GET_MOD_DEFN(
               Con_Modules_import(thread, Con_Modules_get_stdlib(thread, CON_STDLIB_BACKTRACE)),
-              "plain"), exception);
-			fprintf(stderr, "%s\n", Con_Builtins_String_Atom_to_c_string(thread, backtrace));
+              "print_best"), exception);
 			backtrace = NULL;
 			exit_code = 1;
 		}

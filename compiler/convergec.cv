@@ -586,10 +586,10 @@ class Compiler:
                             dls_diff := d.len() - dls.len()
                             Sys::stderr.write(dls[ : col - dls_diff])
                             Sys::stderr.write(Curses::tigetstr("smul"))
+                            Sys::stderr.write(Curses::tigetstr("bold"))
                             if src_len > le_off - ls_off - col:
-                                Sys::stderr.writeln(Strings::format("%s%s...%s", \
-                                  dls[col - dls_diff : ], Curses::tigetstr("bold"), \
-                                  Curses::tigetstr("sgr0")))
+                                Sys::stderr.writeln(Strings::format("%s...%s", \
+                                  dls[col - dls_diff : ], Curses::tigetstr("sgr0")))
                             else:
                                 Sys::stderr.writeln(Strings::format("%s%s%s", \
                                   dls[col - dls_diff : col - dls_diff + src_len], \

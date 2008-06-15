@@ -45,7 +45,7 @@ class Attr:
 
 class Elem(Builtins::List):
 
-    func init(self, name, attrs, prefix := "", namespace := ""):
+    func init(self, name, attrs := [], prefix := "", namespace := ""):
     
         self.name := name
         self._attr_namespaces := Dict{}

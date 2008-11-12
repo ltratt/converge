@@ -184,7 +184,9 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 	// dodgy proposition, we don't rely on this definitely succeeding, and fall back on our
 	// other mechanism if it doesn't work.
 
-	vm_path = malloc(PATH_MAX);
+	if ((vm_path = malloc(PATH_MAX)) == NULL)
+        err(1, "malloc");
+    
 	int rtn = readlink("/proc/self/exe", vm_path, PATH_MAX);
 	if (rtn != -1) {
 		vm_path[rtn] = '\0';
@@ -203,7 +205,9 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 	// On Windows, GetModuleFileName appears to always return a canonicalised path of the
 	// executable path, which is doubly nice because its possible to execute "x.exe" as simply
 	// just "x", and that would make working this out painful in the extreme.
-	vm_path = malloc(PATH_MAX);
+	if ((vm_path = malloc(PATH_MAX)) == NULL)
+        err(1, "malloc");
+
 	if (GetModuleFileName(NULL, vm_path, PATH_MAX) == PATH_MAX || stat(vm_path, &tmp_stat) == -1) {
 		free(vm_path);
 		vm_path = NULL;
@@ -211,7 +215,9 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 #	endif
 
 	if (vm_path == NULL) {
-		vm_path = malloc(PATH_MAX);
+	    if ((vm_path = malloc(PATH_MAX)) == NULL)
+            err(1, "malloc");
+
 		if (realpath(argv0, vm_path) == NULL || stat(vm_path, &tmp_stat) != 0) {
 #		ifdef CON_PLATFORM_POSIX
 			// Since realpath failed, we fall back on searching through $PATH and try and find
@@ -219,7 +225,10 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 			char *path;
 			// If getenv returns NULL, we're out of ideas.
 			if ((path = getenv("PATH")) != NULL) {
-				char *cnd = malloc(PATH_MAX);
+				char *cnd;
+	            if ((cnd = malloc(PATH_MAX)) == NULL)
+                    err(1, "malloc");
+
 				size_t i = 0;
 				while (1) {
 					size_t j;
@@ -266,7 +275,10 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 	else
 		prog_path = argv[0];
 	
-	canon_prog_path = malloc(PATH_MAX);
+	canon_prog_path;
+	if ((canon_prog_path = malloc(PATH_MAX)) == NULL)
+        err(1, "malloc");
+
 	if (realpath(prog_path, canon_prog_path) == NULL) {
 		// If we can't canonicalise the programs path name, we fall back on the "raw" path and cross
 		// our fingers.
@@ -292,7 +304,9 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 	}
 	
 	size_t bytecode_size = con_binary_file_stat.st_size;
-	bytecode = malloc(bytecode_size);
+	if ((bytecode = malloc(bytecode_size)) == NULL)
+        err(1, "malloc");
+
 	fread(bytecode, 1, bytecode_size, con_binary_file);
 
 	if (fclose(con_binary_file) != 0) {
@@ -414,8 +428,13 @@ char *find_con_exec(const char *name, const char *vm_path)
 	char *prog_path = NULL;
 	if (vm_path != NULL) {
 		const char* cnds[] = {"", ".." CON_DIR_SEP "compiler" CON_DIR_SEP, NULL};
-		char *cnd = malloc(PATH_MAX);
-		char *canon_cnd = malloc(PATH_MAX);
+		char *cnd, *canon_cnd;
+	    if ((cnd = malloc(PATH_MAX)) == NULL)
+            err(1, "malloc");
+
+	    if ((canon_cnd = malloc(PATH_MAX)) == NULL)
+            err(1, "malloc");
+
 		int i;
 		for (i = 0; cnds[i] != NULL; i += 1) {
 			if (strlcpy(cnd, vm_path, PATH_MAX) > PATH_MAX)
@@ -470,8 +489,13 @@ void import_con_lib(Con_Obj *thread, const char *leaf, const char** cnd_dirs, co
         return;
     
     char *lib_path = NULL;
-    char *cnd = malloc(PATH_MAX);
-    char *canon_cnd = malloc(PATH_MAX);
+    char *cnd, *canon_cnd;
+	if ((cnd = malloc(PATH_MAX)) == NULL)
+        err(1, "malloc");
+
+	if ((canon_cnd = malloc(PATH_MAX)) == NULL)
+        err(1, "malloc");
+
     int i;
     for (i = 0; cnd_dirs[i] != NULL; i += 1) {
         if (strlcpy(cnd, vm_path, PATH_MAX) > PATH_MAX)
@@ -519,7 +543,9 @@ void import_con_lib(Con_Obj *thread, const char *leaf, const char** cnd_dirs, co
 	}
 
 	size_t lib_size = st.st_size;
-	u_char *bc = malloc(lib_size);
+	u_char *bc;
+    if ((bc = malloc(lib_size)) == NULL)
+        err(1, "malloc");
 	fread(bc, 1, lib_size, lib_file);
 
 	if (fclose(lib_file) != 0) {
@@ -721,7 +747,8 @@ make:
 	if (i < BUFSIZ)
 		i = BUFSIZ;
 	*bytecode_size = 0;
-	*bytecode = malloc(i);
+	if ((*bytecode = malloc(i)) == NULL)
+        err(1, "malloc");
 	while (1) {
 		int rtn = read(filedes[0], *bytecode + *bytecode_size, i);
 		if (rtn == 0)
@@ -770,7 +797,9 @@ make:
 			if (cache_file == NULL)
 				return;
 
-			u_char *tmp = malloc(BYTES_TO_FIND_EXEC);
+			u_char *tmp;
+            if ((tmp = malloc(BYTES_TO_FIND_EXEC)) == NULL)
+                err(1, "malloc");
 			int read = fread(tmp, 1, BYTES_TO_FIND_EXEC, cache_file);
 			if (read < BYTES_TO_FIND_EXEC && ferror(cache_file)) {
 				free(tmp);

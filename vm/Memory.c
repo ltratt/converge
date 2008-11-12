@@ -59,8 +59,10 @@ Con_Memory_Store *Con_Memory_init()
 	mem_store->num_chunks_allocated = CON_DEFAULT_NUM_OBJECTS_TO_TRACK;
 	mem_store->num_chunks = 0;
 	mem_store->chunks = malloc(sizeof(Con_Memory_Chunk *) * mem_store->num_chunks_allocated);
-	if (mem_store->chunks == NULL)
+	if (mem_store->chunks == NULL) {
+        free(mem_store);
 		return NULL;
+    }
 
 
 	mem_store->gc_stack_num_chunks_allocated = CON_DEFAULT_GC_STACK_NUM_ENTRIES;

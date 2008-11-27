@@ -101,6 +101,9 @@ Con_Obj *_Con_Builtins_Module_Class_new_object(Con_Obj *thread)
 	CON_UNPACK_ARGS("CS", &self, &bc);
 
 	Con_Builtins_String_Atom *bc_str_atom = CON_GET_ATOM(bc, CON_BUILTIN(CON_BUILTIN_STRING_ATOM_DEF_OBJECT));
+    
+    if (bc_str_atom->size < 8 || memcmp(bc_str_atom->str, "CONVMODL", 8) != 0)
+        CON_RAISE_EXCEPTION("VM_Exception", CON_NEW_STRING("Can't make a module from non-module bytecode."));
 
 	return Con_Builtins_Module_Atom_new_from_bytecode(thread, (u_char*) bc_str_atom->str);
 }

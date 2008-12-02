@@ -230,6 +230,8 @@ class _Parser:
         else:
             // precedence ::= "%PRECEDENCE" "INT"
             prec := Builtins::Int.new(prec_node[1].value)
+            if prec <= 0:
+                self._error("User assigned precedences must be greater than 0.")
 
         if node.len() == 0:
             // alt ::=

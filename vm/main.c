@@ -275,7 +275,6 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 	else
 		prog_path = argv[0];
 	
-	canon_prog_path;
 	if ((canon_prog_path = malloc(PATH_MAX)) == NULL)
         err(1, "malloc");
 

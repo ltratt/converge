@@ -69,9 +69,9 @@
 
 #define BYTES_TO_FIND_EXEC 1024
 
-#define COMPILER_CND_DIRS {".." CON_DIR_SEP ".." "converge-" CON_VERSION CON_DIR_SEP, \
+#define COMPILER_CND_DIRS {".." CON_DIR_SEP "lib" CON_DIR_SEP "converge-" CON_VERSION CON_DIR_SEP, \
     ".." CON_DIR_SEP "compiler" CON_DIR_SEP, NULL}
-#define STDLIB_CND_DIRS {".." CON_DIR_SEP ".." "converge-" CON_VERSION CON_DIR_SEP, \
+#define STDLIB_CND_DIRS {".." CON_DIR_SEP "lib" CON_DIR_SEP "converge-" CON_VERSION CON_DIR_SEP, \
     ".." CON_DIR_SEP "lib" CON_DIR_SEP, NULL}
 
 

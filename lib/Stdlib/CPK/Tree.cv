@@ -36,7 +36,7 @@ class Non_Term:
 
     func to_str(self):
     
-        return self.children.to_str()
+        return pp_tree(self)
 
 
 

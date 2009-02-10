@@ -325,13 +325,22 @@ class QQ_Mode:
                 
         self._nesting.append(_NEST_CLASS)
         
+        fields_contains_iinsert := 0
         fields := []
         for field := node.fields.iter():
-            fields.append(self._preorder(field))
+            if ITree::IInsert.instantiated(field):
+                fields.append(self._process_insert(field, _pi_class_field))
+                fields_contains_iinsert := 1
+            else:
+                fields.append(self._preorder(field))
         
         self._nesting.pop()
         
-        return self._qq("IClass_Defn", [class_name, ITree::IList.new(supers, node.src_infos), metaclass_, ITree::IList.new(fields, node.src_infos)], node.src_infos)
+        fields_list := ITree::IList.new(fields, node.src_infos)
+        if fields_contains_iinsert == 1:
+            fields_list := ITree::IApplication.new(ITree::ISlot_Lookup.new(fields_list, "flattened", node.src_infos), [], node.src_infos)
+        
+        return self._qq("IClass_Defn", [class_name, ITree::IList.new(supers, node.src_infos), metaclass_, fields_list], node.src_infos)
 
 
 
@@ -903,6 +912,25 @@ func _pi_class_name(name, src_infos):
         ITree_WF::type_error("Class_Defn", "name", name, "String", src_infos)
 
     return name
+
+
+
+func _pi_class_field(field, src_infos):
+
+    if Builtins::List.instantiated(field):
+        post := []
+        for f := field.iter():
+            if not (ITree::IFunc_Defn.instantiated(f) | ITree::IClass_Defn.instantiated(f) | ITree::IPass.instantiated(f)):
+                ITree_WF::type_error("Class_Defn", "field", f, "[IFunc_Defn, IClass_Defn, IPass]", src_infos)
+            ITree_WF::wf_expr(f, "in class field", src_infos)
+            post.append(f.extended_src_infos(src_infos))
+        
+        return post
+    else:
+        if not (ITree::IFunc_Defn.instantiated(field) | ITree::IClass_Defn.instantiated(field) | ITree::IPass.instantiated(field)):
+                ITree_WF::type_error("Class_Defn", "field", field, "[IFunc_Defn, IClass_Defn, IPass]", src_infos)
+
+        return field.extended_src_infos(src_infos)
 
 
 

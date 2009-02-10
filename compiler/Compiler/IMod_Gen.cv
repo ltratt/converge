@@ -408,7 +408,7 @@ class IMod_Gen:
         while i < node[6].len():
             // class_fields ::= class_field { "NEWLINE" class_field }*
             field_node := node[6][i]
-            if field_node.len() == 1 & not Tree::Non_Term.instantiated(field_node[0]):
+            ndif field_node.len() == 1 & not Tree::Non_Term.instantiated(field_node[0]):
                 // class_field ::= "PASS"
                 fields.append(ITree::IPass.new(field_node.src_infos))
             elif field_node.len() == 1 & field_node[0].name == "class_defn":
@@ -428,13 +428,16 @@ class IMod_Gen:
             elif field_node.len() == 3 & field_node[0].name == "name":
                 // class_field ::= name ":=" expr
                 fields.append(ITree::IAssignment.new(ITree::STD_ASSIGN, [self._preorder(field_node[0], extra_src_infos)], self._preorder(field_node[2], extra_src_infos), extra_src_infos + field_node.src_infos))
-            elif field_node.len() == 1:
+            elif field_node.len() == 1 & field_node[0].name == "splice":
                 // class_field ::= splice
                 sp := self._eval_splice(field_node[0], extra_src_infos)
                 if Builtins::List.conformed_by(sp):
                     fields.extend(sp)
                 else:
                     fields.append(sp)
+            elif field_node.len() == 1 & field_node[0].name == "insert":
+                // class_field ::= insert
+                fields.append(self._preorder(field_node[0]))
             i += 2
         self._nesting.pop()
 

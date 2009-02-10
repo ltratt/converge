@@ -899,7 +899,10 @@ class IMod_Gen:
         if Tree::Non_Term.instantiated(node[2]):
             // slot_lookup ::= expr "." splice
             //             ::= expr "." insert
-            raise "XXX"
+            if node[2].name == "splice":
+                raise "XXX"
+            else:
+                return ITree::ISlot_Lookup.new(self._preorder(node[0], extra_src_infos), self._preorder(node[2]), extra_src_infos + node.src_infos)
         else:
             // slot_lookup ::= expr "." "ID"
             return ITree::ISlot_Lookup.new(self._preorder(node[0], extra_src_infos), node[2].value, extra_src_infos + node.src_infos)

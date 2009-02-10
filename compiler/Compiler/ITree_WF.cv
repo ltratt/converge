@@ -250,8 +250,8 @@ class ITree_WF:
     
         self._check_expr(node, "target", node.target)
         
-        if not Builtins::String.instantiated(node.slot_name):
-            self._type_error(node, "slot_name", node.slot_name, "String")
+        if not (Builtins::String.instantiated(node.slot_name) | ITree::IInsert.instantiated(node.slot_name)):
+            self._type_error(node, "slot_name", node.slot_name, "[String, IInsert]")
 
 
 

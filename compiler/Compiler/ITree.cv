@@ -594,6 +594,13 @@ class ISlot_Lookup(IRoot):
         self.qq_bound_vars := target.qq_bound_vars
         self.free_vars := target.free_vars
         self.mod_id_lookups := target.mod_id_lookups
+        
+        if IInsert.instantiated(slot_name):
+            self.bound_vars.extend(slot_name.bound_vars)
+            self.import_vars.extend(slot_name.import_vars)
+            self.qq_bound_vars.extend(slot_name.qq_bound_vars)
+            self.free_vars.extend(slot_name.free_vars)
+            self.mod_id_lookups.extend(slot_name.mod_id_lookups)
 
 
 

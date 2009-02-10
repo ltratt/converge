@@ -278,7 +278,13 @@ class QQ_Mode:
             return post_insert
         
         return self._lift_func_call(ITree_Rename::rename_fresh, [post_insert], node.src_infos)
-        
+
+
+
+    func _process_insert_no_rename(self, node, check_func):
+
+        return self._lift_func_call(check_func, [node.expr, Lift::lift(node.src_infos)], node.src_infos)
+
 
 
     /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -483,7 +489,12 @@ class QQ_Mode:
 
     func _t_islot_lookup(self, node):
 
-        return self._qq("ISlot_Lookup", [self._preorder(node.target), ITree::IString.new(node.slot_name, node.src_infos)], node.src_infos)
+        if ITree::IInsert.instantiated(node.slot_name):
+            slot_name := self._process_insert_no_rename(node.slot_name, _pi_slot_name)
+        else:
+            slot_name := ITree::IString.new(node.slot_name, node.src_infos)
+
+        return self._qq("ISlot_Lookup", [self._preorder(node.target), slot_name], node.src_infos)
 
 
 
@@ -944,6 +955,15 @@ func _pi_var_arg(var_arg, src_infos):
         return var_arg.extended_src_infos(src_infos)
     
     ITree_WF::type_error("Func_Defn", "var arg", var_arg, "[null, IVar]", src_infos)
+
+
+
+func _pi_slot_name(slot_name, src_infos):
+
+    if Builtins::String.instantiated(slot_name):
+        return slot_name
+    
+    ITree_WF::type_error("ISlot_Lookup", "slot name", slot_name, "String", src_infos)
 
 
 

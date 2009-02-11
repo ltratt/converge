@@ -563,24 +563,36 @@ class Compiler:
                 le_off := newlines[line] - 1
                 
                 src_len := src_info[2]
-                if local_src_path := self._mod_id_to_local_src_path(src_info[0]):
-                    // We now try and print out the appropriate line of source code.
-                    //
-                    // If this fails, d is set to null; otherwise d is the line of source code.
 
+                // If we have a file on the local machine which matches the src info, we now try
+                // and print out the appropriate line of source code.
+                //
+                // If this succeeds otherwise d contains the appropriate line of source code.
+
+                if local_src_path := self._mod_id_to_local_src_path(src_info[0]):
                     try:
                         f := File::open(local_src_path, "r")
                         f.seek(ls_off)
                         d := f.read(le_off - ls_off)
                         f.close()
                     catch Exceptions::IO_Exception:
-                        d := null
+                        d := local_src_path := null
 
-                    // If we didn't read the contents of the file, or if we read in less bytes than we
-                    // expected, we don't add the contents of this file to the backtrace.
+                if local_src_path is null:
+                    entry := Strings::format("""  Mod id "%s", line %d, column %d, length %d:""", \
+                      src_info[0], line, col, src_len)
+                    Sys::stderr.writeln(entry)
+                else:
+                    entry := Strings::format("""  File "%s", line %d, column %d, length %d:""", \
+                      local_src_path, line, col, src_len)
+                    Sys::stderr.writeln(entry)
 
-                    if not d is null & d.len() == le_off - ls_off:
-                        Sys::stderr.write("       ")
+                    // If we read in less bytes than we expected (presumably the user has changed
+                    // the file since it was compiled), we don't add the contents of this file to
+                    // the backtrace.
+
+                    if d.len() == le_off - ls_off:
+                        Sys::stderr.write("     ")
                         if self._use_curses == 1:
                             dls := d.lstripped()
                             dls_diff := d.len() - dls.len()
@@ -596,10 +608,6 @@ class Compiler:
                                   Curses::tigetstr("sgr0"), dls[col - dls_diff + src_len : ]))
                         else:
                             Sys::stderr.writeln(d.lstripped())
-                else:
-                    entry := Strings::format("""  Mod id "%s", line %d, column %d, length %d:""", \
-                      src_info[0], line, col, src_len)
-                    Sys::stderr.writeln(entry)
 
             Sys::stderr.writeln(msg)
         else:

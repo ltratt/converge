@@ -168,37 +168,55 @@ class IFunc_Defn(IRoot):
         self.src_infos := src_infos
 
         if IVar.instantiated(name):
-            all_bound_vars := Set{name.name}
+            self.bound_vars := Set{name.name}
+            self.import_vars := Set{}
             self.qq_bound_vars := Set{name.name}
+            self.free_vars := Set{}
+            self.mod_id_lookups := Dict{}
+        elif IInsert.instantiated(name):
+            self.bound_vars := name.bound_vars.scopy()
+            self.import_vars := name.import_vars.scopy()
+            self.qq_bound_vars := name.qq_bound_vars.scopy()
+            self.free_vars := name.free_vars.scopy()
+            self.mod_id_lookups := name.mod_id_lookups.scopy()
         else:
-            all_bound_vars := Set{}
+            self.bound_vars := Set{}
+            self.import_vars := Set{}
             self.qq_bound_vars := Set{}
-        self.import_vars := Set{}
-        self.mod_id_lookups := Dict{}
+            self.free_vars := Set{}
+            self.mod_id_lookups := Dict{}
+
         self.internal_import_vars := Set{}
 
-        all_free_vars := Set{}
-        all_internal_bound_vars := Set{}
+        internal_free_vars := Set{}
+        internal_bound_vars := Set{}
 
         for param := params.iter():
-            all_internal_bound_vars.extend(param.bound_vars)
-            all_free_vars.extend(param.free_vars)
-            self.qq_bound_vars.extend(param.qq_bound_vars)
-            _merge_mod_id_lookups(self.mod_id_lookups, param.mod_id_lookups)
-            self.internal_import_vars.extend(param.import_vars)
+            if IInsert.instantiated(param):
+                self.bound_vars.extend(param.bound_vars)
+                self.free_vars.extend(param.free_vars)
+                self.qq_bound_vars.extend(param.qq_bound_vars)
+                _merge_mod_id_lookups(self.mod_id_lookups, param.mod_id_lookups)
+                self.internal_import_vars.extend(param.import_vars)
+            else:
+                internal_bound_vars.extend(param.bound_vars)
+                internal_free_vars.extend(param.free_vars)
+                self.qq_bound_vars.extend(param.qq_bound_vars)
+                _merge_mod_id_lookups(self.mod_id_lookups, param.mod_id_lookups)
+                self.internal_import_vars.extend(param.import_vars)
             
         if not var_arg is null:
             if IInsert.instantiated(var_arg):
-                all_internal_bound_vars.extend(var_arg.bound_vars)
+                internal_bound_vars.extend(var_arg.bound_vars)
                 self.qq_bound_vars.extend(var_arg.qq_bound_vars)
                 _merge_mod_id_lookups(self.mod_id_lookups, var_arg.mod_id_lookups)
             else:
-                all_internal_bound_vars.add(var_arg.name)
+                internal_bound_vars.add(var_arg.name)
                 self.qq_bound_vars.add(var_arg.name)
                 _merge_mod_id_lookups(self.mod_id_lookups, var_arg.mod_id_lookups)
 
-        all_free_vars.extend(body.free_vars)
-        all_internal_bound_vars.extend(body.bound_vars)
+        internal_free_vars.extend(body.free_vars)
+        internal_bound_vars.extend(body.bound_vars)
         self.qq_bound_vars.extend(body.qq_bound_vars)
         _merge_mod_id_lookups(self.mod_id_lookups, body.mod_id_lookups)
         self.internal_import_vars.extend(body.import_vars)
@@ -212,24 +230,23 @@ class IFunc_Defn(IRoot):
 
         for rename_ := renames.iter():
             if IInsert.instantiated(rename_):
-                all_internal_bound_vars.extend(rename_.bound_vars)
-                all_free_vars.extend(rename_.free_vars)
+                self.bound_vars.extend(rename_.bound_vars)
                 self.qq_bound_vars.extend(rename_.qq_bound_vars)
                 _merge_mod_id_lookups(self.mod_id_lookups, rename_.mod_id_lookups)
+                self.free_vars.extend(rename_.free_vars)
                 self.internal_import_vars.extend(rename_.import_vars)
             else:
-                all_bound_vars.extend(rename_.bound_vars)
-                self.import_vars.extend(rename_.import_vars)
+                internal_bound_vars.extend(rename_.bound_vars)
                 self.qq_bound_vars.extend(rename_.qq_bound_vars)
-                all_free_vars.extend(rename_.free_vars)
                 _merge_mod_id_lookups(self.mod_id_lookups, rename_.from.mod_id_lookups)
+                internal_free_vars.extend(rename_.free_vars)
+                self.import_vars.extend(rename_.import_vars)
 
                 if IVar.instantiated(rename_.as_):
                     nl_vars.add(rename_.as_.name)
 
-        self.bound_vars := all_bound_vars.complement(nl_vars)
-        self.internal_bound_vars := all_internal_bound_vars.complement(nl_vars)
-        self.free_vars := all_free_vars.complement(self.internal_bound_vars)
+        self.internal_bound_vars := internal_bound_vars.complement(nl_vars)
+        self.free_vars.extend(internal_free_vars.complement(self.internal_bound_vars))
         
         for rename_ := renames.iter():
             if IInsert.instantiated(rename_):

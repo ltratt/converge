@@ -547,7 +547,7 @@ class IMod_Gen:
                             else:
                                 param := ITree::IApplication.new(iparam_new, [var, param_default, Lift::lift(src_infos)], src_infos)
                             
-                            params.append(ITree::IInsert.new(ITree::INSERT_CAPTURING, param, []))
+                            params.append(ITree::IInsert.new(ITree::INSERT_CAPTURING, param, src_infos))
                         i += 3
             if params_node[-1].name == "func_varargs":
                 // func_varargs ::= "*" name
@@ -843,7 +843,7 @@ class IMod_Gen:
             ivar := ITree::IModule_Lookup.new([itree_mod_imp, ITree::IVar.new("IVar", src_infos)], src_infos)
             ivar_new := ITree::ISlot_Lookup.new(ivar, "new", src_infos)
             var := ITree::IApplication.new(ivar_new, [ITree::IString.new(node[1].value, src_infos), Lift::lift(src_infos)], node[1].src_infos)
-            return ITree::IInsert.new(ITree::INSERT_CAPTURING, var, [])
+            return ITree::IInsert.new(ITree::INSERT_CAPTURING, var, src_infos)
         elif node[0].name == "splice":
             // name ::= splice
             splice_node := node[0]
@@ -881,7 +881,7 @@ class IMod_Gen:
             ivar_new := ITree::ISlot_Lookup.new(ivar, "new", src_infos)
             var := ITree::IApplication.new(ivar_new, [ITree::IString.new(node[1].value, src_infos), Lift::lift(src_infos)], node.src_infos)
             
-            return ITree::IInsert.new(ITree::INSERT_CAPTURING, var, [])
+            return ITree::IInsert.new(ITree::INSERT_CAPTURING, var, node.src_infos)
 
 
 

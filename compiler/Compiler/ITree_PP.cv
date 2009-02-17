@@ -34,6 +34,7 @@ _INDENT_STRING := "    "
 
 _NEST_CLASS := 0
 _NEST_FUNC := 1
+_NEST_EXPR := 2
 
 
 
@@ -106,11 +107,22 @@ class ITree_PP:
         return Strings::join(pp, "")
 
 
+
     func _t_ifunc_defn(self, node):
 
         pp := []
 
-        if self._nesting.len() == 0 | self._nesting[-1] == _NEST_FUNC:
+        in_class := 0
+        if self._nesting.len() > 0:
+            for n := self._nesting.riter():
+                if n == _NEST_FUNC:
+                    in_class := 0
+                    break
+                elif n == _NEST_CLASS:
+                    in_class := 1
+                    break
+        
+        if in_class == 0:
             if node.is_bound == 0:
                 pp.append("func ")
             else:
@@ -131,7 +143,10 @@ class ITree_PP:
                 pp.append(", ")
             pp.append("*")
             pp.append(self._preorder(node.var_arg))
-        pp.append("):")
+        if self._nesting.len() > 0 & self._nesting[-1] == _NEST_EXPR:
+            pp.append(") {")
+        else:
+            pp.append("):")
         
         nonlocals := []
         for nonlocal_ := node.nonlocals.iter():
@@ -159,6 +174,10 @@ class ITree_PP:
         pp.append("\n")
         pp.append(_INDENT_STRING * (self._indent_level + 1))
         pp.append(body)
+        if self._nesting.len() > 0 & self._nesting[-1] == _NEST_EXPR:
+            pp.append("\n")
+            pp.append(_INDENT_STRING * self._indent_level)
+            pp.append("}")
         
         return Strings::join(pp, "")
 
@@ -173,7 +192,9 @@ class ITree_PP:
             else:
                 pp.append(Strings::format("\n%selif ", _INDENT_STRING * self._indent_level))
             self._indent_level += 1
+            self._nesting.append(_NEST_EXPR)
             pp.append(Strings::format("%s:", self._preorder(node.clauses[i].condition)))
+            self._nesting.pop()
             pp.append("\n" + (_INDENT_STRING * self._indent_level))
             pp.append(self._preorder(node.clauses[i].body))
             self._indent_level -= 1
@@ -196,7 +217,9 @@ class ITree_PP:
             else:
                 pp.append(Strings::format("\n%selif ", _INDENT_STRING * self._indent_level))
             self._indent_level += 1
+            self._nesting.append(_NEST_EXPR)
             pp.append(Strings::format("%s:", self._preorder(node.clauses[i].condition)))
+            self._nesting.pop()
             pp.append("\n" + (_INDENT_STRING * self._indent_level))
             pp.append(self._preorder(node.clauses[i].body))
             self._indent_level -= 1
@@ -224,7 +247,9 @@ class ITree_PP:
 
     func _t_iwhile(self, node):
 
+        self._nesting.append(_NEST_EXPR)
         pp := ["while ", self._preorder(node.condition)]
+        self._nesting.pop()
 
         if not node.body is null:
             self._indent_level += 1
@@ -250,7 +275,9 @@ class ITree_PP:
 
     func _t_ifor(self, node):
 
+        self._nesting.append(_NEST_EXPR)
         pp := ["for ", self._preorder(node.condition)]
+        self._nesting.pop()
 
         if not node.body is null:
             self._indent_level += 1
@@ -287,7 +314,9 @@ class ITree_PP:
             pp.append("\n")
             pp.append(_INDENT_STRING * self._indent_level)
             pp.append("catch ")
+            self._nesting.append(_NEST_EXPR)
             pp.append(self._preorder(catch_.expr))
+            self._nesting.pop()
             if not catch_.var is null:
                 pp.append(" into ")
                 pp.append(self._preorder(catch_.var))
@@ -309,21 +338,31 @@ class ITree_PP:
 
     func _t_ilist(self, node):
 
-        return Strings::format("[%s]", Strings::join(Functional::map(self._preorder, node.elems), ", "))
+        self._nesting.append(_NEST_EXPR)
+        list_elems := Functional::map(self._preorder, node.elems)
+        self._nesting.pop()
+        
+        return Strings::format("[%s]", Strings::join(list_elems, ", "))
 
 
 
     func _t_idict(self, node):
 
+        self._nesting.append(_NEST_EXPR)
         elems := Functional::map(self._preorder, node.elems)
+        self._nesting.pop()
 
         return Strings::format("Dict{%s}", Strings::join(elems, ", "))
 
 
 
     func _t_iset(self, node):
+    
+        self._nesting.append(_NEST_EXPR)
+        set_elems := Functional::map(self._preorder, node.elems)
+        self._nesting.pop()
 
-        return Strings::format("Set{%s}", Strings::join(Functional::map(self._preorder, node.elems), ", "))
+        return Strings::format("Set{%s}", Strings::join(set_elems, ", "))
 
 
 
@@ -339,7 +378,11 @@ class ITree_PP:
 
     func _t_islot_lookup(self, node):
 
-        return Strings::format("%s.%s", self._preorder(node.target), node.slot_name)
+        self._nesting.append(_NEST_EXPR)
+        target := self._preorder(node.target)
+        self._nesting.pop()
+
+        return Strings::format("%s.%s", target, node.slot_name)
 
 
 
@@ -358,34 +401,54 @@ class ITree_PP:
 
 
 
-    func _t_ilist(self, node):
-    
-        return Strings::format("[%s]", Strings::join(Functional::map(self._preorder, node.elems), ", "))
-
-
-
     func _t_iapplication(self, node):
     
-        return Strings::format("%s(%s)", self._preorder(node.target), Strings::join(Functional::map(self._preorder, node.args), ", "))
+        self._nesting.append(_NEST_EXPR)
+        target_expr := self._preorder(node.target)
+        params := Functional::map(self._preorder, node.args)
+        self._nesting.pop()
+    
+        return Strings::format("%s(%s)", target_expr, Strings::join(params, ", "))
 
 
 
     func _t_iget(self, node):
 
-        return Strings::format("%s[%s]", self._preorder(node.target), self._preorder(node.index))
+        self._nesting.append(_NEST_EXPR)
+        target_expr := self._preorder(node.target)
+        index_expr := self._preorder(node.index)
+        self._nesting.pop()
+
+        return Strings::format("%s[%s]", target_expr, index_expr)
 
 
 
     func _t_islice(self, node):
 
         if node.lower_bound is null & node.upper_bound is null:
-            return Strings::format("%s[ : ]", self._preorder(node.target))
+            self._nesting.append(_NEST_EXPR)
+            target_expr := self._preorder(node.target)
+            self._nesting.pop()
+            return Strings::format("%s[ : ]", target_expr)
         elif node.lower_bound is null:
-            return Strings::format("%s[ : %s]", self._preorder(node.target), self._preorder(node.upper_bound))
+            self._nesting.append(_NEST_EXPR)
+            target_expr := self._preorder(node.target)
+            upper_expr := self._preorder(node.upper_bound)
+            self._nesting.pop()
+            return Strings::format("%s[ : %s]", target_expr, upper_expr)
         elif node.upper_bound is null:
-            return Strings::format("%s[%s : ]", self._preorder(node.target), self._preorder(node.lower_bound))
+            self._nesting.append(_NEST_EXPR)
+            target_expr := self._preorder(node.target)
+            lower_expr := self._preorder(node.lower_bound)
+            self._nesting.pop()
+            return Strings::format("%s[%s : ]", target_expr, lower_expr)
         else:
-            return Strings::format("%s[%s : %s]", self._preorder(node.target), self._preorder(node.lower_bound), self._preorder(node.upper_bound))
+            self._nesting.append(_NEST_EXPR)
+            target_expr := self._preorder(node.target)
+            lower_expr := self._preorder(node.lower_bound)
+            upper_expr := self._preorder(node.upper_bound)
+            self._nesting.pop()
+            return Strings::format("%s[%s : %s]", target_expr, lower_expr, upper_expr)
 
 
 
@@ -394,19 +457,30 @@ class ITree_PP:
         if node.expr is null:
             return "return"
         else:
-            return Strings::format("return %s", self._preorder(node.expr))
+            self._nesting.append(_NEST_EXPR)
+            return_expr := self._preorder(node.expr)
+            self._nesting.pop()
+            return Strings::format("return %s", return_expr)
 
 
 
     func _t_iyield(self, node):
 
-        return Strings::format("yield %s", self._preorder(node.expr))
+        self._nesting.append(_NEST_EXPR)
+        yield_expr := self._preorder(node.expr)
+        self._nesting.pop()
+
+        return Strings::format("yield %s", yield_expr)
 
 
 
     func _t_iraise(self, node):
 
-        return Strings::format("raise %s", self._preorder(node.expr))
+        self._nesting.append(_NEST_EXPR)
+        raise_expr := self._preorder(node.expr)
+        self._nesting.pop()
+
+        return Strings::format("raise %s", raise_expr)
 
 
 
@@ -418,7 +492,11 @@ class ITree_PP:
 
     func _t_iassert(self, node):
 
-        return Strings::format("assert %s", self._preorder(node.expr))
+        self._nesting.append(_NEST_EXPR)
+        assert_expr := self._preorder(node.expr)
+        self._nesting.pop()
+
+        return Strings::format("assert %s", assert_expr)
 
 
 
@@ -436,19 +514,37 @@ class ITree_PP:
 
     func _t_iconjunction(self, node):
     
-        return "(" + Strings::join(Functional::map(self._preorder, node.exprs), " & ") + ")"
+        self._nesting.append(_NEST_EXPR)
+        con_exprs := Functional::map(self._preorder, node.exprs)
+        self._nesting.pop()
+
+        if self._nesting.len() > 0 & self._nesting[-1] == _NEST_EXPR:
+            return "(" + Strings::join(con_exprs, " & ") + ")"
+        else:
+            return Strings::join(con_exprs, " & ")
 
 
 
     func _t_ialternation(self, node):
     
-        return Strings::join(Functional::map(self._preorder, node.exprs), " | ")
+        self._nesting.append(_NEST_EXPR)
+        alt_exprs := Functional::map(self._preorder, node.exprs)
+        self._nesting.pop()
+
+        if self._nesting.len() > 0 & self._nesting[-1] == _NEST_EXPR:
+            return "(" + Strings::join(alt_exprs, " | ") + ")"
+        else:
+            return Strings::join(alt_exprs, " | ")
 
 
 
     func _t_inot(self, node):
 
-        return Strings::format("not %s", self._preorder(node.expr))
+        self._nesting.append(_NEST_EXPR)
+        not_expr := self._preorder(node.expr)
+        self._nesting.pop()
+
+        return Strings::format("not %s", not_expr)
 
 
 
@@ -465,7 +561,11 @@ class ITree_PP:
         elif node.type == ITree::DIV_ASSIGN:
             op := "/="
         
-        return Strings::format("%s %s %s", Strings::join(Functional::map(self._preorder, node.targets), ", "), op, self._preorder(node.expr))
+        self._nesting.append(_NEST_EXPR)
+        assign_expr := self._preorder(node.expr)
+        self._nesting.pop()
+        
+        return Strings::format("%s %s %s", Strings::join(Functional::map(self._preorder, node.targets), ", "), op, assign_expr)
 
 
 
@@ -486,7 +586,12 @@ class ITree_PP:
         elif node.type == ITree::GE_COMPARISON:
             op := ">"
     
-        return Strings::format("%s %s %s", self._preorder(node.lhs), op, self._preorder(node.rhs))
+        self._nesting.append(_NEST_EXPR)
+        lhs := self._preorder(node.lhs)
+        rhs := self._preorder(node.rhs)
+        self._nesting.pop()
+    
+        return Strings::format("%s %s %s", lhs, op, rhs)
 
 
 
@@ -537,7 +642,12 @@ class ITree_PP:
         elif node.type == ITree::BINARY_MOD:
             op := "%"
     
-        return Strings::format("%s %s %s", self._preorder(node.lhs), op, self._preorder(node.rhs))
+        self._nesting.append(_NEST_EXPR)
+        lhs := self._preorder(node.lhs)
+        rhs := self._preorder(node.rhs)
+        self._nesting.pop()
+    
+        return Strings::format("%s %s %s", lhs, op, rhs)
 
 
 
@@ -560,9 +670,16 @@ class ITree_PP:
     func _t_iparam(self, node):
     
         if not node.default is null:
-            return Strings::format("%s := %s", self._preorder(node.var), self._preorder(node.default))
+            self._nesting.append(_NEST_EXPR)
+            var := self._preorder(node.var)
+            default := self._preorder(node.default)
+            self._nesting.pop()
+            return Strings::format("%s := %s", var, default)
         else:
-            return self._preorder(node.var)
+            self._nesting.append(_NEST_EXPR)
+            var := self._preorder(node.var)
+            self._nesting.pop()
+            return var
 
 
 
@@ -574,8 +691,10 @@ class ITree_PP:
 
     func _t_idict_elem(self, node):
     
+        self._nesting.append(_NEST_EXPR)
         key := self._preorder(node.key)
         val := self._preorder(node.val)
+        self._nesting.pop()
     
         return Strings::format("%s : %s", key, val)
 

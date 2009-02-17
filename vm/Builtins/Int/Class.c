@@ -63,6 +63,7 @@ Con_Obj *_Con_Builtins_Int_Class_lsl_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Int_Class_lsr_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Int_Class_or_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Int_Class_iter_to_func(Con_Obj *);
+Con_Obj *_Con_Builtins_Int_Class_str_val_func(Con_Obj *);
 
 
 
@@ -100,6 +101,7 @@ void Con_Builtins_Int_Class_bootstrap(Con_Obj *thread)
 	CON_SET_FIELD(int_class, "lsr", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Int_Class_lsr_func, "lsr", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), int_class));
 	CON_SET_FIELD(int_class, "or", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Int_Class_or_func, "or", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), int_class));
 	CON_SET_FIELD(int_class, "iter_to", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Int_Class_iter_to_func, "iter_to", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), int_class));
+    CON_SET_FIELD(int_class, "str_val", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Int_Class_str_val_func, "str_val", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), int_class));
 }
 
 
@@ -472,4 +474,26 @@ Con_Obj *_Con_Builtins_Int_Class_iter_to_func(Con_Obj *thread)
 	}
 	
 	return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
+}
+
+
+
+//
+// 'str_val()' returns the string (e.g. ASCII) value of this integer, if in
+// range.
+//
+
+Con_Obj *_Con_Builtins_Int_Class_str_val_func(Con_Obj *thread)
+{
+	Con_Obj *self;
+	CON_UNPACK_ARGS("I", &self);
+	
+	Con_Builtins_Int_Atom *self_int_atom = CON_GET_ATOM(self, CON_BUILTIN(CON_BUILTIN_INT_ATOM_DEF_OBJECT));
+
+    if (self_int_atom->val < 0 || self_int_atom->val > 255)
+        CON_XXX;
+
+    char c = (char) self_int_atom->val;
+
+	return Con_Builtins_String_Atom_new_copy(thread, &c, 1, CON_STR_UTF_8);
 }

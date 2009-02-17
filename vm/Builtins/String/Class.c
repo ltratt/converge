@@ -55,6 +55,7 @@ Con_Obj *_Con_Builtins_String_Class_find_index_func(Con_Obj *);
 Con_Obj *_Con_Builtins_String_Class_get_func(Con_Obj *);
 Con_Obj *_Con_Builtins_String_Class_get_slice_func(Con_Obj *);
 Con_Obj *_Con_Builtins_String_Class_hash_func(Con_Obj *);
+Con_Obj *_Con_Builtins_String_Class_int_val_func(Con_Obj *);
 Con_Obj *_Con_Builtins_String_Class_iter_func(Con_Obj *);
 Con_Obj *_Con_Builtins_String_Class_len_func(Con_Obj *);
 Con_Obj *_Con_Builtins_String_Class_prefixed_by_func(Con_Obj *);
@@ -99,6 +100,7 @@ void Con_Builtins_String_Class_bootstrap(Con_Obj *thread)
 	CON_SET_FIELD(string_class, "get", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_get_func, "get", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
 	CON_SET_FIELD(string_class, "get_slice", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_get_slice_func, "get_slice", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
 	CON_SET_FIELD(string_class, "hash", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_hash_func, "hash", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
+    CON_SET_FIELD(string_class, "int_val", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_int_val_func, "int_val", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
 	CON_SET_FIELD(string_class, "iter", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_iter_func, "iter", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
 	CON_SET_FIELD(string_class, "len", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_len_func, "len", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
 	CON_SET_FIELD(string_class, "prefixed_by", CON_NEW_BOUND_C_FUNC(_Con_Builtins_String_Class_prefixed_by_func, "prefixed_by", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), string_class));
@@ -427,6 +429,30 @@ Con_Obj *_Con_Builtins_String_Class_get_slice_func(Con_Obj *thread)
 		CON_XXX;
 	
 	return Con_Builtins_String_Atom_new_no_copy(thread, self_string_atom->str + lower, upper - lower, self_string_atom->encoding);
+}
+
+
+
+//
+// 'int_val(i := 0)' returns the integer value of the character at position 'i'.
+//
+
+Con_Obj *_Con_Builtins_String_Class_int_val_func(Con_Obj *thread)
+{
+	Con_Obj *i_obj, *self;
+	CON_UNPACK_ARGS("S;N", &self, &i_obj);
+	
+	Con_Builtins_String_Atom *self_string_atom = CON_GET_ATOM(self, CON_BUILTIN(CON_BUILTIN_STRING_ATOM_DEF_OBJECT));
+	Con_Int i;
+    if (i_obj == NULL)
+        i = Con_Misc_translate_index(thread, NULL, 0, self_string_atom->size);
+    else
+        i = Con_Misc_translate_index(thread, NULL, Con_Numbers_Number_to_Con_Int(thread, i_obj), self_string_atom->size);
+
+	if (self_string_atom->encoding != CON_STR_UTF_8)
+		CON_XXX;
+	
+	return CON_NEW_INT(self_string_atom->str[i]);
 }
 
 

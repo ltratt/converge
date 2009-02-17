@@ -893,8 +893,7 @@ func encode_src_infos(all_src_infos):
 
     src_infos_array := Array::Array.new(ARRAY_TYPE_32BIT)
     for num_instructions, src_infos := all_src_infos.iter():
-        i := 0
-        while i < num_instructions:
+        while num_instructions > 0:
             for j := 0.iter_to(src_infos.len()):
                 // XXX: At no point in the following do we check for overflow of any kind.
 
@@ -902,7 +901,10 @@ func encode_src_infos(all_src_infos):
 
                 // Bits 0-3
 
-                enc_src_info1 := Maths::min(num_instructions - i, 15)
+                if num_instructions > 15:
+                    enc_src_info1 := 15
+                else:
+                    enc_src_info1 := num_instructions
 
                 // Bit 4
 
@@ -926,7 +928,7 @@ func encode_src_infos(all_src_infos):
 
                 src_infos_array.append(enc_src_info1)
                 src_infos_array.append(enc_src_info2)
-            i += 15
+            num_instructions -= 15
     
     return src_infos_array.serialize()
 

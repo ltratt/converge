@@ -174,8 +174,17 @@ class QQ_Mode:
                 closure := mode.closures[i]
                 if closure[Core::CLOSURE_VARS].find(search_var_name):
                     return [search_var_name, mode, i]
-                if rename_from := closure[Core::CLOSURE_RENAMES].find(search_var_name):
-                    search_var_name := rename_from
+
+                for rename_to, rename_from := closure[Core::CLOSURE_RENAMES].iter():
+                    if search_var_name == rename_to:
+                        ndif ITree::IVar.instantiated(rename_from):
+                            search_var_name := rename_from.name
+                        elif ITree::IModule_Lookup.instantiated(rename_from):
+                            return [rename_from, -1, -1]
+                    elif ITree::IVar.instantiated(rename_from) & search_var_name == rename_from.name:
+                        msg := Strings::format("Variable '%s' not in scope (renamed to '%s').", var_name, rename_to)
+                        self._compiler.error(msg, src_infos)
+
                 i -= 1
             
             mode := mode.parent_mode

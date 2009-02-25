@@ -39,6 +39,9 @@ tests := $<<Lang_Test::tests>>:
     "ns6.cv":
         ctime exception "Unknown variable 'x'."
 
+    "ns7.cv":
+        ctime exception "Variable 'x' not in scope (renamed to 'y')."
+
     "qq1.cv":
         rtime exception "Unassigned_Var_Exception"
 
@@ -54,6 +57,9 @@ tests := $<<Lang_Test::tests>>:
     
     "qq7.cv":
         ctime exception "Unknown variable 'x'."
+
+    "qq8.cv":
+        ctime exception "Variable 'x' not in scope (renamed to 'y')."
 
 
 

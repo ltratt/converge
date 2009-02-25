@@ -1,0 +1,17 @@
+//
+// Check that we can't access a renamed variable.
+//
+
+
+import CEI, Sys
+
+
+
+x := 2
+
+func main():
+    [|
+        func f():
+            rename x as y
+            z := x
+    |]

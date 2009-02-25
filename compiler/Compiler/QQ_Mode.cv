@@ -379,7 +379,7 @@ class QQ_Mode:
                     self._get_var_offset(rename_.from.name, rename_.from.src_infos)
 
                 if ITree::IVar.instantiated(rename_.from) & ITree::IVar.instantiated(rename_.as_):
-                    renames[rename_.as_.name] := rename_.from.name
+                    renames[rename_.as_.name] := rename_.from
                 else:
                     if ITree::IVar.instantiated(rename_.from):
                         qq_rename_from := self._preorder(rename_.from)
@@ -387,8 +387,8 @@ class QQ_Mode:
                         qq_rename_from := self._process_insert(rename_.from, _pi_rename_var)
 
                     ndif ITree::IVar.instantiated(rename_.as_):
-                        rename_.as__name := ITree::IString.new(rename_.as_.name, rename_.src_infos)
-                        qq_rename_as_ := self._qq("IVar", [rename_.as__name], rename_.src_infos)
+                        rename_as_name := ITree::IString.new(rename_.as_.name, rename_.src_infos)
+                        qq_rename_as_ := self._qq("IVar", [rename_as_name], rename_.src_infos)
                     elif ITree::IInsert.instantiated(rename_.as_):
                         qq_rename_as_ := self._process_insert(rename_.as_, _pi_rename_var)
 

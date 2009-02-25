@@ -885,14 +885,24 @@ func _pi_expr_seq(expr, src_infos):
 
     if Builtins::List.instantiated(expr):
         post := []
-        for e := expr.iter():
+        i := 0
+        while i < expr.len():
+            e := expr[i]
+            if not ITree::IRename.instantiated(e):
+                break
+            post.append(e.extended_src_infos(src_infos))
+            i += 1
+
+        while i < expr.len():
+            e := expr[i]            
             if not ITree::IPass.instantiated(e):
                 ITree_WF::wf_expr(e, "in expression body", src_infos)
             post.append(e.extended_src_infos(src_infos))
+            i += 1
         
         return post
     else:
-        if not ITree::IPass.instantiated(expr):
+        if not (ITree::IPass.instantiated(expr) | ITree::IRename.instantiated(expr)):
             ITree_WF::wf_expr(expr, "in expression body", src_infos)
 
         return expr.extended_src_infos(src_infos)

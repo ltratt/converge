@@ -499,7 +499,7 @@ class IFor(IRoot):
         if self.broken_body is null:
             broken_body := null
         else:
-            broken_body := _extended_collection_src_infos(self.broken_body, extra_src_infos)
+            broken_body := _extended_obj_src_infos(self.broken_body, extra_src_infos)
         
         return IFor.new(condition, body, exhausted_body, broken_body, self.src_infos + extra_src_infos)
 

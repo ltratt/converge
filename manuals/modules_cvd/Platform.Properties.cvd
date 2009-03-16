@@ -7,8 +7,16 @@ This module provides information about the underlying platform (OS, architecture
 <assignment name="LITTLE_ENDIAN">
 </assignment>
 
+<assignment name="case_sensitive_filenames">
+Set to 1 if the underlying platform generally uses case sensitive filenames, or 0 otherwise. Note that this does not guarantee that specific file systems will respect this setting.
+</assignment>
+
 <assignment name="endianness">
 Currently set to either <ref name="BIG_ENDIAN" /> or <ref name="LITTLE_ENDIAN" /> as appropriate.
+</assignment>
+
+<assignment name="osname">
+The name of the operating system.
 </assignment>
 
 <assignment name="word_bits">

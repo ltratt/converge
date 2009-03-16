@@ -270,9 +270,11 @@ pass ::= "PASS"
 
 splice        ::= expr_splice
                 | dsl_splice
+                | if_splice
 expr_splice   ::= "$" splice_type "<" expr ">"
 dsl_splice    ::= "$" splice_type "<<" expr ">>" ":" "DSL_BLOCK"
                 | "$" splice_type "<<" expr ">>" "<<" "DSL_BLOCK" ">>"
+if_splice     ::= "$" "IF" "<<" expr ">>" splice_type "<<" expr ">>"
 splice_type   ::= "ID"
                 |
 

@@ -747,7 +747,7 @@ class QQ_Mode:
     func _t_iimport(self, node):
     
         as_var := self._process_var(node.var_name, node.src_infos)
-        as_name := ITree::ISlot_Lookup.new(as_var, "var_name", node.src_infos)
+        as_name := ITree::ISlot_Lookup.new(as_var, "name", node.src_infos)
     
         return self._qq("IImport", [ITree::IString.new(node.mod_path, node.src_infos), as_name], node.src_infos)
 

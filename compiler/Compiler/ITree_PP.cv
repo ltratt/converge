@@ -69,7 +69,7 @@ class ITree_PP:
 
     func _t_imodule(self, node):
     
-        return Strings::join(Functional::map(self._preorder, node.defns), "\n")
+        return Strings::join(Functional::map(self._preorder, node.defns), "\n\n\n")
 
 
 
@@ -92,15 +92,14 @@ class ITree_PP:
             pp.append(" metaclass")
             pp.append(self._preorder(node.metaclass_))
 
-        pp.append(":")
+        pp.append(":\n")
 
         self._indent_level += 1
         self._nesting.append(_NEST_CLASS)
         fields := []
         for field := node.fields.iter():
-            pp.append("\n")
-            pp.append(_INDENT_STRING * self._indent_level)
-            pp.append(self._preorder(field))
+            fields.append(_INDENT_STRING * self._indent_level + self._preorder(field))
+        pp.append(Strings::join(fields, "\n\n"))
         self._nesting.pop()
         self._indent_level -= 1
 

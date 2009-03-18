@@ -51,7 +51,7 @@ power3 := func (x):
 
 <p>As the above examples show, by using the splicing and quasi-quoting mechanisms, users can generate code at compile-time. Many readers will be familiar with other macro and macro-esque approaches, and a brief comparison can be enlightening.
 
-<p><q>Lexical</q> macros such as the C preprocessor are deal in string replacement, with little or no regard for the programming language they are dealing with. In such systems it is possible to create syntactically non-nonsensical programs, and to encounter difficult problems such as variable capture. Converge instead works at the abstract syntax tree level; it has little in common with such approaches.
+<p><q>Lexical</q> macros such as the C preprocessor are deal in string replacement, with little or no regard for the programming language they are dealing with. In such systems it is possible to create syntactically nonsensical programs, and to encounter difficult problems such as variable capture. Converge instead works at the abstract syntax tree level; it has little in common with such approaches.
 
 <p><q>Traditional macro systems</q> are best exemplified by LISP. Converge ultimately traces its CTMP abilities back to LISP. As seen above, Converge uses normal functions for CTMP, and does not explicitly identify macros; instead macro calls (a.k.a splices) are explicitly identified. A number of other differences result from the fact that Converge has a modern, relatively rich, syntax compared to LISPs minimal syntax.
 

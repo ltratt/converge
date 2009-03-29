@@ -42,13 +42,7 @@ class Compiler:
         options.append(Parse_Args::Opt_Spec.new("target", "T", Parse_Args::MANDATORY, Parse_Args::TYPE_ANY, Parse_Args::FREQUENCY_ZERO_OR_ONE))
         options.append(Parse_Args::Opt_Spec.new("verbose", "v", Parse_Args::NONE, Parse_Args::TYPE_ANY, Parse_Args::FREQUENCY_ZERO_OR_MORE))
         
-        self._use_curses := 1
-        try:
-            Curses::setupterm(null, Sys::stderr)
-            Curses::tigetstr("sgr0")
-        catch Curses::Curses_Exception:
-            // If we can't initialise curses, we ignore the error and resort to "plain" output.
-            self._use_curses := 0
+        self._init_curses()
 
         self.mk_mode := 0
         self.mk_fresh := 0
@@ -132,6 +126,8 @@ class Compiler:
         self.verbosity := verbosity
         self.target := target
         self.internal_target := internal_target
+
+        self._init_curses()
         
         self.src_paths_to_mod_ids := Dict{}
         self.mk_done_bc_mods := mk_done_bc_mods
@@ -141,7 +137,7 @@ class Compiler:
 
         mk_done_bc_mods[mod_id] := [src_path, bc_mod]
         mk_mtime_map[mod_id] := Time::current()
-        
+
         return bc_mod
 
 
@@ -288,6 +284,17 @@ class Compiler:
     ////////////////////////////////////////////////////////////////////////////////////////////////
     // Internal functions
     //
+
+    func _init_curses(self):
+    
+        self._use_curses := 1
+        try:
+            Curses::setupterm(null, Sys::stderr)
+            Curses::tigetstr("sgr0")
+        catch Curses::Curses_Exception:
+            // If we can't initialise curses, we ignore the error and resort to "plain" output.
+            self._use_curses := 0
+
 
 
     func _compile_path(self, src_path):

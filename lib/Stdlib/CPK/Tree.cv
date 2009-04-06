@@ -57,11 +57,20 @@ class Non_Term:
         return self.children.len()
 
 
+
     func iter(self, i := 0):
     
         for yield self.children.iter(i)
         
-        return fail
+        fail
+
+
+
+    func riter(self, i := 0):
+    
+        for yield self.children.riter(i)
+        
+        fail
 
 
 

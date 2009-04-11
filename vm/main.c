@@ -604,6 +604,11 @@ void make_mode(char *prog_path, u_char **bytecode, size_t *bytecode_size, char *
 	if (have_cache_path && !mk_fresh) {
 		if (stat(cache_path, &st) == -1)
 			goto make;
+        
+        if (st.st_size == 0) {
+            unlink(cache_path);
+            goto make;
+        }
 
 		// There is a cached path, so now we try and load it and see if it is upto date. If any part
 		// of this fails, we simply go straight to full make mode.
@@ -788,7 +793,9 @@ make:
 	if (have_cache_path) {
 		FILE *cache_file;
 
-		if (stat(cache_path, &st) != -1) {
+        // Note that if the potentially cached file is 0 bytes, we treat it as if it doesn't exist
+        // and merrily overwrite it.
+		if (stat(cache_path, &st) != -1 && st.st_size > 0) {
 			// As a file with the cached name already exists, we want to ensure that it's a Converge
 			// executeable to be reasonably sure that we're not overwriting a normal user file.
 

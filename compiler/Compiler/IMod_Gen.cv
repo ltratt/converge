@@ -882,7 +882,7 @@ class IMod_Gen:
             itree_mod_imp := ITree::IMod_Id_Import.new(ITree.mod_id, ITree.src_path, src_infos)
             ivar := ITree::IModule_Lookup.new([itree_mod_imp, ITree::IVar.new("IVar", src_infos)], src_infos)
             ivar_new := ITree::ISlot_Lookup.new(ivar, "new", src_infos)
-            var := ITree::IApplication.new(ivar_new, [ITree::IString.new(node[1].value, src_infos), Lift::lift(src_infos)], node[1].src_infos)
+            var := ITree::IApplication.new(ivar_new, [ITree::IString.new(node[1].value, src_infos), Lift::lift(src_infos)], src_infos)
             return ITree::IInsert.new(ITree::INSERT_CAPTURING, var, src_infos)
         elif node[0].name == "splice":
             // name ::= splice

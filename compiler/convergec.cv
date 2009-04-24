@@ -266,6 +266,7 @@ class Compiler:
                             raise "XXX"
                         i += 1
                     mod_id := cnd.get_mod_id()
+                    src_path := cnd.get_src_path()
                     import_extras := import_name_list[i : ]
                     break
         exhausted:

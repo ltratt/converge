@@ -26,7 +26,7 @@
 
 
 import File, Strings, Sys
-import CPK::Earley::Grammar, CPK::Earley, CPK::Tokens, CPK::Tree
+import CPK::Earley::Grammar, CPK::Earley::Parser as Earley_Parser, CPK::Tokens, CPK::Tree
 import Core, Tokenizer
 
 
@@ -294,7 +294,7 @@ brackets ::= "(" expr ")"
 
 
 
-class Parser(Earley::Parser::Parser):
+class Parser(Earley_Parser::Parser):
 
     func error(self, token):
 

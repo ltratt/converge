@@ -450,7 +450,8 @@ char *find_con_exec(const char *name, const char *vm_path)
 				j += strlen(cnds[i]) + strlen(CON_DIR_SEP);
 			}
 			else {
-				if (strlcpy(cnd + j, cnds[i], PATH_MAX - j) > (size_t) (PATH_MAX - j));
+				if (strlcpy(cnd + j, cnds[i], PATH_MAX - j) > (size_t) (PATH_MAX - j))
+					CON_XXX;
 				j += strlen(cnds[i]);
 			}
 			if (strlcpy(cnd + j, name, PATH_MAX - j) > (size_t) (PATH_MAX - j))
@@ -511,7 +512,8 @@ void import_con_lib(Con_Obj *thread, const char *leaf, const char** cnd_dirs, co
             j += strlen(cnd_dirs[i]) + strlen(CON_DIR_SEP);
         }
         else {
-            if (strlcpy(cnd + j, cnd_dirs[i], PATH_MAX - j) > (size_t) (PATH_MAX - j));
+            if (strlcpy(cnd + j, cnd_dirs[i], PATH_MAX - j) > (size_t) (PATH_MAX - j))
+                CON_XXX;
             j += strlen(cnd_dirs[i]);
         }
         if (strlcpy(cnd + j, leaf, PATH_MAX - j) > (size_t) (PATH_MAX - j))

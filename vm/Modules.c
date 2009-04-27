@@ -103,7 +103,7 @@ Con_Obj *_Con_Modules_get_stdlib_hack(Con_Obj *);
 Con_Obj *Con_Modules_get_stdlib(Con_Obj *thread, const char *ptl_mod_id)
 {
     Con_Obj *w = CON_NEW_BOUND_C_FUNC(_Con_Modules_get_stdlib_hack, "woo", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
-    return CON_APPLY(w, Con_Builtins_String_Atom_new_copy(thread, ptl_mod_id, strlen(ptl_mod_id), CON_STR_UTF_8));
+    return CON_APPLY(w, Con_Builtins_String_Atom_new_copy(thread, (const u_char *) ptl_mod_id, strlen(ptl_mod_id), CON_STR_UTF_8));
 }
 
 

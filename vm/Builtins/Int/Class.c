@@ -495,5 +495,5 @@ Con_Obj *_Con_Builtins_Int_Class_str_val_func(Con_Obj *thread)
 
     char c = (char) self_int_atom->val;
 
-	return Con_Builtins_String_Atom_new_copy(thread, &c, 1, CON_STR_UTF_8);
+	return Con_Builtins_String_Atom_new_copy(thread, (u_char const *) &c, 1, CON_STR_UTF_8);
 }

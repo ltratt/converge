@@ -6,6 +6,11 @@ Important functions and classes in this module are as follows:
 Adds or replaces modules in the running VM. <code>mods</code> should be a list of modules. Note that this function does not import modules: it merely adds them into the VM so that they can then be imported e.g. by <ref name="import_module" />.
 </function>
 
+<function name="find_module">
+<argument name="mod_id" type="String" />
+Returns the module with identifier <code>mod_id</code> if it exists in the VM, failing otherwise.
+</function>
+
 <function name="import_module">
 <argument name="mod_id" type="String" />
 Imports the module with identifier <code>mod_id</code>. Raises an exception if no such module is in the VM.

@@ -183,9 +183,9 @@ class Compiler:
     func get_bc_mod(self, mod_id, src_path, src_infos := null):
     
         if self.mk_mode == 1:
-            if src_path, bc_mod := self.mk_done_bc_mods.find(mod_id):
+            if bc_src_path, bc_mod := self.mk_done_bc_mods.find(mod_id) & not bc_mod is null:
                 return bc_mod
-    
+
         if not(self.mk_mode == 1 & self.mk_fresh == 1):
             if bc_mod, mtime := self._read_cache_cvb(src_path):
                 if mod_id == bc_mod.get_mod_id():

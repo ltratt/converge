@@ -26,18 +26,30 @@
 
 
 import Platform::Properties
-import Builtins, Code_Gen, Core, BC_Lib, BC_Mod, Parser, BC_Pkg, File, Functional, IMod_Gen, ITree, Link,  Strings, Targets::Available, Tokenizer, VM
+import Builtins, Code_Gen, Core, BC_Lib, BC_Mod, Parser, BC_Pkg, Exceptions, File, Functional, IMod_Gen, ITree, Link,  Strings, Targets::Available, Tokenizer, VM
 
 
 
 
 class Eval_Compiler:
 
-    func init(self, str, vars, includes):
+    func eval_itree(self, itree):
     
-        self._str := str
-        self.vars := vars
+        self.vars := Dict{}
+        self.includes := []
+        self.mod_id := Strings::format(Core::UNIQUE_EVAL_NAME_TEMPLATE, Core::fresh_name())
+        self.src_path := self.mod_id
+        self.internal_target := self.target := Available::TARGETS[Strings::format("%dbit", Properties::word_bits)].new()
+
+        self.newlines := []
         
+        return self._do_eval(ITree::IReturn.new(itree, itree.src_infos), itree.src_infos)
+
+
+
+    func eval_str(self, str, vars, includes):
+    
+        self.vars := vars
         self.includes := includes[ : ]
         self.mod_id := Strings::format(Core::UNIQUE_EVAL_NAME_TEMPLATE, Core::fresh_name())
         self.src_path := self.mod_id
@@ -53,19 +65,8 @@ class Eval_Compiler:
             bc_lib.deserialize(bc)
             self.includes.append(bc_lib)
 
-        self._cached_mods := Dict{}
-        for include := self.includes.iter():
-            ndif Builtins::String.instantiated(include):
-                continue
-            elif BC_Lib::BC_Lib.instantiated(include):
-                for bc_obj := include.iter_bc_mods():
-                    self._cached_mods[bc_obj.get_mod_id()] := [null, bc_obj]
-
-
-    func eval(self):
-        
         self.tokenizer := Tokenizer::Tokenizer.new()
-        parse_tree := Parser::parse_expr_seq(self._str)
+        parse_tree := Parser::parse_expr_seq(str)
         self.newlines := self.tokenizer.newlines
         
         body := []
@@ -116,18 +117,49 @@ class Eval_Compiler:
         body.append(iif)
         
         body := ITree::IExpr_Seq.new(body, src_infos)
+        
+        return self._do_eval(body, src_infos)
 
-        eval_name := Core::fresh_name()		
+
+
+    func _do_eval(self, body, src_infos):
+
+        self._cached_mods := Dict{}
+        for include := self.includes.iter():
+            ndif Builtins::String.instantiated(include):
+                continue
+            elif BC_Lib::BC_Lib.instantiated(include):
+                for bc_obj := include.iter_bc_mods():
+                    self._cached_mods[bc_obj.get_mod_id()] := [null, bc_obj]
+
+        eval_name := Core::fresh_name()
         dummy_func := ITree::IFunc_Defn.new(0, ITree::IVar.new(eval_name, src_infos), [], null, [], [], body, src_infos)
         dummy_defns := [ITree::IAssignment.new(ITree::STD_ASSIGN, [ITree::IVar.new(eval_name, src_infos)], dummy_func, src_infos)]
         dummy_imodule := ITree::IModule.new(eval_name, dummy_defns, src_infos)
         
         bc_mod := _Eval_Code_Gen.new().generate(self.target, dummy_imodule)
         
+
         bc_mods := [bc_mod]
         for cached_mod_src_path, cached_bc_mod := self._cached_mods.iter_vals():
             bc_mods.append(cached_bc_mod)
         
+        todo := bc_mods[:]
+        while todo.len() > 0:
+            mod := todo[0]
+            todo.del(0)
+            if not BC_Mod::BC_Mod.instantiated(mod):
+                continue
+            for imp_mod_id, imp_src_path := mod.get_imports().iter():
+                if self._cached_mods.find(imp_mod_id):
+                    continue
+                if Core::BUILTIN_MODULES.find(imp_mod_id):
+                    continue
+                new_mod := Core::peek_compiler().get_bc_mod(imp_mod_id, imp_src_path, src_infos)
+                self._cached_mods[imp_mod_id] := new_mod
+                todo.append(new_mod)
+                bc_mods.append(new_mod)
+
         // XXX technically we should provide our own linker class as an argument to link_max_pkgs.
 		
         linked_bc_mods := Link::link_max_pkgs(Core::peek_compiler(), bc_mods)
@@ -240,6 +272,24 @@ class Eval_Compiler:
 
 
 
+    func error(self, msg, src_infos := null):
+    
+        self._print_msg("Error", msg, src_infos)
+
+
+
+    func warning(self, msg, src_infos := null):
+    
+        self._print_msg("Warning", msg, src_infos)
+    
+    
+    
+    func _print_msg(self, pre_msg, msg, src_infos := null):
+
+        raise Exceptions::Exception.new(Strings::format("%s: %s", pre_msg, msg))
+
+
+
 
 class _Eval_Code_Gen(Code_Gen::Code_Gen):
 
@@ -260,11 +310,24 @@ class _Eval_Code_Gen(Code_Gen::Code_Gen):
 
 func eval(str, vars := Dict{}, includes := []):
 
-    compiler := Eval_Compiler.new(str, vars, includes)
+    compiler := Eval_Compiler.new()
     Core::push_compiler(compiler)
-    if not (result := compiler.eval()):
+    if not (result := compiler.eval(str, vars, includes)):
         Core::pop_compiler()
         fail
     else:
         Core::pop_compiler()
+        return result
+
+
+
+func eval_itree(ast):
+
+    compiler := Eval_Compiler.new()
+    //Core::push_compiler(compiler)
+    if not (result := compiler.eval_itree(ast)):
+        //Core::pop_compiler()
+        fail
+    else:
+        //Core::pop_compiler()
         return result

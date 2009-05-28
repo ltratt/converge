@@ -91,9 +91,9 @@ func main():
             continue
 
         try:
-            compiler := _Interactive_Compiler.new(input, d, includes)
+            compiler := _Interactive_Compiler.new()
             Core::push_compiler(compiler)
-            if rtn := compiler.eval():
+            if rtn := compiler.eval_str(input, d, includes):
                 Sys::println(rtn)
             Core::pop_compiler()
         catch _Dummy_Exception into e:

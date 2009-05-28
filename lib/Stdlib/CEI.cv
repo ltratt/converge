@@ -50,6 +50,12 @@ func eval(str, vars := Dict{}, includes := []):
 
 
 
+func eval_itree(itree):
+
+    return Eval::eval_itree(itree)
+
+
+
 func fresh_name(name := null):
 
     return Core::fresh_name(name)

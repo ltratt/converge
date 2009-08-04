@@ -7,9 +7,9 @@ Converge by executing the following commands:
 
 ================================================================================
 
-  Building from a Darcs checkout
+  Building from a git checkout
  
-If you have checked the source out via Darcs (i.e. you have not downloaded a
+If you have checked the source out via git (i.e. you have not downloaded a
 tar.gz file), you will first need to create the 'configure' script. This can be
 created with the following command:
 

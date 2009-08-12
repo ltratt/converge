@@ -71,6 +71,7 @@ func main():
         Sys::print(">>> ")
         input := []
         while 1:
+            Sys::stderr.flush()
             Sys::stdout.flush()
             if not (line := Sys::stdin.readln()):
                 Sys::exit(0)

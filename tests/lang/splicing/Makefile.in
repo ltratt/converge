@@ -1,7 +1,7 @@
 include @abs_top_srcdir@/Makefile.inc
 
 
-TESTS = ns1 ns2 ns3 ns4 ns5 ns6 qq1 qq2 qq3 qq4 qq5 qq6 qq7
+TESTS = result1 result2 result3 result4 type1 type2
 
 
 all:

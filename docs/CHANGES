@@ -1,0 +1,23 @@
+================================================================================
+ Converge changes file
+================================================================================
+
+  2009/09/08 Converge 1.1
+
+This release contains many minor fixes and enhancements. Major changes include:
+
+  * Src infos are now triples (src file, src offset, len) meaning that error
+    reporting is now much more detailed.
+
+  * Parse trees have now changed representation from lists to instances of
+    specific classes. Parse tree walking code needs to be updated accordingly.
+
+  * Simple dynamic linking of core libraries.
+
+  * Much enhanced backtraces (when curses is available).
+
+
+
+  2008/02/25 Converge 1.0
+
+Initial public release of the 1.0 series.

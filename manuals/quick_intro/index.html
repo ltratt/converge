@@ -196,11 +196,11 @@ class Animal:
 New objects can be created via the <code>new</code> slot of a class:
 
 <pre class="indented-code">
-fido := Animal.new()
+fido := Animal.new("Fido")
 </pre>
 The resulting object can then have its slots accessed and assigned in the standard fashion:
 <pre class="indented-code">
-fido.set_name("Fido")
+fido.set_name("Dido")
 Sys::println(fido.get_name())
 fido.name := "Lido"
 </pre>

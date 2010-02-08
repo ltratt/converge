@@ -289,7 +289,7 @@ Con_Obj *_Con_Builtins_Int_Class_div_func(Con_Obj *thread)
 	else {
 		Con_Int o = o_int_atom->val;
 		if (o == 0)
-			CON_XXX;
+			CON_RAISE_EXCEPTION("Number_Exception", o);
 
 		if (self_int_atom->val % o == 0)
 			return CON_NEW_INT(self_int_atom->val / o);

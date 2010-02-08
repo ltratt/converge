@@ -171,7 +171,7 @@ func fresh_name(name := null):
 
 func get_std_libraries(comp_link):
 
-    bin_dir := File::split_leaf(Sys::program_path)[0]
+    bin_dir := File::split_leaf(Sys::vm_path)[0]
     
     libraries := []
 
@@ -179,6 +179,7 @@ func get_std_libraries(comp_link):
 
     cnd_dirs := [File::join_names(bin_dir, "..", "lib", "converge-" + Sys::version), \
       File::join_names(bin_dir, "..", "lib", "converge"), \
+      File::join_names(bin_dir, "..", "compiler"), \
       File::join_names(bin_dir)]
     for cnd_dir := cnd_dirs.iter():
         cnd_path := File::join_names(cnd_dir, "Compiler.cvl")

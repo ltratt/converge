@@ -312,7 +312,7 @@ func eval(str, vars := Dict{}, includes := []):
 
     compiler := Eval_Compiler.new()
     Core::push_compiler(compiler)
-    if not (result := compiler.eval(str, vars, includes)):
+    if not (result := compiler.eval_str(str, vars, includes)):
         Core::pop_compiler()
         fail
     else:

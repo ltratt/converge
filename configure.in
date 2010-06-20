@@ -802,8 +802,11 @@ if [[ "$GCC" = "yes" ]]; then
 				AC_MSG_RESULT(-O3 -fno-strict-aliasing)
 				CFLAGS="$CFLAGS -O3 -fno-strict-aliasing"
 			fi;;
+
+		4.2.1 )
+			AC_MSG_RESULT(none);;
 		
-		4\.0* | 4\.1* | 4\.2*)
+		4\.0* | 4\.1* | 4\.2* )
 			# On GCC 4.*, we need to turn off both -fno-tree-copyrename -fno-expensive-optimizations. I have
 			# no idea why.
 			if [[ $? -eq 0 ]]; then

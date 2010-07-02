@@ -47,7 +47,7 @@ libconverge.a: ${OBJ_FILES}
 	ranlib libconverge.a
 
 converge: libconverge.a
-	gcc -o converge main.o libconverge.a ${LIBS}
+	${CC} -o converge main.o libconverge.a ${LIBS}
 
 clean:
 	rm -rf *.core libconverge.a converge ${OBJ_FILES}

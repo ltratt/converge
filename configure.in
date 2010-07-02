@@ -782,20 +782,31 @@ AC_CHECK_DECL(letoh32 letoh64 htobe16 htobe32 htobe64 betoh16 betoh32 betoh64 , 
 #
 
 if [[ "$GCC" = "yes" ]]; then
-	CFLAGS="-std=c99 -g -DNDEBUG -Wall -Wstrict-prototypes -Wmissing-prototypes -Wwrite-strings -Wpointer-arith -Wbad-function-cast -Wsign-compare $extra_cflags"
+	CFLAGS="-std=c99 -g -DDEBUG -Wall -Wstrict-prototypes -Wmissing-prototypes -Wwrite-strings -Wpointer-arith -Wbad-function-cast -Wsign-compare $extra_cflags"
 
-	AC_MSG_CHECKING([for gcc version])
-	gcc_version=`$CC -v 2>&1 | grep "gcc version" | sed "s/gcc version //" | sed "s/ .*//"`
-	AC_MSG_RESULT($gcc_version)
+	AC_MSG_CHECKING([for cc version])
+    cc_type=`${CC} -v 2>&1 | grep version | cut -d " " -f 1`
+    case $cc_type in
+    	clang )
+        	cc_version=clang-`$CC -v 2>&1 | grep "clang version" | sed "s/clang version //" | sed "s/ .*//"`;;
+
+    	gcc )
+        	cc_version=gcc-`$CC -v 2>&1 | grep "gcc version" | sed "s/gcc version //" | sed "s/ .*//"`;;
+
+		* )
+        	AC_MSG_ERROR([Unknown compiler]);;
+    esac
+    
+	AC_MSG_RESULT($cc_version)
 
 	# We now have to check what the safe optimisations for GCC are. This varies between versions
 	# it seems.
 	
-	AC_MSG_CHECKING([for safe gcc optimisation level])
+	AC_MSG_CHECKING([for safe optimisation level])
 	found_opts=0
 	
-	case $gcc_version in
-		3\.3* )
+	case $cc_version in
+		gcc-3\.3* )
 			# On GCC 3.3, optimisations work pretty much as advertised.
 			$CC -v 2>&1 | grep "gcc version 3\.3" > /dev/null
 			if [[ $? -eq 0 ]]; then
@@ -803,10 +814,10 @@ if [[ "$GCC" = "yes" ]]; then
 				CFLAGS="$CFLAGS -O3 -fno-strict-aliasing"
 			fi;;
 
-		4.2.1 )
+		gcc-4.2.1 )
 			AC_MSG_RESULT(none);;
 		
-		4\.0* | 4\.1* | 4\.2* )
+		gcc-4\.0* | gcc-4\.1* | gcc-4\.2* )
 			# On GCC 4.*, we need to turn off both -fno-tree-copyrename -fno-expensive-optimizations. I have
 			# no idea why.
 			if [[ $? -eq 0 ]]; then
@@ -818,7 +829,7 @@ if [[ "$GCC" = "yes" ]]; then
 			AC_MSG_RESULT(none);;
 	esac
 else
-	CFLAGS="-DNDEBUG"
+	CFLAGS="-DNDEBUG -O2"
 fi
 
 

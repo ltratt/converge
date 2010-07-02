@@ -737,7 +737,7 @@ make:
 		if (mk_fresh)
 			args[j++] = "-f";
 		args[j++] = prog_path;
-		args[j++] = NULL;
+		args[j] = NULL;
 		execv(vm_path, (char **const) args);
 		err(1, ": trying to execv convergec");
 	}

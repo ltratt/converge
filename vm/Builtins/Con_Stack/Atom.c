@@ -562,8 +562,6 @@ void Con_Builtins_Con_Stack_Atom_prepare_to_return_from_generator(Con_Obj *threa
 	Con_Int gen_objs_size = con_stack_atom->gfp - sizeof(Con_Builtins_Con_Stack_Class_Generator_Frame) - sizeof(Con_Builtins_Con_Stack_Class_Type) - gen_objs_start;
 	ENSURE_ROOM(gen_objs_size + generator_frame->suspended_con_stack_size);
 
-	generator_frame = (Con_Builtins_Con_Stack_Class_Generator_Frame *) (con_stack_atom->stack + con_stack_atom->gfp - sizeof(Con_Builtins_Con_Stack_Class_Generator_Frame) - sizeof(Con_Builtins_Con_Stack_Class_Type));
-	
 	// Copy the gen objs.
 
 	memmove(con_stack_atom->stack + con_stack_atom->stackp, con_stack_atom->stack + gen_objs_start, gen_objs_size);

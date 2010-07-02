@@ -113,7 +113,7 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 	// so that we can make a reasonable stab at freeing all the memory we've allocated. We define
 	// all these variables here so that we can track them.
 
-	Con_Obj *thread, *main_module_identifier, *exception, *main_module, *backtrace;
+	Con_Obj *thread, *main_module_identifier, *exception, *main_module;
 	char *vm_path, *canon_prog_path;
 	u_char *bytecode;
 	
@@ -348,10 +348,9 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 		if (CON_GET_SLOT_APPLY_NO_FAIL(CON_GET_MOD_DEFN(CON_BUILTIN(CON_BUILTIN_EXCEPTIONS_MODULE), "System_Exit_Exception"), "instantiated", exception) != NULL)
 			exit_code = Con_Numbers_Number_to_Con_Int(thread, CON_GET_SLOT(exception, "code"));
 		else {
-			backtrace = CON_APPLY(CON_GET_MOD_DEFN(
+			CON_APPLY(CON_GET_MOD_DEFN(
               Con_Modules_import(thread, Con_Modules_get_stdlib(thread, CON_STDLIB_BACKTRACE)),
               "print_best"), exception);
-			backtrace = NULL;
 			exit_code = 1;
 		}
 		
@@ -392,7 +391,7 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 	// executed, but they should mostly (if not all) be objects created during the bootstrap
 	// process so hopefully aren't too important.
 
-	main_module_identifier = exception = main_module = backtrace = NULL;
+	main_module_identifier = exception = main_module = NULL;
 	if (vm_path != NULL) {
 		free(vm_path);
 		vm_path = NULL;

@@ -598,7 +598,7 @@ Con_Obj *_Con_Builtins_String_Class_replaced_func(Con_Obj *thread)
 	// string, which we then construct.
 
 	Con_Int new_str_mem_size = self_string_atom->size + matches * (new_string_atom->size - old_string_atom->size);
-	u_char *new_str_mem = new_str_mem = Con_Memory_malloc(thread, new_str_mem_size, CON_MEMORY_CHUNK_OPAQUE);
+	u_char *new_str_mem = Con_Memory_malloc(thread, new_str_mem_size, CON_MEMORY_CHUNK_OPAQUE);
 	Con_Int new_str_mem_pos = 0;
 	i = 0;
 	Con_Int last_i = 0;

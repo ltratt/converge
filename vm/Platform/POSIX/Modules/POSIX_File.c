@@ -577,8 +577,7 @@ Con_Obj *_Con_Module_POSIX_File_is_dir_func(Con_Obj *thread)
 	
 	struct stat sb;
 	
-	int rtn;
-	if ((rtn = stat(Con_Builtins_String_Atom_to_c_string(thread, path), &sb)) != 0)
+	if (stat(Con_Builtins_String_Atom_to_c_string(thread, path), &sb) != 0)
 		_Con_Module_POSIX_File_error(thread, path, errno);
 	
 	if (sb.st_mode & S_IFDIR)
@@ -603,8 +602,7 @@ Con_Obj *_Con_Module_POSIX_File_is_file_func(Con_Obj *thread)
 	
 	struct stat sb;
 	
-	int rtn;
-	if ((rtn = stat(Con_Builtins_String_Atom_to_c_string(thread, path), &sb)) != 0)
+	if (stat(Con_Builtins_String_Atom_to_c_string(thread, path), &sb) != 0)
 		_Con_Module_POSIX_File_error(thread, path, errno);
 	
 	if (sb.st_mode & S_IFREG)

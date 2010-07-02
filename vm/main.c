@@ -238,7 +238,7 @@ int main_do(int argc, char** argv, u_char *root_stack_start)
 					}
 
 					memmove(cnd, path + i, j - i);
-					if (cnd[j - i - 1] != '/') {
+					if (j > i && cnd[j - i - 1] != '/') {
 						cnd[j - i] = '/';
 						cnd[j - i + 1] = '\0';
 					}

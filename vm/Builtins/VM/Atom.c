@@ -591,7 +591,42 @@ void _Con_Builtins_VM_Atom_apply_pump_restore_c_stack(Con_Obj *thread, u_char *c
 // Returns NULL if the generator has no more values to pump.
 //
 
+void __attribute__((noinline)) Con_Builtins_VM_Atom_apply_pump_dc(Con_Obj *thread, bool remove_finished_generator_frames, Con_Obj **declobber_obj);
+
 Con_Obj *Con_Builtins_VM_Atom_apply_pump(Con_Obj *thread, bool remove_finished_generator_frames)
+{
+    // This particular routine is something of a "dummy". What it works around is the fact that
+    // in some setups (e.g. gcc on x86_64 with -O2 or above), not all registers are saved when
+    // a function is called. That means that our stack restoration technique can accidentally
+    // clobber registers, giving them the value that they had on the *previous* call to
+    // apply_pump - with consequent hilarity.
+    //
+    // What we do here is save all the registers (via setjmp), do all the stack restoration
+    // gubbins, then restore the registers (via longjmp) and return an object. This prevents
+    // (hopefully) clobbering.
+
+    Con_Obj *declobber_obj;
+    JMP_BUF declobber_env;
+#if CON_HAVE_SIGSETJMP
+    if (sigsetjmp(declobber_env, 0) == 1) {
+#else
+    if (setjmp(declobber_env, 0) == 1) {
+#endif
+        return declobber_obj;
+    }
+
+    Con_Builtins_VM_Atom_apply_pump_dc(thread, remove_finished_generator_frames, &declobber_obj);
+    
+#if CON_HAVE_SIGSETJMP
+    siglongjmp(declobber_env, 1);
+#else
+    longjmp(declobber_env, 1);
+#endif
+}
+
+
+
+void __attribute__((noinline)) Con_Builtins_VM_Atom_apply_pump_dc(Con_Obj *thread, bool remove_finished_generator_frames, Con_Obj **declobber_obj)
 {
 	Con_Obj *con_stack = Con_Builtins_Thread_Atom_get_con_stack(thread);
 
@@ -647,9 +682,11 @@ Con_Obj *Con_Builtins_VM_Atom_apply_pump(Con_Obj *thread, bool remove_finished_g
 				CON_MUTEX_UNLOCK(&con_stack->mutex);
 			
 				if (return_obj == CON_BUILTIN(CON_BUILTIN_FAIL_OBJ))
-					return NULL;
+                    *declobber_obj = NULL;
+                else
+                    *declobber_obj = return_obj;
 			
-				return return_obj;
+				return;
 			}
 
 			Con_Builtins_Con_Stack_Atom_set_generator_returned(thread, con_stack);
@@ -663,7 +700,8 @@ Con_Obj *Con_Builtins_VM_Atom_apply_pump(Con_Obj *thread, bool remove_finished_g
 			if (Con_Builtins_Con_Stack_Atom_has_generator_returned(thread, con_stack)) {
 				Con_Builtins_Con_Stack_Atom_remove_generator_frame(thread, con_stack);
 				CON_MUTEX_UNLOCK(&con_stack->mutex);
-				return NULL;
+                *declobber_obj = NULL;
+				return;
 			}
 			
 			// We need to restore the function on the C stack.
@@ -702,11 +740,13 @@ Con_Obj *Con_Builtins_VM_Atom_apply_pump(Con_Obj *thread, bool remove_finished_g
 	if (return_obj == CON_BUILTIN(CON_BUILTIN_FAIL_OBJ)) {
 		Con_Builtins_Con_Stack_Atom_remove_generator_frame(thread, con_stack);
 		CON_MUTEX_UNLOCK(&con_stack->mutex);
-		return NULL;
+        *declobber_obj = NULL;
+		return;
 	}
 	else {
 		CON_MUTEX_UNLOCK(&con_stack->mutex);
-		return return_obj;
+        *declobber_obj = return_obj;
+		return;
 	}
 }
 

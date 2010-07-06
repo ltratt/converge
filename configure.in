@@ -785,7 +785,7 @@ if [[ "$GCC" = "yes" ]]; then
 	CFLAGS="-std=c99 -g -DNDEBUG -Wall -Wstrict-prototypes -Wmissing-prototypes -Wwrite-strings -Wpointer-arith -Wbad-function-cast -Wsign-compare $extra_cflags"
 
 	AC_MSG_CHECKING([for cc version])
-    cc_type=`${CC} -v 2>&1 | grep version | cut -d " " -f 1`
+    cc_type=`${CC} -v 2>&1 | grep " version" | cut -d " " -f 1`
     case $cc_type in
     	clang )
         	cc_version=clang-`$CC -v 2>&1 | grep "clang version" | sed "s/clang version //" | sed "s/ .*//"`;;
@@ -806,7 +806,7 @@ if [[ "$GCC" = "yes" ]]; then
 	found_opts=0
 	
 	case $cc_version in
-		gcc-3\.3* | gcc-4\.0* | gcc-4\.1* | gcc-4\.2* )
+		gcc-3\.3* | gcc-4\.* )
 			AC_MSG_RESULT(-O3 -fno-strict-aliasing)
 			CFLAGS="$CFLAGS -O3 -fno-strict-aliasing"
 			;;

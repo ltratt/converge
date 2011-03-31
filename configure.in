@@ -344,6 +344,7 @@ if [[ $static_link -eq 1 ]]; then
 		cnd=$dir/libpcre.a
 		if [[ -f $cnd ]]; then
 			libpcre_a=$cnd
+			break
 		fi
 	done
 	if [[ "$libpcre_a" = "" ]]; then
@@ -368,10 +369,11 @@ if [[ $static_link -eq 1 ]]; then
 	# Statically link libXML2 on MinGW
 	AC_MSG_CHECKING([location of libxml2.a])
 	libxml2_a=""
-	for dir in `xml2-config --libs | tr " " "\n" | grep "^-L" | sort -u | sed "s/^-L//"`; do
+	for dir in `xml2-config --libs | tr " " "\n" | grep "^-L" | sort -u | sed "s/^-L//"` /usr/local/lib /opt/local/lib /usr/lib /lib; do
 		cnd=$dir/libxml2.a
 		if [[ -f $cnd ]]; then
 			libxml2_a=$cnd
+			break
 		fi
 	done
 	if [[ "$libxml2_a" = "" ]]; then

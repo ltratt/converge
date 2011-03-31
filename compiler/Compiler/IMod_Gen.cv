@@ -47,7 +47,7 @@ class IMod_Gen:
 
         self._defns := []
         self._nesting := []
-        self._qq_level := 0
+        self._meta_level := 0
 
         // These next two slots are purely for convenience.
 
@@ -105,7 +105,10 @@ class IMod_Gen:
 
             if node[0].name == "expr_splice":
                 // expr_splice  ::= "$" splice_type "<" expr ">"
+                meta_level_o := self._meta_level
+                self._meta_level := 0
                 expr := self._preorder(node[0][3], extra_src_infos)
+                self._meta_level := meta_level_o
             else:
                 // dsl_splice ::= "$" splice_type "<<" expr ">>" ":" "DSL_BLOCK"
                 //            ::= "$" splice_type "<<" expr ">>" "<<" "DSL_BLOCK" ">>"
@@ -118,7 +121,10 @@ class IMod_Gen:
                 src_len := ITree::IInt.new(dsl_node[6].src_infos[0][2], extra_src_infos + dsl_node.src_infos)
                 src_infos := ITree::IList.new([ITree::IList.new([src_path, src_offset, src_len], extra_src_infos + node[0][0].src_infos)], extra_src_infos + dsl_node.src_infos)
 
+                meta_level_o := self._meta_level
+                self._meta_level := 0
                 expr := ITree::IApplication.new(self._preorder(dsl_node[3], extra_src_infos), [dsl_block, src_infos], extra_src_infos + node.src_infos)
+                self._meta_level := meta_level_o
 
             if out_itree := self._eval_splice_expr(expr, extra_src_infos + node.src_infos):
                 got_val := 1
@@ -132,7 +138,10 @@ class IMod_Gen:
         else:
             // splice    ::= if_splice
             // if_splice ::= "$" "IF" "<<" expr ">>" splice_type "<<" expr ">>"
+            meta_level_o := self._meta_level
+            self._meta_level := 0
             expr := self._preorder(node[0][3], extra_src_infos)
+            self._meta_level := meta_level_o
             if not self._eval_splice_expr(expr, extra_src_infos + node.src_infos):
                 return ITree::IPass.new(node.src_infos)
             
@@ -149,7 +158,10 @@ class IMod_Gen:
             else:
                 st := ITree::SPLICE_DEFAULT
             
+            meta_level_o := self._meta_level
+            self._meta_level := 0
             expr := self._preorder(node[0][7], extra_src_infos)
+            self._meta_level := meta_level_o
 
             if out_itree := self._eval_splice_expr(expr, extra_src_infos + node.src_infos):
                 got_val := 1
@@ -571,6 +583,10 @@ class IMod_Gen:
                         else:
                             // name ::= "&" "ID"
                             
+                            if self._meta_level == 0:
+                                self._compiler.error("Dynamically scoped variables only allowed " \
+                                  + "directly inside quasi-quotes.", elems_node[i].src_infos)
+                            
                             src_infos := extra_src_infos + var_def.src_infos
                             
                             itree_mod_imp := ITree::IMod_Id_Import.new(ITree.mod_id, ITree.src_path, src_infos)
@@ -879,6 +895,10 @@ class IMod_Gen:
         elif node.len() == 2:
             // name ::= "&" "ID"
             src_infos := extra_src_infos + node.src_infos
+            if self._meta_level == 0:
+                self._compiler.error("Dynamically scoped variables only allowed " \
+                  + "directly inside quasi-quotes.", src_infos)
+
             itree_mod_imp := ITree::IMod_Id_Import.new(ITree.mod_id, ITree.src_path, src_infos)
             ivar := ITree::IModule_Lookup.new([itree_mod_imp, ITree::IVar.new("IVar", src_infos)], src_infos)
             ivar_new := ITree::ISlot_Lookup.new(ivar, "new", src_infos)
@@ -916,6 +936,11 @@ class IMod_Gen:
         elif node.len() == 2:
             // name ::= "&" "ID"
             src_infos := extra_src_infos + node.src_infos
+
+            if self._meta_level == 0:
+                self._compiler.error("Dynamically scoped variables only allowed " \
+                  + "directly inside quasi-quotes.", src_infos)
+
             itree_mod_imp := ITree::IMod_Id_Import.new(ITree.mod_id, ITree.src_path, src_infos)
             ivar := ITree::IModule_Lookup.new([itree_mod_imp, ITree::IVar.new("IVar", src_infos)], src_infos)
             ivar_new := ITree::ISlot_Lookup.new(ivar, "new", src_infos)
@@ -1303,6 +1328,10 @@ class IMod_Gen:
     
         // insert ::= "$" insert_type "{" expr "}"
 
+        if self._meta_level == 0:
+            self._compiler.error("Insertions only allowed directly inside quasi-quotes.", \
+              node.src_infos)
+
         it_node := node[1]
         if it_node.len() == 1:
             // insert_type ::= "ID"
@@ -1315,7 +1344,9 @@ class IMod_Gen:
         else:
             it := ITree::INSERT_DEFAULT
 
+        self._meta_level -= 1
         expr := self._preorder(node[3], extra_src_infos)
+        self._meta_level += 1
 
         return ITree::IInsert.new(it, expr, extra_src_infos + node.src_infos)
 
@@ -1326,6 +1357,8 @@ class IMod_Gen:
         // quasi_quotes ::= quasi_quotes_customize "INDENT" expr_seq "DEDENT" "NEWLINE" "|]"
         //              ::= quasi_quotes_customize expr "|]"
 
+        self._meta_level += 1
+        
         if node.len() == 6:
             // expr_quasi_quotes ::= quasi_quotes_customize "INDENT" expr_seq "DEDENT" "NEWLINE"
             //                       "|]"
@@ -1341,6 +1374,8 @@ class IMod_Gen:
         else:
             // quasi_quotes_customize ::= "[" "<" expr ">" "|"
             qq_extra_src_infos := self._preorder(node[0][2], extra_src_infos)
+
+        self._meta_level -= 1
 
         sqq := ITree::IQuasi_Quotes.new(body, qq_extra_src_infos, extra_src_infos + node.src_infos)
 

@@ -1,5 +1,6 @@
 CC=@CC@
 CFLAGS=@CFLAGS@
+LDFLAGS=@LDFLAGS@
 LIBS=@LIBS@
 prefix = @prefix@
 exec_prefix = @exec_prefix@
@@ -47,7 +48,7 @@ libconverge.a: ${OBJ_FILES}
 	ranlib libconverge.a
 
 converge: libconverge.a
-	${CC} -o converge main.o libconverge.a ${LIBS}
+	${CC} ${LDFLAGS} -o converge main.o libconverge.a ${LIBS}
 
 clean:
 	rm -rf *.core libconverge.a converge ${OBJ_FILES}

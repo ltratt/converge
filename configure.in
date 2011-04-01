@@ -80,11 +80,6 @@ AH_BOTTOM([#endif])
 AH_TEMPLATE(CON_CC, [The name of your C compiler.])
 AC_DEFINE_UNQUOTED(CON_CC, [$CC])
 
-
-extra_cflags="-I/usr/local/include -I/usr/include/pcre"
-extra_libs="-L/usr/local/lib"
-
-
 AC_ARG_ENABLE(static, AC_HELP_STRING([--enable-static], [statically link in external libraries [[default=NO]]]), [static_link=1], [static_link=0])
 
 
@@ -212,6 +207,29 @@ esac
 AH_TEMPLATE(CON_LITTLE_ENDIAN, [Define if this machine is little endian; otherwise big endian is assumed.])
 AC_C_BIGENDIAN([], [AC_DEFINE(CON_LITTLE_ENDIAN)])
 
+CFLAGS="$CFLAGS -std=c99"
+
+extra_cflags="-I/usr/local/include -I/usr/include/pcre"
+extra_libs="-L/usr/local/lib"
+
+AC_MSG_CHECKING(for platform CFLAGS needed)
+if [[ $operating_system == "Darwin" -a $machine_type == "i386" ]]; then
+	extra_cflags="$extra_cflags -arch i386"
+    CFLAGS="-arch i386"
+	AC_MSG_RESULT(-arch i386)
+else
+	AC_MSG_RESULT(none)
+fi
+
+AC_MSG_CHECKING(for platform linker flags needed)
+if [[ $operating_system == "Darwin" -a $machine_type == "i386" ]]; then
+	LDFLAGS="-arch i386"
+	extra_libs="$extra_libs -L/usr/lib"
+	AC_MSG_RESULT(-arch i386)
+else
+	AC_MSG_RESULT(none)
+fi
+
 AC_CHECK_SIZEOF(int)
 AC_CHECK_SIZEOF(long)
 
@@ -225,7 +243,7 @@ AC_TRY_RUN([
 
 int main()
 {
-	if (sizeof(ptrdiff_t) == sizeof(int))
+	if (sizeof(int *) == sizeof(int))
 		return 0;
 	else
 		return 1;
@@ -239,7 +257,7 @@ int main()
 
 int main()
 {
-	if (sizeof(ptrdiff_t) == sizeof(long))
+	if (sizeof(int *) == sizeof(long))
 		return 0;
 	else
 		return 1;
@@ -253,7 +271,7 @@ int main()
 
 int main()
 {
-	if (sizeof(ptrdiff_t) == sizeof(long long))
+	if (sizeof(int *) == sizeof(long long))
 		return 0;
 	else
 		return 1;
@@ -269,11 +287,15 @@ int main()
 
 AC_CHECK_SIZEOF(CON_INT)
 
-case $ac_cv_sizeof_CON_INT in
-	4 ) AC_C_BIGENDIAN([bootstrap_dir="bootstrap/32bit_big_endian"], [bootstrap_dir="bootstrap/32bit_little_endian"]);;
-	8 ) AC_C_BIGENDIAN([bootstrap_dir="bootstrap/64bit_big_endian"], [bootstrap_dir="bootstrap/64bit_little_endian"]);;
-	* ) AC_MSG_ERROR([Unknown word size2 $ac_cv_sizeof_CON_INT]);;
+case $machine_type in
+	i386 | i686 )
+        AC_C_BIGENDIAN([bootstrap_dir="bootstrap/32bit_big_endian"], [bootstrap_dir="bootstrap/32bit_little_endian"]);;
+	amd64 | x86_64 )
+        AC_C_BIGENDIAN([bootstrap_dir="bootstrap/64bit_big_endian"], [bootstrap_dir="bootstrap/64bit_little_endian"]);;
+	*) AC_MSG_ERROR([Unknown machine type "$machine_type"]);;
 esac
+
+echo $ac_cv_sizeof_CON_INT $bootstrap_dir
 
 AH_TEMPLATE(CON_FLOAT, [The appropriate type for a double word float on your machine.])
 AC_DEFINE(CON_FLOAT, double)
@@ -326,8 +348,6 @@ fi
 ####################################################################################################
 # Package / header file checks & module inclusions
 #
-
-CFLAGS="-std=c99 $extra_cflags"
 
 # PCRE
 

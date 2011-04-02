@@ -223,7 +223,7 @@ fi
 
 AC_MSG_CHECKING(for platform linker flags needed)
 if [[ $operating_system == "Darwin" -a $machine_type == "i386" ]]; then
-	LDFLAGS="-arch i386"
+	LDFLAGS="$LDFLAGS -arch i386"
 	extra_libs="$extra_libs -L/usr/lib"
 	AC_MSG_RESULT(-arch i386)
 else

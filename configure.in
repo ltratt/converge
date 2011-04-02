@@ -387,7 +387,7 @@ if [[ $static_link -eq 1 ]]; then
 	# Statically link libXML2 on MinGW
 	AC_MSG_CHECKING([location of libxml2.a])
 	libxml2_a=""
-	for dir in `xml2-config --libs | tr " " "\n" | grep "^-L" | sort -u | sed "s/^-L//"` /usr/local/lib /opt/local/lib /usr/lib /lib; do
+	for dir in `xml2-config --libs | tr " " "\n" | grep "^-L" | sort -u | sed "s/^-L//"` ; do
 		cnd=$dir/libxml2.a
 		if [[ -f $cnd ]]; then
 			libxml2_a=$cnd

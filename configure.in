@@ -180,6 +180,12 @@ esac
 
 machine_type=`uname -m`
 
+if [[ $operating_system == "Darwin" -a $machine_type == "i386" ]]; then
+	# On modern Darwin machine it now seems that it's easier to build 64 bit binaries than 32 bit.
+    # Why? I don't know.
+	machine_type=x86_64
+fi
+
 AH_TEMPLATE(CON_ARCH, [Define to your system architecture.])
 
 AH_TEMPLATE(CON_C_STACK_GROWS_DOWN, [Define if the stack grows down from a particular word. Undefine if the stack grows upwards.])

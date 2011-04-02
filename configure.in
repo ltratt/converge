@@ -295,8 +295,6 @@ case $machine_type in
 	*) AC_MSG_ERROR([Unknown machine type "$machine_type"]);;
 esac
 
-echo $ac_cv_sizeof_CON_INT $bootstrap_dir
-
 AH_TEMPLATE(CON_FLOAT, [The appropriate type for a double word float on your machine.])
 AC_DEFINE(CON_FLOAT, double)
 AC_CHECK_SIZEOF(double)

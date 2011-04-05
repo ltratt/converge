@@ -610,7 +610,7 @@ Con_Obj *Con_Builtins_VM_Atom_apply_pump(Con_Obj *thread, bool remove_finished_g
 #if CON_HAVE_SIGSETJMP
     if (sigsetjmp(declobber_env, 0) == 1) {
 #else
-    if (setjmp(declobber_env, 0) == 1) {
+    if (setjmp(declobber_env) == 1) {
 #endif
         return declobber_obj;
     }

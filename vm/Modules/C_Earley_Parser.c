@@ -376,7 +376,7 @@ void _Con_Module_C_Earley_Parser_Parser_parse_func_recognise(Con_Obj *thread, pa
 		
 		// Reset the list of which rules have been predicted.
 		
-		bzero(&predicted, (parser->num_rules / (sizeof(unsigned int) * 8) + 1) * sizeof(unsigned int));
+		memset(&predicted, 0, (parser->num_rules / (sizeof(unsigned int) * 8) + 1) * sizeof(unsigned int));
 		
 		Con_Int y = 0;
 		while (y < parser->lstates[x].num_states) {
@@ -897,7 +897,7 @@ remove_alternative:
 		
 		memmove(alternatives->entries + x, alternatives->entries + x + 1, (alternatives->num_entries - (x + 1)) * sizeof(parse_func_parse_Tree_Alternative));
 		alternatives->num_entries -= 1;
-		bzero(alternatives->entries + alternatives->num_entries, sizeof(parse_func_parse_Tree_Alternative));
+		memset(alternatives->entries + alternatives->num_entries, 0, sizeof(parse_func_parse_Tree_Alternative));
 	}
 
 	if (alternatives->num_entries == 1) {

@@ -169,7 +169,7 @@ Con_Obj *Con_Builtins_Module_Atom_new_from_bytecode(Con_Obj *thread, u_char *byt
 	module_atom->constants_create_offsets = Con_Memory_malloc(thread, sizeof(Con_Int) * ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_NUM_CONSTANTS), CON_MEMORY_CHUNK_OPAQUE);
 	memmove(module_atom->constants_create_offsets, ID_MODULE_GET_OFFSET(CON_BYTECODE_MODULE_CONSTANTS_CREATE_OFFSETS), sizeof(Con_Int) * ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_NUM_CONSTANTS));
 	module_atom->constants = Con_Memory_malloc(thread, ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_NUM_CONSTANTS) * sizeof(Con_Obj *), CON_MEMORY_CHUNK_OPAQUE);
-	bzero(module_atom->constants, ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_NUM_CONSTANTS) * sizeof(Con_Obj *));
+	memset(module_atom->constants, 0, ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_NUM_CONSTANTS) * sizeof(Con_Obj *));
 	
 	module_atom->init_func = Con_Builtins_Func_Atom_new(thread, false, Con_Builtins_Func_Atom_make_con_pc_bytecode(thread, module, ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_INSTRUCTIONS)), 0,  ID_MODULE_GET_WORD(CON_BYTECODE_MODULE_NUM_TOP_LEVEL_VARS), NULL, CON_NEW_STRING("$$init$$"), module);
 

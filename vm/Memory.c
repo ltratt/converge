@@ -132,7 +132,7 @@ void *Con_Memory_malloc(Con_Obj *thread, size_t size, Con_Memory_Chunk_Type type
 	}
 	
 	if (type == CON_MEMORY_CHUNK_CONSERVATIVE)
-		bzero(chunk + 1, size);
+		memset(chunk + 1, 0, size);
 
 	chunk->size = size;
 	chunk->type = type;
@@ -164,7 +164,7 @@ void *Con_Memory_malloc_no_gc(Con_Obj *thread, size_t size, Con_Memory_Chunk_Typ
 		return NULL;
 	
 	if (type == CON_MEMORY_CHUNK_CONSERVATIVE)
-		bzero(chunk + 1, size);
+		memset(chunk + 1, 0, size);
 
 	chunk->size = size;
 	chunk->type = type;
@@ -203,7 +203,7 @@ void *Con_Memory_realloc(Con_Obj *thread, void *ptr, size_t size)
 	}
 
 	if (new_chunk->type == CON_MEMORY_CHUNK_CONSERVATIVE)
-		bzero(((u_char *) (new_chunk + 1)) + new_chunk->size, size - new_chunk->size);
+		memset(((u_char *) (new_chunk + 1)) + new_chunk->size, 0, size - new_chunk->size);
 
 	new_chunk->size = size;
 
@@ -242,7 +242,7 @@ void *Con_Memory_realloc_no_gc(Con_Obj *thread, void *ptr, size_t size)
 	}
 
 	if (new_chunk->type == CON_MEMORY_CHUNK_CONSERVATIVE)
-		bzero(((u_char *) (new_chunk + 1)) + new_chunk->size, size - new_chunk->size);
+		memset(((u_char *) (new_chunk + 1)) + new_chunk->size, 0, size - new_chunk->size);
 
 	new_chunk->size = size;
 	

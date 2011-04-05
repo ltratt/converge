@@ -145,7 +145,7 @@ Con_Obj *_Con_Module_libXML2_parse_func(Con_Obj *thread)
 		CON_XXX;
 
 	xmlSAXHandler handler;
-	bzero(&handler, sizeof(xmlSAXHandler));
+	memset(&handler, 0, sizeof(xmlSAXHandler));
 	
 	_Con_Module_libXML2_parse_func_state state;
 	state.thread = thread;

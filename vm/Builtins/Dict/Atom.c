@@ -94,7 +94,7 @@ void Con_Builtins_Dict_Atom_init_atom(Con_Obj *thread, Con_Builtins_Dict_Atom *d
 	dict_atom->atom_type = CON_BUILTIN(CON_BUILTIN_DICT_ATOM_DEF_OBJECT);
 	
 	dict_atom->entries = Con_Memory_malloc(thread, sizeof(Con_Builtins_Dict_Class_Hash_Entry) * CON_DEFAULT_DICT_NUM_ENTRIES_ALLOCATED, CON_MEMORY_CHUNK_OPAQUE);
-	bzero(dict_atom->entries, sizeof(Con_Builtins_Dict_Class_Hash_Entry) * CON_DEFAULT_DICT_NUM_ENTRIES_ALLOCATED);
+	memset(dict_atom->entries, 0, sizeof(Con_Builtins_Dict_Class_Hash_Entry) * CON_DEFAULT_DICT_NUM_ENTRIES_ALLOCATED);
 	dict_atom->num_entries = 0;
 	dict_atom->num_entries_allocated = CON_DEFAULT_DICT_NUM_ENTRIES_ALLOCATED;
 }

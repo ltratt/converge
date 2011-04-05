@@ -756,11 +756,6 @@ int main()
 AC_CHECK_FUNC(realpath, [], [AC_SUBST(PLATFORM_REALPATH, Platform/MinGW/realpath.o)])
 
 
-# bzero
-
-AC_CHECK_FUNC(bzero, [], [AC_SUBST(PLATFORM_BZERO, Platform/bzero.o)])
-
-
 # setenv
 
 AH_TEMPLATE(CON_HAVE_SETENV,

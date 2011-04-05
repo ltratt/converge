@@ -92,12 +92,12 @@ Con_Obj *Con_Bootstrap_do(u_char *c_stack_start, int argc, char **argv, char *vm
 	Con_Obj *bootstrap_vm = malloc(sizeof(Con_Obj) + sizeof(Con_Builtins_VM_Atom));
 	if (bootstrap_vm == NULL)
 		return NULL;
-	bzero(bootstrap_vm, sizeof(Con_Obj) + sizeof(Con_Builtins_VM_Atom));
+	memset(bootstrap_vm, 0, sizeof(Con_Obj) + sizeof(Con_Builtins_VM_Atom));
 
 	Con_Obj *bootstrap_thread = malloc(sizeof(Con_Obj) + sizeof(Con_Builtins_Thread_Atom));
 	if (bootstrap_thread == NULL)
 		return NULL;
-	bzero(bootstrap_thread, sizeof(Con_Obj) + sizeof(Con_Builtins_Thread_Atom));	
+	memset(bootstrap_thread, 0, sizeof(Con_Obj) + sizeof(Con_Builtins_Thread_Atom));	
 	
 	Con_Builtins_Thread_Atom *bootstrap_thread_atom = (Con_Builtins_Thread_Atom *) bootstrap_thread->first_atom;
 	bootstrap_thread_atom->vm = bootstrap_vm;

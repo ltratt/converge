@@ -21,9 +21,11 @@
 
 #include "Config.h"
 
+#ifdef CON_HAVE_CURSES
 #include <curses.h>
-#include <string.h>
 #include <term.h>
+#endif
+#include <string.h>
 #include <unistd.h>
 
 #include "Core.h"
@@ -103,6 +105,7 @@ Con_Obj *_Con_Module_Curses_setupterm_func(Con_Obj *thread)
 	Con_Obj *term_obj, *file_obj;
 	CON_UNPACK_ARGS(";sO", &term_obj, &file_obj);
 
+#ifdef CON_HAVE_CURSES
     char *term = NULL;
     if (!(term_obj == NULL || term_obj == CON_BUILTIN(CON_BUILTIN_NULL_OBJ)))
         CON_XXX;
@@ -134,6 +137,12 @@ Con_Obj *_Con_Module_Curses_setupterm_func(Con_Obj *thread)
     }
 
     return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
+#else
+    Con_Obj *msg = CON_NEW_STRING("Curses library not available.");
+    Con_Obj *curses_exception = CON_GET_MOD_DEFN(curses_mod, "Curses_Exception");
+    Con_Obj *exception = CON_GET_SLOT_APPLY(curses_exception, "new", msg);
+    Con_Builtins_VM_Atom_raise(thread, exception);
+#endif
 }
 
 
@@ -149,6 +158,7 @@ Con_Obj *_Con_Module_Curses_tigetstr_func(Con_Obj *thread)
 	Con_Obj *capname_obj;
 	CON_UNPACK_ARGS("S", &capname_obj);
 
+#ifdef CON_HAVE_CURSES
     char *capname = Con_Builtins_String_Atom_to_c_string(thread, capname_obj);
     
     char *rtn = tigetstr(capname);
@@ -163,4 +173,10 @@ Con_Obj *_Con_Module_Curses_tigetstr_func(Con_Obj *thread)
     }
 
     return Con_Builtins_String_Atom_new_copy(thread, (u_char *) rtn, strlen(rtn), CON_STR_UTF_8);
+#else
+    Con_Obj *msg = CON_NEW_STRING("Curses library not available.");
+    Con_Obj *curses_exception = CON_GET_MOD_DEFN(curses_mod, "Curses_Exception");
+    Con_Obj *exception = CON_GET_SLOT_APPLY(curses_exception, "new", msg);
+    Con_Builtins_VM_Atom_raise(thread, exception);
+#endif
 }

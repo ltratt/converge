@@ -412,9 +412,13 @@ fi
 
 # curses / ncurses
 
+AH_TEMPLATE(CON_HAVE_CURSES,
+  [Define if you have a curses library available.])
+
 AC_CHECK_LIB(curses, setupterm,
-  [extra_libs="$extra_libs -lcurses"],
-  [AC_MSG_ERROR([Can't find curses library])])
+  [AC_DEFINE(CON_HAVE_CURSES)
+  extra_libs="$extra_libs -lcurses"],
+  [])
 
 
 # Pull it all together

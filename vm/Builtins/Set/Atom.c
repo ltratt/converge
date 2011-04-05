@@ -95,7 +95,7 @@ Con_Obj *Con_Builtins_Set_Atom_new_sized(Con_Obj *thread, Con_Int num_entries)
 	set_atom->atom_type = CON_BUILTIN(CON_BUILTIN_SET_ATOM_DEF_OBJECT);
 	
 	Con_Int num_entries_allocated = num_entries + num_entries / 4 + 1 > CON_DEFAULT_SET_NUM_ENTRIES_ALLOCATED ? num_entries + num_entries / 4 + 1 : CON_DEFAULT_SET_NUM_ENTRIES_ALLOCATED;
-	set_atom->entries = Con_Memory_malloc(thread, sizeof(Con_Builtins_Set_Atom_Entry) * num_entries_allocated, CON_MEMORY_CHUNK_CONSERVATIVE);
+	set_atom->entries = Con_Memory_malloc(thread, sizeof(Con_Builtins_Set_Atom_Entry) * num_entries_allocated, CON_MEMORY_CHUNK_OPAQUE);
 	for (Con_Int i = 0; i < num_entries_allocated; i += 1)
 		set_atom->entries[i].obj = NULL;
 	set_atom->num_entries = 0;
@@ -126,7 +126,7 @@ Con_Obj *Con_Builtins_Set_Atom_new_from_con_stack(Con_Obj *thread, Con_Obj *con_
 	set_atom->atom_type = CON_BUILTIN(CON_BUILTIN_SET_ATOM_DEF_OBJECT);
 	
 	Con_Int num_entries_allocated = num_entries + num_entries / 4 + 1 > CON_DEFAULT_SET_NUM_ENTRIES_ALLOCATED ? num_entries + num_entries / 4 + 1 : CON_DEFAULT_SET_NUM_ENTRIES_ALLOCATED;
-	set_atom->entries = Con_Memory_malloc(thread, sizeof(Con_Builtins_Set_Atom_Entry) * num_entries_allocated, CON_MEMORY_CHUNK_CONSERVATIVE);
+	set_atom->entries = Con_Memory_malloc(thread, sizeof(Con_Builtins_Set_Atom_Entry) * num_entries_allocated, CON_MEMORY_CHUNK_OPAQUE);
 	for (Con_Int i = 0; i < num_entries_allocated; i += 1)
 		set_atom->entries[i].obj = NULL;
 	set_atom->num_entries = 0;

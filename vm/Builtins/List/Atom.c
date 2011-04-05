@@ -123,14 +123,15 @@ Con_Obj *Con_Builtins_List_Atom_new_from_con_stack(Con_Obj *thread, Con_Obj *con
 
 	list_atom->atom_type = CON_BUILTIN(CON_BUILTIN_LIST_ATOM_DEF_OBJECT);
 	Con_Int num_entries_allocated = num_entries > CON_DEFAULT_LIST_NUM_ENTRIES_ALLOCATED ? num_entries : CON_DEFAULT_LIST_NUM_ENTRIES_ALLOCATED;
-	list_atom->entries = (Con_Obj **) Con_Memory_malloc(thread, sizeof(Con_Obj *) * num_entries_allocated, CON_MEMORY_CHUNK_CONSERVATIVE);
-	list_atom->num_entries = num_entries;
+	list_atom->entries = (Con_Obj **) Con_Memory_malloc(thread, sizeof(Con_Obj *) * num_entries_allocated, CON_MEMORY_CHUNK_OPAQUE);
+	list_atom->num_entries = 0;
 	list_atom->num_entries_allocated = num_entries_allocated;
 
 	CON_MUTEX_LOCK(&con_stack->mutex);
 	for (Con_Int i = 0; i < num_entries; i += 1) {
 		// Notice we're poping elements off the stack in reverse order.
 		list_atom->entries[num_entries - i - 1] = Con_Builtins_Con_Stack_Atom_pop_object(thread, con_stack);
+    	list_atom->num_entries += 1;
 	}
 	CON_MUTEX_UNLOCK(&con_stack->mutex);
 

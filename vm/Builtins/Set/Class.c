@@ -609,7 +609,7 @@ Con_Obj *_Con_Builtins_Set_Class_scopy_func(Con_Obj *thread)
 	
 	CON_MUTEX_LOCK(&self->mutex);
 	
-	new_set_atom->entries = Con_Memory_malloc_no_gc(thread, self_set_atom->num_entries_allocated * sizeof(Con_Builtins_Set_Atom_Entry), CON_MEMORY_CHUNK_CONSERVATIVE);
+	new_set_atom->entries = Con_Memory_malloc_no_gc(thread, self_set_atom->num_entries_allocated * sizeof(Con_Builtins_Set_Atom_Entry), CON_MEMORY_CHUNK_OPAQUE);
 	if (new_set_atom->entries == NULL)
 		CON_XXX;
 	new_set_atom->num_entries = self_set_atom->num_entries;

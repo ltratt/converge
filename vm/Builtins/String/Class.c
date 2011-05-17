@@ -334,7 +334,7 @@ Con_Obj *_Con_Builtins_String_Class_find_func(Con_Obj *thread)
 		CON_XXX;
 	
 	Con_Int i = 0;
-	while (i + o_string_atom->size < self_string_atom->size) {
+	while (i + o_string_atom->size <= self_string_atom->size) {
 		if (memcmp(self_string_atom->str + i, o_string_atom->str, o_string_atom->size) == 0)
 			CON_YIELD(o_obj);
 		
@@ -362,7 +362,7 @@ Con_Obj *_Con_Builtins_String_Class_find_index_func(Con_Obj *thread)
 		CON_XXX;
 	
 	Con_Int i = 0;
-	while (i + o_string_atom->size < self_string_atom->size) {
+	while (i + o_string_atom->size <= self_string_atom->size) {
 		if (memcmp(self_string_atom->str + i, o_string_atom->str, o_string_atom->size) == 0)
 			CON_YIELD(CON_NEW_INT(i));
 		

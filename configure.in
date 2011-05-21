@@ -390,7 +390,7 @@ if [[ "$xml2_config" = "fail" ]]; then
 fi
 extra_cflags="$extra_cflags `$xml2_config --cflags`"
 if [[ $static_link -eq 1 ]]; then
-	# Statically link libXML2 on MinGW
+	# Statically link libXML2
 	AC_MSG_CHECKING([location of libxml2.a])
 	libxml2_a=""
 	for dir in `xml2-config --libs | tr " " "\n" | grep "^-L" | sort -u | sed "s/^-L//"` ; do
@@ -404,7 +404,26 @@ if [[ $static_link -eq 1 ]]; then
 		AC_MSG_ERROR([unable to find libxml2.a.])
 	fi
 	AC_MSG_RESULT($libxml2_a)
-	extra_libs="$extra_libs $libxml2_a `$xml2_config --libs | sed 's/-lxml2//'`"
+    case $operating_system in
+		MINGW*)
+	        # Statically link libiconv (which libXML2 needs and Windows doesn't provide)
+	        AC_MSG_CHECKING([location of libiconv.a])
+	        libiconv_a=""
+	        for dir in /mingw/lib/ ; do
+		        cnd=$dir/libiconv.a
+		        if [[ -f $cnd ]]; then
+			        libiconv_a=$cnd
+			        break
+		        fi
+	        done
+	        if [[ "$libiconv_a" = "" ]]; then
+		        AC_MSG_ERROR([unable to find libiconv.a.])
+	        fi
+	        AC_MSG_RESULT($libiconv_a)
+            extra_libs="$extra_libs"
+           	extra_libs="$extra_libs $libxml2_a `$xml2_config --libs | sed 's/-lxml2//;s/-liconv//'` $libiconv_a";;
+		*) 	extra_libs="$extra_libs $libxml2_a `$xml2_config --libs | sed 's/-lxml2//'`";;
+	esac
 else
 	extra_libs="$extra_libs `$xml2_config --libs`"
 fi

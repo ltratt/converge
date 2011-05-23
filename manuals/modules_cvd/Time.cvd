@@ -1,0 +1,14 @@
+<module name="Time">
+<h3>Time objects</h3>
+
+<class name="Instant">
+Denotes a specific instant in time.
+
+<function name="Instant.new">
+<argument name="sec" type="Integer" />
+<argument name="nsec" type="Integer" />
+Creates a new time instant <code>sec</code> seconds + <code>nsec</code> nanoseconds since the local epoch.
+</function>
+</class>
+
+</module>

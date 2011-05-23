@@ -56,6 +56,7 @@ is_dir := POSIX_File::is_dir
 is_file := POSIX_File::is_file
 mtime := POSIX_File::mtime
 rm := POSIX_File::rm
+temp_file := POSIX_File::temp_file
 
 
 

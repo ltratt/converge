@@ -66,9 +66,11 @@ typedef struct {
 	CON_ATOM_HEAD
 	
 	FILE *file;
+    Con_Obj *path;
 } _Con_Module_POSIX_File_Atom;
 
-void __Con_Module_POSIX_File_Atom_gc_clean_up(Con_Obj *, Con_Obj *, Con_Atom *);
+void _Con_Module_POSIX_File_Atom_gc_clean_up(Con_Obj *, Con_Obj *, Con_Atom *);
+void _Con_Module_POSIX_File_Atom_gc_scan(Con_Obj *, Con_Obj *, Con_Atom *);
 
 void _Con_Module_POSIX_File_error(Con_Obj *, Con_Obj *, int);
 void _Con_Module_POSIX_File_error_no_path(Con_Obj *, int);
@@ -78,6 +80,7 @@ Con_Obj *Con_Module_POSIX_File_Module_import(Con_Obj *thread, Con_Obj *);
 
 Con_Obj *_Con_Module_POSIX_File_File_new_func(Con_Obj *);
 
+Con_Obj *_Con_Module_POSIX_File_File_Class_get_slot_func(Con_Obj *);
 Con_Obj *_Con_Module_POSIX_File_File_Class_close_func(Con_Obj *);
 Con_Obj *_Con_Module_POSIX_File_File_Class_fileno_func(Con_Obj *);
 Con_Obj *_Con_Module_POSIX_File_File_Class_flush_func(Con_Obj *);
@@ -96,12 +99,13 @@ Con_Obj *_Con_Module_POSIX_File_is_file_func(Con_Obj *);
 Con_Obj *_Con_Module_POSIX_File_iter_dir_entries_func(Con_Obj *);
 Con_Obj *_Con_Module_POSIX_File_mtime_func(Con_Obj *);
 Con_Obj *_Con_Module_POSIX_File_rm_func(Con_Obj *);
+Con_Obj *_Con_Module_POSIX_File_temp_file_func(Con_Obj *);
 
 
 
 Con_Obj *Con_Module_POSIX_File_init(Con_Obj *thread, Con_Obj *identifier)
 {
-	const char* defn_names[] = {"DIR_SEP", "EXT_SEP", "NULL_DEV", "File_Atom_Def", "File", "canon_path", "exists", "is_dir", "is_file", "chmod", "rdmod", "iter_dir_entries", "mtime", "rm", NULL};
+	const char* defn_names[] = {"DIR_SEP", "EXT_SEP", "NULL_DEV", "File_Atom_Def", "File", "canon_path", "exists", "is_dir", "is_file", "chmod", "rdmod", "iter_dir_entries", "mtime", "rm", "temp_file", NULL};
 
 	return Con_Builtins_Module_Atom_new_c(thread, identifier, CON_NEW_STRING("POSIX_File"), defn_names, CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
 }
@@ -118,13 +122,14 @@ Con_Obj *Con_Module_POSIX_File_import(Con_Obj *thread, Con_Obj *posix_file_mod)
 
 	// File_Atom_Def
 	
-	CON_SET_MOD_DEFN(posix_file_mod, "File_Atom_Def", Con_Builtins_Atom_Def_Atom_new(thread, NULL, __Con_Module_POSIX_File_Atom_gc_clean_up));
+	CON_SET_MOD_DEFN(posix_file_mod, "File_Atom_Def", Con_Builtins_Atom_Def_Atom_new(thread, _Con_Module_POSIX_File_Atom_gc_scan, _Con_Module_POSIX_File_Atom_gc_clean_up));
 	
 	// POSIX_File.File
 	
 	Con_Obj *file_class = CON_GET_SLOT_APPLY(CON_BUILTIN(CON_BUILTIN_CLASS_CLASS), "new", CON_NEW_STRING("File"), Con_Builtins_List_Atom_new_va(thread, CON_BUILTIN(CON_BUILTIN_OBJECT_CLASS), NULL), posix_file_mod, CON_NEW_UNBOUND_C_FUNC(_Con_Module_POSIX_File_File_new_func, "File_new", posix_file_mod));
 	CON_SET_MOD_DEFN(posix_file_mod, "File", file_class);
 	
+    CON_SET_FIELD(file_class, "get_slot", CON_NEW_BOUND_C_FUNC(_Con_Module_POSIX_File_File_Class_get_slot_func, "get_slot", posix_file_mod, file_class));
 	CON_SET_FIELD(file_class, "close", CON_NEW_BOUND_C_FUNC(_Con_Module_POSIX_File_File_Class_close_func, "close", posix_file_mod, file_class));
 	CON_SET_FIELD(file_class, "fileno", CON_NEW_BOUND_C_FUNC(_Con_Module_POSIX_File_File_Class_fileno_func, "fileno", posix_file_mod, file_class));
 	CON_SET_FIELD(file_class, "flush", CON_NEW_BOUND_C_FUNC(_Con_Module_POSIX_File_File_Class_flush_func, "flush", posix_file_mod, file_class));
@@ -145,6 +150,7 @@ Con_Obj *Con_Module_POSIX_File_import(Con_Obj *thread, Con_Obj *posix_file_mod)
 	CON_SET_MOD_DEFN(posix_file_mod, "iter_dir_entries", CON_NEW_UNBOUND_C_FUNC(_Con_Module_POSIX_File_iter_dir_entries_func, "iter_dir_entries", posix_file_mod));
 	CON_SET_MOD_DEFN(posix_file_mod, "mtime", CON_NEW_UNBOUND_C_FUNC(_Con_Module_POSIX_File_mtime_func, "mtime", posix_file_mod));
 	CON_SET_MOD_DEFN(posix_file_mod, "rm", CON_NEW_UNBOUND_C_FUNC(_Con_Module_POSIX_File_rm_func, "rm", posix_file_mod));
+	CON_SET_MOD_DEFN(posix_file_mod, "temp_file", CON_NEW_UNBOUND_C_FUNC(_Con_Module_POSIX_File_temp_file_func, "temp_file", posix_file_mod));
 	
 	return posix_file_mod;
 }
@@ -155,7 +161,16 @@ Con_Obj *Con_Module_POSIX_File_import(Con_Obj *thread, Con_Obj *posix_file_mod)
 // Garbage collection
 //
 
-void __Con_Module_POSIX_File_Atom_gc_clean_up(Con_Obj *thread, Con_Obj *obj, Con_Atom *atom)
+void _Con_Module_POSIX_File_Atom_gc_scan(Con_Obj *thread, Con_Obj *obj, Con_Atom *atom)
+{
+	_Con_Module_POSIX_File_Atom *file_atom = (_Con_Module_POSIX_File_Atom *) atom;
+
+    Con_Memory_gc_push(thread, file_atom->path);
+}
+
+
+
+void _Con_Module_POSIX_File_Atom_gc_clean_up(Con_Obj *thread, Con_Obj *obj, Con_Atom *atom)
 {
 	_Con_Module_POSIX_File_Atom *file_atom = (_Con_Module_POSIX_File_Atom *) atom;
 
@@ -226,10 +241,12 @@ Con_Obj *_Con_Module_POSIX_File_File_new_func(Con_Obj *thread)
 #	endif
 
 	if (atom->atom_type == CON_BUILTIN(CON_BUILTIN_INT_ATOM_DEF_OBJECT)) {
+        file_atom->path = CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 		if ((file_atom->file = fdopen(Con_Numbers_Number_to_c_Int(thread, path_obj), mode)) == NULL)
 			CON_XXX;
 	}
 	else {
+        file_atom->path = path_obj;
 		if ((file_atom->file = fopen(Con_Builtins_String_Atom_to_c_string(thread, path_obj), mode)) == NULL) {
 			_Con_Module_POSIX_File_error(thread, path_obj, errno);
 		}
@@ -240,6 +257,31 @@ Con_Obj *_Con_Module_POSIX_File_File_new_func(Con_Obj *thread)
 	Con_Memory_change_chunk_type(thread, new_file, CON_MEMORY_CHUNK_OBJ);
 	
 	return new_file;
+}
+
+
+
+//
+// get_slot(name)
+//
+
+Con_Obj *_Con_Module_POSIX_File_File_Class_get_slot_func(Con_Obj *thread)
+{
+	Con_Obj *file_atom_def = CON_GET_MOD_DEFN(Con_Builtins_VM_Atom_get_functions_module(thread), "File_Atom_Def");
+
+	Con_Obj *self_obj, *slot_name;
+	CON_UNPACK_ARGS("US", file_atom_def, &self_obj, &slot_name);
+	
+    _Con_Module_POSIX_File_Atom *file_atom = CON_GET_ATOM(self_obj, file_atom_def);
+
+	if (CON_C_STRING_EQ("path", slot_name)) {
+		CON_MUTEX_LOCK(&self_obj->mutex);
+		Con_Obj *p = file_atom->path;
+		CON_MUTEX_UNLOCK(&self_obj->mutex);
+		return p;
+	}
+	else
+		return CON_APPLY(CON_EXBI(CON_BUILTIN(CON_BUILTIN_OBJECT_CLASS), "get_slot", self_obj), slot_name);
 }
 
 
@@ -702,4 +744,29 @@ Con_Obj *_Con_Module_POSIX_File_rm_func(Con_Obj *thread)
 	}	
 	
 	return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
+}
+
+
+
+//
+// 'temp_file()' returns a read / write File object in a temporary location. The file is not deleted
+// upon closing the file and must be manually discarded.
+//
+
+Con_Obj *_Con_Module_POSIX_File_temp_file_func(Con_Obj *thread)
+{
+    CON_UNPACK_ARGS("");
+
+    Con_Obj *posix_mod = Con_Builtins_VM_Atom_get_functions_module(thread);
+    
+    char tfn[20];
+    strlcpy(tfn, "/tmp/tmp.XXXXXXXXXX", sizeof(tfn));
+    int fd;
+    if ((fd = mkstemp(tfn)) == -1)
+        CON_RAISE_EXCEPTION("File_Exception", CON_NEW_STRING("Unable to create temporary file"));
+    
+    Con_Obj *filec = CON_GET_MOD_DEFN(posix_mod, "File");
+    Con_Obj *p = Con_Builtins_String_Atom_new_copy(thread, tfn, strlen(tfn), CON_STR_UTF_8);
+
+    return CON_GET_SLOT_APPLY(filec, "new", p, CON_NEW_STRING("w+"));
 }

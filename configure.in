@@ -821,6 +821,14 @@ AH_TEMPLATE(CON_NEED_ENDIAN_H,
 AC_CHECK_DECL(letoh32 letoh64 htobe16 htobe32 htobe64 betoh16 betoh32 betoh64 , [], [AC_DEFINE(CON_NEED_ENDIAN_H)])
 
 
+# mkstemp
+
+AH_TEMPLATE(CON_HAVE_MKSTEMP,
+  [Define if your platform has the mkstemp function.])
+
+AC_CHECK_FUNC(mkstemp, [AC_DEFINE(CON_HAVE_MKSTEMP)])
+
+
 ####################################################################################################
 # C compiler
 #

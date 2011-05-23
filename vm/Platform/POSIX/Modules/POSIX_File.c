@@ -759,14 +759,26 @@ Con_Obj *_Con_Module_POSIX_File_temp_file_func(Con_Obj *thread)
 
     Con_Obj *posix_mod = Con_Builtins_VM_Atom_get_functions_module(thread);
     
+#ifdef CON_HAVE_MKSTEMP
     char tfn[20];
     strlcpy(tfn, "/tmp/tmp.XXXXXXXXXX", sizeof(tfn));
     int fd;
     if ((fd = mkstemp(tfn)) == -1)
-        CON_RAISE_EXCEPTION("File_Exception", CON_NEW_STRING("Unable to create temporary file"));
+        goto err;
+
+    Con_Obj *p = Con_Builtins_String_Atom_new_copy(thread, tfn, strlen(tfn), CON_STR_UTF_8);
+#else
+    char *pc = tmpnam(NULL);
+    if (pc == NULL)
+        goto err;
+    Con_Obj *p = Con_Builtins_String_Atom_new_copy(thread, pc, strlen(pc), CON_STR_UTF_8);
+#endif
+        
     
     Con_Obj *filec = CON_GET_MOD_DEFN(posix_mod, "File");
-    Con_Obj *p = Con_Builtins_String_Atom_new_copy(thread, tfn, strlen(tfn), CON_STR_UTF_8);
 
     return CON_GET_SLOT_APPLY(filec, "new", p, CON_NEW_STRING("w+"));
+
+err:
+    CON_RAISE_EXCEPTION("File_Exception", CON_NEW_STRING("Unable to create temporary file"));
 }

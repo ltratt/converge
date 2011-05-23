@@ -11,10 +11,22 @@ following suppression file:
 
 {
   conservative_garbage_collector_may_read_uninitialized_values2
+  Memcheck:Value4
+  fun:Con_Memory_gc_scan_conservative
+}
+
+{
+  conservative_garbage_collector_may_read_uninitialized_values3
   Memcheck:Cond
   fun:Con_Memory_gc_push_ptr
 }
 
+{
+  stack_swapping_may_read_uninitialized_values1
+  Memcheck:Addr1
+  fun:memmove
+  fun:Con_Builtins_VM_Atom_yield
+}
 
 If you spot any genuine bugs using Valgrind please report them using the normal
 channels.

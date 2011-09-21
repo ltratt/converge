@@ -5,11 +5,8 @@ AC_INIT([converge], CONVERGE_VERSION)
 #   converge_version=0.7
 #   converge_date=2006/01/04
 
-#converge_version=current
-#converge_date=`date '+%Y/%m/%d %H:%M:%S'`
-
-converge_version=1.2
-converge_date=2011/05/29
+converge_version=current
+converge_date=`date '+%Y/%m/%d %H:%M:%S'`
 
 
 ####################################################################################################

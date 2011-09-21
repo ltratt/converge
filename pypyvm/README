@@ -1,0 +1,28 @@
+This directory contains an experimental PyPy VM for Converge. At least
+initially, this is meant to be 100% backwards compatible with the C Converge
+VM. Currently it is extremely incomplete and can only run toy examples. It
+is likely that this VM will change rapidly as a better understanding of the
+best way to do this is gained.
+
+You first need to download the PyPy source distribution from
+<http://pypy.org/download.html> (note that you do not need to build PyPy -
+simply unpacking it is sufficient). You then need to define the PYPY_SRC
+variable to point to the top-level pypy source directory. e.g. to perform
+these steps in ~tmp do:
+
+  $ cd ~
+  $ mkdir -p tmp
+  $ cd tmp
+  $ hg clone https://bitbucket.org/pypy/pypy
+  $ export PYPY_SRC=~/tmp/pypy
+
+You can then either run the VM directly:
+
+  $ python main.py <converge binary file>
+
+Or translate it using PyPy:
+
+  $ python $PYPY_SRC/pypy/translator/goal/translate.py --continuation --opt=0 main.py
+  $ ./main-c <converge binary file>
+
+All optimisation levels up to and including --opt=jit should work.

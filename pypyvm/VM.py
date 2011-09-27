@@ -32,7 +32,13 @@ import Builtins, Modules, Target
 
 class Return_Exception(Exception): pass
 
-jitdriver = jit.JitDriver(greens=["bc_off", "mod_bc"], reds=["cf", "pc", "self"])
+def get_printable_location(bc_off, mod_bc, pc):
+    instr = Target.read_word(mod_bc, bc_off)
+    it = Target.get_instr(instr)
+    return "%s:%s at offset %s. bytecode: %s" % (pc.mod.name, pc.off, bc_off, it)
+
+jitdriver = jit.JitDriver(greens=["bc_off", "mod_bc", "pc"], reds=["cf", "self"],
+                          get_printable_location=get_printable_location)
 
 
 class VM(object):

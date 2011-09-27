@@ -97,11 +97,35 @@ class VM(object):
         return o, cf.closure[-1]
 
 
-    def _apply_pump(self):
-        ct = self.st.new(switch_hack)
-        self.st.destroy(ct)
-        o = self.stack.pop()
-        self._remove_continuation_frame()
+    def _apply_pump(self, remove_generator_frames=False):
+	    # At this point, we're in one of two situations:
+	    #
+	    #   1) A generator frame has been added but not yet used. So the con stack looks like:
+	    #        [..., <generator frame>, <continuation frame>, <argument objects>]
+	    #
+	    #   2) We need to resume a previous generator. The con stack looks like:
+	    #        [..., <generator frame>, <random objects>]
+	    #
+	    # Fortunately there's an easy way to distinguish the two: if the current continuation on the
+	    # stack has a generator frame we're in situation #2, otherwise we're in situation #1.
+
+        cf = self.stack[self.cfp]
+        assert isinstance(cf, Stack_Continuation_Frame)
+
+        if cf.gfp == -1:
+            # We're in case 1) from above.
+            ct = self.st.new(switch_hack)
+            o = self.stack.pop()
+            if cf.returned:
+                self._remove_continuation_frame()
+                self._remove_generator_frame()
+        else:
+            # We're in case 2) from above.
+            raise Exception("XXX")
+        
+        if o is None:
+            raise Exception("XXX")
+
         return o
 
 
@@ -135,6 +159,7 @@ class VM(object):
                 
         cf = self.stack[self.cfp]
         assert isinstance(cf, Stack_Continuation_Frame)
+        cf.returned = True
         if cf.ct:
             self.st.switch(cf.ct)
         else:
@@ -274,7 +299,7 @@ class VM(object):
         num_args = Target.unpack_apply(instr)
 
         if is_fail_up:
-            self._add_continuation_frame(num_args, cf.bc_off + Target.INTSIZE)
+            self._add_continuation_frame(num_args, True, cf.bc_off + Target.INTSIZE)
             o = self._apply_pump()
             if o is None:
                 raise Exception("XXX")
@@ -417,8 +442,18 @@ class VM(object):
     # Stack operations
     #
 
-    def _add_continuation_frame(self, num_args, resumption_bc_off = -1):
+    def _add_continuation_frame(self, num_args, resumable = False, resume_bc_off = -1):
         fp = len(self.stack) - 1 - num_args
+        assert fp >= 0
+        if resumable and resume_bc_off != -1:
+            assert self.cfp > -1 # Generator frames can't "live" outside a continuation frame
+            old_cf = self.stack[self.cfp]
+            assert isinstance(old_cf, Stack_Continuation_Frame)
+            gf = Stack_Generator_Frame(old_cf.gfp, resume_bc_off)
+            self.stack.insert(fp, gf)
+            old_cf.gfp = fp
+            fp += 1
+
         f = self.stack[fp]
         if not isinstance(f, Builtins.Con_Func):
             raise Exception("XXX")
@@ -434,7 +469,7 @@ class VM(object):
         else:
             closure = [[None] * f.num_vars]
 
-        cf = Stack_Continuation_Frame(self.cfp, self.ffp, f, pc, bc_off, closure, resumption_bc_off)
+        cf = Stack_Continuation_Frame(self.cfp, self.ffp, f, pc, bc_off, closure, resumable)
 
         self.cfp = fp
         self.stack[fp] = cf
@@ -451,6 +486,19 @@ class VM(object):
         self.cfp = cf.prev_cfp
         del self.stack[old_cfp:]
         self.ffp = cf.prev_ffp
+
+
+    def _remove_generator_frame(self):
+        cf = self.stack[self.cfp]
+        assert isinstance(cf, Stack_Continuation_Frame)
+        
+        gf = self.stack[cf.gfp]
+        assert isinstance(gf, Stack_Generator_Frame)
+        cf.gfp = gf.prev_gfp
+        
+        i = cf.gfp
+        assert i > 0
+        del self.stack[i:]
 
 
     def _add_failure_frame(self, is_fail_up, new_off=-1):
@@ -497,7 +545,11 @@ class VM(object):
         while 1:
             is_fail_up, fail_to_off = self._read_failure_frame()
             if is_fail_up:
-                raise Exception("XXX")
+                if cf.gfp > -1:
+                    raise Exception("XXX")
+                else:
+                    self._remove_failure_frame()
+                    cf.bc_off = fail_to_off
             else:
                 cf.bc_off = fail_to_off
                 self._remove_failure_frame()
@@ -514,17 +566,18 @@ def new_vm():
 
 class Stack_Continuation_Frame(Con_Thingy):
     __slots__ = ("prev_cfp", "prev_ffp", "func", "pc", "bc_off", "closure", "ct", "gfp", "xfp",
-      "resumption_bc_off")
-    _immutable_fields_ = ("prev_cfp", "prev_ffp", "closure", "pc", "resumption_bc_off")
+      "resumable", "returned")
+    _immutable_fields_ = ("prev_cfp", "prev_ffp", "closure", "pc", "resumable")
 
-    def __init__(self, prev_cfp, prev_ffp, func, pc, bc_off, closure, resumption_bc_off):
+    def __init__(self, prev_cfp, prev_ffp, func, pc, bc_off, closure, resumable):
         self.prev_cfp = prev_cfp
         self.prev_ffp = prev_ffp
         self.func = func
         self.pc = pc
         self.bc_off = bc_off # -1 for Py modules
         self.closure = closure
-        self.resumption_bc_off = resumption_bc_off
+        self.resumable = resumable
+        self.returned = False
 
         self.gfp = self.xfp = -1
 
@@ -534,7 +587,13 @@ class Stack_Failure_Frame(Con_Thingy):
 
 
 class Stack_Generator_Frame(Con_Thingy):
-    pass
+    __slots__ = ("prev_gfp", "resume_bc_off", "returned")
+    _immutable_fields_ = ("prev_gfp", "resume_bc_off")
+    
+    def __init__(self, prev_gfp, resume_bc_off):
+        self.prev_gfp = prev_gfp
+        self.resume_bc_off = resume_bc_off
+        self.returned = True
 
 
 def switch_hack(ct, arg):

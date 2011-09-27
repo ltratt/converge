@@ -306,7 +306,6 @@ class Con_Int(Con_Unboxed_Object):
     def __init__(self, v):
         self.v = v
 
-    @elidable    
     def eq(self, vm, o):
         if not isinstance(o, Con_Int):
             raise Exception("XXX")
@@ -314,7 +313,6 @@ class Con_Int(Con_Unboxed_Object):
             return self.v == o.v
 
 
-    @elidable
     def gt(self, vm, o):
         if not isinstance(o, Con_Int):
             raise Exception("XXX")
@@ -322,7 +320,6 @@ class Con_Int(Con_Unboxed_Object):
             return self.v > o.v
 
 
-    @elidable
     def sub(self, vm, o):
         if not isinstance(o, Con_Int):
             raise Exception("XXX")

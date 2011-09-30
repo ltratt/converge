@@ -200,9 +200,9 @@ class Con_Module(Con_Boxed_Object):
             return
         
         if self.is_bc:
-            v, self.closure = vm.apply_closure(self.init_func, self)
+            v, self.closure = vm.apply_closure(self.init_func, [self])
         else:
-            v = vm.apply(self.init_func, self)
+            v = vm.apply(self.init_func, [self])
         self.initialized = True
         return
 

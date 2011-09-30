@@ -20,7 +20,7 @@
 
 
 from pypy.config.pypyoption import get_pypy_config
-from pypy.rlib import jit
+from pypy.rlib import debug, jit
 from pypy.rlib.rstacklet import StackletThread
 from pypy.rpython.lltypesystem import lltype, llmemory, rffi
 
@@ -29,32 +29,25 @@ import Builtins, Modules, Target
 
 
 
-
 class Return_Exception(Exception): pass
 
 def get_printable_location(bc_off, mod_bc, pc):
     instr = Target.read_word(mod_bc, bc_off)
     it = Target.get_instr(instr)
-    return "%s:%s at offset %s. bytecode: %s" % (pc.mod.name, pc.off, bc_off, it)
+    return "%s:%s at offset %s. bytecode: %s" % (pc.mod.name, pc.off, bc_off, Target.INSTR_NAMES[it])
 
 jitdriver = jit.JitDriver(greens=["bc_off", "mod_bc", "pc"], reds=["cf", "self"],
                           get_printable_location=get_printable_location)
 
 
 class VM(object):
-    __slots__ = ("builtins", "cfp", "ff_stack", "ffp", "mods", "pypy_config", "st", "stack")
-    _immutable_fields = ("builtins", "mods", "stack", "ff_stack")
+    __slots__ = ("builtins", "cf_stack", "mods", "pypy_config", "st")
+    _immutable_fields = ("builtins", "cf_stack", "mods")
 
     def __init__(self): 
         self.builtins = [None] * Builtins.NUM_BUILTINS
         self.mods = {}
-        self.stack = []
-        # Failure frames are a real nusciance in an Icon-based system. We take the general idea
-        # from the "Experiences with an Icon-like Expression Evaluation System" paper and try
-        # to avoid continually putting these on the main stack.
-        self.ff_stack = []
-        self.ffp = -1
-        self.cfp = -1
+        self.cf_stack = []
         self.pypy_config = None
 
 
@@ -76,31 +69,27 @@ class VM(object):
         return m
 
 
-    def apply(self, f, *args):
-        o, _ = self.apply_closure(f, *args)
+    def apply(self, func, args=None):
+        o, _ = self.apply_closure(func, args)
         return o
 
 
     @jit.unroll_safe
-    def apply_closure(self, f, *args):
-        self.stack.append(f)
-        for a in list(args):
-            self.stack.append(a)
+    def apply_closure(self, func, args=None):
+        if args is None: args = []
+    
+        cf = self._add_continuation_frame(func)
+        self._cf_stack_extend(cf, list(args))
+        self._cf_stack_append(cf, Builtins.new_con_int(self, len(args)))
 
-        return self._apply_closure_on_stack(len(args))
-        
-        
-    def _apply_closure_on_stack(self, num_args):
-        cf = self._add_continuation_frame(num_args)
         try:
             self.execute(self.st.get_null_handle())
         except Return_Exception:
             pass
         
-        o = self.stack.pop()
         self._remove_continuation_frame()
         
-        return o, cf.closure[-1]
+        return self._cf_stack_pop(cf), cf.closure[-1]
 
 
     def _apply_pump(self, remove_generator_frames=False):
@@ -115,13 +104,12 @@ class VM(object):
 	    # Fortunately there's an easy way to distinguish the two: if the current continuation on the
 	    # stack has a generator frame we're in situation #2, otherwise we're in situation #1.
 
-        cf = self.stack[self.cfp]
-        assert isinstance(cf, Stack_Continuation_Frame)
+        cf = self.cf_stack[-1]
 
         if cf.gfp == -1:
             # We're in case 1) from above.
             ct = self.st.new(switch_hack)
-            o = self.stack.pop()
+            o = self._cf_stack_pop(cf)
             if cf.returned:
                 self._remove_continuation_frame()
                 self._remove_generator_frame()
@@ -137,34 +125,33 @@ class VM(object):
 
     @jit.unroll_safe
     def decode_args(self, as_):
-        np_o = self.stack.pop()
+        cf = self.cf_stack[-1]
+        np_o = self._cf_stack_pop(cf)
         assert isinstance(np_o, Builtins.Con_Int)
         np = np_o.v # Num params
         nrmargs = [] # Normal args
         vargs = [] # Var args
         for i in range(len(as_)):
             if as_[i] == "O":
-                nrmargs.append(self.stack[len(self.stack) - np + i])
+                nrmargs.append(cf.stack[cf.stackpe - np + i])
             elif as_[i] == "v":
                 for j in range(i, np - i):
-                    vargs.append(self.stack[len(self.stack) - np + j])
+                    vargs.append(cf.stack[cf.stackpe - np + j])
                 break
             else:
                raise Exception("XXX")
-        
-        s = len(self.stack) - np
-        assert s > 0
-        del self.stack[s : ]
+
+        for i in range(0, np):
+            cf.stack[cf.stackpe - i - 1] = None
+        cf.stackpe -= np        
         
         return (nrmargs, vargs)
 
 
     def return_(self, obj):
         assert isinstance(obj, Builtins.Con_Object)
-        self.stack.append(obj)
-                
-        cf = self.stack[self.cfp]
-        assert isinstance(cf, Stack_Continuation_Frame)
+        cf = self.cf_stack[-1]
+        self._cf_stack_append(cf, obj)
         cf.returned = True
         if cf.ct:
             self.st.switch(cf.ct)
@@ -173,8 +160,7 @@ class VM(object):
 
 
     def execute(self, ct):
-        cf = self.stack[self.cfp]
-        assert isinstance(cf, Stack_Continuation_Frame)
+        cf = self.cf_stack[-1]
         cf.ct = ct
         pc = cf.pc
         if isinstance(pc, Py_PC):
@@ -187,8 +173,7 @@ class VM(object):
 
 
     def bc_loop(self):
-        cf = self.stack[self.cfp]
-        assert isinstance(cf, Stack_Continuation_Frame)
+        cf = self.cf_stack[-1]
         pc = cf.pc
         assert isinstance(pc, BC_PC)
         mod_bc = pc.mod.bc
@@ -197,7 +182,7 @@ class VM(object):
             jitdriver.jit_merge_point(bc_off=bc_off, mod_bc=mod_bc, cf=cf, pc=pc, self=self)
             instr = Target.read_word(mod_bc, bc_off)
             it = Target.get_instr(instr)
-            #print "%s %s %d [%d %d %d]" % (str(self.stack), Target.INSTR_NAMES[instr & 0xFF], bc_off, self.cfp, self.ffp, cf.xfp)
+            #print "%s %s %d [stackpe:%d ffp:%d gfp:%d xfp:%d]" % (str(cf.stack), Target.INSTR_NAMES[instr & 0xFF], bc_off, cf.stackpe, cf.ffp, cf.gfp, cf.xfp)
             if it == Target.CON_INSTR_VAR_LOOKUP:
                 self._instr_var_lookup(instr, cf)
             elif it == Target.CON_INSTR_VAR_ASSIGN:
@@ -239,7 +224,7 @@ class VM(object):
             elif it == Target.CON_INSTR_CONST_SET:
                 self._instr_const_set(instr, cf)
             elif it == Target.CON_INSTR_BRANCH_IF_NOT_FAIL:
-                if self.stack.pop() is self.builtins[Builtins.BUILTIN_FAIL_OBJ]:
+                if self._cf_stack_pop(cf) is self.builtins[Builtins.BUILTIN_FAIL_OBJ]:
                     cf.bc_off += Target.INTSIZE
                 else:
                     j = Target.unpack_branch_if_not_fail(instr)
@@ -254,7 +239,7 @@ class VM(object):
             elif it == Target.CON_INSTR_MODULE_LOOKUP:
                 self._instr_module_lookup(instr, cf)
             else:
-                print it, self.stack
+                print it, cf.stack
                 raise Exception("XXX")
 
 
@@ -263,18 +248,18 @@ class VM(object):
         v = cf.closure[closure_off - 1][var_num]
         if v is None:
             raise Exception("XXX")
-        self.stack.append(v)
+        self._cf_stack_append(cf, v)
         cf.bc_off += Target.INTSIZE
 
 
     def _instr_var_assign(self, instr, cf):
         closure_off, var_num = Target.unpack_var_assign(instr)
-        cf.closure[len(cf.closure) - 1 - closure_off][var_num] = self.stack[-1]
+        cf.closure[len(cf.closure) - 1 - closure_off][var_num] = cf.stack[cf.stackpe - 1]
         cf.bc_off += Target.INTSIZE
 
 
     def _instr_int(self, instr, cf):
-        self.stack.append(Builtins.new_con_int(self, Target.unpack_int(instr)))
+        self._cf_stack_append(cf, Builtins.new_con_int(self, Target.unpack_int(instr)))
         cf.bc_off += Target.INTSIZE
 
 
@@ -295,23 +280,37 @@ class VM(object):
 
 
     def _instr_pop(self, instr, cf):
-        assert isinstance(self.stack[-1], Builtins.Con_Object)
-        del self.stack[-1]
+        self._cf_stack_pop(cf)
         cf.bc_off += Target.INTSIZE
 
 
     def _instr_apply(self, instr, cf):
         is_fail_up, _ = self._read_failure_frame()
         num_args = Target.unpack_apply(instr)
+        fp = cf.stackpe - num_args - 1
+        func = cf.stack[fp]
+        args = [None] * num_args
+        for i in range(0, num_args):
+            args[i] = cf.stack[cf.stackpe - i - 1]
+            cf.stack[cf.stackpe - i - 1] = None
+        cf.stackpe -= num_args
 
         if is_fail_up:
-            self._add_continuation_frame(num_args, True, cf.bc_off + Target.INTSIZE)
+            gf = Stack_Generator_Frame(cf.gfp, cf.bc_off + Target.INTSIZE)
+            cf.stack[fp] = gf
+            cf.gfp = fp
+            fp += 1
+            new_cf = self._add_continuation_frame(func, True)
+            self._cf_stack_extend(new_cf, args)
+            self._cf_stack_append(new_cf, Builtins.new_con_int(self, num_args))
             o = self._apply_pump()
             if o is None:
                 raise Exception("XXX")
         else:
-            o, _ = self._apply_closure_on_stack(num_args)
-        self.stack.append(o)
+            cf.stack[fp] = None
+            cf.stackpe -= 1
+            o, _ = self.apply_closure(func, args)
+        self._cf_stack_append(cf, o)
         cf.bc_off += Target.INTSIZE
 
 
@@ -321,27 +320,27 @@ class VM(object):
 
     def _instr_func_defn(self, instr, cf):
         is_bound = Target.unpack_func_defn(instr)
-        np_o = self.stack.pop()
+        np_o = self._cf_stack_pop(cf)
         assert isinstance(np_o, Builtins.Con_Int)
-        nv_o = self.stack.pop()
+        nv_o = self._cf_stack_pop(cf)
         assert isinstance(nv_o, Builtins.Con_Int)
-        name = self.stack.pop()
+        name = self._cf_stack_pop(cf)
         new_pc = BC_PC(cf.pc.mod, cf.bc_off + 2 * Target.INTSIZE)
         container = cf.func.get_slot("container")
         f = Builtins.new_bc_con_func(self, name, is_bound, new_pc, np_o.v, nv_o.v, \
           container, cf.closure)
-        self.stack.append(f)
+        self._cf_stack_append(cf, f)
         cf.bc_off += Target.INTSIZE
 
 
     def _instr_return(self, instr, cf):
-        self.return_(self.stack.pop())
+        self.return_(self._cf_stack_pop(cf))
         # Won't get here
 
 
     def _instr_import(self, instr, cf):
         mod = self.get_mod(cf.pc.mod.imps[Target.unpack_import(instr)])
-        self.stack.append(mod)
+        self._cf_stack_append(cf, mod)
         cf.bc_off += Target.INTSIZE
 
 
@@ -350,21 +349,21 @@ class VM(object):
         str_off = cf.bc_off + str_start
         assert str_off > 0 and str_size > 0
         str_ = rffi.charpsize2str(rffi.ptradd(cf.pc.mod.bc, str_off), str_size)
-        self.stack.append(Builtins.new_con_string(self, str_))
+        self._cf_stack_append(cf, Builtins.new_con_string(self, str_))
         cf.bc_off += Target.align(str_start + str_size)
 
 
     def _instr_builtin_lookup(self, instr, cf):
         bl = Target.unpack_builtin_lookup(instr)
         assert self.builtins[bl] is not None
-        self.stack.append(self.builtins[bl])
+        self._cf_stack_append(cf, self.builtins[bl])
         cf.bc_off += Target.INTSIZE
 
 
     @jit.unroll_safe
     def _instr_unpack_args(self, instr, cf):
         num_fargs, has_vargs = Target.unpack_unpack_args(instr)
-        na_o = self.stack.pop()
+        na_o = self._cf_stack_pop(cf)
         assert isinstance(na_o, Builtins.Con_Int)
         num_params = na_o.v
         if num_params > num_fargs and not has_vargs:
@@ -382,7 +381,7 @@ class VM(object):
                     if num_params > num_fargs:
                         raise Exception("XXX")
                     else:
-                        o = self.stack.pop()
+                        o = self._cf_stack_pop(cf)
                         assert isinstance(o, Builtins.Con_Object)
                     cf.closure[-1][Target.unpack_unpack_args_arg_num(arg_info)] = o
 
@@ -395,7 +394,7 @@ class VM(object):
     def _instr_const_get(self, instr, cf):
         const_num = Target.unpack_constant_get(instr)
         if cf.pc.mod.consts[const_num] is not None:
-            self.stack.append(cf.pc.mod.consts[const_num])
+            self._cf_stack_append(cf, cf.pc.mod.consts[const_num])
             cf.bc_off += Target.INTSIZE
         else:
             self._add_failure_frame(False, cf.bc_off)
@@ -404,13 +403,13 @@ class VM(object):
 
     def _instr_const_set(self, instr, cf):
         const_num = Target.unpack_constant_set(instr)
-        cf.pc.mod.consts[const_num] = self.stack.pop()
+        cf.pc.mod.consts[const_num] = self._cf_stack_pop(cf)
         cf.bc_off += Target.INTSIZE
 
 
     def _instr_cmp(self, instr, cf):
-        rhs = self.stack.pop()
-        lhs = self.stack.pop()
+        rhs = self._cf_stack_pop(cf)
+        lhs = self._cf_stack_pop(cf)
         
         it = Target.get_instr(instr)
         if it == Target.CON_INSTR_EQ:
@@ -421,133 +420,128 @@ class VM(object):
             raise Exception("XXX")
         
         if r:
-            self.stack.append(rhs)
+            self._cf_stack_append(cf, rhs)
             cf.bc_off += Target.INTSIZE
         else:
             self._fail_now()
 
 
     def _instr_sub(self, instr, cf):
-        rhs = self.stack.pop()
-        lhs = self.stack.pop()
-        self.stack.append(lhs.sub(self, rhs))
+        rhs = self._cf_stack_pop(cf)
+        lhs = self._cf_stack_pop(cf)
+        self._cf_stack_append(cf, lhs.sub(self, rhs))
         cf.bc_off += Target.INTSIZE
 
 
     def _instr_module_lookup(self, instr, cf):
-        o = self.stack.pop()
+        o = self._cf_stack_pop(cf)
         nm_start, nm_size = Target.unpack_mod_lookup(instr)
         nm_off = cf.bc_off + nm_start
         assert nm_off > 0 and nm_size > 0
         nm = rffi.charpsize2str(rffi.ptradd(cf.pc.mod.bc, nm_off), nm_size)
-        self.stack.append(o.get_defn(nm))
+        self._cf_stack_append(cf, o.get_defn(nm))
         cf.bc_off += Target.align(nm_start + nm_size)
 
 
     #
     # Stack operations
     #
+    
+    def _cf_stack_append(self, cf, x):
+        cf.stack[cf.stackpe] = x
+        cf.stackpe += 1
 
-    def _add_continuation_frame(self, num_args, resumable = False, resume_bc_off = -1):
-        fp = len(self.stack) - 1 - num_args
-        assert fp >= 0
-        if resumable and resume_bc_off != -1:
-            assert self.cfp > -1 # Generator frames can't "live" outside a continuation frame
-            old_cf = self.stack[self.cfp]
-            assert isinstance(old_cf, Stack_Continuation_Frame)
-            gf = Stack_Generator_Frame(old_cf.gfp, resume_bc_off)
-            self.stack.insert(fp, gf)
-            old_cf.gfp = fp
-            fp += 1
+    def _cf_stack_extend(self, cf, l):
+        for x in l:
+            cf.stack[cf.stackpe] = x
+            cf.stackpe += 1
 
-        f = self.stack[fp]
-        if not isinstance(f, Builtins.Con_Func):
+
+    def _cf_stack_pop(self, cf):
+        cf.stackpe -= 1
+        o = cf.stack[cf.stackpe]
+        cf.stack[cf.stackpe] = None
+        return o
+
+
+    def _cf_stack_insert(self, cf, i, x):
+        for j in range(cf.stackpe, i, -1):
+            cf.stack[j] = cf.stack[j - 1]
+        cf.stack[i] = x
+    
+
+    def _add_continuation_frame(self, func, resumable = False):
+        if not isinstance(func, Builtins.Con_Func):
             raise Exception("XXX")
 
-        pc = f.pc
+        pc = func.pc
         if isinstance(pc, BC_PC):
             bc_off = pc.off
         else:
             bc_off = -1 
 
-        if f.container_closure is not None:
-            closure = f.container_closure + [[None] * f.num_vars]
+        if func.container_closure is not None:
+            closure = func.container_closure + [[None] * func.num_vars]
         else:
-            closure = [[None] * f.num_vars]
+            closure = [[None] * func.num_vars]
 
-        cf = Stack_Continuation_Frame(self.cfp, self.ffp, f, pc, bc_off, closure, resumable)
-
-        self.cfp = fp
-        self.stack[fp] = cf
-        self.stack.append(Builtins.new_con_int(self, num_args))
+        cf = Stack_Continuation_Frame(func, pc, bc_off, closure, resumable)
+        self.cf_stack.append(cf)
         
         return cf
 
 
     def _remove_continuation_frame(self):
-        old_cfp = self.cfp
-        assert old_cfp >= 0
-        cf = self.stack[old_cfp]
-        assert isinstance(cf, Stack_Continuation_Frame)
-        self.cfp = cf.prev_cfp
-        del self.stack[old_cfp:]
-        self.ffp = cf.prev_ffp
+        del self.cf_stack[-1]
 
 
     def _remove_generator_frame(self):
-        cf = self.stack[self.cfp]
-        assert isinstance(cf, Stack_Continuation_Frame)
+        cf = self.cf_stack[-1]
         
-        gf = self.stack[cf.gfp]
+        gf = cf.stack[cf.gfp]
         assert isinstance(gf, Stack_Generator_Frame)
-        cf.gfp = gf.prev_gfp
         
-        i = cf.gfp
-        assert i > 0
-        del self.stack[i:]
+        for i in range(cf.gfp, cf.stackpe):
+            cf.stack[i] = None
+        cf.stackpe = cf.gfp
+        cf.gfp = gf.prev_gfp
 
 
     def _add_failure_frame(self, is_fail_up, new_off=-1):
-        cf = self.stack[self.cfp]
-        assert isinstance(cf, Stack_Continuation_Frame)
+        cf = self.cf_stack[-1]
 
-        if self.ffp + 1 == len(self.ff_stack):
+        if cf.ff_stack[cf.ffp + 1] is None:
             ff = Stack_Failure_Frame()
-            self.ff_stack.append(ff)
+            cf.ff_stack[cf.ffp + 1] = ff
 
-        ff = self.ff_stack[self.ffp + 1]
-        ff.stackp = len(self.stack)
+        ff = cf.ff_stack[cf.ffp + 1]
+        ff.stackpe = cf.stackpe
         ff.is_fail_up = is_fail_up
         ff.prev_gfp = cf.gfp
         ff.fail_to_off = new_off
+
         cf.gfp = -1
-        self.ffp += 1
+        cf.ffp += 1
         
 
     def _remove_failure_frame(self):
-        cf = self.stack[self.cfp]
-        assert isinstance(cf, Stack_Continuation_Frame)
-        
-        ff = self.ff_stack[self.ffp]
-        del self.stack[ff.stackp:]
-        cf.gfp = ff.prev_gfp
-
-        self.ffp -= 1
+        cf = self.cf_stack[-1]
+        ff = cf.ff_stack[cf.ffp]
+        for i in range(ff.stackpe, cf.stackpe):
+            cf.stack[i] = None
+        cf.stackpe = ff.stackpe
+        cf.ffp -= 1
 
 
     def _read_failure_frame(self):
-        cf = self.stack[self.cfp]
-        assert isinstance(cf, Stack_Continuation_Frame)
-        
-        ff = self.ff_stack[self.ffp]
-
+        cf = self.cf_stack[-1]
+        ff = cf.ff_stack[cf.ffp]
         return (ff.is_fail_up, ff.fail_to_off)
 
 
     @jit.unroll_safe
     def _fail_now(self):
-        cf = self.stack[self.cfp]
-        assert isinstance(cf, Stack_Continuation_Frame)
+        cf = self.cf_stack[-1]
         while 1:
             is_fail_up, fail_to_off = self._read_failure_frame()
             if is_fail_up:
@@ -571,13 +565,15 @@ def new_vm():
 
 
 class Stack_Continuation_Frame(Con_Thingy):
-    __slots__ = ("prev_cfp", "prev_ffp", "func", "pc", "bc_off", "closure", "ct", "gfp", "xfp",
-      "resumable", "returned")
-    _immutable_fields_ = ("prev_cfp", "prev_ffp", "closure", "pc", "resumable")
+    __slots__ = ("stack", "stackpe", "ff_stack", "func", "pc", "bc_off", "closure", "ct", "ffp",
+      "gfp", "xfp", "resumable", "returned")
+    _immutable_fields_ = ("stack", "ff_stack", "func", "closure", "pc", "resumable")
 
-    def __init__(self, prev_cfp, prev_ffp, func, pc, bc_off, closure, resumable):
-        self.prev_cfp = prev_cfp
-        self.prev_ffp = prev_ffp
+    def __init__(self, func, pc, bc_off, closure, resumable):
+        self.stack = [None] * 64
+        debug.make_sure_not_resized(self.stack)
+        self.ff_stack = [None] * 32
+        debug.make_sure_not_resized(self.ff_stack)
         self.func = func
         self.pc = pc
         self.bc_off = bc_off # -1 for Py modules
@@ -585,11 +581,15 @@ class Stack_Continuation_Frame(Con_Thingy):
         self.resumable = resumable
         self.returned = False
 
-        self.gfp = self.xfp = -1
+        # stackpe always points to the element *after* the end of the stack (this makes a lot of
+        # stack-based operations quicker)
+        self.stackpe = 0
+        # ffp, gfp, and xfp all point *to* the frame they refer to
+        self.ffp = self.gfp = self.xfp = -1
 
 
 class Stack_Failure_Frame(Con_Thingy):
-    __slots__ = ("stackp", "is_fail_up", "prev_gfp", "prev_ffp", "fail_to_off")
+    __slots__ = ("stackpe", "is_fail_up", "prev_gfp", "fail_to_off")
 
 
 class Stack_Generator_Frame(Con_Thingy):
@@ -599,7 +599,7 @@ class Stack_Generator_Frame(Con_Thingy):
     def __init__(self, prev_gfp, resume_bc_off):
         self.prev_gfp = prev_gfp
         self.resume_bc_off = resume_bc_off
-        self.returned = True
+        self.returned = False
 
 
 def switch_hack(ct, arg):

@@ -79,7 +79,7 @@ class VM(object):
     
         cf = self._add_continuation_frame(func)
         self._cf_stack_extend(cf, list(args))
-        self._cf_stack_append(cf, Builtins.new_con_int(self, len(args)))
+        self._cf_stack_push(cf, Builtins.new_con_int(self, len(args)))
 
         try:
             self.execute(self.st.get_null_handle())
@@ -148,7 +148,7 @@ class VM(object):
     def return_(self, obj):
         assert isinstance(obj, Builtins.Con_Object)
         cf = self.cf_stack[-1]
-        self._cf_stack_append(cf, obj)
+        self._cf_stack_push(cf, obj)
         cf.returned = True
         if cf.ct:
             self.st.switch(cf.ct)
@@ -245,7 +245,7 @@ class VM(object):
         v = cf.closure[closure_off - 1][var_num]
         if v is None:
             raise Exception("XXX")
-        self._cf_stack_append(cf, v)
+        self._cf_stack_push(cf, v)
         cf.bc_off += Target.INTSIZE
 
 
@@ -256,7 +256,7 @@ class VM(object):
 
 
     def _instr_int(self, instr, cf):
-        self._cf_stack_append(cf, Builtins.new_con_int(self, Target.unpack_int(instr)))
+        self._cf_stack_push(cf, Builtins.new_con_int(self, Target.unpack_int(instr)))
         cf.bc_off += Target.INTSIZE
 
 
@@ -300,7 +300,7 @@ class VM(object):
             fp += 1
             new_cf = self._add_continuation_frame(func, True)
             self._cf_stack_extend(new_cf, args)
-            self._cf_stack_append(new_cf, Builtins.new_con_int(self, num_args))
+            self._cf_stack_push(new_cf, Builtins.new_con_int(self, num_args))
             o = self._apply_pump()
             if o is None:
                 raise Exception("XXX")
@@ -308,7 +308,7 @@ class VM(object):
             cf.stack[fp] = None
             cf.stackpe -= 1
             o, _ = self.apply_closure(func, args)
-        self._cf_stack_append(cf, o)
+        self._cf_stack_push(cf, o)
         cf.bc_off += Target.INTSIZE
 
 
@@ -327,7 +327,7 @@ class VM(object):
         container = cf.func.get_slot("container")
         f = Builtins.new_bc_con_func(self, name, is_bound, new_pc, np_o.v, nv_o.v, \
           container, cf.closure)
-        self._cf_stack_append(cf, f)
+        self._cf_stack_push(cf, f)
         cf.bc_off += Target.INTSIZE
 
 
@@ -338,7 +338,7 @@ class VM(object):
 
     def _instr_import(self, instr, cf):
         mod = self.get_mod(cf.pc.mod.imps[Target.unpack_import(instr)])
-        self._cf_stack_append(cf, mod)
+        self._cf_stack_push(cf, mod)
         cf.bc_off += Target.INTSIZE
 
 
@@ -347,14 +347,14 @@ class VM(object):
         str_off = cf.bc_off + str_start
         assert str_off > 0 and str_size > 0
         str_ = rffi.charpsize2str(rffi.ptradd(cf.pc.mod.bc, str_off), str_size)
-        self._cf_stack_append(cf, Builtins.new_con_string(self, str_))
+        self._cf_stack_push(cf, Builtins.new_con_string(self, str_))
         cf.bc_off += Target.align(str_start + str_size)
 
 
     def _instr_builtin_lookup(self, instr, cf):
         bl = Target.unpack_builtin_lookup(instr)
         assert self.builtins[bl] is not None
-        self._cf_stack_append(cf, self.builtins[bl])
+        self._cf_stack_push(cf, self.builtins[bl])
         cf.bc_off += Target.INTSIZE
 
 
@@ -392,7 +392,7 @@ class VM(object):
     def _instr_const_get(self, instr, cf):
         const_num = Target.unpack_constant_get(instr)
         if cf.pc.mod.consts[const_num] is not None:
-            self._cf_stack_append(cf, cf.pc.mod.consts[const_num])
+            self._cf_stack_push(cf, cf.pc.mod.consts[const_num])
             cf.bc_off += Target.INTSIZE
         else:
             self._add_failure_frame(False, cf.bc_off)
@@ -418,7 +418,7 @@ class VM(object):
             raise Exception("XXX")
         
         if r:
-            self._cf_stack_append(cf, rhs)
+            self._cf_stack_push(cf, rhs)
             cf.bc_off += Target.INTSIZE
         else:
             self._fail_now()
@@ -427,7 +427,7 @@ class VM(object):
     def _instr_sub(self, instr, cf):
         rhs = self._cf_stack_pop(cf)
         lhs = self._cf_stack_pop(cf)
-        self._cf_stack_append(cf, lhs.sub(self, rhs))
+        self._cf_stack_push(cf, lhs.sub(self, rhs))
         cf.bc_off += Target.INTSIZE
 
 
@@ -437,7 +437,7 @@ class VM(object):
         nm_off = cf.bc_off + nm_start
         assert nm_off > 0 and nm_size > 0
         nm = rffi.charpsize2str(rffi.ptradd(cf.pc.mod.bc, nm_off), nm_size)
-        self._cf_stack_append(cf, o.get_defn(nm))
+        self._cf_stack_push(cf, o.get_defn(nm))
         cf.bc_off += Target.align(nm_start + nm_size)
 
 
@@ -445,7 +445,7 @@ class VM(object):
     # Stack operations
     #
     
-    def _cf_stack_append(self, cf, x):
+    def _cf_stack_push(self, cf, x):
         cf.stack[cf.stackpe] = x
         cf.stackpe += 1
 
@@ -529,7 +529,7 @@ class VM(object):
 
         cf.gfp = -1
         cf.ffp = cf.stackpe
-        self._cf_stack_append(cf, ff)
+        self._cf_stack_push(cf, ff)
         
 
     def _remove_failure_frame(self):

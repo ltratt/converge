@@ -74,7 +74,6 @@ class VM(object):
         return o
 
 
-    @jit.unroll_safe
     def apply_closure(self, func, args=None):
         if args is None: args = []
     
@@ -141,9 +140,7 @@ class VM(object):
             else:
                raise Exception("XXX")
 
-        for i in range(0, np):
-            cf.stack[cf.stackpe - i - 1] = None
-        cf.stackpe -= np        
+        self._cf_stack_del_from(cf, cf.stackpe - np)
         
         return (nrmargs, vargs)
 
@@ -284,6 +281,7 @@ class VM(object):
         cf.bc_off += Target.INTSIZE
 
 
+    @jit.unroll_safe
     def _instr_apply(self, instr, cf):
         is_fail_up, _ = self._read_failure_frame()
         num_args = Target.unpack_apply(instr)
@@ -451,10 +449,12 @@ class VM(object):
         cf.stack[cf.stackpe] = x
         cf.stackpe += 1
 
+
+    @jit.unroll_safe
     def _cf_stack_extend(self, cf, l):
         for x in l:
             cf.stack[cf.stackpe] = x
-            cf.stackpe += 1
+        cf.stackpe += len(l)
 
 
     def _cf_stack_pop(self, cf):
@@ -464,6 +464,14 @@ class VM(object):
         return o
 
 
+    @jit.unroll_safe
+    def _cf_stack_del_from(self, cf, i):
+        for j in range(i, cf.stackpe):
+            cf.stack[j] = None
+        cf.stackpe = i
+
+
+    @jit.unroll_safe
     def _cf_stack_insert(self, cf, i, x):
         for j in range(cf.stackpe, i, -1):
             cf.stack[j] = cf.stack[j - 1]
@@ -500,42 +508,48 @@ class VM(object):
         
         gf = cf.stack[cf.gfp]
         assert isinstance(gf, Stack_Generator_Frame)
-        
-        for i in range(cf.gfp, cf.stackpe):
-            cf.stack[i] = None
-        cf.stackpe = cf.gfp
+
+        self._cf_stack_del_from(cf, cf.gfp)
         cf.gfp = gf.prev_gfp
 
 
     def _add_failure_frame(self, is_fail_up, new_off=-1):
         cf = self.cf_stack[-1]
 
-        if cf.ff_stack[cf.ffp + 1] is None:
+        if cf.ff_cachesz == 0:
             ff = Stack_Failure_Frame()
-            cf.ff_stack[cf.ffp + 1] = ff
+        else:
+            cf.ff_cachesz -= 1
+            ff = cf.ff_cache[cf.ff_cachesz]
 
-        ff = cf.ff_stack[cf.ffp + 1]
-        ff.stackpe = cf.stackpe
         ff.is_fail_up = is_fail_up
+        ff.prev_ffp = cf.ffp
         ff.prev_gfp = cf.gfp
         ff.fail_to_off = new_off
 
         cf.gfp = -1
-        cf.ffp += 1
+        cf.ffp = cf.stackpe
+        self._cf_stack_append(cf, ff)
         
 
     def _remove_failure_frame(self):
         cf = self.cf_stack[-1]
-        ff = cf.ff_stack[cf.ffp]
-        for i in range(ff.stackpe, cf.stackpe):
-            cf.stack[i] = None
-        cf.stackpe = ff.stackpe
-        cf.ffp -= 1
+        ff = cf.stack[cf.ffp]
+        assert isinstance(ff, Stack_Failure_Frame)
+        self._cf_stack_del_from(cf, cf.ffp)
+        cf.ffp = ff.prev_ffp
+
+        if cf.ff_cachesz < len(cf.ff_cache):
+            # Return the failure frame to the cache, if there is room.
+            cf.ff_cache[cf.ff_cachesz] = ff
+            cf.ff_cachesz += 1
 
 
     def _read_failure_frame(self):
         cf = self.cf_stack[-1]
-        ff = cf.ff_stack[cf.ffp]
+        ff = cf.stack[cf.ffp]
+        assert isinstance(ff, Stack_Failure_Frame)
+
         return (ff.is_fail_up, ff.fail_to_off)
 
 
@@ -557,23 +571,23 @@ class VM(object):
 
 
 
-global_vm = VM()
-
-def new_vm():
-    global_vm.init()
-    return global_vm
-
 
 class Stack_Continuation_Frame(Con_Thingy):
-    __slots__ = ("stack", "stackpe", "ff_stack", "func", "pc", "bc_off", "closure", "ct", "ffp",
-      "gfp", "xfp", "resumable", "returned")
-    _immutable_fields_ = ("stack", "ff_stack", "func", "closure", "pc", "resumable")
+    __slots__ = ("stack", "stackpe", "ff_cache", "ff_cachesz", "func", "pc", "bc_off", "closure",
+      "ct", "ffp", "gfp", "xfp", "resumable", "returned")
+    _immutable_fields_ = ("stack", "ff_cache", "func", "closure", "pc", "resumable")
 
     def __init__(self, func, pc, bc_off, closure, resumable):
         self.stack = [None] * 64
         debug.make_sure_not_resized(self.stack)
-        self.ff_stack = [None] * 32
-        debug.make_sure_not_resized(self.ff_stack)
+        # Continually allocating and deallocating failure frames is expensive, which is particularly
+        # annoying as most never have any impact. ff_cache is used as a simple cache of failure frame
+        # objects, so that instead of being continually allocated and deallocated, in most cases we
+        # can move a pointer from ff_cache to a continuation frame's stack, which is cheap. As
+        # failure frames are removed, they are stored in the cache, if there is room.
+        self.ff_cache = [None] * 24
+        debug.make_sure_not_resized(self.ff_cache)
+        self.ff_cachesz = 0
         self.func = func
         self.pc = pc
         self.bc_off = bc_off # -1 for Py modules
@@ -589,7 +603,8 @@ class Stack_Continuation_Frame(Con_Thingy):
 
 
 class Stack_Failure_Frame(Con_Thingy):
-    __slots__ = ("stackpe", "is_fail_up", "prev_gfp", "fail_to_off")
+    __slots__ = ("is_fail_up", "prev_ffp", "prev_gfp", "fail_to_off")
+    # Because failure frames can be reused, they have no immutable fields.
 
 
 class Stack_Generator_Frame(Con_Thingy):
@@ -605,3 +620,10 @@ class Stack_Generator_Frame(Con_Thingy):
 def switch_hack(ct, arg):
     global_vm.execute(ct)
     return ct
+
+
+global_vm = VM()
+
+def new_vm():
+    global_vm.init()
+    return global_vm

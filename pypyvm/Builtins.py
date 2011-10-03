@@ -171,7 +171,7 @@ def bootstrap_con_class():
 class Con_Module(Con_Boxed_Object):
     __slots__ = ("is_bc", "bc", "name", "id_", "src_path", "imps", "tlvars_map", "consts",
       "init_func", "values", "closure", "initialized")
-    _immutable_fields_ = ("is_bc", "bc", "name", "id_", "src_path", "imps", "tlvars_map", "init_func")
+    _immutable_fields_ = ("is_bc", "bc", "name", "id_", "src_path", "imps", "tlvars_map", "init_func", "consts")
 
     def __init__(self, vm, is_bc, bc, name, id_, src_path, imps, tlvars_map, num_consts, init_func):
         Con_Boxed_Object.__init__(self, vm)

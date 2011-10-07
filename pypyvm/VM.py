@@ -29,6 +29,11 @@ import Builtins, Modules, Target
 
 
 
+
+DEBUG = False
+
+
+
 class Return_Exception(Exception): pass
 
 def get_printable_location(bc_off, mod_bc, pc):
@@ -56,6 +61,19 @@ class VM(object):
         
         for init_func in Modules.BUILTIN_MODULES:
             self.set_mod(init_func(self))
+
+
+    @jit.elidable
+    def get_builtin(self, i):
+        if DEBUG:
+            assert self.builtins[i] is not None # Builtins can not be read before they are set
+        return self.builtins[i]
+
+
+    def set_builtin(self, i, o):
+        if DEBUG:
+            assert self.builtins[i] is None # Once set, a builtin can never change
+        self.builtins[i] = o
 
 
     def set_mod(self, mod):
@@ -221,7 +239,7 @@ class VM(object):
             elif it == Target.CON_INSTR_CONST_SET:
                 self._instr_const_set(instr, cf)
             elif it == Target.CON_INSTR_BRANCH_IF_NOT_FAIL:
-                if self._cf_stack_pop(cf) is self.builtins[Builtins.BUILTIN_FAIL_OBJ]:
+                if self._cf_stack_pop(cf) is self.get_builtin(Builtins.BUILTIN_FAIL_OBJ):
                     cf.bc_off += Target.INTSIZE
                 else:
                     j = Target.unpack_branch_if_not_fail(instr)
@@ -353,8 +371,7 @@ class VM(object):
 
     def _instr_builtin_lookup(self, instr, cf):
         bl = Target.unpack_builtin_lookup(instr)
-        assert self.builtins[bl] is not None
-        self._cf_stack_push(cf, self.builtins[bl])
+        self._cf_stack_push(cf, self.get_builtin(bl))
         cf.bc_off += Target.INTSIZE
 
 

@@ -128,12 +128,12 @@ class Con_Unboxed_Object(Con_Object):
 
 def bootstrap_con_object(vm):
     object_class = Con_Class(vm, "Object", [], None)
-    vm.builtins[BUILTIN_OBJECT_CLASS] = object_class
+    vm.set_builtin(BUILTIN_OBJECT_CLASS, object_class)
     class_class = Con_Class(vm, "Class", [object_class], None)
-    vm.builtins[BUILTIN_CLASS_CLASS] = class_class
+    vm.set_builtin(BUILTIN_CLASS_CLASS, class_class)
     
-    vm.builtins[BUILTIN_NULL_OBJ] = Con_Boxed_Object(vm)
-    vm.builtins[BUILTIN_FAIL_OBJ] = Con_Boxed_Object(vm)
+    vm.set_builtin(BUILTIN_NULL_OBJ, Con_Boxed_Object(vm))
+    vm.set_builtin(BUILTIN_FAIL_OBJ, Con_Boxed_Object(vm))
 
 
 

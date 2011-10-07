@@ -39,7 +39,7 @@ def import_(vm):
     println_func = Builtins.new_c_con_func(vm, Builtins.new_con_string(vm, "println"), False, println, mod)
     mod.set_defn("println", println_func)
     
-    vm.return_(vm.builtins[Builtins.BUILTIN_NULL_OBJ])
+    vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))
 
 
 
@@ -53,4 +53,4 @@ def println(vm):
             print o, s
             raise Exception("XXX")
 
-    vm.return_(vm.builtins[Builtins.BUILTIN_NULL_OBJ])
+    vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))

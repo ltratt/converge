@@ -97,6 +97,7 @@ class Con_Boxed_Object(Con_Object):
     __slots__ = ("slots",)
     _immutable_fields = ("slots",)
 
+
     def __init__(self, vm):
         self.slots = {}
 
@@ -121,11 +122,6 @@ class Con_Boxed_Object(Con_Object):
 
 
 
-class Con_Unboxed_Object(Con_Object):
-    __slots__ = ()
-
-
-
 def bootstrap_con_object(vm):
     object_class = Con_Class(vm, "Object", [], None)
     vm.set_builtin(BUILTIN_OBJECT_CLASS, object_class)
@@ -146,6 +142,7 @@ class Con_Class(Con_Boxed_Object):
     __slots__ = ("name", "supers")
     _immutable_fields = ("supers",)
 
+
     def __init__(self, vm, name, supers, container):
         Con_Boxed_Object.__init__(self, vm)
         
@@ -153,7 +150,6 @@ class Con_Class(Con_Boxed_Object):
         self.supers = supers
 
         self.set_slot("container", container)
-
 
 
 
@@ -173,6 +169,8 @@ class Con_Module(Con_Boxed_Object):
       "init_func", "values", "closure", "initialized")
     _immutable_fields_ = ("is_bc", "bc", "name", "id_", "src_path", "imps", "tlvars_map",
       "init_func", "consts")
+
+
 
     def __init__(self, vm, is_bc, bc, name, id_, src_path, imps, tlvars_map, num_consts, init_func):
         Con_Boxed_Object.__init__(self, vm)
@@ -269,6 +267,7 @@ class Con_Func(Con_Boxed_Object):
     __slots__ = ("name", "is_bound", "pc", "num_params", "num_vars", "container_closure")
     _immutable_fields_ = ("name", "is_bound", "pc", "num_params", "num_vars", "container_closure")
 
+
     def __init__(self, vm, name, is_bound, pc, num_params, num_vars, container, container_closure):
         Con_Boxed_Object.__init__(self, vm)
     
@@ -316,13 +315,15 @@ class Con_Number(Con_Object):
 # Con_Int
 #
 
-class Con_Int(Con_Unboxed_Object):
+class Con_Int(Con_Boxed_Object):
     __slots__ = ("v",)
     _immutable_fields_ = ("v",)
 
 
-    def __init__(self, v):
+    def __init__(self, vm, v):
+        Con_Boxed_Object.__init__(self, vm)
         self.v = v
+
 
     def eq(self, vm, o):
         if not isinstance(o, Con_Int):
@@ -342,12 +343,12 @@ class Con_Int(Con_Unboxed_Object):
         if not isinstance(o, Con_Int):
             raise Exception("XXX")
         else:
-            return Con_Int(self.v - o.v)
+            return Con_Int(vm, self.v - o.v)
 
 
 
 def new_con_int(vm, v):
-    return Con_Int(v)
+    return Con_Int(vm, v)
 
 
 
@@ -358,6 +359,7 @@ def new_con_int(vm, v):
 class Con_String(Con_Boxed_Object):
     __slots__ = ("v",)
     _immutable_fields_ = ("v",)
+
 
     def __init__(self, vm, v):
         Con_Boxed_Object.__init__(self, vm)

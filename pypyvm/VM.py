@@ -450,11 +450,13 @@ class VM(object):
 
     def _instr_module_lookup(self, instr, cf):
         o = self._cf_stack_pop(cf)
+        if not isinstance(o, Builtins.Con_Module):
+            raise Exception("XXX")
         nm_start, nm_size = Target.unpack_mod_lookup(instr)
         nm_off = cf.bc_off + nm_start
         assert nm_off > 0 and nm_size > 0
-        nm = rffi.charpsize2str(rffi.ptradd(cf.pc.mod.bc, nm_off), nm_size)
-        self._cf_stack_push(cf, o.get_defn(nm))
+        i = o.get_closure_i_from_other_bc(cf.pc.mod, nm_off, nm_size)
+        self._cf_stack_push(cf, o.closure[i])
         cf.bc_off += Target.align(nm_start + nm_size)
 
 

@@ -18,7 +18,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-from pypy.rlib.jit import *
+from pypy.rlib import debug, jit
 from pypy.rlib.objectmodel import UnboxedValue
 from pypy.rpython.lltypesystem import lltype, rffi
 
@@ -171,7 +171,8 @@ def bootstrap_con_class():
 class Con_Module(Con_Boxed_Object):
     __slots__ = ("is_bc", "bc", "name", "id_", "src_path", "imps", "tlvars_map", "consts",
       "init_func", "values", "closure", "initialized")
-    _immutable_fields_ = ("is_bc", "bc", "name", "id_", "src_path", "imps", "tlvars_map", "init_func", "consts")
+    _immutable_fields_ = ("is_bc", "bc", "name", "id_", "src_path", "imps", "tlvars_map",
+      "init_func", "consts")
 
     def __init__(self, vm, is_bc, bc, name, id_, src_path, imps, tlvars_map, num_consts, init_func):
         Con_Boxed_Object.__init__(self, vm)
@@ -184,6 +185,7 @@ class Con_Module(Con_Boxed_Object):
         self.imps = imps
         self.tlvars_map = tlvars_map
         self.consts = [None] * num_consts
+        debug.make_sure_not_resized(self.consts)
         self.init_func = init_func
         
         self.values = []
@@ -207,12 +209,28 @@ class Con_Module(Con_Boxed_Object):
         return
 
 
+    @jit.elidable
+    def get_closure_i(self, n):
+        return self.tlvars_map[n]
+
+
+    # This function gets the position of a definition in the closure based on the string stored in
+    # another bytecode's module. The reason for this is that, because this is a pure function, we
+    # can generally avoid the expensive calls to (1) rffi.charpsize2str and (2) a dictionary
+    # lookup. This can speed module lookups from bytecode modules by roughly a factor of 4 or 5.
+
+    @jit.elidable_promote()
+    def get_closure_i_from_other_bc(self, o_m, nm_off, nm_size):
+        nm = rffi.charpsize2str(rffi.ptradd(o_m.bc, nm_off), nm_size)
+        return self.get_closure_i(nm)
+
+
     def get_defn(self, n):
-        return self.closure[self.tlvars_map[n]]
+        return self.closure[self.get_closure_i(n)]
 
 
     def set_defn(self, n, o):
-        self.closure[self.tlvars_map[n]] = o
+        self.closure[self.get_closure_i(n)] = o
 
 
     def get_const_create_off(self, vm, i):

@@ -19,6 +19,11 @@
 # IN THE SOFTWARE.
 
 
+import Builtins
+
+
+
+
 class Con_Thingy(object):
     __slots__ = ()
 
@@ -33,6 +38,7 @@ class BC_PC(PC):
     _immutable_fields_ = ("mod", "off")
     
     def __init__(self, mod, off):
+        assert isinstance(mod, Builtins.Con_Module)
         self.mod = mod
         self.off = off
 
@@ -42,5 +48,6 @@ class Py_PC(PC):
     _immutable_fields_ = ("mod", "f")
 
     def __init__(self, mod, f):
+        assert isinstance(mod, Builtins.Con_Module)
         self.mod = mod
         self.f = f

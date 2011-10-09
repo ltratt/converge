@@ -22,7 +22,7 @@ from pypy.rlib import debug, jit
 from pypy.rlib.objectmodel import UnboxedValue
 from pypy.rpython.lltypesystem import lltype, rffi
 
-NUM_BUILTINS = 40
+NUM_BUILTINS = 41
 
 from Core import *
 import Target, VM
@@ -72,14 +72,15 @@ BUILTIN_EXCEPTION_CLASS = 32
 BUILTIN_SET_CLASS = 33
 BUILTIN_NUMBER_CLASS = 34
 
-BUILTIN_C_FILE_MODULE = 35
-BUILTIN_EXCEPTIONS_MODULE = 36
-BUILTIN_SYS_MODULE = 37
+BUILTIN_BUILTINS_MODULE = 35
+BUILTIN_C_FILE_MODULE = 36
+BUILTIN_EXCEPTIONS_MODULE = 37
+BUILTIN_SYS_MODULE = 38
 
 # Floats
 
-BUILTIN_FLOAT_ATOM_DEF_OBJECT = 38
-BUILTIN_FLOAT_CLASS = 39
+BUILTIN_FLOAT_ATOM_DEF_OBJECT = 39
+BUILTIN_FLOAT_CLASS = 40
 
 
 
@@ -127,26 +128,38 @@ _EMPTY_MAP = _Con_Map()
 
 
 class Con_Boxed_Object(Con_Object):
-    __slots__ = ("slots", "slots_map")
+    __slots__ = ("instance_of", "slots_map", "slots")
     _immutable_fields = ("slots",)
 
 
-    def __init__(self, vm):
+    def __init__(self, vm, instance_of=None):
+        if instance_of is None:
+            self.instance_of = vm.get_builtin(BUILTIN_OBJECT_CLASS)
+        else:
+            self.instance_of = instance_of
         self.slots_map = _EMPTY_MAP
         self.slots = None
 
 
     def get_slot(self, vm, n):
+        return self.get_slot_raw(vm, n)
+
+
+    def get_slot_raw(self, vm, n):
+        o = None
         if self.slots is not None:
             m = jit.promote(self.slots_map)
             i = m.find(n)
             if i != -1:
-                return self.slots[i]
+                o = self.slots[i]
     
-        if n == "get_slot":
+        if o is None:
+            o = self.instance_of.get_field(vm, n)
+        
+        if o is None:
             raise Exception("XXX")
-
-        raise Exception("XXX")
+        
+        return o
 
 
     def set_slot(self, vm, n, v):
@@ -169,9 +182,14 @@ def bootstrap_con_object(vm):
     vm.set_builtin(BUILTIN_OBJECT_CLASS, object_class)
     class_class = Con_Class(vm, "Class", [object_class], None)
     vm.set_builtin(BUILTIN_CLASS_CLASS, class_class)
+    object_class.instance_of = class_class
+    class_class.instance_of = class_class
     
     vm.set_builtin(BUILTIN_NULL_OBJ, Con_Boxed_Object(vm))
     vm.set_builtin(BUILTIN_FAIL_OBJ, Con_Boxed_Object(vm))
+    
+    builtins_module = new_c_con_module(vm, "Builtins", "Builtins", __file__, [])
+    vm.set_builtin(BUILTIN_BUILTINS_MODULE, builtins_module)
 
 
 
@@ -181,17 +199,45 @@ def bootstrap_con_object(vm):
 #
 
 class Con_Class(Con_Boxed_Object):
-    __slots__ = ("name", "supers")
-    _immutable_fields = ("supers",)
+    __slots__ = ("name", "supers", "fields_map", "fields")
+    _immutable_fields = ("supers", "fields")
 
 
     def __init__(self, vm, name, supers, container):
-        Con_Boxed_Object.__init__(self, vm)
+        Con_Boxed_Object.__init__(self, vm, vm.get_builtin(BUILTIN_CLASS_CLASS))
         
         self.name = name
         self.supers = supers
+        self.fields_map = _EMPTY_MAP
+        self.fields = []
 
         self.set_slot(vm, "container", container)
+
+
+    def get_field(self, vm, n):
+        m = jit.promote(self.fields_map)
+        i = m.find(n)
+        if i != -1:
+            return self.fields[i]
+        
+        for s in self.supers:
+            assert isinstance(s, Con_Class)
+            m = jit.promote(s.fields_map)
+            i = m.find(n)
+            if i != -1:
+                return s.fields[i]
+
+        return None
+
+
+    def set_field(self, vm, n, o):
+        m = jit.promote(self.fields_map)
+        i = m.find(n)
+        if i == -1:
+            self.fields_map = m.extend(n)
+            self.fields.append(o)
+        else:
+            self.fields[i] = o
 
 
 
@@ -214,7 +260,7 @@ class Con_Module(Con_Boxed_Object):
 
 
     def __init__(self, vm, is_bc, bc, name, id_, src_path, imps, tlvars_map, num_consts, init_func):
-        Con_Boxed_Object.__init__(self, vm)
+        Con_Boxed_Object.__init__(self, vm, vm.get_builtin(BUILTIN_MODULE_CLASS))
 
         self.is_bc = is_bc # True for bytecode modules; False for RPython modules
         self.bc = bc
@@ -299,7 +345,7 @@ class Con_Func(Con_Boxed_Object):
 
 
     def __init__(self, vm, name, is_bound, pc, num_params, num_vars, container, container_closure):
-        Con_Boxed_Object.__init__(self, vm)
+        Con_Boxed_Object.__init__(self, vm, vm.get_builtin(BUILTIN_FUNC_CLASS))
     
         self.name = name
         self.is_bound = is_bound
@@ -321,7 +367,7 @@ def bootstrap_con_func():
 
 def new_c_con_func(vm, name, is_bound, func, container):
     cnd = container
-    while not isinstance(cnd, Con_Module):
+    while not (isinstance(cnd, Con_Module) or cnd is vm.get_builtin(BUILTIN_NULL_OBJ)):
         cnd = cnd.get_slot(vm, "container")
     return Con_Func(vm, name, is_bound, VM.Py_PC(cnd, func), 0, 0, container, None)
 
@@ -351,7 +397,7 @@ class Con_Int(Con_Boxed_Object):
 
 
     def __init__(self, vm, v):
-        Con_Boxed_Object.__init__(self, vm)
+        Con_Boxed_Object.__init__(self, vm, vm.get_builtin(BUILTIN_INT_CLASS))
         self.v = v
 
 
@@ -377,8 +423,18 @@ class Con_Int(Con_Boxed_Object):
 
 
 
+def _Con_Int_to_str(vm):
+    (o,),_ = vm.decode_args("I")
+    assert isinstance(o, Con_Int)
+
+    vm.return_(new_con_string(vm, str(o.v)))
+
+
 def bootstrap_con_int(vm):
-    pass
+    int_class = Con_Class(vm, "Int", [vm.get_builtin(BUILTIN_OBJECT_CLASS)], vm.get_builtin(BUILTIN_BUILTINS_MODULE))
+    vm.set_builtin(BUILTIN_INT_CLASS, int_class)
+    to_str_func = new_c_con_func(vm, new_con_string(vm, "to_str"), True, _Con_Int_to_str, int_class)
+    int_class.set_field(vm, "to_str", to_str_func)
 
 
 
@@ -397,7 +453,7 @@ class Con_String(Con_Boxed_Object):
 
 
     def __init__(self, vm, v):
-        Con_Boxed_Object.__init__(self, vm)
+        Con_Boxed_Object.__init__(self, vm, vm.get_builtin(BUILTIN_STRING_CLASS))
         self.v = v
 
 

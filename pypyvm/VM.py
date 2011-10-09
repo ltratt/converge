@@ -92,6 +92,17 @@ class VM(object):
         return o
 
 
+    def get_slot_apply(self, o, n, args=None):
+        f = o.get_slot_raw(self, n)
+
+        if args is None:
+            args = [o]
+        else:
+            args = [o] + args
+
+        return self.apply(f, args)
+
+
     def apply_closure(self, func, args=None):
         if args is None: args = []
     
@@ -149,8 +160,16 @@ class VM(object):
         nrmargs = [] # Normal args
         vargs = [] # Var args
         for i in range(len(as_)):
+            if i >= np and as_[i] != "v":
+                raise Exception("XXX")
+            
             if as_[i] == "O":
                 nrmargs.append(cf.stack[cf.stackpe - np + i])
+            elif as_[i] == "I":
+                o = cf.stack[cf.stackpe - np + i]
+                if not isinstance(o, Builtins.Con_Int):
+                    raise Exception("XXX")
+                nrmargs.append(o)
             elif as_[i] == "v":
                 for j in range(i, np - i):
                     vargs.append(cf.stack[cf.stackpe - np + j])

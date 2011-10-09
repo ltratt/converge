@@ -93,27 +93,30 @@ class Con_Object(Con_Thingy):
 
 
 
+# This map class is inspired by:
+#   http://morepypy.blogspot.com/2011/03/controlling-tracing-of-interpreter-with_21.html
+
 class _Con_Map(object):
-    __slots__ = ("slots_map", "other_maps")
-    _immutable_fields_ = ("slots_map", "other_maps")
+    __slots__ = ("index_map", "other_maps")
+    _immutable_fields_ = ("index_map", "other_maps")
 
 
     def __init__(self):
-        self.slots_map = {}
+        self.index_map = {}
         self.other_maps = {}
 
 
     @jit.elidable
     def find(self, n):
-        return self.slots_map.get(n, -1)
+        return self.index_map.get(n, -1)
 
 
     @jit.elidable
     def extend(self, n):
         if n not in self.other_maps:
             nm = _Con_Map()
-            nm.slots_map.update(self.slots_map)
-            nm.slots_map[n] = len(self.slots_map)
+            nm.index_map.update(self.index_map)
+            nm.index_map[n] = len(self.index_map)
             self.other_maps[n] = nm
         return self.other_maps[n]
 

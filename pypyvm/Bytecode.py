@@ -29,16 +29,11 @@ from VM import *
 
 
 
-
-
 @jit.elidable_promote()
-def _extract_str(bc, soff, ssize):
-
+def _extract_sstr(bc, soff, ssize):
     off = read_word(bc, soff)
     size = read_word(bc, ssize)
-    assert off > 0 and size > 0
-    return rffi.charpsize2str(rffi.ptradd(bc, off), size)
-
+    return Target.extract_str(bc, off, size)
 
 
 def add_exec(vm, bc):
@@ -50,9 +45,9 @@ def add_exec(vm, bc):
         
         mod_bc = rffi.ptradd(bc, mod_off)
         
-        name = _extract_str(mod_bc, BC_MOD_NAME, BC_MOD_NAME_SIZE)
-        id_ = _extract_str(mod_bc, BC_MOD_ID, BC_MOD_ID_SIZE)
-        src_path = _extract_str(mod_bc, BC_MOD_SRC_PATH, BC_MOD_SRC_PATH_SIZE)
+        name = _extract_sstr(mod_bc, BC_MOD_NAME, BC_MOD_NAME_SIZE)
+        id_ = _extract_sstr(mod_bc, BC_MOD_ID, BC_MOD_ID_SIZE)
+        src_path = _extract_sstr(mod_bc, BC_MOD_SRC_PATH, BC_MOD_SRC_PATH_SIZE)
 
         if main_mod_id is None:
             main_mod_id = id_

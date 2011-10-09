@@ -214,6 +214,8 @@ class VM(object):
                 self._instr_fail_now(instr, cf)
             elif it == Target.CON_INSTR_POP:
                 self._instr_pop(instr, cf)
+            elif it == Target.CON_INSTR_SLOT_LOOKUP:
+                self._instr_slot_lookup(instr, cf)
             elif it == Target.CON_INSTR_APPLY:
                 self._instr_apply(instr, cf)
             elif it == Target.CON_INSTR_FUNC_DEFN:
@@ -299,6 +301,14 @@ class VM(object):
         cf.bc_off += Target.INTSIZE
 
 
+    def _instr_slot_lookup(self, instr, cf):
+        o = self._cf_stack_pop(cf)
+        nm_start, nm_size = Target.unpack_slot_lookup(instr)
+        nm = Target.extract_str(cf.pc.mod.bc, nm_start + cf.bc_off, nm_size)
+        self._cf_stack_push(cf, o.get_slot(self, nm))
+        cf.bc_off += Target.align(nm_start + nm_size)
+
+
     @jit.unroll_safe
     def _instr_apply(self, instr, cf):
         is_fail_up, _ = self._read_failure_frame()
@@ -342,7 +352,7 @@ class VM(object):
         assert isinstance(nv_o, Builtins.Con_Int)
         name = self._cf_stack_pop(cf)
         new_pc = BC_PC(cf.pc.mod, cf.bc_off + 2 * Target.INTSIZE)
-        container = cf.func.get_slot("container")
+        container = cf.func.get_slot(self, "container")
         f = Builtins.new_bc_con_func(self, name, is_bound, new_pc, np_o.v, nv_o.v, \
           container, cf.closure)
         self._cf_stack_push(cf, f)
@@ -453,10 +463,8 @@ class VM(object):
         if not isinstance(o, Builtins.Con_Module):
             raise Exception("XXX")
         nm_start, nm_size = Target.unpack_mod_lookup(instr)
-        nm_off = cf.bc_off + nm_start
-        assert nm_off > 0 and nm_size > 0
-        i = o.get_closure_i_from_other_bc(cf.pc.mod, nm_off, nm_size)
-        self._cf_stack_push(cf, o.closure[i])
+        nm = Target.extract_str(cf.pc.mod.bc, cf.bc_off + nm_start, nm_size)
+        self._cf_stack_push(cf, o.closure[o.get_closure_i(nm)])
         cf.bc_off += Target.align(nm_start + nm_size)
 
 

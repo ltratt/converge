@@ -93,32 +93,71 @@ class Con_Object(Con_Thingy):
 
 
 
+class _Con_Map(object):
+    __slots__ = ("slots_map", "other_maps")
+    _immutable_fields_ = ("slots_map", "other_maps")
+
+
+    def __init__(self):
+        self.slots_map = {}
+        self.other_maps = {}
+
+
+    @jit.elidable
+    def find(self, n):
+        return self.slots_map.get(n, -1)
+
+
+    @jit.elidable
+    def extend(self, n):
+        if n not in self.other_maps:
+            nm = _Con_Map()
+            nm.slots_map.update(self.slots_map)
+            nm.slots_map[n] = len(self.slots_map)
+            self.other_maps[n] = nm
+        return self.other_maps[n]
+
+
+
+_EMPTY_MAP = _Con_Map()
+
+
+
 class Con_Boxed_Object(Con_Object):
-    __slots__ = ("slots",)
+    __slots__ = ("slots", "slots_map")
     _immutable_fields = ("slots",)
 
 
     def __init__(self, vm):
-        self.slots = {}
+        self.slots_map = _EMPTY_MAP
+        self.slots = None
 
 
-    def get_slot(self, n):
+    def get_slot(self, vm, n):
+        if self.slots is not None:
+            m = jit.promote(self.slots_map)
+            i = m.find(n)
+            if i != -1:
+                return self.slots[i]
+    
         if n == "get_slot":
             raise Exception("XXX")
-        
-        if n in self.slots:
-            v = self.slots[n]
+
+        raise Exception("XXX")
+
+
+    def set_slot(self, vm, n, v):
+        m = jit.promote(self.slots_map)
+        if self.slots is not None:
+            i = m.find(n)
+            if i == -1:
+                self.slots_map = m.extend(n)
+                self.slots.append(v)
+            else:
+                self.slots[i] = v
         else:
-            raise Exception("XXX")
-
-        if isinstance(v, Con_Func):
-            raise Exception("XXX")
-        
-        return v
-
-
-    def set_slot(self, n, v):
-        self.slots[n] = v
+            self.slots_map = m.extend(n)
+            self.slots = [v]
 
 
 
@@ -149,13 +188,12 @@ class Con_Class(Con_Boxed_Object):
         self.name = name
         self.supers = supers
 
-        self.set_slot("container", container)
+        self.set_slot(vm, "container", container)
 
 
 
-def bootstrap_con_class():
-    class_class = Con_Class("Class", [object_class], None)
-
+def bootstrap_con_class(vm):
+    pass
 
 
 
@@ -207,20 +245,9 @@ class Con_Module(Con_Boxed_Object):
         return
 
 
-    @jit.elidable
+    @jit.elidable_promote("0")
     def get_closure_i(self, n):
         return self.tlvars_map[n]
-
-
-    # This function gets the position of a definition in the closure based on the string stored in
-    # another bytecode's module. The reason for this is that, because this is a pure function, we
-    # can generally avoid the expensive calls to (1) rffi.charpsize2str and (2) a dictionary
-    # lookup. This can speed module lookups from bytecode modules by roughly a factor of 4 or 5.
-
-    @jit.elidable_promote()
-    def get_closure_i_from_other_bc(self, o_m, nm_off, nm_size):
-        nm = rffi.charpsize2str(rffi.ptradd(o_m.bc, nm_off), nm_size)
-        return self.get_closure_i(nm)
 
 
     def get_defn(self, n):
@@ -278,7 +305,7 @@ class Con_Func(Con_Boxed_Object):
         self.num_vars = num_vars
         self.container_closure = container_closure
         
-        self.set_slot("container", container)
+        self.set_slot(vm, "container", container)
 
 
     def __repr__(self):
@@ -292,7 +319,7 @@ def bootstrap_con_func():
 def new_c_con_func(vm, name, is_bound, func, container):
     cnd = container
     while not isinstance(cnd, Con_Module):
-        cnd = cnd.get_slot("container")
+        cnd = cnd.get_slot(vm, "container")
     return Con_Func(vm, name, is_bound, VM.Py_PC(cnd, func), 0, 0, container, None)
 
 
@@ -344,6 +371,11 @@ class Con_Int(Con_Boxed_Object):
             raise Exception("XXX")
         else:
             return Con_Int(vm, self.v - o.v)
+
+
+
+def bootstrap_con_int(vm):
+    pass
 
 
 

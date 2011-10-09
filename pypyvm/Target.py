@@ -123,6 +123,10 @@ if INTSIZE == 8:
     CON_INSTR_GT = 50                     # bits 0-7 50
     CON_INSTR_MODULE_LOOKUP = 51          # bits 0-7 51, bits 8-31 := size of definition name, bits 32-.. := definition name
 
+    @elidable_promote()
+    def extract_str(bc, off, size):
+        assert off > 0 and size > 0
+        return rffi.charpsize2str(rffi.ptradd(bc, off), size)
 
     @elidable_promote("1")
     def read_word(bc, i):
@@ -157,6 +161,10 @@ if INTSIZE == 8:
     @elidable_promote()
     def unpack_func_defn(instr):
         return (instr & 0x00000100) >> 8
+
+    @elidable_promote()
+    def unpack_slot_lookup(instr):
+        return (4, (instr & 0xFFFFFF00) >> 8)
 
     @elidable_promote()
     def unpack_apply(instr):

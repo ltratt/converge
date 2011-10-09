@@ -49,7 +49,7 @@ def println(vm):
         if isinstance(o, Builtins.Con_String):
             print o.v
         else:
-            s = vm.apply(o.get_slot("to_str"))
+            s = vm.apply(o.get_slot(vm, "to_str"))
             print o, s
             raise Exception("XXX")
 

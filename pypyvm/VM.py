@@ -121,29 +121,61 @@ class VM(object):
 
 
     def _apply_pump(self, remove_generator_frames=False):
-	    # At this point, we're in one of two situations:
-	    #
-	    #   1) A generator frame has been added but not yet used. So the con stack looks like:
-	    #        [..., <generator frame>, <continuation frame>, <argument objects>]
-	    #
-	    #   2) We need to resume a previous generator. The con stack looks like:
-	    #        [..., <generator frame>, <random objects>]
-	    #
-	    # Fortunately there's an easy way to distinguish the two: if the current continuation on the
-	    # stack has a generator frame we're in situation #2, otherwise we're in situation #1.
+        # At this point, we're in one of two situations:
+        #
+        #   1) A generator frame has been added but not yet used. So the con stacks look like:
+        #        calling function: [..., <generator frame>]
+        #        callee function:  [<argument objects>]
+        #
+        #   2) We need to resume a previous generator. The con stack looks like:
+        #        [..., <generator frame>, <random objects>]
+        #
+        # Fortunately there's an easy way to distinguish the two: if the current continuation on the
+        # stack has a generator frame we're in situation #2, otherwise we're in situation #1.
 
         cf = self.cf_stack[-1]
 
         if cf.gfp == -1:
             # We're in case 1) from above.
             ct = self.st.new(switch_hack)
-            o = self._cf_stack_pop(cf)
-            if cf.returned:
-                self._remove_continuation_frame()
-                self._remove_generator_frame()
         else:
             # We're in case 2) from above.
-            raise Exception("XXX")
+            self._cf_stack_del_from(cf, cf.gfp + 1)
+            gf = cf.stack[cf.gfp]
+            assert isinstance(gf, Stack_Generator_Frame)
+            if gf.returned:
+                return None
+            cf = gf.saved_cf
+            self.cf_stack.append(cf)
+            ct = self.st.switch(gf.ct)
+
+        o = self._cf_stack_pop(cf)
+        if cf.returned:
+            self.st.destroy(ct)
+            self._remove_continuation_frame()
+            self._remove_generator_frame()
+        else:
+            saved_cf = self.cf_stack.pop()
+            cf = self.cf_stack[-1]
+
+            # At this point cf.stack looks like:
+            #   [..., <gen obj 1>, ..., <gen obj n>, <generator frame>]
+
+            gf = cf.stack[cf.gfp]
+            assert isinstance(gf, Stack_Generator_Frame)
+            gf.ct = ct
+            gf.saved_cf = saved_cf
+            if gf.prev_gfp > cf.ffp:
+                i = gf.prev_gfp + 1
+            else:
+                i = cf.ffp + 1
+            j = cf.gfp
+            assert i >= 0 and j >= i
+            self._cf_stack_extend(cf, cf.stack[i : j])
+
+            # At this point cf.stack looks like:
+            #   [..., <gen obj 1>, ..., <gen obj n>, <generator frame>, <gen obj 1>, ...,
+            #     <gen obj n>]
         
         if o is None:
             raise Exception("XXX")
@@ -193,6 +225,16 @@ class VM(object):
             raise Return_Exception()
 
 
+    def yield_(self, obj):
+        cf = self.cf_stack[-1]
+        if cf.ct is None:
+            # If there's no continuation to return back to, this yield becomes in effect a return.
+            self.return_(obj)
+
+        self._cf_stack_push(cf, obj)
+        cf.ct = self.st.switch(cf.ct)
+
+
     def execute(self, ct):
         cf = self.cf_stack[-1]
         cf.ct = ct
@@ -216,7 +258,7 @@ class VM(object):
             jitdriver.jit_merge_point(bc_off=bc_off, mod_bc=mod_bc, cf=cf, pc=pc, self=self)
             instr = Target.read_word(mod_bc, bc_off)
             it = Target.get_instr(instr)
-            #print "%s %s %d [stackpe:%d ffp:%d gfp:%d xfp:%d]" % (str(cf.stack), Target.INSTR_NAMES[instr & 0xFF], bc_off, cf.stackpe, cf.ffp, cf.gfp, cf.xfp)
+            #print "%s %s %d [stackpe:%d ffp:%d gfp:%d xfp:%d]" % (Target.INSTR_NAMES[instr & 0xFF], str(cf.stack), bc_off, cf.stackpe, cf.ffp, cf.gfp, cf.xfp)
             if it == Target.CON_INSTR_VAR_LOOKUP:
                 self._instr_var_lookup(instr, cf)
             elif it == Target.CON_INSTR_VAR_ASSIGN:
@@ -247,6 +289,8 @@ class VM(object):
                 if j < 0:
                     bc_off=cf.bc_off
                     jitdriver.can_enter_jit(bc_off=bc_off, mod_bc=mod_bc, cf=cf, pc=pc, self=self)
+            elif it == Target.CON_INSTR_YIELD:
+                self._instr_yield(instr, cf)
             elif it == Target.CON_INSTR_IMPORT:
                 self._instr_import(instr, cf)
             elif it == Target.CON_INSTR_STRING:
@@ -381,6 +425,11 @@ class VM(object):
     def _instr_return(self, instr, cf):
         self.return_(self._cf_stack_pop(cf))
         # Won't get here
+
+
+    def _instr_yield(self, instr, cf):
+        self.yield_(self._cf_stack_pop(cf))
+        cf.bc_off += Target.INTSIZE
 
 
     def _instr_import(self, instr, cf):
@@ -605,11 +654,21 @@ class VM(object):
         while 1:
             is_fail_up, fail_to_off = self._read_failure_frame()
             if is_fail_up:
+                has_rg = False
                 if cf.gfp > -1:
-                    raise Exception("XXX")
+                    gf = cf.stack[cf.gfp]
+                    assert isinstance(gf, Stack_Generator_Frame)
+                    has_rg = not gf.returned
+                
+                if has_rg:
+                    o = self._apply_pump(True)
+                    if o is not None:
+                        cf = self.cf_stack[-1]
+                        self._cf_stack_push(cf, o)
+                        cf.bc_off = gf.resume_bc_off
+                        return
                 else:
                     self._remove_failure_frame()
-                    cf.bc_off = fail_to_off
             else:
                 cf.bc_off = fail_to_off
                 self._remove_failure_frame()
@@ -652,9 +711,15 @@ class Stack_Failure_Frame(Con_Thingy):
     __slots__ = ("is_fail_up", "prev_ffp", "prev_gfp", "fail_to_off")
     # Because failure frames can be reused, they have no immutable fields.
 
+    def __repr__(self):
+        if self.is_fail_up:
+            return "<Fail up frame>"
+        else:
+            return "<Failure frame>"
+
 
 class Stack_Generator_Frame(Con_Thingy):
-    __slots__ = ("prev_gfp", "resume_bc_off", "returned")
+    __slots__ = ("prev_gfp", "resume_bc_off", "returned", "ct", "saved_cf")
     _immutable_fields_ = ("prev_gfp", "resume_bc_off")
     
     def __init__(self, prev_gfp, resume_bc_off):

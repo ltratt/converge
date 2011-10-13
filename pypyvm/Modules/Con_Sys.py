@@ -47,12 +47,13 @@ def println(vm):
     _,vargs = vm.decode_args("v")
     for o in vargs:
         if isinstance(o, Builtins.Con_String):
-            print o.v
+            print o.v,
         else:
             s = vm.get_slot_apply(o, "to_str")
             if isinstance(s, Builtins.Con_String):
-                print s.v
+                print s.v,
             else:
                 raise Exception("XXX")
+    print ""
 
     vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))

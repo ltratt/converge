@@ -549,7 +549,7 @@ class VM(object):
     def _cf_stack_extend(self, cf, l):
         for x in l:
             cf.stack[cf.stackpe] = x
-        cf.stackpe += len(l)
+            cf.stackpe += 1
 
 
     def _cf_stack_pop(self, cf):

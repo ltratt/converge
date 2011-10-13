@@ -103,7 +103,7 @@ class VM(object):
         return self.apply(f, args)
 
 
-    def apply_closure(self, func, args=None):
+    def apply_closure(self, func, args=None, allow_fail=False):
         if args is None: args = []
     
         cf = self._add_continuation_frame(func)
@@ -117,7 +117,13 @@ class VM(object):
         
         self._remove_continuation_frame()
         
-        return self._cf_stack_pop(cf), cf.closure[-1]
+        o = self._cf_stack_pop(cf)
+        if o is self.get_builtin(Builtins.BUILTIN_FAIL_OBJ):
+            o = None
+        if not allow_fail and o is None:
+            raise Exception("XXX")
+        
+        return o, cf.closure[-1]
 
 
     def _apply_pump(self, remove_generator_frames=False):
@@ -177,8 +183,10 @@ class VM(object):
             #   [..., <gen obj 1>, ..., <gen obj n>, <generator frame>, <gen obj 1>, ...,
             #     <gen obj n>]
         
-        if o is None:
-            raise Exception("XXX")
+        if o is self.get_builtin(Builtins.BUILTIN_FAIL_OBJ):
+            # Currently the failure of a function is signalled in the bytecode by returning the
+            # FAIL object.
+            return None
 
         return o
 
@@ -227,7 +235,7 @@ class VM(object):
 
     def yield_(self, obj):
         cf = self.cf_stack[-1]
-        if cf.ct is None:
+        if not cf.ct:
             # If there's no continuation to return back to, this yield becomes in effect a return.
             self.return_(obj)
 
@@ -394,11 +402,15 @@ class VM(object):
             self._cf_stack_push(new_cf, Builtins.new_con_int(self, num_args))
             o = self._apply_pump()
             if o is None:
-                raise Exception("XXX")
+                self._fail_now()
+                return
         else:
             cf.stack[fp] = None
             cf.stackpe -= 1
-            o, _ = self.apply_closure(func, args)
+            o, _ = self.apply_closure(func, args, True)
+            if o is None:
+                self._fail_now()
+                return
         self._cf_stack_push(cf, o)
         cf.bc_off += Target.INTSIZE
 

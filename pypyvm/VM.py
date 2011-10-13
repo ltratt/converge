@@ -204,7 +204,7 @@ class VM(object):
                 nrmargs.append(o)
             elif as_[i] == "v":
                 for j in range(i, np - i):
-                    vargs.append(cf.stack[cf.stackpe - np + j])
+                    vargs.append(cf.stack[cf.stackpe - j - 1])
                 break
             else:
                raise Exception("XXX")

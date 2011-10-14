@@ -63,6 +63,14 @@ class VM(object):
             self.set_mod(init_func(self))
 
 
+    # Check that 'o' is an instance of the Python class pyc. If not an appropriate exception is
+    # raised.
+
+    def type_check(self, o, pyc):
+        if not isinstance(o, pyc):
+            raise Exception("XXX")
+
+
     @jit.elidable
     def get_builtin(self, i):
         if DEBUG:
@@ -200,23 +208,23 @@ class VM(object):
         nrmargs = [] # Normal args
         vargs = [] # Var args
         for i in range(len(as_)):
-            if i >= np and as_[i] != "v":
+            t = as_[i]
+            if i >= np and t != "v":
                 raise Exception("XXX")
             
-            if as_[i] == "O":
+            if t == "O":
                 nrmargs.append(cf.stack[cf.stackpe - np + i])
-            elif as_[i] == "I":
-                o = cf.stack[cf.stackpe - np + i]
-                if not isinstance(o, Builtins.Con_Int):
-                    raise Exception("XXX")
-                nrmargs.append(o)
-            elif as_[i] == "v":
+            elif t == "v":
                 for j in range(i, np - i):
                     vargs.append(cf.stack[cf.stackpe - j - 1])
                 break
             else:
-               raise Exception("XXX")
-
+                o = cf.stack[cf.stackpe - np + i]
+                if t == "I":
+                    self.type_check(o, Builtins.Con_Int)
+                elif t == "L":
+                    self.type_check(o, Builtins.Con_List)
+                nrmargs.append(o)
         self._cf_stack_del_from(cf, cf.stackpe - np)
         
         return (nrmargs, vargs)
@@ -283,6 +291,8 @@ class VM(object):
                 self._instr_fail_now(instr, cf)
             elif it == Target.CON_INSTR_POP:
                 self._instr_pop(instr, cf)
+            elif it == Target.CON_INSTR_LIST:
+                self._instr_list(instr, cf)
             elif it == Target.CON_INSTR_SLOT_LOOKUP:
                 self._instr_slot_lookup(instr, cf)
             elif it == Target.CON_INSTR_APPLY:
@@ -369,6 +379,18 @@ class VM(object):
 
     def _instr_pop(self, instr, cf):
         self._cf_stack_pop(cf)
+        cf.bc_off += Target.INTSIZE
+
+
+    def _instr_list(self, instr, cf):
+        ne = Target.unpack_list(instr)
+        i = cf.stackpe - ne
+        assert i >= 0
+        j = cf.stackpe
+        assert j >= 0
+        l = cf.stack[i : j]
+        self._cf_stack_del_from(cf, i)
+        self._cf_stack_push(cf, Builtins.new_con_list(self, l))
         cf.bc_off += Target.INTSIZE
 
 

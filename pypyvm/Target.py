@@ -163,6 +163,10 @@ if INTSIZE == 8:
         return (instr & 0x00000100) >> 8
 
     @elidable_promote()
+    def unpack_list(instr):
+        return (instr & 0xFFFFFF00) >> 8
+
+    @elidable_promote()
     def unpack_slot_lookup(instr):
         return (4, (instr & 0xFFFFFF00) >> 8)
 

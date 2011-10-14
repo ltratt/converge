@@ -157,6 +157,7 @@ class Con_Boxed_Object(Con_Object):
             o = self.instance_of.get_field(vm, n)
         
         if o is None:
+            print o, n
             raise Exception("XXX")
         
         return o
@@ -431,7 +432,8 @@ def _Con_Int_to_str(vm):
 
 
 def bootstrap_con_int(vm):
-    int_class = Con_Class(vm, "Int", [vm.get_builtin(BUILTIN_OBJECT_CLASS)], vm.get_builtin(BUILTIN_BUILTINS_MODULE))
+    int_class = Con_Class(vm, "Int", [vm.get_builtin(BUILTIN_OBJECT_CLASS)], \
+      vm.get_builtin(BUILTIN_BUILTINS_MODULE))
     vm.set_builtin(BUILTIN_INT_CLASS, int_class)
     to_str_func = new_c_con_func(vm, new_con_string(vm, "to_str"), True, _Con_Int_to_str, int_class)
     int_class.set_field(vm, "to_str", to_str_func)
@@ -460,3 +462,47 @@ class Con_String(Con_Boxed_Object):
 
 def new_con_string(vm, v):
     return Con_String(vm, v)
+
+
+
+################################################################################
+# Con_List
+#
+
+class Con_List(Con_Boxed_Object):
+    __slots__ = ("l",)
+    _immutable_fields_ = ("l",)
+
+
+    def __init__(self, vm, l):
+        Con_Boxed_Object.__init__(self, vm, vm.get_builtin(BUILTIN_LIST_CLASS))
+        self.l = l
+
+
+
+def _Con_List_to_str(vm):
+    (o,),_ = vm.decode_args("L")
+    assert isinstance(o, Con_List)
+    
+    es = []
+    for e in o.l:
+        s = vm.get_slot_apply(e, "to_str")
+        vm.type_check(s, Con_String)
+        assert isinstance(s, Con_String)
+        es.append(s.v)
+
+    vm.return_(new_con_string(vm, "[%s]" % ", ".join(es)))
+
+
+
+def bootstrap_con_list(vm):
+    list_class = Con_Class(vm, "List", [vm.get_builtin(BUILTIN_OBJECT_CLASS)], \
+      vm.get_builtin(BUILTIN_BUILTINS_MODULE))
+    vm.set_builtin(BUILTIN_LIST_CLASS, list_class)
+    to_str_func = new_c_con_func(vm, new_con_string(vm, "to_str"), True, _Con_List_to_str, \
+      list_class)
+    list_class.set_field(vm, "to_str", to_str_func)
+
+
+def new_con_list(vm, l):
+    return Con_List(vm, l)

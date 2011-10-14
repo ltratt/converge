@@ -200,34 +200,50 @@ class VM(object):
 
 
     @jit.unroll_safe
-    def decode_args(self, as_):
+    def decode_args(self, mand="", opt="", vargs=False):
         cf = self.cf_stack[-1]
         np_o = self._cf_stack_pop(cf)
         assert isinstance(np_o, Builtins.Con_Int)
         np = np_o.v # Num params
-        nrmargs = [] # Normal args
-        vargs = [] # Var args
-        for i in range(len(as_)):
-            t = as_[i]
-            if i >= np and t != "v":
-                raise Exception("XXX")
-            
+
+        if np < len(mand):
+            raise Exception("XXX")
+        elif np > (len(mand) + len(opt)) and not vargs:
+            raise Exception("XXX")
+
+        if np == 0:
+            return [None, None]
+        
+        nrmp = [None] * (len(mand) + len(opt)) # Normal params
+        i = 0
+        while i < (len(mand) + len(opt)):
+            if i < len(mand):
+                t = mand[i]
+            else:
+                t = opt[i - len(mand)]
+        
             if t == "O":
-                nrmargs.append(cf.stack[cf.stackpe - np + i])
-            elif t == "v":
-                for j in range(i, np - i):
-                    vargs.append(cf.stack[cf.stackpe - j - 1])
-                break
+                nrmp[i] = cf.stack[cf.stackpe - np + i]
             else:
                 o = cf.stack[cf.stackpe - np + i]
                 if t == "I":
                     self.type_check(o, Builtins.Con_Int)
                 elif t == "L":
                     self.type_check(o, Builtins.Con_List)
-                nrmargs.append(o)
+                nrmp[i] = o
+            
+            i += 1
+
+        if vargs:
+            vap = [None] * (np - i)
+            for j in range(i, np):
+                vap[j - i] = cf.stack[cf.stackpe - np + j]
+        else:
+            vap = None
+
         self._cf_stack_del_from(cf, cf.stackpe - np)
         
-        return (nrmargs, vargs)
+        return [nrmp, vap]
 
 
     def return_(self, obj):

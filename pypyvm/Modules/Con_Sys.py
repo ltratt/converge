@@ -42,9 +42,8 @@ def import_(vm):
     vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))
 
 
-
 def println(vm):
-    _,vargs = vm.decode_args("v")
+    _,vargs = vm.decode_args(vargs=True)
     for o in vargs:
         if isinstance(o, Builtins.Con_String):
             print o.v,

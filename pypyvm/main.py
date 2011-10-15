@@ -62,8 +62,11 @@ def entry_point(argv):
     Builtins.bootstrap_con_int(vm)
     Builtins.bootstrap_con_list(vm)
     main_mod_id = Bytecode.add_exec(vm, useful_bc)
-    mod = vm.get_mod(main_mod_id)
-    vm.apply(mod.get_defn("main"))
+    try:
+        mod = vm.get_mod(main_mod_id)
+        vm.apply(mod.get_defn("main"))
+    except SystemExit:
+        return vm.exit_code
     
     return 0
 

@@ -46,7 +46,7 @@ jitdriver = jit.JitDriver(greens=["bc_off", "mod_bc", "pc"], reds=["cf", "self"]
 
 
 class VM(object):
-    __slots__ = ("builtins", "cf_stack", "mods", "pypy_config", "st")
+    __slots__ = ("builtins", "cf_stack", "mods", "pypy_config", "st", "exit_code")
     _immutable_fields = ("builtins", "cf_stack", "mods")
 
     def __init__(self): 
@@ -54,6 +54,12 @@ class VM(object):
         self.mods = {}
         self.cf_stack = []
         self.pypy_config = None
+        # Storing the exit code here seems evil, but RPython doesn't appear to give a prettier
+        # option. sys.exit doesn't exist and the SystemExit exception doesn't carry with it the
+        # desired return code. This variable should be set to a value, then SystemExit raised,
+        # and then main.entry_point will pick this up and return the appropriate value to the
+        # calling environment.
+        self.exit_code = 0
 
 
     def init(self):

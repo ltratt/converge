@@ -212,7 +212,10 @@ class VM(object):
             raise Exception("XXX")
 
         if np == 0:
-            return [None, None]
+            if vargs:
+                return (None, [])
+            else:
+                return (None, None)
         
         nrmp = [None] * (len(mand) + len(opt)) # Normal params
         i = 0
@@ -243,7 +246,7 @@ class VM(object):
 
         self._cf_stack_del_from(cf, cf.stackpe - np)
         
-        return [nrmp, vap]
+        return (nrmp, vap)
 
 
     def return_(self, obj):

@@ -119,10 +119,16 @@ class VM(object):
 
     def apply_closure(self, func, args=None, allow_fail=False):
         if args is None: args = []
-    
-        cf = self._add_continuation_frame(func)
+        
+        if isinstance(func, Builtins.Con_Partial_Application):
+            cf = self._add_continuation_frame(func.f)
+            self._cf_stack_push(cf, func.o)
+            nargs = len(args) + 1
+        else:
+            cf = self._add_continuation_frame(func)
+            nargs = len(args)
         self._cf_stack_extend(cf, list(args))
-        self._cf_stack_push(cf, Builtins.new_con_int(self, len(args)))
+        self._cf_stack_push(cf, Builtins.new_con_int(self, nargs))
 
         try:
             self.execute(self.st.get_null_handle())
@@ -346,6 +352,13 @@ class VM(object):
                 self._instr_const_get(instr, cf)
             elif it == Target.CON_INSTR_CONST_SET:
                 self._instr_const_set(instr, cf)
+            elif it == Target.CON_INSTR_PRE_SLOT_LOOKUP_APPLY:
+                # In the C Converge VM, this instruction is used to avoid a very expensive path
+                # through the VM; it's currently unclear whether this VM will suffer from the
+                # same problem. Until we are more sure, we simply use the normal slot lookup
+                # function, which has the correct semantics, but may perhaps not be fully
+                # optimised.
+                self._instr_slot_lookup(instr, cf)
             elif it == Target.CON_INSTR_BRANCH_IF_NOT_FAIL:
                 if self._cf_stack_pop(cf) is self.get_builtin(Builtins.BUILTIN_FAIL_OBJ):
                     cf.bc_off += Target.INTSIZE

@@ -142,7 +142,11 @@ class Con_Boxed_Object(Con_Object):
 
 
     def get_slot(self, vm, n):
-        return self.get_slot_raw(vm, n)
+        o = self.get_slot_raw(vm, n)
+        if isinstance(o, Con_Func):
+            return Con_Partial_Application(vm, self, o)
+        
+        return o
 
 
     def get_slot_raw(self, vm, n):
@@ -375,6 +379,22 @@ def new_c_con_func(vm, name, is_bound, func, container):
 
 def new_bc_con_func(vm, name, is_bound, pc, num_params, num_vars, container, container_closure):
     return Con_Func(vm, name, is_bound, pc, num_params, num_vars, container, container_closure)
+
+
+
+################################################################################
+# Con_Class
+#
+
+class Con_Partial_Application(Con_Boxed_Object):
+    __slots__ = ("o", "f")
+    _immutable_fields_ = ("o", "f")
+
+
+    def __init__(self, vm, o, f):
+        self.o = o
+        self.f = f
+
 
 
 

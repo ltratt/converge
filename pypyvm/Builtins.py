@@ -182,6 +182,12 @@ class Con_Boxed_Object(Con_Object):
 
 
 
+def _Con_Object_to_str(vm):
+    (o,),_ = vm.decode_args("O")
+
+    vm.return_(new_con_string(vm, "<Object@%x>" % id(o)))
+
+
 def bootstrap_con_object(vm):
     object_class = Con_Class(vm, "Object", [], None)
     vm.set_builtin(BUILTIN_OBJECT_CLASS, object_class)
@@ -195,6 +201,12 @@ def bootstrap_con_object(vm):
     
     builtins_module = new_c_con_module(vm, "Builtins", "Builtins", __file__, [])
     vm.set_builtin(BUILTIN_BUILTINS_MODULE, builtins_module)
+
+    object_class.set_slot(vm, "container", builtins_module)
+    class_class.set_slot(vm, "container", builtins_module)
+
+    to_str_func = new_c_con_func(vm, new_con_string(vm, "to_str"), True, _Con_Object_to_str, object_class)
+    object_class.set_field(vm, "to_str", to_str_func)
 
 
 

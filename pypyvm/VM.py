@@ -68,12 +68,22 @@ class VM(object):
         for init_func in Modules.BUILTIN_MODULES:
             self.set_mod(init_func(self))
 
+        Builtins.bootstrap_con_object(self)
+        Builtins.bootstrap_con_class(self)
+        Builtins.bootstrap_con_int(self)
+        Builtins.bootstrap_con_list(self)
+        Builtins.bootstrap_con_exception(self)
+
+        self.get_mod("Exceptions").import_(self)
+        self.get_mod("Sys").import_(self)
+
 
     # Check that 'o' is an instance of the Python class pyc. If not an appropriate exception is
     # raised.
 
     def type_check(self, o, pyc):
         if not isinstance(o, pyc):
+            #print o, pyc
             raise Exception("XXX")
 
 
@@ -241,10 +251,16 @@ class VM(object):
                 nrmp[i] = cf.stack[cf.stackpe - np + i]
             else:
                 o = cf.stack[cf.stackpe - np + i]
-                if t == "I":
+                if t == "C":
+                    self.type_check(o, Builtins.Con_Class)
+                elif t == "I":
                     self.type_check(o, Builtins.Con_Int)
                 elif t == "L":
                     self.type_check(o, Builtins.Con_List)
+                elif t == "S":
+                    self.type_check(o, Builtins.Con_String)
+                else:
+                    raise Exception("XXX")
                 nrmp[i] = o
             
             i += 1
@@ -448,8 +464,8 @@ class VM(object):
         func = cf.stack[fp]
         args = [None] * num_args
         for i in range(0, num_args):
-            args[i] = cf.stack[cf.stackpe - i - 1]
-            cf.stack[cf.stackpe - i - 1] = None
+            args[i] = cf.stack[cf.stackpe - num_args + i]
+            cf.stack[cf.stackpe - num_args + i] = None
         cf.stackpe -= num_args
 
         if is_fail_up:

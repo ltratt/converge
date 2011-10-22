@@ -181,10 +181,20 @@ class Con_Boxed_Object(Con_Object):
             self.slots = [v]
 
 
+def _new_func_Con_Object(vm):
+    (c,), vargs = vm.decode_args("O", vargs=True)
+    o = Con_Boxed_Object(vm, c)
+    vm.apply(o.get_slot(vm, "init"), vargs)
+    vm.return_(o)
+
+
+def _Con_Object_init(vm):
+    (self,), vargs = vm.decode_args("O", vargs=True)
+    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+
 
 def _Con_Object_to_str(vm):
     (o,),_ = vm.decode_args("O")
-
     vm.return_(new_con_string(vm, "<Object@%x>" % id(o)))
 
 
@@ -199,13 +209,28 @@ def bootstrap_con_object(vm):
     vm.set_builtin(BUILTIN_NULL_OBJ, Con_Boxed_Object(vm))
     vm.set_builtin(BUILTIN_FAIL_OBJ, Con_Boxed_Object(vm))
     
-    builtins_module = new_c_con_module(vm, "Builtins", "Builtins", __file__, [])
+    # In order that later objects can refer to the Builtins module, we have to create it now.
+    builtins_module = new_c_con_module(vm, "Builtins", "Builtins", __file__, ["Object", "Class"])
+    # We effectively initialize the Builtins module through the bootstrapping process, so it doesn't
+    # need a separate initialization function.
+    builtins_module.initialized = True
     vm.set_builtin(BUILTIN_BUILTINS_MODULE, builtins_module)
-
+    vm.set_mod(builtins_module)
+    
     object_class.set_slot(vm, "container", builtins_module)
     class_class.set_slot(vm, "container", builtins_module)
+    builtins_module.set_defn("Object", object_class)
+    builtins_module.set_defn("Class", class_class)
 
-    to_str_func = new_c_con_func(vm, new_con_string(vm, "to_str"), True, _Con_Object_to_str, object_class)
+    object_class.new_func = \
+      new_c_con_func(vm, new_con_string(vm, "new_Object"), False, _new_func_Con_Object, \
+        builtins_module)
+
+    init_func = new_c_con_func(vm, new_con_string(vm, "init"), True, _Con_Object_init, object_class)
+    object_class.set_field(vm, "init", init_func)
+
+    to_str_func = new_c_con_func(vm, new_con_string(vm, "to_str"), True, _Con_Object_to_str, \
+      object_class)
     object_class.set_field(vm, "to_str", to_str_func)
 
 
@@ -216,12 +241,34 @@ def bootstrap_con_object(vm):
 #
 
 class Con_Class(Con_Boxed_Object):
-    __slots__ = ("name", "supers", "fields_map", "fields")
+    __slots__ = ("name", "supers", "fields_map", "fields", "new_func")
     _immutable_fields = ("supers", "fields")
 
 
-    def __init__(self, vm, name, supers, container):
-        Con_Boxed_Object.__init__(self, vm, vm.get_builtin(BUILTIN_CLASS_CLASS))
+    def __init__(self, vm, name, supers, container, instance_of=None, new_func=None):
+        if instance_of is None:
+            instance_of = vm.get_builtin(BUILTIN_CLASS_CLASS)
+        Con_Boxed_Object.__init__(self, vm, instance_of)
+        
+        if new_func is None:
+            # A new object function hasn't been supplied so we need to search for one.
+            # See http://tratt.net/laurie/tech_articles/articles/more_meta_matters for
+            # more details about this algorithm.
+            for sc in supers:
+                assert isinstance(sc, Con_Class)
+                if new_func is None:
+                    new_func = sc.new_func
+                elif new_func is not sc.new_func:
+                    new_func = sc.new_func
+                    object_class = vm.get_builtin(BUILTIN_OBJECT_CLASS)
+                    assert isinstance(object_class, Con_Class)
+                    object_class.new_func
+                    if new_func is object_class.new_func:
+                        new_func = sc.new_func
+                    else:
+                        # There's a clash between superclass's metaclasses.
+                        raise Exception("XXX")
+        self.new_func = new_func
         
         self.name = name
         self.supers = supers
@@ -257,9 +304,48 @@ class Con_Class(Con_Boxed_Object):
             self.fields[i] = o
 
 
+def _new_func_Con_Class(vm):
+    (c, name, supers, container), vargs = vm.decode_args("CSLO", vargs=True)
+    assert isinstance(c, Con_Class)
+    assert isinstance(name, Con_String)
+    assert isinstance(supers, Con_List)
+    o = Con_Class(vm, name.v, supers.l[:], container, c)
+    vm.apply(o.get_slot(vm, "init"), vargs)
+    vm.return_(o)
+
+
+def _Con_Class_new(vm):
+    _, v = vm.decode_args(vargs=True)
+    c = v[0]
+    vm.type_check(c, Con_Class)
+    assert isinstance(c, Con_Class)
+    vm.return_(vm.apply(c.new_func, v))
+
+
+def _Con_Class_to_str(vm):
+    (self,),_ = vm.decode_args("C")
+    assert isinstance(self, Con_Class)
+
+    vm.return_(new_con_string(vm, "<Class %s>" % self.name))
+
 
 def bootstrap_con_class(vm):
-    pass
+    class_class = vm.get_builtin(BUILTIN_CLASS_CLASS)
+    assert isinstance(class_class, Con_Class)
+
+    class_class.new_func = \
+      new_c_con_func(vm, new_con_string(vm, "new_Class"), False, _new_func_Con_Class, \
+        vm.get_builtin(BUILTIN_BUILTINS_MODULE))
+
+    new_func = new_c_con_func(vm, new_con_string(vm, "new"), True, _Con_Class_new, class_class)
+    class_class.set_field(vm, "new", new_func)
+    to_str_func = new_c_con_func(vm, new_con_string(vm, "to_str"), True, _Con_Class_to_str, \
+      class_class)
+    class_class.set_field(vm, "to_str", to_str_func)
+
+
+def new_con_class(vm, name, supers, container):
+    return Con_Class(vm, name, supers, container)
 
 
 
@@ -313,7 +399,10 @@ class Con_Module(Con_Boxed_Object):
 
     @jit.elidable_promote("0")
     def get_closure_i(self, n):
-        return self.tlvars_map[n]
+        i = self.tlvars_map.get(n, -1)
+        if i == -1:
+            raise Exception("XXX")
+        return i
 
 
     def get_defn(self, n):
@@ -538,3 +627,32 @@ def bootstrap_con_list(vm):
 
 def new_con_list(vm, l):
     return Con_List(vm, l)
+
+
+
+################################################################################
+# Con_Exception
+#
+
+class Con_Exception(Con_Boxed_Object):
+    __slots__ = ("call_chain",)
+    _immutable_fields_ = ()
+
+
+    def __init__(self, vm):
+        Con_Boxed_Object.__init__(self, vm, vm.get_builtin(BUILTIN_EXCEPTION_CLASS))
+
+
+def _Con_Exception_init(vm):
+    (self, msg),_ = vm.decode_args("OO")
+    self.set_slot(vm, "msg", msg)
+    vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))
+
+
+def bootstrap_con_exception(vm):
+    exception_class = Con_Class(vm, "Exception", [vm.get_builtin(BUILTIN_OBJECT_CLASS)], \
+      vm.get_builtin(BUILTIN_BUILTINS_MODULE))
+    vm.set_builtin(BUILTIN_EXCEPTION_CLASS, exception_class)
+    init_func = new_c_con_func(vm, new_con_string(vm, "init"), True, _Con_Exception_init, \
+      exception_class)
+    exception_class.set_field(vm, "init", init_func)

@@ -19,9 +19,23 @@
 # IN THE SOFTWARE.
 
 
-__all__ = ["Con_Exceptions", "Con_Sys"]
+import sys
+import Builtins
 
-import Con_Exceptions, Con_Sys
 
-BUILTIN_MODULES = \
-  [Con_Exceptions.init, Con_Sys.init]
+
+
+def init(vm):
+    mod = Builtins.new_c_con_module(vm, "Exceptions", "Exceptions", __file__, ["Exception"])
+    init_func = Builtins.new_c_con_func(vm, Builtins.new_con_string(vm, "init"), False, import_, mod)
+    mod.init_func = init_func
+    
+    return mod
+
+
+def import_(vm):
+    (mod,),_ = vm.decode_args("O")
+
+    mod.set_defn("Exception", vm.get_builtin(Builtins.BUILTIN_EXCEPTION_CLASS))
+
+    vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))

@@ -362,6 +362,8 @@ class VM(object):
                     self._instr_add_fail_up_frame(instr, cf)
                 elif it == Target.CON_INSTR_REMOVE_FAILURE_FRAME:
                     self._instr_remove_failure_frame(instr, cf)
+                elif it == Target.CON_INSTR_IS_ASSIGNED:
+                    self._instr_is_assigned(instr, cf)
                 elif it == Target.CON_INSTR_FAIL_NOW:
                     self._instr_fail_now(instr, cf)
                 elif it == Target.CON_INSTR_POP:
@@ -484,6 +486,18 @@ class VM(object):
     def _instr_remove_failure_frame(self, instr, cf):
         self._remove_failure_frame()
         cf.bc_off += Target.INTSIZE
+
+
+    def _instr_is_assigned(self, instr, cf):
+        closure_off, var_num = Target.unpack_var_lookup(instr)
+        if cf.closure[len(cf.closure) - 1 - closure_off][var_num] is None:
+            pc = cf.pc
+            assert isinstance(pc, BC_PC)
+            mod_bc = pc.mod.bc
+            instr2 = Target.read_word(mod_bc, cf.bc_off + Target.INTSIZE)
+            cf.bc_off += Target.unpack_is_assigned(instr)
+        else:
+            cf.bc_off += Target.INTSIZE + Target.INTSIZE
 
 
     def _instr_pop(self, instr, cf):

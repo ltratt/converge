@@ -83,8 +83,9 @@ if INTSIZE == 8:
     CON_INSTR_ADD_FAILURE_FRAME = 5       # bits 0-7 5, bits 8-30 pc offset, bit 31 offset sign
     CON_INSTR_ADD_FAIL_UP_FRAME = 6       # bits 0-7 6
     CON_INSTR_REMOVE_FAILURE_FRAME = 7    # bits 0-7 7
-    CON_INSTR_IS_ASSIGNED = 8             # bits 0-7 8, bits 8-19 closures offset, bits 20-31 var number
-                                          #   bits 32-39 := 0, 40-62 := pc offset, bit 63 := offset sign
+    CON_INSTR_IS_ASSIGNED = 8             # Stored as two words
+                                          #   Word 1: bits 0-7 8, bits 8-19 closures offset, bits 20-31 var number
+                                          #   Word 2: bits bits 8-30 pc offset, bit 31 offset sign
     CON_INSTR_IS = 9                      # bits 0-7 9
     CON_INSTR_FAIL_NOW = 10               # bits 0-7 10
     CON_INSTR_POP = 11                    # bits 0-7 11
@@ -171,6 +172,13 @@ if INTSIZE == 8:
             return -((instr & 0x7FFFFF00) >> 8)
         else:
             return (instr & 0x7FFFFF00) >> 8
+
+    @elidable_promote()
+    def unpack_is_assigned(instr2):
+        if (instr2 & 0x80000000) >> 8:
+            return -((instr2 & 0x7FFFFF00) >> 8)
+        else:
+            return (instr2 & 0x7FFFFF00) >> 8
 
     @elidable_promote()
     def unpack_func_defn(instr):

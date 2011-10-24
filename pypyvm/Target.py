@@ -157,7 +157,14 @@ if INTSIZE == 8:
             return -((instr & ((1 << x) - 256)) >> 8)
         else:
             return (instr & ((1 << x) - 256)) >> 8
-    
+
+    @elidable_promote()
+    def unpack_add_failure_frame(instr):
+        if (instr & 0x80000000) >> 8:
+            return -((instr & 0x7FFFFF00) >> 8)
+        else:
+            return (instr & 0x7FFFFF00) >> 8
+
     @elidable_promote()
     def unpack_func_defn(instr):
         return (instr & 0x00000100) >> 8
@@ -180,13 +187,10 @@ if INTSIZE == 8:
             return -((instr & 0x7FFFFF00) >> 8)
         else:
             return (instr & 0x7FFFFF00) >> 8
-    
+
     @elidable_promote()
-    def unpack_add_failure_frame(instr):
-        if (instr & 0x80000000) >> 8:
-            return -((instr & 0x7FFFFF00) >> 8)
-        else:
-            return (instr & 0x7FFFFF00) >> 8
+    def unpack_pull(instr):
+        return (instr & 0xFFFFFF00) >> 8
 
     @elidable_promote()
     def unpack_import(instr):
@@ -199,6 +203,13 @@ if INTSIZE == 8:
     @elidable_promote()
     def unpack_builtin_lookup(instr):
         return (instr & 0xFFFFFF00) >> 8
+
+    @elidable_promote()
+    def unpack_add_exception_frame(instr):
+        if (instr & 0x80000000) >> 8:
+            return -((instr & 0x7FFFFF00) >> 8)
+        else:
+            return (instr & 0x7FFFFF00) >> 8
 
     @elidable_promote()
     def unpack_unpack_args(instr):

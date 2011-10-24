@@ -60,9 +60,11 @@ def entry_point(argv):
     main_mod_id = Bytecode.add_exec(vm, useful_bc)
     try:
         mod = vm.get_mod(main_mod_id)
-        vm.apply(mod.get_defn("main"))
+        vm.apply(mod.get_defn(vm, "main"))
     except SystemExit:
         return vm.exit_code
+    except VM.Raise_Exception, e:
+        raise Exception("XXX")
     
     return 0
 

@@ -219,8 +219,8 @@ def bootstrap_con_object(vm):
     
     object_class.set_slot(vm, "container", builtins_module)
     class_class.set_slot(vm, "container", builtins_module)
-    builtins_module.set_defn("Object", object_class)
-    builtins_module.set_defn("Class", class_class)
+    builtins_module.set_defn(vm, "Object", object_class)
+    builtins_module.set_defn(vm, "Class", class_class)
 
     object_class.new_func = \
       new_c_con_func(vm, new_con_string(vm, "new_Object"), False, _new_func_Con_Object, \
@@ -329,10 +329,20 @@ def _Con_Class_to_str(vm):
     vm.return_(new_con_string(vm, "<Class %s>" % self.name))
 
 
+def _Con_Class_instantiated(vm):
+    (self, o),_ = vm.decode_args("CO")
+    assert isinstance(self, Con_Class)
+    assert isinstance(o, Con_Boxed_Object)
+
+    if o.instance_of is self:
+        vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+
+    vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+
+
 def bootstrap_con_class(vm):
     class_class = vm.get_builtin(BUILTIN_CLASS_CLASS)
     assert isinstance(class_class, Con_Class)
-
     class_class.new_func = \
       new_c_con_func(vm, new_con_string(vm, "new_Class"), False, _new_func_Con_Class, \
         vm.get_builtin(BUILTIN_BUILTINS_MODULE))
@@ -342,6 +352,9 @@ def bootstrap_con_class(vm):
     to_str_func = new_c_con_func(vm, new_con_string(vm, "to_str"), True, _Con_Class_to_str, \
       class_class)
     class_class.set_field(vm, "to_str", to_str_func)
+    instantiated_func = new_c_con_func(vm, new_con_string(vm, "instantiated"), True, \
+      _Con_Class_instantiated, class_class)
+    class_class.set_field(vm, "instantiated", instantiated_func)
 
 
 def new_con_class(vm, name, supers, container):
@@ -398,19 +411,20 @@ class Con_Module(Con_Boxed_Object):
 
 
     @jit.elidable_promote("0")
-    def get_closure_i(self, n):
+    def get_closure_i(self, vm, n):
         i = self.tlvars_map.get(n, -1)
         if i == -1:
-            raise Exception("XXX")
+            vm.raise_helper("Mod_Defn_Exception", \
+              [Builtins.new_con_string(vm, "Definition '%s' not found in '%s'." % (n, self.name))])
         return i
 
 
-    def get_defn(self, n):
-        return self.closure[self.get_closure_i(n)]
+    def get_defn(self, vm, n):
+        return self.closure[self.get_closure_i(vm, n)]
 
 
-    def set_defn(self, n, o):
-        self.closure[self.get_closure_i(n)] = o
+    def set_defn(self, vm, n, o):
+        self.closure[self.get_closure_i(vm, n)] = o
 
 
     def get_const_create_off(self, vm, i):
@@ -641,6 +655,14 @@ class Con_Exception(Con_Boxed_Object):
 
     def __init__(self, vm):
         Con_Boxed_Object.__init__(self, vm, vm.get_builtin(BUILTIN_EXCEPTION_CLASS))
+        self.call_chain = None
+
+
+def _new_func_Con_Exception(vm):
+    (self, ), vargs = vm.decode_args("C", vargs=True)
+    o = Con_Exception(vm)
+    vm.apply(o.get_slot(vm, "init"), vargs)
+    vm.return_(o)
 
 
 def _Con_Exception_init(vm):
@@ -653,6 +675,10 @@ def bootstrap_con_exception(vm):
     exception_class = Con_Class(vm, "Exception", [vm.get_builtin(BUILTIN_OBJECT_CLASS)], \
       vm.get_builtin(BUILTIN_BUILTINS_MODULE))
     vm.set_builtin(BUILTIN_EXCEPTION_CLASS, exception_class)
+    exception_class.new_func = \
+      new_c_con_func(vm, new_con_string(vm, "new_Exception"), False, _new_func_Con_Exception, \
+        vm.get_builtin(BUILTIN_BUILTINS_MODULE))
+
     init_func = new_c_con_func(vm, new_con_string(vm, "init"), True, _Con_Exception_init, \
       exception_class)
     exception_class.set_field(vm, "init", init_func)

@@ -26,7 +26,9 @@ import Builtins
 
 
 def init(vm):
-    mod = Builtins.new_c_con_module(vm, "Exceptions", "Exceptions", __file__, ["Exception"])
+    mod = Builtins.new_c_con_module(vm, "Exceptions", "Exceptions", __file__, \
+      ["Exception", "Mod_Defn_Exception"])
+    vm.set_builtin(Builtins.BUILTIN_EXCEPTIONS_MODULE, mod)
     init_func = Builtins.new_c_con_func(vm, Builtins.new_con_string(vm, "init"), False, import_, mod)
     mod.init_func = init_func
     
@@ -36,6 +38,15 @@ def init(vm):
 def import_(vm):
     (mod,),_ = vm.decode_args("O")
 
-    mod.set_defn("Exception", vm.get_builtin(Builtins.BUILTIN_EXCEPTION_CLASS))
+    mod.set_defn(vm, "Exception", vm.get_builtin(Builtins.BUILTIN_EXCEPTION_CLASS))
+    _mk_simple_exception(vm, mod, "Mod_Defn_Exception")
 
     vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))
+
+
+def _mk_simple_exception(vm, mod, n):
+    class_class = vm.get_builtin(Builtins.BUILTIN_CLASS_CLASS)
+    ex_class = vm.get_builtin(Builtins.BUILTIN_EXCEPTION_CLASS)
+    assert isinstance(ex_class, Builtins.Con_Class)
+    ex = vm.get_slot_apply(class_class, "new", [Builtins.new_con_string(vm, n), Builtins.new_con_list(vm, [ex_class]), mod])
+    mod.set_defn(vm, n, ex)

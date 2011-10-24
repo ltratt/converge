@@ -34,8 +34,6 @@ DEBUG = False
 
 
 
-class Return_Exception(Exception): pass
-
 def get_printable_location(bc_off, mod_bc, pc):
     instr = Target.read_word(mod_bc, bc_off)
     it = Target.get_instr(instr)
@@ -78,6 +76,11 @@ class VM(object):
         self.get_mod("Sys").import_(self)
 
 
+    ################################################################################################
+    # Generic helper functions
+    #
+
+
     # Check that 'o' is an instance of the Python class pyc. If not an appropriate exception is
     # raised.
 
@@ -111,20 +114,18 @@ class VM(object):
         return m
 
 
+
+    ################################################################################################
+    # Core VM functions
+    #
+
     def apply(self, func, args=None):
         o, _ = self.apply_closure(func, args)
         return o
 
 
     def get_slot_apply(self, o, n, args=None):
-        f = o.get_slot_raw(self, n)
-
-        if args is None:
-            args = [o]
-        else:
-            args = [o] + args
-
-        return self.apply(f, args)
+        return self.apply(o.get_slot(self, n), args)
 
 
     def apply_closure(self, func, args=None, allow_fail=False):
@@ -298,6 +299,34 @@ class VM(object):
         cf.ct = self.st.switch(cf.ct)
 
 
+    def raise_(self, ex):
+        self.type_check(ex, Builtins.Con_Exception)
+        assert isinstance(ex, Builtins.Con_Exception)
+        if ex.call_chain is None:
+            cc = [] # Call chain
+            i = len(self.cf_stack) - 1
+            while i >= 0:
+                cf = self.cf_stack[i]
+                cc.append((cf.pc, cf.bc_off))
+                i -= 1
+            ex.call_chain = cc
+        raise Raise_Exception(ex)
+
+
+    def raise_helper(self, ex_name, args=None):
+        if args is None:
+            args = []
+
+        ex_mod = self.get_builtin(Builtins.BUILTIN_EXCEPTIONS_MODULE)
+        assert isinstance(ex_mod, Builtins.Con_Module)
+        ex = self.get_slot_apply(ex_mod.get_defn(self, ex_name), "new", args)
+        self.raise_(ex)
+
+
+    ################################################################################################
+    # The interepreter
+    #
+
     def execute(self, ct):
         cf = self.cf_stack[-1]
         cf.ct = ct
@@ -317,82 +346,108 @@ class VM(object):
         assert isinstance(pc, BC_PC)
         mod_bc = pc.mod.bc
         while 1:
-            bc_off = cf.bc_off
-            jitdriver.jit_merge_point(bc_off=bc_off, mod_bc=mod_bc, cf=cf, pc=pc, self=self)
-            instr = Target.read_word(mod_bc, bc_off)
-            it = Target.get_instr(instr)
-            #print "%s %s %d [stackpe:%d ffp:%d gfp:%d xfp:%d]" % (Target.INSTR_NAMES[instr & 0xFF], str(cf.stack), bc_off, cf.stackpe, cf.ffp, cf.gfp, cf.xfp)
-            if it == Target.CON_INSTR_VAR_LOOKUP:
-                self._instr_var_lookup(instr, cf)
-            elif it == Target.CON_INSTR_VAR_ASSIGN:
-                self._instr_var_assign(instr, cf)
-            elif it == Target.CON_INSTR_INT:
-                self._instr_int(instr, cf)
-            elif it == Target.CON_INSTR_ADD_FAILURE_FRAME:
-                self._instr_add_failure_frame(instr, cf)
-            elif it == Target.CON_INSTR_ADD_FAIL_UP_FRAME:
-                self._instr_add_fail_up_frame(instr, cf)
-            elif it == Target.CON_INSTR_REMOVE_FAILURE_FRAME:
-                self._instr_remove_failure_frame(instr, cf)
-            elif it == Target.CON_INSTR_FAIL_NOW:
-                self._instr_fail_now(instr, cf)
-            elif it == Target.CON_INSTR_POP:
-                self._instr_pop(instr, cf)
-            elif it == Target.CON_INSTR_LIST:
-                self._instr_list(instr, cf)
-            elif it == Target.CON_INSTR_SLOT_LOOKUP:
-                self._instr_slot_lookup(instr, cf)
-            elif it == Target.CON_INSTR_APPLY:
-                self._instr_apply(instr, cf)
-            elif it == Target.CON_INSTR_FUNC_DEFN:
-                self._instr_func_defn(instr, cf)
-            elif it == Target.CON_INSTR_RETURN:
-                self._instr_return(instr, cf)
-            elif it == Target.CON_INSTR_BRANCH:
-                j = Target.unpack_branch(instr)
-                cf.bc_off += j
-                if j < 0:
-                    bc_off=cf.bc_off
-                    jitdriver.can_enter_jit(bc_off=bc_off, mod_bc=mod_bc, cf=cf, pc=pc, self=self)
-            elif it == Target.CON_INSTR_YIELD:
-                self._instr_yield(instr, cf)
-            elif it == Target.CON_INSTR_IMPORT:
-                self._instr_import(instr, cf)
-            elif it == Target.CON_INSTR_STRING:
-                self._instr_string(instr, cf)
-            elif it == Target.CON_INSTR_BUILTIN_LOOKUP:
-                self._instr_builtin_lookup(instr, cf)
-            elif it == Target.CON_INSTR_UNPACK_ARGS:
-                self._instr_unpack_args(instr, cf)
-            elif it == Target.CON_INSTR_CONST_GET:
-                self._instr_const_get(instr, cf)
-            elif it == Target.CON_INSTR_CONST_SET:
-                self._instr_const_set(instr, cf)
-            elif it == Target.CON_INSTR_PRE_SLOT_LOOKUP_APPLY:
-                # In the C Converge VM, this instruction is used to avoid a very expensive path
-                # through the VM; it's currently unclear whether this VM will suffer from the
-                # same problem. Until we are more sure, we simply use the normal slot lookup
-                # function, which has the correct semantics, but may perhaps not be fully
-                # optimised.
-                self._instr_slot_lookup(instr, cf)
-            elif it == Target.CON_INSTR_BRANCH_IF_NOT_FAIL:
-                if self._cf_stack_pop(cf) is self.get_builtin(Builtins.BUILTIN_FAIL_OBJ):
-                    cf.bc_off += Target.INTSIZE
-                else:
-                    j = Target.unpack_branch_if_not_fail(instr)
+            try:
+                bc_off = cf.bc_off
+                jitdriver.jit_merge_point(bc_off=bc_off, mod_bc=mod_bc, cf=cf, pc=pc, self=self)
+                instr = Target.read_word(mod_bc, bc_off)
+                it = Target.get_instr(instr)
+                #print "%s %s %d [stackpe:%d ffp:%d gfp:%d xfp:%d]" % (Target.INSTR_NAMES[instr & 0xFF], str(cf.stack[:cf.stackpe]), bc_off, cf.stackpe, cf.ffp, cf.gfp, cf.xfp)
+                if it == Target.CON_INSTR_VAR_LOOKUP:
+                    self._instr_var_lookup(instr, cf)
+                elif it == Target.CON_INSTR_VAR_ASSIGN:
+                    self._instr_var_assign(instr, cf)
+                elif it == Target.CON_INSTR_INT:
+                    self._instr_int(instr, cf)
+                elif it == Target.CON_INSTR_ADD_FAILURE_FRAME:
+                    self._instr_add_failure_frame(instr, cf)
+                elif it == Target.CON_INSTR_ADD_FAIL_UP_FRAME:
+                    self._instr_add_fail_up_frame(instr, cf)
+                elif it == Target.CON_INSTR_REMOVE_FAILURE_FRAME:
+                    self._instr_remove_failure_frame(instr, cf)
+                elif it == Target.CON_INSTR_FAIL_NOW:
+                    self._instr_fail_now(instr, cf)
+                elif it == Target.CON_INSTR_POP:
+                    self._instr_pop(instr, cf)
+                elif it == Target.CON_INSTR_LIST:
+                    self._instr_list(instr, cf)
+                elif it == Target.CON_INSTR_SLOT_LOOKUP:
+                    self._instr_slot_lookup(instr, cf)
+                elif it == Target.CON_INSTR_APPLY:
+                    self._instr_apply(instr, cf)
+                elif it == Target.CON_INSTR_FUNC_DEFN:
+                    self._instr_func_defn(instr, cf)
+                elif it == Target.CON_INSTR_RETURN:
+                    self._instr_return(instr, cf)
+                elif it == Target.CON_INSTR_BRANCH:
+                    j = Target.unpack_branch(instr)
                     cf.bc_off += j
                     if j < 0:
                         bc_off=cf.bc_off
                         jitdriver.can_enter_jit(bc_off=bc_off, mod_bc=mod_bc, cf=cf, pc=pc, self=self)
-            elif it == Target.CON_INSTR_EQ or it == Target.CON_INSTR_GT:
-                self._instr_cmp(instr, cf)
-            elif it == Target.CON_INSTR_SUBTRACT:
-                self._instr_sub(instr, cf)
-            elif it == Target.CON_INSTR_MODULE_LOOKUP:
-                self._instr_module_lookup(instr, cf)
-            else:
-                print it, cf.stack
-                raise Exception("XXX")
+                elif it == Target.CON_INSTR_YIELD:
+                    self._instr_yield(instr, cf)
+                elif it == Target.CON_INSTR_IMPORT:
+                    self._instr_import(instr, cf)
+                elif it == Target.CON_INSTR_DUP:
+                    self._instr_dup(instr, cf)
+                elif it == Target.CON_INSTR_PULL:
+                    self._instr_pull(instr, cf)
+                elif it == Target.CON_INSTR_STRING:
+                    self._instr_string(instr, cf)
+                elif it == Target.CON_INSTR_BUILTIN_LOOKUP:
+                    self._instr_builtin_lookup(instr, cf)
+                elif it == Target.CON_INSTR_ADD_EXCEPTION_FRAME:
+                    self._instr_add_exception_frame(instr, cf)
+                elif it == Target.CON_INSTR_REMOVE_EXCEPTION_FRAME:
+                    self._instr_remove_exception_frame(instr, cf)
+                elif it == Target.CON_INSTR_RAISE:
+                    self._instr_raise(instr, cf)
+                elif it == Target.CON_INSTR_UNPACK_ARGS:
+                    self._instr_unpack_args(instr, cf)
+                elif it == Target.CON_INSTR_CONST_GET:
+                    self._instr_const_get(instr, cf)
+                elif it == Target.CON_INSTR_CONST_SET:
+                    self._instr_const_set(instr, cf)
+                elif it == Target.CON_INSTR_PRE_SLOT_LOOKUP_APPLY:
+                    # In the C Converge VM, this instruction is used to avoid a very expensive path
+                    # through the VM; it's currently unclear whether this VM will suffer from the
+                    # same problem. Until we are more sure, we simply use the normal slot lookup
+                    # function, which has the correct semantics, but may perhaps not be fully
+                    # optimised.
+                    self._instr_slot_lookup(instr, cf)
+                elif it == Target.CON_INSTR_BRANCH_IF_NOT_FAIL:
+                    if self._cf_stack_pop(cf) is self.get_builtin(Builtins.BUILTIN_FAIL_OBJ):
+                        cf.bc_off += Target.INTSIZE
+                    else:
+                        j = Target.unpack_branch_if_not_fail(instr)
+                        cf.bc_off += j
+                        if j < 0:
+                            bc_off=cf.bc_off
+                            jitdriver.can_enter_jit(bc_off=bc_off, mod_bc=mod_bc, cf=cf, pc=pc, self=self)
+                elif it == Target.CON_INSTR_EQ or it == Target.CON_INSTR_GT:
+                    self._instr_cmp(instr, cf)
+                elif it == Target.CON_INSTR_SUBTRACT:
+                    self._instr_sub(instr, cf)
+                elif it == Target.CON_INSTR_MODULE_LOOKUP:
+                    self._instr_module_lookup(instr, cf)
+                else:
+                    print it, cf.stack
+                    raise Exception("XXX")
+            except Raise_Exception, e:
+                # An exception has been raised and is working its way up the call chain. Each bc_loop
+                # catches the Raise_Exception and either a) kills its continuation and passes the
+                # exception up a level b) deals with it.
+                if cf.xfp == -1:
+                    # There is no exception handler, so kill this continuation frame and propagate
+                    # the exception
+                    self._remove_continuation_frame()
+                    raise
+                # We have an exception handler, so deal with it.
+                ef = cf.stack[cf.xfp]
+                assert isinstance(ef, Stack_Exception_Frame)
+                self._remove_exception_frame(cf)
+                self._cf_stack_push(cf, e.ex_obj)
+                cf.bc_off = ef.bc_off
 
 
     def _instr_var_lookup(self, instr, cf):
@@ -526,6 +581,17 @@ class VM(object):
         cf.bc_off += Target.INTSIZE
 
 
+    def _instr_dup(self, instr, cf):
+        self._cf_stack_push(cf, cf.stack[cf.stackpe - 1])
+        cf.bc_off += Target.INTSIZE
+
+
+    def _instr_pull(self, instr, cf):
+        i = Target.unpack_pull(instr)
+        self._cf_stack_push(cf, self._cf_stack_pop_n(cf, i))
+        cf.bc_off += Target.INTSIZE
+
+
     def _instr_string(self, instr, cf):
         str_start, str_size = Target.unpack_string(instr)
         str_off = cf.bc_off + str_start
@@ -539,6 +605,21 @@ class VM(object):
         bl = Target.unpack_builtin_lookup(instr)
         self._cf_stack_push(cf, self.get_builtin(bl))
         cf.bc_off += Target.INTSIZE
+
+
+    def _instr_add_exception_frame(self, instr, cf):
+        j = Target.unpack_add_exception_frame(instr)
+        self._add_exception_frame(cf, cf.bc_off + j)
+        cf.bc_off += Target.INTSIZE
+
+
+    def _instr_remove_exception_frame(self, instr, cf):
+        self._remove_exception_frame(cf)
+        cf.bc_off += Target.INTSIZE
+
+
+    def _instr_raise(self, instr, cf):
+        self.raise_(self._cf_stack_pop(cf))
 
 
     @jit.unroll_safe
@@ -620,12 +701,12 @@ class VM(object):
             raise Exception("XXX")
         nm_start, nm_size = Target.unpack_mod_lookup(instr)
         nm = Target.extract_str(cf.pc.mod.bc, cf.bc_off + nm_start, nm_size)
-        self._cf_stack_push(cf, o.closure[o.get_closure_i(nm)])
+        self._cf_stack_push(cf, o.closure[o.get_closure_i(self, nm)])
         cf.bc_off += Target.align(nm_start + nm_size)
 
 
-    #
-    # Stack operations
+    ################################################################################################
+    # cf.stack operations
     #
     
     def _cf_stack_push(self, cf, x):
@@ -644,6 +725,28 @@ class VM(object):
         cf.stackpe -= 1
         o = cf.stack[cf.stackpe]
         cf.stack[cf.stackpe] = None
+        return o
+
+
+    # Pop an item n items from the end of cf.stack.
+
+    def _cf_stack_pop_n(self, cf, n):
+        assert n < cf.stackpe
+        i = cf.stackpe - 1 - n
+        o = cf.stack[i]
+        # Shuffle the stack down
+        for j in range(i, cf.stackpe):
+            cf.stack[j] = cf.stack[j + 1]
+        cf.stackpe -= 1
+        cf.stack[cf.stackpe] = None
+        # If the frame pointers come after the popped item, they need to be rewritten
+        if cf.ffp > i:
+            cf.ffp -= 1
+        if cf.gfp > i:
+            cf.gfp -= 1
+        if cf.xfp > i:
+            cf.xfp -= 1
+
         return o
 
 
@@ -763,7 +866,27 @@ class VM(object):
                 break
 
 
+    def _add_exception_frame(self, cf, bc_off):
+        ef = Stack_Exception_Frame(bc_off, cf.ffp, cf.gfp, cf.xfp)
+        cf.xfp = cf.stackpe
+        self._cf_stack_push(cf, ef)
 
+
+    def _remove_exception_frame(self, cf):
+        ef = cf.stack[cf.xfp]
+        assert isinstance(ef, Stack_Exception_Frame)
+        cf.ffp = ef.prev_ffp
+        cf.gfp = ef.prev_gfp
+        cf.xfp = ef.prev_xfp
+        cf.stack[cf.xfp] = None
+        cf.stackpe -= 1
+
+
+
+
+####################################################################################################
+# Stack frame classes
+#
 
 class Stack_Continuation_Frame(Con_Thingy):
     __slots__ = ("stack", "stackpe", "ff_cache", "ff_cachesz", "func", "pc", "bc_off", "closure",
@@ -814,6 +937,32 @@ class Stack_Generator_Frame(Con_Thingy):
         self.prev_gfp = prev_gfp
         self.resume_bc_off = resume_bc_off
         self.returned = False
+
+
+class Stack_Exception_Frame(Con_Thingy):
+    __slots__ = ("bc_off", "prev_ffp", "prev_gfp", "prev_xfp")
+    _immutable_fields_ = ("bc_off", "prev_ffp", "prev_gfp", "prev_xfp")
+    
+    def __init__(self, bc_off, prev_ffp, prev_gfp, prev_xfp):
+        self.bc_off = bc_off
+        self.prev_ffp = prev_ffp
+        self.prev_gfp = prev_gfp
+        self.prev_xfp = prev_xfp
+
+
+
+####################################################################################################
+# Misc
+#
+
+class Return_Exception(Exception): pass
+
+
+class Raise_Exception(Exception):
+    _immutable_fields_ = ("ex_obj",)
+
+    def __init__(self, ex_obj):
+        self.ex_obj = ex_obj
 
 
 def switch_hack(ct, arg):

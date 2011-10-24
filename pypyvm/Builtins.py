@@ -160,6 +160,9 @@ class Con_Boxed_Object(Con_Object):
         if o is None:
             o = self.instance_of.get_field(vm, n)
         
+        if o is None and n == "instance_of":
+            return self.instance_of
+        
         if o is None:
             print o, n
             raise Exception("XXX")

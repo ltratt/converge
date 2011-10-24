@@ -47,11 +47,8 @@ def import_(vm):
 
 def exit(vm):
     (c,),_ = vm.decode_args(opt="I")
-    assert isinstance(c, Builtins.Con_Int)
 
-    vm.exit_code = c.v
-
-    raise SystemExit
+    raise vm.raise_helper("System_Exit_Exception", [c])
 
 
 def println(vm):

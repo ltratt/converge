@@ -57,14 +57,20 @@ def entry_point(argv):
 
     useful_bc = rffi.str2charp(bc[i:])
     vm = VM.new_vm()
-    main_mod_id = Bytecode.add_exec(vm, useful_bc)
     try:
+        main_mod_id = Bytecode.add_exec(vm, useful_bc)
         mod = vm.get_mod(main_mod_id)
         vm.apply(mod.get_defn(vm, "main"))
-    except SystemExit:
-        return vm.exit_code
-    except VM.Raise_Exception, e:
-        raise Exception("XXX")
+    except VM.Con_Raise_Exception, e:
+        ex_mod = vm.get_builtin(Builtins.BUILTIN_EXCEPTIONS_MODULE)
+        sys_ex_class = ex_mod.get_defn(vm, "System_Exit_Exception")
+        if vm.get_slot_apply(sys_ex_class, "instantiated", [e.ex_obj], allow_fail=True) is not None:
+            code = e.ex_obj.get_slot(vm, "code")
+            vm.type_check(code, Builtins.Con_Int)
+            assert isinstance(code, Builtins.Con_Int)
+            return code.v
+        else:
+            raise
     
     return 0
 

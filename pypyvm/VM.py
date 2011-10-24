@@ -44,7 +44,7 @@ jitdriver = jit.JitDriver(greens=["bc_off", "mod_bc", "pc"], reds=["cf", "self"]
 
 
 class VM(object):
-    __slots__ = ("builtins", "cf_stack", "mods", "pypy_config", "st", "exit_code")
+    __slots__ = ("builtins", "cf_stack", "mods", "pypy_config", "st")
     _immutable_fields = ("builtins", "cf_stack", "mods")
 
     def __init__(self): 
@@ -52,12 +52,6 @@ class VM(object):
         self.mods = {}
         self.cf_stack = []
         self.pypy_config = None
-        # Storing the exit code here seems evil, but RPython doesn't appear to give a prettier
-        # option. sys.exit doesn't exist and the SystemExit exception doesn't carry with it the
-        # desired return code. This variable should be set to a value, then SystemExit raised,
-        # and then main.entry_point will pick this up and return the appropriate value to the
-        # calling environment.
-        self.exit_code = 0
 
 
     def init(self):
@@ -119,13 +113,13 @@ class VM(object):
     # Core VM functions
     #
 
-    def apply(self, func, args=None):
-        o, _ = self.apply_closure(func, args)
+    def apply(self, func, args=None, allow_fail=False):
+        o, _ = self.apply_closure(func, args, allow_fail=allow_fail)
         return o
 
 
-    def get_slot_apply(self, o, n, args=None):
-        return self.apply(o.get_slot(self, n), args)
+    def get_slot_apply(self, o, n, args=None, allow_fail=False):
+        return self.apply(o.get_slot(self, n), args, allow_fail=allow_fail)
 
 
     def apply_closure(self, func, args=None, allow_fail=False):
@@ -143,7 +137,7 @@ class VM(object):
 
         try:
             self.execute(self.st.get_null_handle())
-        except Return_Exception:
+        except Con_Return_Exception:
             pass
         
         self._remove_continuation_frame()
@@ -286,7 +280,7 @@ class VM(object):
         if cf.ct:
             self.st.switch(cf.ct)
         else:
-            raise Return_Exception()
+            raise Con_Return_Exception()
 
 
     def yield_(self, obj):
@@ -310,7 +304,7 @@ class VM(object):
                 cc.append((cf.pc, cf.bc_off))
                 i -= 1
             ex.call_chain = cc
-        raise Raise_Exception(ex)
+        raise Con_Raise_Exception(ex)
 
 
     def raise_helper(self, ex_name, args=None):
@@ -433,9 +427,9 @@ class VM(object):
                 else:
                     print it, cf.stack
                     raise Exception("XXX")
-            except Raise_Exception, e:
+            except Con_Raise_Exception, e:
                 # An exception has been raised and is working its way up the call chain. Each bc_loop
-                # catches the Raise_Exception and either a) kills its continuation and passes the
+                # catches the Con_Raise_Exception and either a) kills its continuation and passes the
                 # exception up a level b) deals with it.
                 if cf.xfp == -1:
                     # There is no exception handler, so kill this continuation frame and propagate
@@ -955,14 +949,16 @@ class Stack_Exception_Frame(Con_Thingy):
 # Misc
 #
 
-class Return_Exception(Exception): pass
-
-
-class Raise_Exception(Exception):
+class Con_Raise_Exception(Exception):
     _immutable_fields_ = ("ex_obj",)
 
     def __init__(self, ex_obj):
         self.ex_obj = ex_obj
+
+
+class Con_Return_Exception(Exception):
+    pass
+
 
 
 def switch_hack(ct, arg):

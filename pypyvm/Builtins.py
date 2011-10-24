@@ -335,7 +335,20 @@ def _Con_Class_instantiated(vm):
     assert isinstance(o, Con_Boxed_Object)
 
     if o.instance_of is self:
+        # We optimise the easy case.
         vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    else:
+		# What we do now is to put 'instance_of' onto a stack; if the current class on the stack
+		# does not match 'self', we push all the class's superclasses onto the stack.
+		#
+		# If we run off the end of the stack then there is no match.
+        stack = [o.instance_of]
+        while len(stack) > 0:
+            cnd = stack.pop()
+            assert isinstance(cnd, Con_Class)
+            if cnd is self:
+                vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+            stack.extend(cnd.supers)
 
     vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
 
@@ -653,14 +666,14 @@ class Con_Exception(Con_Boxed_Object):
     _immutable_fields_ = ()
 
 
-    def __init__(self, vm):
-        Con_Boxed_Object.__init__(self, vm, vm.get_builtin(BUILTIN_EXCEPTION_CLASS))
+    def __init__(self, vm, instance_of):
+        Con_Boxed_Object.__init__(self, vm, instance_of)
         self.call_chain = None
 
 
 def _new_func_Con_Exception(vm):
-    (self, ), vargs = vm.decode_args("C", vargs=True)
-    o = Con_Exception(vm)
+    (class_, ), vargs = vm.decode_args("C", vargs=True)
+    o = Con_Exception(vm, class_)
     vm.apply(o.get_slot(vm, "init"), vargs)
     vm.return_(o)
 

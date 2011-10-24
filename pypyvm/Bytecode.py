@@ -40,51 +40,75 @@ def add_exec(vm, bc):
     main_mod_id = None
     for i in range(read_word(bc, BC_HD_NUM_MODULES)):
         mod_off = read_word(bc, BC_HD_MODULES + i * INTSIZE)
-        mod_size = read_word(bc, mod_off + BC_MOD_SIZE)
-        assert mod_off > 0 and mod_size > 0
-        
-        mod_bc = rffi.ptradd(bc, mod_off)
-        
-        name = _extract_sstr(mod_bc, BC_MOD_NAME, BC_MOD_NAME_SIZE)
-        id_ = _extract_sstr(mod_bc, BC_MOD_ID, BC_MOD_ID_SIZE)
-        src_path = _extract_sstr(mod_bc, BC_MOD_SRC_PATH, BC_MOD_SRC_PATH_SIZE)
-
+        id_ = add_mod(vm, bc, mod_off)
         if main_mod_id is None:
             main_mod_id = id_
 
-        imps = []
-        j = read_word(mod_bc, BC_MOD_IMPORTS)
-        for k in range(read_word(mod_bc, BC_MOD_NUM_IMPORTS)):
-            assert j > 0
-            imp_size = read_word(mod_bc, j)
-            assert imp_size > 0
-            j += INTSIZE
-            imps.append(rffi.charpsize2str(rffi.ptradd(mod_bc, j), imp_size))
-            j += align(imp_size)
-            j += INTSIZE + align(read_word(mod_bc, j))
-
-        num_vars = read_word(mod_bc, BC_MOD_NUM_TL_VARS_MAP)
-        tlvars_map = {}
-        j = read_word(mod_bc, BC_MOD_TL_VARS_MAP)
-        for k in range(num_vars):
-            assert j > 0
-            var_num = read_word(mod_bc, j)
-            j += INTSIZE
-            tlvar_size = read_word(mod_bc, j)
-            assert tlvar_size > 0
-            j += INTSIZE
-            n = rffi.charpsize2str(rffi.ptradd(mod_bc, j), tlvar_size)
-            tlvars_map[n] = var_num
-            j += align(tlvar_size)
-
-        num_consts = read_word(mod_bc, BC_MOD_NUM_CONSTANTS)
-
-        mod = new_bc_con_module(vm, mod_bc, name, id_, src_path, imps, tlvars_map, num_consts)
-        init_func_off = read_word(mod_bc, BC_MOD_INSTRUCTIONS)
-        pc = BC_PC(mod, init_func_off)
-        mod.init_func = Con_Func(vm, new_con_string(vm, "$$init$$"), False, pc, 0, num_vars, mod, \
-          None)
-        
-        vm.set_mod(mod)
-
     return main_mod_id
+
+
+#
+# XXX This is intended to be a part of a poor mans dynamic linker. It is very limited; in particular
+# it doesn't handle packages properly.
+#
+
+def add_lib(vm, bc):
+    for i in range(read_word(bc, BC_LIB_HD_NUM_MODULES)):
+        mod_off = read_word(bc, BC_LIB_HD_MODULES + i * INTSIZE)
+        
+        if extract_str(bc, mod_off, 8) == "CONVPACK":
+            # XXX we simply skip packages currently. This needs more thought.
+            continue
+        
+        mod_bc = rffi.ptradd(bc, mod_off)
+        id_ = _extract_sstr(mod_bc, BC_MOD_ID, BC_MOD_ID_SIZE)
+        if not vm.has_mod(id_):
+            add_mod(vm, bc, mod_off)
+
+
+def add_mod(vm, bc, mod_off):
+    mod_size = read_word(bc, mod_off + BC_MOD_SIZE)
+    assert mod_off > 0 and mod_size > 0
+
+    mod_bc = rffi.ptradd(bc, mod_off)
+
+    name = _extract_sstr(mod_bc, BC_MOD_NAME, BC_MOD_NAME_SIZE)
+    id_ = _extract_sstr(mod_bc, BC_MOD_ID, BC_MOD_ID_SIZE)
+    src_path = _extract_sstr(mod_bc, BC_MOD_SRC_PATH, BC_MOD_SRC_PATH_SIZE)
+
+    imps = []
+    j = read_word(mod_bc, BC_MOD_IMPORTS)
+    for k in range(read_word(mod_bc, BC_MOD_NUM_IMPORTS)):
+        assert j > 0
+        imp_size = read_word(mod_bc, j)
+        assert imp_size > 0
+        j += INTSIZE
+        imps.append(rffi.charpsize2str(rffi.ptradd(mod_bc, j), imp_size))
+        j += align(imp_size)
+        j += INTSIZE + align(read_word(mod_bc, j))
+
+    num_vars = read_word(mod_bc, BC_MOD_NUM_TL_VARS_MAP)
+    tlvars_map = {}
+    j = read_word(mod_bc, BC_MOD_TL_VARS_MAP)
+    for k in range(num_vars):
+        assert j > 0
+        var_num = read_word(mod_bc, j)
+        j += INTSIZE
+        tlvar_size = read_word(mod_bc, j)
+        assert tlvar_size > 0
+        j += INTSIZE
+        n = rffi.charpsize2str(rffi.ptradd(mod_bc, j), tlvar_size)
+        tlvars_map[n] = var_num
+        j += align(tlvar_size)
+
+    num_consts = read_word(mod_bc, BC_MOD_NUM_CONSTANTS)
+
+    mod = new_bc_con_module(vm, mod_bc, name, id_, src_path, imps, tlvars_map, num_consts)
+    init_func_off = read_word(mod_bc, BC_MOD_INSTRUCTIONS)
+    pc = BC_PC(mod, init_func_off)
+    mod.init_func = Con_Func(vm, new_con_string(vm, "$$init$$"), False, pc, 0, num_vars, mod, \
+      None)
+
+    vm.set_mod(mod)
+    
+    return id_

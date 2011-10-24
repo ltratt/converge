@@ -28,9 +28,15 @@ except:
 from pypy.config.config import Config
 from pypy.rlib.jit import *
 from pypy.rpython.lltypesystem import lltype, rffi
-import os
+import os, os.path, sys
 import Builtins, Bytecode, VM
 
+
+
+VM_VERSION = "current"
+
+STDLIB_DIRS = ["../lib/converge-%s/" % VM_VERSION, "../lib/"]
+COMPILER_DIRS = ["../lib/converge-%s/" % VM_VERSION, "../compiler/"]
 
 
 def entry_point(argv):
@@ -40,23 +46,14 @@ def entry_point(argv):
         print "You must supply a filename"
         return 1
     
-    s = os.stat(argv[1]).st_size
-    f = os.open(argv[1], os.O_RDONLY, 0777)
-    bc = ""
-    i = 0
-    while i < s:
-        d = os.read(f, 64 * 1024)
-        bc += d
-        i += len(d)
+    bc, start = _read_bc(argv[1], "CONVEXEC")
 
-    i = 0
-    while i < s:
-        if bc[i:].startswith("CONVEXEC"):
-            break
-        i += 1
+    vm_path = os.path.abspath(argv[0])
 
-    useful_bc = rffi.str2charp(bc[i:])
+    useful_bc = rffi.str2charp(bc[start:])
     vm = VM.new_vm()
+    _import_lib(vm, "Stdlib.cvl", vm_path, STDLIB_DIRS)
+    _import_lib(vm, "Compiler.cvl", vm_path, COMPILER_DIRS)
     try:
         main_mod_id = Bytecode.add_exec(vm, useful_bc)
         mod = vm.get_mod(main_mod_id)
@@ -75,11 +72,57 @@ def entry_point(argv):
     return 0
 
 
+def _read_bc(path, id_):
+    s = os.stat(path).st_size
+    f = os.open(path, os.O_RDONLY, 0777)
+    bc = ""
+    i = 0
+    while i < s:
+        d = os.read(f, 64 * 1024)
+        bc += d
+        i += len(d)
+
+    i = 0
+    s = os.stat(path).st_size
+    while i < s:
+        if bc[i:].startswith(id_):
+            break
+        i += 1
+    else:
+        raise Exception("XXX")
+
+    return bc, i
+
+
+def _import_lib(vm, leaf, vm_path, cnd_dirs):
+    vm_dir = dirname(vm_path)
+    for d in cnd_dirs:
+        path = "%s/%s/%s" % (vm_dir, d, leaf)
+        if os.path.exists(path):
+            break
+    else:
+        raise Exception("XXX")
+
+    bc, start = _read_bc(path, "CONVLIBR")
+    if start != 0:
+        raise Exception("XXX")
+    Bytecode.add_lib(vm, rffi.str2charp(bc))
+
+
+def dirname(p): # An RPython compatible version since that in os.path currently isn't...
+    i = p.rfind('/') + 1
+    assert i > 0
+    head = p[:i]
+    if head and head != '/'*len(head):
+        head = head.rstrip('/')
+    return head
+
 
 def target(driver, args):
     VM.global_vm.pypy_config = driver.config
     return entry_point, None
-    
+
+
 def jitpolicy(driver):
     from pypy.jit.codewriter.policy import JitPolicy
     return JitPolicy()

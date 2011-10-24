@@ -108,6 +108,10 @@ class VM(object):
         return m
 
 
+    def has_mod(self, mod_id):
+        return mod_id in self.mods
+
+
 
     ################################################################################################
     # Core VM functions

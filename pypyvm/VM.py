@@ -589,7 +589,7 @@ class VM(object):
     def _instr_string(self, instr, cf):
         str_start, str_size = Target.unpack_string(instr)
         str_off = cf.bc_off + str_start
-        assert str_off > 0 and str_size > 0
+        assert str_off > 0 and str_size >= 0
         str_ = rffi.charpsize2str(rffi.ptradd(cf.pc.mod.bc, str_off), str_size)
         self._cf_stack_push(cf, Builtins.new_con_string(self, str_))
         cf.bc_off += Target.align(str_start + str_size)

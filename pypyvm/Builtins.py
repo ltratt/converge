@@ -550,33 +550,76 @@ class Con_Int(Con_Boxed_Object):
         self.v = v
 
 
+    def add(self, vm, o):
+        vm.type_check(o, Con_Int)
+        assert isinstance(o, Con_Int)
+        return Con_Int(vm, self.v + o.v)
+
+
+    def subtract(self, vm, o):
+        vm.type_check(o, Con_Int)
+        assert isinstance(o, Con_Int)
+        return Con_Int(vm, self.v - o.v)
+
+
     def eq(self, vm, o):
-        if not isinstance(o, Con_Int):
-            raise Exception("XXX")
-        else:
-            return self.v == o.v
+        vm.type_check(o, Con_Int)
+        assert isinstance(o, Con_Int)
+        return self.v == o.v
+
+
+    def neq(self, vm, o):
+        vm.type_check(o, Con_Int)
+        assert isinstance(o, Con_Int)
+        return self.v != o.v
+
+
+    def le(self, vm, o):
+        vm.type_check(o, Con_Int)
+        assert isinstance(o, Con_Int)
+        return self.v < o.v
+
+
+    def le_eq(self, vm, o):
+        vm.type_check(o, Con_Int)
+        assert isinstance(o, Con_Int)
+        return self.v <= o.v
+
+
+    def gr_eq(self, vm, o):
+        vm.type_check(o, Con_Int)
+        assert isinstance(o, Con_Int)
+        return self.v >= o.v
 
 
     def gt(self, vm, o):
-        if not isinstance(o, Con_Int):
-            raise Exception("XXX")
-        else:
-            return self.v > o.v
-
-
-    def sub(self, vm, o):
-        if not isinstance(o, Con_Int):
-            raise Exception("XXX")
-        else:
-            return Con_Int(vm, self.v - o.v)
+        vm.type_check(o, Con_Int)
+        assert isinstance(o, Con_Int)
+        return self.v > o.v
 
 
 
 def _Con_Int_to_str(vm):
-    (o,),_ = vm.decode_args("I")
+    (self,),_ = vm.decode_args("I")
+    assert isinstance(self, Con_Int)
+
+    vm.return_(new_con_string(vm, str(self.v)))
+
+
+def _Con_Int_idiv(vm):
+    (self, o),_ = vm.decode_args("II")
+    assert isinstance(self, Con_Int)
     assert isinstance(o, Con_Int)
 
-    vm.return_(new_con_string(vm, str(o.v)))
+    vm.return_(new_con_int(vm, self.v / o.v))
+
+
+def _Con_Int_mul(vm):
+    (self, o),_ = vm.decode_args("II")
+    assert isinstance(self, Con_Int)
+    assert isinstance(o, Con_Int)
+
+    vm.return_(new_con_int(vm, self.v * o.v))
 
 
 def bootstrap_con_int(vm):
@@ -585,6 +628,10 @@ def bootstrap_con_int(vm):
     vm.set_builtin(BUILTIN_INT_CLASS, int_class)
     to_str_func = new_c_con_func(vm, new_con_string(vm, "to_str"), True, _Con_Int_to_str, int_class)
     int_class.set_field(vm, "to_str", to_str_func)
+    idiv_func = new_c_con_func(vm, new_con_string(vm, "idiv"), True, _Con_Int_idiv, int_class)
+    int_class.set_field(vm, "idiv", idiv_func)
+    mul_func = new_c_con_func(vm, new_con_string(vm, "*"), True, _Con_Int_mul, int_class)
+    int_class.set_field(vm, "*", mul_func)
 
 
 

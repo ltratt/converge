@@ -422,10 +422,12 @@ class VM(object):
                         if j < 0:
                             bc_off=cf.bc_off
                             jitdriver.can_enter_jit(bc_off=bc_off, mod_bc=mod_bc, cf=cf, pc=pc, self=self)
-                elif it == Target.CON_INSTR_EQ or it == Target.CON_INSTR_GT:
+                elif it == Target.CON_INSTR_EQ or it == Target.CON_INSTR_LE \
+                  or it == Target.CON_INSTR_NEQ or it == Target.CON_INSTR_LE_EQ \
+                  or it == Target.CON_INSTR_GR_EQ or it == Target.CON_INSTR_GT:
                     self._instr_cmp(instr, cf)
-                elif it == Target.CON_INSTR_SUBTRACT:
-                    self._instr_sub(instr, cf)
+                elif it == Target.CON_INSTR_ADD or it == Target.CON_INSTR_SUBTRACT:
+                    self._instr_calc(instr, cf)
                 elif it == Target.CON_INSTR_MODULE_LOOKUP:
                     self._instr_module_lookup(instr, cf)
                 else:
@@ -674,6 +676,14 @@ class VM(object):
         it = Target.get_instr(instr)
         if it == Target.CON_INSTR_EQ:
             r = lhs.eq(self, rhs)
+        elif it == Target.CON_INSTR_LE:
+            r = lhs.le(self, rhs)
+        elif it == Target.CON_INSTR_NEQ:
+            r = lhs.neq(self, rhs)
+        elif it == Target.CON_INSTR_LE_EQ:
+            r = lhs.le_eq(self, rhs)
+        elif it == Target.CON_INSTR_GR_EQ:
+            r = lhs.gr_eq(self, rhs)
         elif it == Target.CON_INSTR_GT:
             r = lhs.gt(self, rhs)
         else:
@@ -686,10 +696,18 @@ class VM(object):
             self._fail_now()
 
 
-    def _instr_sub(self, instr, cf):
+    def _instr_calc(self, instr, cf):
         rhs = self._cf_stack_pop(cf)
         lhs = self._cf_stack_pop(cf)
-        self._cf_stack_push(cf, lhs.sub(self, rhs))
+        
+        it = Target.get_instr(instr)
+        if it == Target.CON_INSTR_ADD:
+            r = lhs.add(self, rhs)
+        else:
+            assert it == Target.CON_INSTR_SUBTRACT
+            r = lhs.subtract(self, rhs)
+
+        self._cf_stack_push(cf, r)
         cf.bc_off += Target.INTSIZE
 
 

@@ -679,11 +679,11 @@ class Con_List(Con_Boxed_Object):
 
 
 def _Con_List_to_str(vm):
-    (o,),_ = vm.decode_args("L")
-    assert isinstance(o, Con_List)
+    (self,),_ = vm.decode_args("L")
+    assert isinstance(self, Con_List)
     
     es = []
-    for e in o.l:
+    for e in self.l:
         s = vm.get_slot_apply(e, "to_str")
         vm.type_check(s, Con_String)
         assert isinstance(s, Con_String)
@@ -691,6 +691,28 @@ def _Con_List_to_str(vm):
 
     vm.return_(new_con_string(vm, "[%s]" % ", ".join(es)))
 
+
+def _Con_List_get(vm):
+    (self, i),_ = vm.decode_args("LI")
+    assert isinstance(self, Con_List)
+    assert isinstance(i, Con_Int)
+    
+    vm.return_(self.l[i.v])
+
+
+def _Con_List_len(vm):
+    (self,),_ = vm.decode_args("L")
+    assert isinstance(self, Con_List)
+    
+    vm.return_(new_con_int(vm, len(self.l)))
+
+
+def _Con_List_set(vm):
+    (self, i, o),_ = vm.decode_args("LIO")
+    assert isinstance(self, Con_List)
+    assert isinstance(i, Con_Int)
+    self.l[i.v] = o
+    vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))
 
 
 def bootstrap_con_list(vm):
@@ -700,6 +722,15 @@ def bootstrap_con_list(vm):
     to_str_func = new_c_con_func(vm, new_con_string(vm, "to_str"), True, _Con_List_to_str, \
       list_class)
     list_class.set_field(vm, "to_str", to_str_func)
+    len_func = new_c_con_func(vm, new_con_string(vm, "len"), True, _Con_List_len, \
+      list_class)
+    list_class.set_field(vm, "len", len_func)
+    get_func = new_c_con_func(vm, new_con_string(vm, "get"), True, _Con_List_get, \
+      list_class)
+    list_class.set_field(vm, "get", get_func)
+    set_func = new_c_con_func(vm, new_con_string(vm, "set"), True, _Con_List_set, \
+      list_class)
+    list_class.set_field(vm, "set", set_func)
 
 
 def new_con_list(vm, l):

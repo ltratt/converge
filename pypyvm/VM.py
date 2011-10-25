@@ -668,8 +668,9 @@ class VM(object):
 
     def _instr_const_get(self, instr, cf):
         const_num = Target.unpack_constant_get(instr)
-        if cf.pc.mod.consts[const_num] is not None:
-            self._cf_stack_push(cf, cf.pc.mod.consts[const_num])
+        v = cf.pc.mod.consts[const_num]
+        if v is not None:
+            self._cf_stack_push(cf, v)
             cf.bc_off += Target.INTSIZE
         else:
             self._add_failure_frame(cf, False, cf.bc_off)

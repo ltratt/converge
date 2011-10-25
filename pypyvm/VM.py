@@ -192,7 +192,7 @@ class VM(object):
         if cf.returned:
             self.st.destroy(ct)
             self._remove_continuation_frame()
-            self._remove_generator_frame()
+            self._remove_generator_frame(cf)
         else:
             saved_cf = self.cf_stack.pop()
             cf = self.cf_stack[-1]
@@ -334,14 +334,13 @@ class VM(object):
         if isinstance(pc, Py_PC):
             pc.f(self)
         else:
-            self.bc_loop()
+            self.bc_loop(cf)
         
         #print "XXX"
         return ct
 
 
-    def bc_loop(self):
-        cf = self.cf_stack[-1]
+    def bc_loop(self, cf):
         pc = cf.pc
         assert isinstance(pc, BC_PC)
         mod_bc = pc.mod.bc
@@ -476,17 +475,17 @@ class VM(object):
 
     def _instr_add_failure_frame(self, instr, cf):
         off = Target.unpack_add_failure_frame(instr)
-        self._add_failure_frame(False, cf.bc_off + off)
+        self._add_failure_frame(cf, False, cf.bc_off + off)
         cf.bc_off += Target.INTSIZE
 
 
     def _instr_add_fail_up_frame(self, instr, cf):
-        self._add_failure_frame(True)
+        self._add_failure_frame(cf, True)
         cf.bc_off += Target.INTSIZE
 
 
     def _instr_remove_failure_frame(self, instr, cf):
-        self._remove_failure_frame()
+        self._remove_failure_frame(cf)
         cf.bc_off += Target.INTSIZE
 
 
@@ -549,21 +548,21 @@ class VM(object):
             self._cf_stack_extend(new_cf, args)
             o = self._apply_pump()
             if o is None:
-                self._fail_now()
+                self._fail_now(cf)
                 return
         else:
             cf.stack[fp] = None
             cf.stackpe -= 1
             o, _ = self.apply_closure(func, args, True)
             if o is None:
-                self._fail_now()
+                self._fail_now(cf)
                 return
         self._cf_stack_push(cf, o)
         cf.bc_off += Target.INTSIZE
 
 
     def _instr_fail_now(self, instr, cf):
-        self._fail_now()
+        self._fail_now(cf)
 
 
     def _instr_func_defn(self, instr, cf):
@@ -673,7 +672,7 @@ class VM(object):
             self._cf_stack_push(cf, cf.pc.mod.consts[const_num])
             cf.bc_off += Target.INTSIZE
         else:
-            self._add_failure_frame(False, cf.bc_off)
+            self._add_failure_frame(cf, False, cf.bc_off)
             cf.bc_off = cf.pc.mod.get_const_create_off(self, const_num)
 
 
@@ -707,7 +706,7 @@ class VM(object):
             self._cf_stack_push(cf, rhs)
             cf.bc_off += Target.INTSIZE
         else:
-            self._fail_now()
+            self._fail_now(cf)
 
 
     def _instr_calc(self, instr, cf):
@@ -819,9 +818,7 @@ class VM(object):
         del self.cf_stack[-1]
 
 
-    def _remove_generator_frame(self):
-        cf = self.cf_stack[-1]
-        
+    def _remove_generator_frame(self, cf):
         gf = cf.stack[cf.gfp]
         assert isinstance(gf, Stack_Generator_Frame)
 
@@ -829,9 +826,7 @@ class VM(object):
         cf.gfp = gf.prev_gfp
 
 
-    def _add_failure_frame(self, is_fail_up, new_off=-1):
-        cf = self.cf_stack[-1]
-
+    def _add_failure_frame(self, cf, is_fail_up, new_off=-1):
         if cf.ff_cachesz == 0:
             ff = Stack_Failure_Frame()
         else:
@@ -848,8 +843,7 @@ class VM(object):
         self._cf_stack_push(cf, ff)
         
 
-    def _remove_failure_frame(self):
-        cf = self.cf_stack[-1]
+    def _remove_failure_frame(self, cf):
         ff = cf.stack[cf.ffp]
         assert isinstance(ff, Stack_Failure_Frame)
         self._cf_stack_del_from(cf, cf.ffp)
@@ -870,8 +864,7 @@ class VM(object):
 
 
     @jit.unroll_safe
-    def _fail_now(self):
-        cf = self.cf_stack[-1]
+    def _fail_now(self, cf):
         while 1:
             is_fail_up, fail_to_off = self._read_failure_frame()
             if is_fail_up:
@@ -889,10 +882,10 @@ class VM(object):
                         cf.bc_off = gf.resume_bc_off
                         return
                 else:
-                    self._remove_failure_frame()
+                    self._remove_failure_frame(cf)
             else:
                 cf.bc_off = fail_to_off
-                self._remove_failure_frame()
+                self._remove_failure_frame(cf)
                 break
 
 

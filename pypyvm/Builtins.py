@@ -692,6 +692,14 @@ def _Con_List_to_str(vm):
     vm.return_(new_con_string(vm, "[%s]" % ", ".join(es)))
 
 
+def _Con_List_append(vm):
+    (self, o),_ = vm.decode_args("LO")
+    assert isinstance(self, Con_List)
+    
+    self.l.append(o)
+    vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))
+
+
 def _Con_List_get(vm):
     (self, i),_ = vm.decode_args("LI")
     assert isinstance(self, Con_List)
@@ -724,6 +732,9 @@ def bootstrap_con_list(vm):
     list_class.set_field(vm, "to_str", to_str_func)
     len_func = new_c_con_func(vm, new_con_string(vm, "len"), True, _Con_List_len, \
       list_class)
+    append_func = new_c_con_func(vm, new_con_string(vm, "append"), True, _Con_List_append, \
+      list_class)
+    list_class.set_field(vm, "append", append_func)
     list_class.set_field(vm, "len", len_func)
     get_func = new_c_con_func(vm, new_con_string(vm, "get"), True, _Con_List_get, \
       list_class)

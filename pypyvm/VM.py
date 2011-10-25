@@ -127,17 +127,21 @@ class VM(object):
 
 
     def apply_closure(self, func, args=None, allow_fail=False):
-        if args is None: args = []
+        if not args:
+            nargs = 0
+        else:
+            nargs = len(args)
         
         if isinstance(func, Builtins.Con_Partial_Application):
             cf = self._add_continuation_frame(func.f)
             self._cf_stack_push(cf, func.o)
-            nargs = len(args) + 1
-        else:
+            cf.nargs = nargs + 1
+        else: 
             cf = self._add_continuation_frame(func)
-            nargs = len(args)
-        self._cf_stack_extend(cf, list(args))
-        self._cf_stack_push(cf, Builtins.new_con_int(self, nargs))
+            cf.nargs = nargs
+
+        if args:
+            self._cf_stack_extend(cf, list(args))
 
         try:
             self.execute(self.st.get_null_handle())
@@ -223,16 +227,14 @@ class VM(object):
     @jit.unroll_safe
     def decode_args(self, mand="", opt="", vargs=False):
         cf = self.cf_stack[-1]
-        np_o = self._cf_stack_pop(cf)
-        assert isinstance(np_o, Builtins.Con_Int)
-        np = np_o.v # Num params
+        nargs = cf.nargs # Number of arguments passed
 
-        if np < len(mand):
+        if nargs < len(mand):
             raise Exception("XXX")
-        elif np > (len(mand) + len(opt)) and not vargs:
+        elif nargs > (len(mand) + len(opt)) and not vargs:
             raise Exception("XXX")
 
-        if np == 0:
+        if nargs == 0:
             if vargs:
                 return (None, [])
             else:
@@ -247,9 +249,9 @@ class VM(object):
                 t = opt[i - len(mand)]
         
             if t == "O":
-                nrmp[i] = cf.stack[cf.stackpe - np + i]
+                nrmp[i] = cf.stack[cf.stackpe - nargs + i]
             else:
-                o = cf.stack[cf.stackpe - np + i]
+                o = cf.stack[cf.stackpe - nargs + i]
                 if t == "C":
                     self.type_check(o, Builtins.Con_Class)
                 elif t == "I":
@@ -265,13 +267,13 @@ class VM(object):
             i += 1
 
         if vargs:
-            vap = [None] * (np - i)
-            for j in range(i, np):
-                vap[j - i] = cf.stack[cf.stackpe - np + j]
+            vap = [None] * (nargs - i)
+            for j in range(i, nargs):
+                vap[j - i] = cf.stack[cf.stackpe - nargs + j]
         else:
             vap = None
 
-        self._cf_stack_del_from(cf, cf.stackpe - np)
+        self._cf_stack_del_from(cf, cf.stackpe - nargs)
         
         return (nrmp, vap)
 
@@ -543,8 +545,8 @@ class VM(object):
             cf.gfp = fp
             fp += 1
             new_cf = self._add_continuation_frame(func, True)
+            new_cf.nargs = len(args)
             self._cf_stack_extend(new_cf, args)
-            self._cf_stack_push(new_cf, Builtins.new_con_int(self, num_args))
             o = self._apply_pump()
             if o is None:
                 self._fail_now()
@@ -639,10 +641,8 @@ class VM(object):
     @jit.unroll_safe
     def _instr_unpack_args(self, instr, cf):
         num_fargs, has_vargs = Target.unpack_unpack_args(instr)
-        na_o = self._cf_stack_pop(cf)
-        assert isinstance(na_o, Builtins.Con_Int)
-        num_params = na_o.v
-        if num_params > num_fargs and not has_vargs:
+        nargs = cf.nargs
+        if nargs > num_fargs and not has_vargs:
             raise Exception("XXX")
 
         if num_fargs > 0:
@@ -650,11 +650,11 @@ class VM(object):
             for i in range(num_fargs - 1, -1, -1):
                 arg_offset -= Target.INTSIZE
                 arg_info = Target.read_word(cf.pc.mod.bc, arg_offset)
-                if i > num_params:
+                if i > nargs:
                     if Target.unpack_unpack_args_is_mandatory(arg_info):
                         raise Exception("XXX")
                 else:
-                    if num_params > num_fargs:
+                    if nargs > num_fargs:
                         raise Exception("XXX")
                     else:
                         o = self._cf_stack_pop(cf)
@@ -919,8 +919,8 @@ class VM(object):
 #
 
 class Stack_Continuation_Frame(Con_Thingy):
-    __slots__ = ("stack", "stackpe", "ff_cache", "ff_cachesz", "func", "pc", "bc_off", "closure",
-      "ct", "ffp", "gfp", "xfp", "resumable", "returned")
+    __slots__ = ("stack", "stackpe", "ff_cache", "ff_cachesz", "func", "pc", "nargs", "bc_off",
+      "closure", "ct", "ffp", "gfp", "xfp", "resumable", "returned")
     _immutable_fields_ = ("stack", "ff_cache", "func", "closure", "pc", "resumable")
 
     def __init__(self, func, pc, bc_off, closure, resumable):
@@ -936,6 +936,7 @@ class Stack_Continuation_Frame(Con_Thingy):
         self.ff_cachesz = 0
         self.func = func
         self.pc = pc
+        self.nargs = 0 # Number of arguments passed to this continuation
         self.bc_off = bc_off # -1 for Py modules
         self.closure = closure
         self.resumable = resumable

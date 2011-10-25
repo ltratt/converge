@@ -139,12 +139,10 @@ class VM(object):
             nargs = len(args)
         
         if isinstance(func, Builtins.Con_Partial_Application):
-            cf = self._add_continuation_frame(func.f)
+            cf = self._add_continuation_frame(func.f, nargs + 1)
             self._cf_stack_push(cf, func.o)
-            cf.nargs = nargs + 1
         else: 
-            cf = self._add_continuation_frame(func)
-            cf.nargs = nargs
+            cf = self._add_continuation_frame(func, nargs)
 
         if args:
             self._cf_stack_extend(cf, list(args))
@@ -549,8 +547,7 @@ class VM(object):
             cf.stack[fp] = gf
             cf.gfp = fp
             fp += 1
-            new_cf = self._add_continuation_frame(func, True)
-            new_cf.nargs = len(args)
+            new_cf = self._add_continuation_frame(func, len(args), True)
             self._cf_stack_extend(new_cf, args)
             o = self._apply_pump()
             if o is None:
@@ -800,7 +797,7 @@ class VM(object):
         cf.stack[i] = x
     
 
-    def _add_continuation_frame(self, func, resumable = False):
+    def _add_continuation_frame(self, func, nargs, resumable=False):
         if not isinstance(func, Builtins.Con_Func):
             raise Exception("XXX")
 
@@ -815,7 +812,7 @@ class VM(object):
         else:
             closure = [[None] * func.num_vars]
 
-        cf = Stack_Continuation_Frame(func, pc, bc_off, closure, resumable)
+        cf = Stack_Continuation_Frame(func, pc, nargs, bc_off, closure, resumable)
         self.cf_stack.append(cf)
         
         return cf
@@ -918,14 +915,17 @@ class VM(object):
 class Stack_Continuation_Frame(Con_Thingy):
     __slots__ = ("stack", "stackpe", "ff_cache", "ff_cachesz", "func", "pc", "nargs", "bc_off",
       "closure", "ct", "ffp", "gfp", "xfp", "resumable", "returned")
-    _immutable_fields_ = ("stack", "ff_cache", "func", "closure", "pc", "resumable")
+    _immutable_fields_ = ("stack", "ff_cache", "func", "closure", "pc", "nargs" "resumable")
 
-    def __init__(self, func, pc, bc_off, closure, resumable):
-        self.stack = [None] * 64
+    def __init__(self, func, pc, nargs, bc_off, closure, resumable):
+        if isinstance(pc, BC_PC):
+            self.stack = [None] * 32
+        else:
+            self.stack = [None] * nargs
         debug.make_sure_not_resized(self.stack)
         self.func = func
         self.pc = pc
-        self.nargs = 0 # Number of arguments passed to this continuation
+        self.nargs = nargs # Number of arguments passed to this continuation
         self.bc_off = bc_off # -1 for Py modules
         self.closure = closure
         self.resumable = resumable

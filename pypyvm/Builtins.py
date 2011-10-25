@@ -289,10 +289,9 @@ class Con_Class(Con_Boxed_Object):
         
         for s in self.supers:
             assert isinstance(s, Con_Class)
-            m = jit.promote(s.fields_map)
-            i = m.find(n)
-            if i != -1:
-                return s.fields[i]
+            o = s.get_field(vm, n)
+            if not None:
+                return o
 
         return None
 

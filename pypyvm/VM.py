@@ -44,13 +44,19 @@ jitdriver = jit.JitDriver(greens=["bc_off", "mod_bc", "pc"], reds=["cf", "self"]
 
 
 class VM(object):
-    __slots__ = ("builtins", "cf_stack", "mods", "pypy_config", "st")
+    __slots__ = ("builtins", "cf_stack", "mods", "spare_ff", "pypy_config", "st")
     _immutable_fields = ("builtins", "cf_stack", "mods")
 
     def __init__(self): 
         self.builtins = [None] * Builtins.NUM_BUILTINS
         self.mods = {}
         self.cf_stack = []
+        # Continually allocating and deallocating failure frames is expensive, which is particularly
+        # annoying as most never have any impact. spare_ff is used as a simple one-off cache of a
+        # failure frame object, so that instead of being continually allocated and deallocated, in
+        # many cases we can move a pointer from spare_ff to a continuation frame's stack, which is
+        # cheap.
+        self.spare_ff = None
         self.pypy_config = None
 
 
@@ -828,11 +834,11 @@ class VM(object):
 
 
     def _add_failure_frame(self, cf, is_fail_up, new_off=-1):
-        if cf.ff_cachesz == 0:
-            ff = Stack_Failure_Frame()
+        ff = self.spare_ff
+        if ff:
+            self.spare_ff = None
         else:
-            cf.ff_cachesz -= 1
-            ff = cf.ff_cache[cf.ff_cachesz]
+            ff = Stack_Failure_Frame()
 
         ff.is_fail_up = is_fail_up
         ff.prev_ffp = cf.ffp
@@ -850,10 +856,7 @@ class VM(object):
         self._cf_stack_del_from(cf, cf.ffp)
         cf.ffp = ff.prev_ffp
 
-        if cf.ff_cachesz < len(cf.ff_cache):
-            # Return the failure frame to the cache, if there is room.
-            cf.ff_cache[cf.ff_cachesz] = ff
-            cf.ff_cachesz += 1
+        self.spare_ff = ff
 
 
     def _read_failure_frame(self):
@@ -920,14 +923,6 @@ class Stack_Continuation_Frame(Con_Thingy):
     def __init__(self, func, pc, bc_off, closure, resumable):
         self.stack = [None] * 64
         debug.make_sure_not_resized(self.stack)
-        # Continually allocating and deallocating failure frames is expensive, which is particularly
-        # annoying as most never have any impact. ff_cache is used as a simple cache of failure frame
-        # objects, so that instead of being continually allocated and deallocated, in most cases we
-        # can move a pointer from ff_cache to a continuation frame's stack, which is cheap. As
-        # failure frames are removed, they are stored in the cache, if there is room.
-        self.ff_cache = [None] * 24
-        debug.make_sure_not_resized(self.ff_cache)
-        self.ff_cachesz = 0
         self.func = func
         self.pc = pc
         self.nargs = 0 # Number of arguments passed to this continuation

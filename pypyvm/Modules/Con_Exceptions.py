@@ -26,11 +26,9 @@ import Builtins
 
 
 def init(vm):
-    mod = Builtins.new_c_con_module(vm, "Exceptions", "Exceptions", __file__, \
+    mod = Builtins.new_c_con_module(vm, "Exceptions", "Exceptions", __file__, import_, \
       ["Exception", "Mod_Defn_Exception", "System_Exit_Exception"])
     vm.set_builtin(Builtins.BUILTIN_EXCEPTIONS_MODULE, mod)
-    init_func = Builtins.new_c_con_func(vm, Builtins.Con_String(vm, "init"), False, import_, mod)
-    mod.init_func = init_func
     
     return mod
 

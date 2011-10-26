@@ -213,7 +213,8 @@ def bootstrap_con_object(vm):
     vm.set_builtin(BUILTIN_FAIL_OBJ, Con_Boxed_Object(vm))
     
     # In order that later objects can refer to the Builtins module, we have to create it now.
-    builtins_module = new_c_con_module(vm, "Builtins", "Builtins", __file__, ["Object", "Class"])
+    builtins_module = new_c_con_module(vm, "Builtins", "Builtins", __file__, None, \
+      ["Object", "Class"])
     # We effectively initialize the Builtins module through the bootstrapping process, so it doesn't
     # need a separate initialization function.
     builtins_module.initialized = True
@@ -229,12 +230,8 @@ def bootstrap_con_object(vm):
       new_c_con_func(vm, Con_String(vm, "new_Object"), False, _new_func_Con_Object, \
         builtins_module)
 
-    init_func = new_c_con_func(vm, Con_String(vm, "init"), True, _Con_Object_init, object_class)
-    object_class.set_field(vm, "init", init_func)
-
-    to_str_func = new_c_con_func(vm, Con_String(vm, "to_str"), True, _Con_Object_to_str, \
-      object_class)
-    object_class.set_field(vm, "to_str", to_str_func)
+    new_c_con_func_for_class(vm, "init", _Con_Object_init, object_class)
+    new_c_con_func_for_class(vm, "to_str", _Con_Object_to_str, object_class)
 
 
 
@@ -362,15 +359,9 @@ def bootstrap_con_class(vm):
       new_c_con_func(vm, Con_String(vm, "new_Class"), False, _new_func_Con_Class, \
         vm.get_builtin(BUILTIN_BUILTINS_MODULE))
 
-    new_func = new_c_con_func(vm, Con_String(vm, "new"), True, _Con_Class_new, class_class)
-    class_class.set_field(vm, "new", new_func)
-    to_str_func = new_c_con_func(vm, Con_String(vm, "to_str"), True, _Con_Class_to_str, \
-      class_class)
-    class_class.set_field(vm, "to_str", to_str_func)
-    instantiated_func = new_c_con_func(vm, Con_String(vm, "instantiated"), True, \
-      _Con_Class_instantiated, class_class)
-    class_class.set_field(vm, "instantiated", instantiated_func)
-
+    new_c_con_func_for_class(vm, "new", _Con_Class_new, class_class)
+    new_c_con_func_for_class(vm, "to_str", _Con_Class_to_str, class_class)
+    new_c_con_func_for_class(vm, "instantiated", _Con_Class_instantiated, class_class)
 
 
 
@@ -455,13 +446,17 @@ def bootstrap_con_module():
 
 
 
-def new_c_con_module(vm, name, id_, src_path, names):
+def new_c_con_module(vm, name, id_, src_path, import_func, names):
     tlvars_map = {}
     i = 0
     for j in names:
         tlvars_map[j] = i
         i += 1
-    return Con_Module(vm, False, lltype.nullptr(rffi.CCHARP.TO), name, id_, src_path, [], tlvars_map, 0, None)
+    mod = Con_Module(vm, False, lltype.nullptr(rffi.CCHARP.TO), name, id_, src_path, [], \
+      tlvars_map, 0, None)
+    mod.init_func = new_c_con_func(vm, Con_String(vm, "$$init$$"), False, import_func, mod)
+    
+    return mod
 
 
 def new_bc_con_module(vm, bc, name, id_, src_path, imps, tlvars_map, num_consts):
@@ -506,6 +501,16 @@ def new_c_con_func(vm, name, is_bound, func, container):
     while not (isinstance(cnd, Con_Module)):
         cnd = cnd.get_slot(vm, "container")
     return Con_Func(vm, name, is_bound, VM.Py_PC(cnd, func), 0, 0, container, None)
+
+
+def new_c_con_func_for_class(vm, name, func, class_):
+    f = new_c_con_func(vm, Con_String(vm, name), True, func, class_)
+    class_.set_field(vm, name, f)
+
+
+def new_c_con_func_for_mod(vm, name, func, mod):
+    f = new_c_con_func(vm, Con_String(vm, name), False, func, mod)
+    mod.set_defn(vm, name, f)
 
 
 
@@ -625,12 +630,10 @@ def bootstrap_con_int(vm):
     int_class = Con_Class(vm, "Int", [vm.get_builtin(BUILTIN_OBJECT_CLASS)], \
       vm.get_builtin(BUILTIN_BUILTINS_MODULE))
     vm.set_builtin(BUILTIN_INT_CLASS, int_class)
-    to_str_func = new_c_con_func(vm, Con_String(vm, "to_str"), True, _Con_Int_to_str, int_class)
-    int_class.set_field(vm, "to_str", to_str_func)
-    idiv_func = new_c_con_func(vm, Con_String(vm, "idiv"), True, _Con_Int_idiv, int_class)
-    int_class.set_field(vm, "idiv", idiv_func)
-    mul_func = new_c_con_func(vm, Con_String(vm, "*"), True, _Con_Int_mul, int_class)
-    int_class.set_field(vm, "*", mul_func)
+
+    new_c_con_func_for_class(vm, "to_str", _Con_Int_to_str, int_class)
+    new_c_con_func_for_class(vm, "idiv", _Con_Int_idiv, int_class)
+    new_c_con_func_for_class(vm, "*", _Con_Int_mul, int_class)
 
 
 
@@ -713,21 +716,12 @@ def bootstrap_con_list(vm):
     list_class = Con_Class(vm, "List", [vm.get_builtin(BUILTIN_OBJECT_CLASS)], \
       vm.get_builtin(BUILTIN_BUILTINS_MODULE))
     vm.set_builtin(BUILTIN_LIST_CLASS, list_class)
-    to_str_func = new_c_con_func(vm, Con_String(vm, "to_str"), True, _Con_List_to_str, \
-      list_class)
-    list_class.set_field(vm, "to_str", to_str_func)
-    len_func = new_c_con_func(vm, Con_String(vm, "len"), True, _Con_List_len, \
-      list_class)
-    append_func = new_c_con_func(vm, Con_String(vm, "append"), True, _Con_List_append, \
-      list_class)
-    list_class.set_field(vm, "append", append_func)
-    list_class.set_field(vm, "len", len_func)
-    get_func = new_c_con_func(vm, Con_String(vm, "get"), True, _Con_List_get, \
-      list_class)
-    list_class.set_field(vm, "get", get_func)
-    set_func = new_c_con_func(vm, Con_String(vm, "set"), True, _Con_List_set, \
-      list_class)
-    list_class.set_field(vm, "set", set_func)
+
+    new_c_con_func_for_class(vm, "to_str", _Con_List_to_str, list_class)
+    new_c_con_func_for_class(vm, "len", _Con_List_len, list_class)
+    new_c_con_func_for_class(vm, "append", _Con_List_append, list_class)
+    new_c_con_func_for_class(vm, "get", _Con_List_get, list_class)
+    new_c_con_func_for_class(vm, "set", _Con_List_set, list_class)
 
 
 
@@ -766,6 +760,4 @@ def bootstrap_con_exception(vm):
       new_c_con_func(vm, Con_String(vm, "new_Exception"), False, _new_func_Con_Exception, \
         vm.get_builtin(BUILTIN_BUILTINS_MODULE))
 
-    init_func = new_c_con_func(vm, Con_String(vm, "init"), True, _Con_Exception_init, \
-      exception_class)
-    exception_class.set_field(vm, "init", init_func)
+    new_c_con_func_for_class(vm, "init", _Con_Exception_init, exception_class)

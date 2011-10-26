@@ -507,7 +507,7 @@ def bootstrap_con_func():
 
 def new_c_con_func(vm, name, is_bound, func, container):
     cnd = container
-    while not (isinstance(cnd, Con_Module) or cnd is vm.get_builtin(BUILTIN_NULL_OBJ)):
+    while not (isinstance(cnd, Con_Module)):
         cnd = cnd.get_slot(vm, "container")
     return Con_Func(vm, name, is_bound, VM.Py_PC(cnd, func), 0, 0, container, None)
 

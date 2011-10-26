@@ -106,7 +106,7 @@ def add_mod(vm, bc, mod_off):
     mod = new_bc_con_module(vm, mod_bc, name, id_, src_path, imps, tlvars_map, num_consts)
     init_func_off = read_word(mod_bc, BC_MOD_INSTRUCTIONS)
     pc = BC_PC(mod, init_func_off)
-    mod.init_func = Con_Func(vm, new_con_string(vm, "$$init$$"), False, pc, 0, num_vars, mod, \
+    mod.init_func = Con_Func(vm, Con_String(vm, "$$init$$"), False, pc, 0, num_vars, mod, \
       None)
 
     vm.set_mod(mod)

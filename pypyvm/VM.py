@@ -473,7 +473,7 @@ class VM(object):
 
 
     def _instr_int(self, instr, cf):
-        self._cf_stack_push(cf, Builtins.new_con_int(self, Target.unpack_int(instr)))
+        self._cf_stack_push(cf, Builtins.Con_Int(self, Target.unpack_int(instr)))
         cf.bc_off += Target.INTSIZE
 
 
@@ -518,7 +518,7 @@ class VM(object):
         assert j >= 0
         l = cf.stack[i : j]
         self._cf_stack_del_from(cf, i)
-        self._cf_stack_push(cf, Builtins.new_con_list(self, l))
+        self._cf_stack_push(cf, Builtins.Con_List(self, l))
         cf.bc_off += Target.INTSIZE
 
 
@@ -577,7 +577,7 @@ class VM(object):
         name = self._cf_stack_pop(cf)
         new_pc = BC_PC(cf.pc.mod, cf.bc_off + 2 * Target.INTSIZE)
         container = cf.func.get_slot(self, "container")
-        f = Builtins.new_bc_con_func(self, name, is_bound, new_pc, np_o.v, nv_o.v, \
+        f = Builtins.Con_Func(self, name, is_bound, new_pc, np_o.v, nv_o.v, \
           container, cf.closure)
         self._cf_stack_push(cf, f)
         cf.bc_off += Target.INTSIZE
@@ -615,7 +615,7 @@ class VM(object):
         str_off = cf.bc_off + str_start
         assert str_off > 0 and str_size >= 0
         str_ = rffi.charpsize2str(rffi.ptradd(cf.pc.mod.bc, str_off), str_size)
-        self._cf_stack_push(cf, Builtins.new_con_string(self, str_))
+        self._cf_stack_push(cf, Builtins.Con_String(self, str_))
         cf.bc_off += Target.align(str_start + str_size)
 
 

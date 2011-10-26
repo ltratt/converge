@@ -198,7 +198,7 @@ def _Con_Object_init(vm):
 
 def _Con_Object_to_str(vm):
     (o,),_ = vm.decode_args("O")
-    vm.return_(new_con_string(vm, "<Object@%x>" % id(o)))
+    vm.return_(Con_String(vm, "<Object@%x>" % id(o)))
 
 
 def bootstrap_con_object(vm):
@@ -226,13 +226,13 @@ def bootstrap_con_object(vm):
     builtins_module.set_defn(vm, "Class", class_class)
 
     object_class.new_func = \
-      new_c_con_func(vm, new_con_string(vm, "new_Object"), False, _new_func_Con_Object, \
+      new_c_con_func(vm, Con_String(vm, "new_Object"), False, _new_func_Con_Object, \
         builtins_module)
 
-    init_func = new_c_con_func(vm, new_con_string(vm, "init"), True, _Con_Object_init, object_class)
+    init_func = new_c_con_func(vm, Con_String(vm, "init"), True, _Con_Object_init, object_class)
     object_class.set_field(vm, "init", init_func)
 
-    to_str_func = new_c_con_func(vm, new_con_string(vm, "to_str"), True, _Con_Object_to_str, \
+    to_str_func = new_c_con_func(vm, Con_String(vm, "to_str"), True, _Con_Object_to_str, \
       object_class)
     object_class.set_field(vm, "to_str", to_str_func)
 
@@ -328,7 +328,7 @@ def _Con_Class_to_str(vm):
     (self,),_ = vm.decode_args("C")
     assert isinstance(self, Con_Class)
 
-    vm.return_(new_con_string(vm, "<Class %s>" % self.name))
+    vm.return_(Con_String(vm, "<Class %s>" % self.name))
 
 
 def _Con_Class_instantiated(vm):
@@ -359,21 +359,17 @@ def bootstrap_con_class(vm):
     class_class = vm.get_builtin(BUILTIN_CLASS_CLASS)
     assert isinstance(class_class, Con_Class)
     class_class.new_func = \
-      new_c_con_func(vm, new_con_string(vm, "new_Class"), False, _new_func_Con_Class, \
+      new_c_con_func(vm, Con_String(vm, "new_Class"), False, _new_func_Con_Class, \
         vm.get_builtin(BUILTIN_BUILTINS_MODULE))
 
-    new_func = new_c_con_func(vm, new_con_string(vm, "new"), True, _Con_Class_new, class_class)
+    new_func = new_c_con_func(vm, Con_String(vm, "new"), True, _Con_Class_new, class_class)
     class_class.set_field(vm, "new", new_func)
-    to_str_func = new_c_con_func(vm, new_con_string(vm, "to_str"), True, _Con_Class_to_str, \
+    to_str_func = new_c_con_func(vm, Con_String(vm, "to_str"), True, _Con_Class_to_str, \
       class_class)
     class_class.set_field(vm, "to_str", to_str_func)
-    instantiated_func = new_c_con_func(vm, new_con_string(vm, "instantiated"), True, \
+    instantiated_func = new_c_con_func(vm, Con_String(vm, "instantiated"), True, \
       _Con_Class_instantiated, class_class)
     class_class.set_field(vm, "instantiated", instantiated_func)
-
-
-def new_con_class(vm, name, supers, container):
-    return Con_Class(vm, name, supers, container)
 
 
 
@@ -435,7 +431,7 @@ class Con_Module(Con_Boxed_Object):
         i = self.tlvars_map.get(n, -1)
         if i == -1:
             vm.raise_helper("Mod_Defn_Exception", \
-              [Builtins.new_con_string(vm, "Definition '%s' not found in '%s'." % (n, self.name))])
+              [Builtins.Con_String(vm, "Definition '%s' not found in '%s'." % (n, self.name))])
         return i
 
 
@@ -510,10 +506,6 @@ def new_c_con_func(vm, name, is_bound, func, container):
     while not (isinstance(cnd, Con_Module)):
         cnd = cnd.get_slot(vm, "container")
     return Con_Func(vm, name, is_bound, VM.Py_PC(cnd, func), 0, 0, container, None)
-
-
-def new_bc_con_func(vm, name, is_bound, pc, num_params, num_vars, container, container_closure):
-    return Con_Func(vm, name, is_bound, pc, num_params, num_vars, container, container_closure)
 
 
 
@@ -610,7 +602,7 @@ def _Con_Int_to_str(vm):
     (self,),_ = vm.decode_args("I")
     assert isinstance(self, Con_Int)
 
-    vm.return_(new_con_string(vm, str(self.v)))
+    vm.return_(Con_String(vm, str(self.v)))
 
 
 def _Con_Int_idiv(vm):
@@ -618,7 +610,7 @@ def _Con_Int_idiv(vm):
     assert isinstance(self, Con_Int)
     assert isinstance(o, Con_Int)
 
-    vm.return_(new_con_int(vm, self.v / o.v))
+    vm.return_(Con_Int(vm, self.v / o.v))
 
 
 def _Con_Int_mul(vm):
@@ -626,24 +618,19 @@ def _Con_Int_mul(vm):
     assert isinstance(self, Con_Int)
     assert isinstance(o, Con_Int)
 
-    vm.return_(new_con_int(vm, self.v * o.v))
+    vm.return_(Con_Int(vm, self.v * o.v))
 
 
 def bootstrap_con_int(vm):
     int_class = Con_Class(vm, "Int", [vm.get_builtin(BUILTIN_OBJECT_CLASS)], \
       vm.get_builtin(BUILTIN_BUILTINS_MODULE))
     vm.set_builtin(BUILTIN_INT_CLASS, int_class)
-    to_str_func = new_c_con_func(vm, new_con_string(vm, "to_str"), True, _Con_Int_to_str, int_class)
+    to_str_func = new_c_con_func(vm, Con_String(vm, "to_str"), True, _Con_Int_to_str, int_class)
     int_class.set_field(vm, "to_str", to_str_func)
-    idiv_func = new_c_con_func(vm, new_con_string(vm, "idiv"), True, _Con_Int_idiv, int_class)
+    idiv_func = new_c_con_func(vm, Con_String(vm, "idiv"), True, _Con_Int_idiv, int_class)
     int_class.set_field(vm, "idiv", idiv_func)
-    mul_func = new_c_con_func(vm, new_con_string(vm, "*"), True, _Con_Int_mul, int_class)
+    mul_func = new_c_con_func(vm, Con_String(vm, "*"), True, _Con_Int_mul, int_class)
     int_class.set_field(vm, "*", mul_func)
-
-
-
-def new_con_int(vm, v):
-    return Con_Int(vm, v)
 
 
 
@@ -659,11 +646,6 @@ class Con_String(Con_Boxed_Object):
     def __init__(self, vm, v):
         Con_Boxed_Object.__init__(self, vm, vm.get_builtin(BUILTIN_STRING_CLASS))
         self.v = v
-
-
-
-def new_con_string(vm, v):
-    return Con_String(vm, v)
 
 
 
@@ -693,7 +675,7 @@ def _Con_List_to_str(vm):
         assert isinstance(s, Con_String)
         es.append(s.v)
 
-    vm.return_(new_con_string(vm, "[%s]" % ", ".join(es)))
+    vm.return_(Con_String(vm, "[%s]" % ", ".join(es)))
 
 
 def _Con_List_append(vm):
@@ -716,7 +698,7 @@ def _Con_List_len(vm):
     (self,),_ = vm.decode_args("L")
     assert isinstance(self, Con_List)
     
-    vm.return_(new_con_int(vm, len(self.l)))
+    vm.return_(Con_Int(vm, len(self.l)))
 
 
 def _Con_List_set(vm):
@@ -731,25 +713,21 @@ def bootstrap_con_list(vm):
     list_class = Con_Class(vm, "List", [vm.get_builtin(BUILTIN_OBJECT_CLASS)], \
       vm.get_builtin(BUILTIN_BUILTINS_MODULE))
     vm.set_builtin(BUILTIN_LIST_CLASS, list_class)
-    to_str_func = new_c_con_func(vm, new_con_string(vm, "to_str"), True, _Con_List_to_str, \
+    to_str_func = new_c_con_func(vm, Con_String(vm, "to_str"), True, _Con_List_to_str, \
       list_class)
     list_class.set_field(vm, "to_str", to_str_func)
-    len_func = new_c_con_func(vm, new_con_string(vm, "len"), True, _Con_List_len, \
+    len_func = new_c_con_func(vm, Con_String(vm, "len"), True, _Con_List_len, \
       list_class)
-    append_func = new_c_con_func(vm, new_con_string(vm, "append"), True, _Con_List_append, \
+    append_func = new_c_con_func(vm, Con_String(vm, "append"), True, _Con_List_append, \
       list_class)
     list_class.set_field(vm, "append", append_func)
     list_class.set_field(vm, "len", len_func)
-    get_func = new_c_con_func(vm, new_con_string(vm, "get"), True, _Con_List_get, \
+    get_func = new_c_con_func(vm, Con_String(vm, "get"), True, _Con_List_get, \
       list_class)
     list_class.set_field(vm, "get", get_func)
-    set_func = new_c_con_func(vm, new_con_string(vm, "set"), True, _Con_List_set, \
+    set_func = new_c_con_func(vm, Con_String(vm, "set"), True, _Con_List_set, \
       list_class)
     list_class.set_field(vm, "set", set_func)
-
-
-def new_con_list(vm, l):
-    return Con_List(vm, l)
 
 
 
@@ -785,9 +763,9 @@ def bootstrap_con_exception(vm):
       vm.get_builtin(BUILTIN_BUILTINS_MODULE))
     vm.set_builtin(BUILTIN_EXCEPTION_CLASS, exception_class)
     exception_class.new_func = \
-      new_c_con_func(vm, new_con_string(vm, "new_Exception"), False, _new_func_Con_Exception, \
+      new_c_con_func(vm, Con_String(vm, "new_Exception"), False, _new_func_Con_Exception, \
         vm.get_builtin(BUILTIN_BUILTINS_MODULE))
 
-    init_func = new_c_con_func(vm, new_con_string(vm, "init"), True, _Con_Exception_init, \
+    init_func = new_c_con_func(vm, Con_String(vm, "init"), True, _Con_Exception_init, \
       exception_class)
     exception_class.set_field(vm, "init", init_func)

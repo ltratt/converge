@@ -36,8 +36,11 @@ def init(vm):
 def import_(vm):
     (mod,),_ = vm.decode_args("O")
 
-    Builtins.new_c_con_func_for_mod(vm, "exit", exit, mod)
-    Builtins.new_c_con_func_for_mod(vm, "println", println, mod)
+    exit_func = Builtins.new_c_con_func(vm, Builtins.Con_String(vm, "exit"), False, exit, mod)
+    mod.set_defn(vm, "exit", exit_func)
+    
+    println_func = Builtins.new_c_con_func(vm, Builtins.Con_String(vm, "println"), False, println, mod)
+    mod.set_defn(vm, "println", println_func)
     
     vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))
 

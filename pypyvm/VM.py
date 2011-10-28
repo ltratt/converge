@@ -177,10 +177,10 @@ class VM(object):
         # stack has a generator frame we're in situation #2, otherwise we're in situation #1.
 
         cf = self.cf_stack[-1]
-
         if cf.gfp == -1:
             # We're in case 1) from above.
             ct = self.st.new(switch_hack)
+            cf = self.cf_stack[-1]
         else:
             # We're in case 2) from above.
             self._cf_stack_del_from(cf, cf.gfp + 1)
@@ -196,7 +196,7 @@ class VM(object):
         if cf.returned:
             self.st.destroy(ct)
             self._remove_continuation_frame()
-            self._remove_generator_frame(cf)
+            self._remove_generator_frame(self.cf_stack[-1])
         else:
             saved_cf = self.cf_stack.pop()
             cf = self.cf_stack[-1]

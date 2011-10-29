@@ -782,8 +782,9 @@ class VM(object):
 
     @jit.unroll_safe
     def _cf_stack_del_from(self, cf, i):
+        cf__stack = cf.stack
         for j in range(i, cf.stackpe):
-            cf.stack[j] = None
+            cf__stack[j] = None
         cf.stackpe = i
 
 
@@ -845,9 +846,10 @@ class VM(object):
         
 
     def _remove_failure_frame(self, cf):
-        ff = cf.stack[cf.ffp]
+        ffp = cf.ffp
+        ff = cf.stack[ffp]
         assert isinstance(ff, Stack_Failure_Frame)
-        self._cf_stack_del_from(cf, cf.ffp)
+        self._cf_stack_del_from(cf, ffp)
         cf.ffp = ff.prev_ffp
 
         self.spare_ff = ff

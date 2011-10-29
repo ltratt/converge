@@ -544,7 +544,6 @@ class VM(object):
             gf = Stack_Generator_Frame(cf.gfp, cf.bc_off + Target.INTSIZE)
             cf.stack[fp] = gf
             cf.gfp = fp
-            fp += 1
             new_cf = self._add_continuation_frame(func, len(args), True)
             self._cf_stack_extend(new_cf, args)
             o = self._apply_pump()
@@ -913,7 +912,7 @@ class VM(object):
 class Stack_Continuation_Frame(Con_Thingy):
     __slots__ = ("stack", "stackpe", "ff_cache", "ff_cachesz", "func", "pc", "nargs", "bc_off",
       "closure", "ct", "ffp", "gfp", "xfp", "resumable", "returned")
-    _immutable_fields_ = ("stack", "ff_cache", "func", "closure", "pc", "nargs" "resumable")
+    _immutable_fields_ = ("stack", "ff_cache", "func", "closure", "pc", "nargs", "resumable")
 
     def __init__(self, func, pc, nargs, bc_off, closure, resumable):
         if isinstance(pc, BC_PC):

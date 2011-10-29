@@ -348,9 +348,13 @@ class VM(object):
         pc = cf.pc
         assert isinstance(pc, BC_PC)
         mod_bc = pc.mod.bc
+        old_bc_off = -1
         while 1:
             try:
                 bc_off = cf.bc_off
+                if old_bc_off != -1 and old_bc_off > bc_off:
+                    jitdriver.can_enter_jit(bc_off=bc_off, mod_bc=mod_bc, cf=cf, pc=pc, self=self)
+                old_bc_off = bc_off
                 jitdriver.jit_merge_point(bc_off=bc_off, mod_bc=mod_bc, cf=cf, pc=pc, self=self)
                 instr = Target.read_word(mod_bc, bc_off)
                 it = Target.get_instr(instr)
@@ -386,9 +390,6 @@ class VM(object):
                 elif it == Target.CON_INSTR_BRANCH:
                     j = Target.unpack_branch(instr)
                     cf.bc_off += j
-                    if j < 0:
-                        bc_off=cf.bc_off
-                        jitdriver.can_enter_jit(bc_off=bc_off, mod_bc=mod_bc, cf=cf, pc=pc, self=self)
                 elif it == Target.CON_INSTR_YIELD:
                     self._instr_yield(instr, cf)
                 elif it == Target.CON_INSTR_IMPORT:
@@ -426,9 +427,6 @@ class VM(object):
                     else:
                         j = Target.unpack_branch_if_not_fail(instr)
                         cf.bc_off += j
-                        if j < 0:
-                            bc_off=cf.bc_off
-                            jitdriver.can_enter_jit(bc_off=bc_off, mod_bc=mod_bc, cf=cf, pc=pc, self=self)
                 elif it == Target.CON_INSTR_EQ or it == Target.CON_INSTR_LE \
                   or it == Target.CON_INSTR_NEQ or it == Target.CON_INSTR_LE_EQ \
                   or it == Target.CON_INSTR_GR_EQ or it == Target.CON_INSTR_GT:

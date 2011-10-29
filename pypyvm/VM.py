@@ -39,7 +39,7 @@ def get_printable_location(bc_off, mod_bc, pc):
     it = Target.get_instr(instr)
     return "%s:%s at offset %s. bytecode: %s" % (pc.mod.name, pc.off, bc_off, Target.INSTR_NAMES[it])
 
-jitdriver = jit.JitDriver(greens=["bc_off", "mod_bc", "pc"], reds=["cf", "self"],
+jitdriver = jit.JitDriver(greens=["bc_off", "mod_bc", "pc"], reds=["prev_bc_off", "cf", "self"],
                           get_printable_location=get_printable_location)
 
 
@@ -348,14 +348,14 @@ class VM(object):
         pc = cf.pc
         assert isinstance(pc, BC_PC)
         mod_bc = pc.mod.bc
-        old_bc_off = -1
+        prev_bc_off = -1
         while 1:
             try:
                 bc_off = cf.bc_off
-                if old_bc_off != -1 and old_bc_off > bc_off:
-                    jitdriver.can_enter_jit(bc_off=bc_off, mod_bc=mod_bc, cf=cf, pc=pc, self=self)
-                old_bc_off = bc_off
-                jitdriver.jit_merge_point(bc_off=bc_off, mod_bc=mod_bc, cf=cf, pc=pc, self=self)
+                if prev_bc_off != -1 and prev_bc_off > bc_off:
+                    jitdriver.can_enter_jit(bc_off=bc_off, mod_bc=mod_bc, cf=cf, prev_bc_off=prev_bc_off, pc=pc, self=self)
+                jitdriver.jit_merge_point(bc_off=bc_off, mod_bc=mod_bc, cf=cf, prev_bc_off=prev_bc_off, pc=pc, self=self)
+                prev_bc_off = bc_off
                 instr = Target.read_word(mod_bc, bc_off)
                 it = Target.get_instr(instr)
                 #print "%s %s %d [stackpe:%d ffp:%d gfp:%d xfp:%d]" % (Target.INSTR_NAMES[instr & 0xFF], str(cf.stack[:cf.stackpe]), bc_off, cf.stackpe, cf.ffp, cf.gfp, cf.xfp)

@@ -19,16 +19,45 @@
 # IN THE SOFTWARE.
 
 
-__all__ = ["Con_Array", "Con_C_Earley_Parser", "Con_C_Platform_Host", "Con_C_Platform_Properties",
-  "Con_C_Strings", "Con_C_Time", "Con_Curses", "Con_Exceptions", "Con_PCRE", "Con_POSIX_File",
-  "Con_Sys", "Con_Thread", "Con_VM"]
+import sys
+from Builtins import *
 
-import Con_Array, Con_C_Earley_Parser, Con_C_Platform_Host, Con_C_Platform_Properties, \
-  Con_C_Strings, Con_C_Time, Con_Curses, Con_Exceptions, Con_PCRE, Con_POSIX_File, Con_Sys, \
-  Con_Thread, Con_VM
 
-BUILTIN_MODULES = \
-  [Con_Array.init, Con_C_Earley_Parser.init, Con_C_Platform_Host.init, \
-   Con_C_Platform_Properties.init, Con_C_Strings.init, Con_C_Time.init, Con_Curses.init, \
-   Con_Exceptions.init, Con_PCRE.init, Con_POSIX_File.init, Con_Sys.init, Con_Thread.init, \
-   Con_VM.init]
+
+
+def init(vm):
+    return new_c_con_module(vm, "Curses", "Curses", __file__, import_, \
+      ["Curses_Exception", "setup_term", "tigetstr"])
+
+
+def import_(vm):
+    (mod,),_ = vm.decode_args("O")
+    
+    new_c_con_func_for_mod(vm, "setup_term", setup_term, mod)
+    new_c_con_func_for_mod(vm, "tigetstr", tigetstr, mod)
+
+    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+
+
+def setup_term(vm):
+    (term_o, file_o), _ = vm.decode_args(opt="sO")
+    
+    if term_o is not None:
+        raise Exception("XXX")
+
+    fd = 1
+    if file_o is not None:
+        file_no_o = file_o.get_slot(vm, "fileno")
+        vm.type_check(file_no_o, Con_Int)
+        assert isinstance(file_no_o, Con_Int)
+        fd = file_no_o.v
+
+    #_curses.setupterm(None, fd)
+    
+    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+
+
+def tigetstr(vm):
+    (capname_o), _ = vm.decode_args(opt="S")
+
+    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))

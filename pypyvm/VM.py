@@ -836,6 +836,7 @@ class VM(object):
 
     def _add_continuation_frame(self, func, nargs, resumable=False):
         if not isinstance(func, Builtins.Con_Func):
+            print func
             raise Exception("XXX")
 
         pc = func.pc

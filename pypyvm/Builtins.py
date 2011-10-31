@@ -164,8 +164,7 @@ class Con_Boxed_Object(Con_Object):
             return self.instance_of
         
         if o is None:
-            #print o, n
-            raise Exception("XXX")
+            vm.raise_helper("Slot_Exception", [Con_String(vm, n), self])
         
         return o
 

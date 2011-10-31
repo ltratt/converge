@@ -395,8 +395,7 @@ class VM(object):
                 elif it == Target.CON_INSTR_RETURN:
                     self._instr_return(instr, cf)
                 elif it == Target.CON_INSTR_BRANCH:
-                    j = Target.unpack_branch(instr)
-                    cf.bc_off += j
+                    self._instr_branch(instr, cf)
                 elif it == Target.CON_INSTR_YIELD:
                     self._instr_yield(instr, cf)
                 elif it == Target.CON_INSTR_IMPORT:
@@ -431,11 +430,7 @@ class VM(object):
                     # optimised.
                     self._instr_slot_lookup(instr, cf)
                 elif it == Target.CON_INSTR_BRANCH_IF_NOT_FAIL:
-                    if self._cf_stack_pop(cf) is self.get_builtin(Builtins.BUILTIN_FAIL_OBJ):
-                        cf.bc_off += Target.INTSIZE
-                    else:
-                        j = Target.unpack_branch_if_not_fail(instr)
-                        cf.bc_off += j
+                    self._instr_branch_if_not_fail(instr, cf)
                 elif it == Target.CON_INSTR_EQ or it == Target.CON_INSTR_LE \
                   or it == Target.CON_INSTR_NEQ or it == Target.CON_INSTR_LE_EQ \
                   or it == Target.CON_INSTR_GR_EQ or it == Target.CON_INSTR_GT:
@@ -594,6 +589,10 @@ class VM(object):
         # Won't get here
 
 
+    def _instr_branch(self, instr, cf):
+        cf.bc_off += Target.unpack_branch(instr)
+
+
     def _instr_yield(self, instr, cf):
         self.yield_(self._cf_stack_pop(cf))
         cf.bc_off += Target.INTSIZE
@@ -703,6 +702,14 @@ class VM(object):
         const_num = Target.unpack_constant_set(instr)
         cf.pc.mod.consts[const_num] = self._cf_stack_pop(cf)
         cf.bc_off += Target.INTSIZE
+
+
+    def _instr_branch_if_not_fail(self, instr, cf):
+        if self._cf_stack_pop(cf) is self.get_builtin(Builtins.BUILTIN_FAIL_OBJ):
+            cf.bc_off += Target.INTSIZE
+        else:
+            j = Target.unpack_branch_if_not_fail(instr)
+            cf.bc_off += j
 
 
     def _instr_cmp(self, instr, cf):

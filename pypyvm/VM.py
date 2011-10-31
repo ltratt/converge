@@ -262,18 +262,19 @@ class VM(object):
                 nrmp[i] = cf.stack[cf.stackpe - nargs + i]
             else:
                 o = cf.stack[cf.stackpe - nargs + i]
-                if t == "C":
-                    Builtins.type_check_class(self, o)
-                elif t == "I":
-                    Builtins.type_check_int(self, o)
-                elif t == "L":
-                    Builtins.type_check_list(self, o)
-                elif t == "S":
-                    Builtins.type_check_string(self, o)
-                elif t == "W":
-                    Builtins.type_check_set(self, o)
-                else:
-                    raise Exception("XXX")
+                if t < "a" or o is not None:
+                    if t == "C":
+                        Builtins.type_check_class(self, o)
+                    elif t == "I":
+                        Builtins.type_check_int(self, o)
+                    elif t == "L":
+                        Builtins.type_check_list(self, o)
+                    elif t == "S":
+                        Builtins.type_check_string(self, o)
+                    elif t == "W":
+                        Builtins.type_check_set(self, o)
+                    else:
+                        raise Exception("XXX")
                 nrmp[i] = o
             
             i += 1

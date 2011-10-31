@@ -257,6 +257,11 @@ class VM(object):
         nrmp = [None] * (len(mand) + len(opt)) # Normal params
         i = 0
         while i < (len(mand) + len(opt)):
+            if i >= nargs:
+                for j in range(i, nargs):
+                    nrmp[j] = None
+                break
+
             if i < len(mand):
                 t = mand[i]
             else:

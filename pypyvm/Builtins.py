@@ -864,8 +864,11 @@ def _new_func_Con_Exception(vm):
 
 
 def _Con_Exception_init(vm):
-    (self, msg),_ = vm.decode_args("OO")
-    self.set_slot(vm, "msg", msg)
+    (self, msg),_ = vm.decode_args("O", opt="O")
+    if msg:
+        self.set_slot(vm, "msg", msg)
+    else:
+        self.set_slot(vm, "msg", Con_String(vm, ""))
     vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))
 
 

@@ -239,7 +239,12 @@ class VM(object):
         nargs = cf.nargs # Number of arguments passed
 
         if nargs < len(mand):
-            raise Exception("XXX")
+            if vargs:
+                self.raise_helper("Parameters_Exception", [Builtins.Con_String(self, \
+                  "Too few parameters (%d passed, but at least %d needed)." % (nargs, len(mand)))])
+            else:
+                self.raise_helper("Parameters_Exception", [Builtins.Con_String(self, \
+                  "Too few parameters (%d passed, but %d needed)." % (nargs, len(mand)))])
         elif nargs > (len(mand) + len(opt)) and not vargs:
             raise Exception("XXX")
 

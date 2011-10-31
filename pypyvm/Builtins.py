@@ -859,6 +859,17 @@ def _Con_Exception_init(vm):
     vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))
 
 
+def _Con_Exception_to_str(vm):
+    (self,),_ = vm.decode_args("O")
+    ex_name = self.get_slot(vm, "instance_of").get_slot(vm, "name")
+    vm.type_check(ex_name, Con_String)
+    assert isinstance(ex_name, Con_String)
+    msg = self.get_slot(vm, "msg")
+    vm.type_check(msg, Con_String)
+    assert isinstance(msg, Builtins.Con_String)
+    vm.return_(Con_String(vm, "%s: %s" % (ex_name.v, msg.v)))
+
+
 def bootstrap_con_exception(vm):
     exception_class = Con_Class(vm, "Exception", [vm.get_builtin(BUILTIN_OBJECT_CLASS)], \
       vm.get_builtin(BUILTIN_BUILTINS_MODULE))
@@ -868,3 +879,4 @@ def bootstrap_con_exception(vm):
         vm.get_builtin(BUILTIN_BUILTINS_MODULE))
 
     new_c_con_func_for_class(vm, "init", _Con_Exception_init, exception_class)
+    new_c_con_func_for_class(vm, "to_str", _Con_Exception_to_str, exception_class)

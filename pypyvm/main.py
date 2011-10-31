@@ -67,7 +67,7 @@ def entry_point(argv):
             assert isinstance(code, Builtins.Con_Int)
             return code.v
         else:
-            msg = e.ex_obj.get_slot(vm, "msg")
+            msg = vm.get_slot_apply(e.ex_obj, "to_str")
             assert isinstance(msg, Builtins.Con_String)
             print msg.v
             raise

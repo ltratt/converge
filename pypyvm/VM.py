@@ -37,7 +37,7 @@ DEBUG = False
 def get_printable_location(bc_off, mod_bc, pc):
     instr = Target.read_word(mod_bc, bc_off)
     it = Target.get_instr(instr)
-    return "%s:%s at offset %s. bytecode: %s" % (pc.mod.name, pc.off, bc_off, Target.INSTR_NAMES[it])
+    return "%s:%s at offset %s. bytecode: %s" % (pc.mod, pc.off, bc_off, Target.INSTR_NAMES[it])
 
 jitdriver = jit.JitDriver(greens=["bc_off", "mod_bc", "pc"], reds=["prev_bc_off", "cf", "self"],
                           get_printable_location=get_printable_location)
@@ -71,6 +71,7 @@ class VM(object):
         Builtins.bootstrap_con_class(self)
         Builtins.bootstrap_con_int(self)
         Builtins.bootstrap_con_list(self)
+        Builtins.bootstrap_con_module(self)
         Builtins.bootstrap_con_set(self)
         Builtins.bootstrap_con_string(self)
         Builtins.bootstrap_con_exception(self)
@@ -269,6 +270,8 @@ class VM(object):
                         Builtins.type_check_int(self, o)
                     elif t == "L":
                         Builtins.type_check_list(self, o)
+                    elif t == "M":
+                        Builtins.type_check_module(self, o)
                     elif t == "S":
                         Builtins.type_check_string(self, o)
                     elif t == "W":

@@ -206,19 +206,34 @@ def _Con_Object_to_str(vm):
 
 
 def bootstrap_con_object(vm):
-    object_class = Con_Class(vm, "Object", [], None)
+    # This is where the hardcore bootstrapping stuff happens. Many things here are done in a very
+    # specific order - changing something can easily cause lots of later things to break.
+    
+    object_class_nm = Con_String(vm, "Object")
+    object_class = Con_Class(vm, object_class_nm, [], None)
     vm.set_builtin(BUILTIN_OBJECT_CLASS, object_class)
-    class_class = Con_Class(vm, "Class", [object_class], None)
+    class_class_nm = Con_String(vm, "Class")
+    class_class = Con_Class(vm, class_class_nm, [object_class], None)
     vm.set_builtin(BUILTIN_CLASS_CLASS, class_class)
     object_class.instance_of = class_class
     class_class.instance_of = class_class
+
+    string_class_nm = Con_String(vm, "String")
+    string_class = Con_Class(vm, string_class_nm, [object_class], None)
+    vm.set_builtin(BUILTIN_STRING_CLASS, string_class)
+    object_class_nm.instance_of = string_class
+    class_class_nm.instance_of = string_class
+    string_class_nm.instance_of = string_class
     
     vm.set_builtin(BUILTIN_NULL_OBJ, Con_Boxed_Object(vm))
     vm.set_builtin(BUILTIN_FAIL_OBJ, Con_Boxed_Object(vm))
+
+    module_class = Con_Class(vm, Con_String(vm, "Module"), [object_class], None)
+    vm.set_builtin(BUILTIN_MODULE_CLASS, module_class)
     
     # In order that later objects can refer to the Builtins module, we have to create it now.
     builtins_module = new_c_con_module(vm, "Builtins", "Builtins", __file__, None, \
-      ["Object", "Class"])
+      ["Object", "Class", "String", "Module"])
     # We effectively initialize the Builtins module through the bootstrapping process, so it doesn't
     # need a separate initialization function.
     builtins_module.initialized = True
@@ -227,8 +242,12 @@ def bootstrap_con_object(vm):
     
     object_class.set_slot(vm, "container", builtins_module)
     class_class.set_slot(vm, "container", builtins_module)
+    string_class.set_slot(vm, "container", builtins_module)
+    module_class.set_slot(vm, "container", builtins_module)
     builtins_module.set_defn(vm, "Object", object_class)
     builtins_module.set_defn(vm, "Class", class_class)
+    builtins_module.set_defn(vm, "String", class_class)
+    builtins_module.set_defn(vm, "Module", module_class)
 
     object_class.new_func = \
       new_c_con_func(vm, Con_String(vm, "new_Object"), False, _new_func_Con_Object, \
@@ -245,7 +264,7 @@ def bootstrap_con_object(vm):
 #
 
 class Con_Class(Con_Boxed_Object):
-    __slots__ = ("name", "supers", "fields_map", "fields", "new_func")
+    __slots__ = ("supers", "fields_map", "fields", "new_func")
     _immutable_fields = ("supers", "fields")
 
 
@@ -274,21 +293,12 @@ class Con_Class(Con_Boxed_Object):
                         raise Exception("XXX")
         self.new_func = new_func
         
-        self.name = name
         self.supers = supers
         self.fields_map = _EMPTY_MAP
         self.fields = []
 
+        self.set_slot(vm, "name", name)
         self.set_slot(vm, "container", container)
-
-
-    def get_slot_raw(self, vm, n):
-        o = Con_Boxed_Object.get_slot_raw(self, vm, n)
-        if o is None:
-            if n == "name":
-                o = Con_String(vm, self.name)
-        
-        return o
 
 
     def get_field(self, vm, n):
@@ -316,12 +326,13 @@ class Con_Class(Con_Boxed_Object):
             self.fields[i] = o
 
 
+
 def _new_func_Con_Class(vm):
     (c, name, supers, container), vargs = vm.decode_args("CSLO", vargs=True)
     assert isinstance(c, Con_Class)
     assert isinstance(name, Con_String)
     assert isinstance(supers, Con_List)
-    o = Con_Class(vm, name.v, supers.l[:], container, c)
+    o = Con_Class(vm, name, supers.l[:], container, c)
     vm.apply(o.get_slot(vm, "init"), vargs)
     vm.return_(o)
 
@@ -349,11 +360,32 @@ def _Con_Class_set_field(vm):
     vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
 
 
+def _Con_Class_path(vm):
+    (self, stop_at),_ = vm.decode_args("C", opt="o")
+    assert isinstance(self, Con_Class)
+    
+    name = type_check_string(vm, self.get_slot(vm, "name"))
+    if name.v == "":
+        name = Con_String(vm, "<anon>")
+
+    container = self.get_slot(vm, "container")
+    if container is vm.get_builtin(BUILTIN_NULL_OBJ) or container is stop_at:
+        vm.return_(name)
+    else:
+        rtn = type_check_string(vm, vm.get_slot_apply(container, "path", [stop_at]))
+        if isinstance(container, Con_Module):
+            sep = "::"
+        else:
+            sep = "."
+        vm.return_(Con_String(vm, "%s%s%s" % (rtn.v, sep, name.v)))
+
+
 def _Con_Class_to_str(vm):
     (self,),_ = vm.decode_args("C")
     assert isinstance(self, Con_Class)
 
-    vm.return_(Con_String(vm, "<Class %s>" % self.name))
+    nm = type_check_string(vm, self.get_slot(vm, "name"))
+    vm.return_(Con_String(vm, "<Class %s>" % nm.v))
 
 
 def _Con_Class_instantiated(vm):
@@ -381,8 +413,8 @@ def _Con_Class_instantiated(vm):
 
 
 def bootstrap_con_class(vm):
-    class_class = vm.get_builtin(BUILTIN_CLASS_CLASS)
-    assert isinstance(class_class, Con_Class)
+    class_class = type_check_class(vm, vm.get_builtin(BUILTIN_CLASS_CLASS))
+
     class_class.new_func = \
       new_c_con_func(vm, Con_String(vm, "new_Class"), False, _new_func_Con_Class, \
         vm.get_builtin(BUILTIN_BUILTINS_MODULE))
@@ -391,6 +423,7 @@ def bootstrap_con_class(vm):
     new_c_con_func_for_class(vm, "new", _Con_Class_new, class_class)
     new_c_con_func_for_class(vm, "get_field", _Con_Class_get_field, class_class)
     new_c_con_func_for_class(vm, "set_field", _Con_Class_set_field, class_class)
+    new_c_con_func_for_class(vm, "path", _Con_Class_path, class_class)
     new_c_con_func_for_class(vm, "to_str", _Con_Class_to_str, class_class)
 
 
@@ -400,7 +433,7 @@ def bootstrap_con_class(vm):
 #
 
 class Con_Module(Con_Boxed_Object):
-    __slots__ = ("is_bc", "bc", "name", "id_", "src_path", "imps", "tlvars_map", "consts",
+    __slots__ = ("is_bc", "bc", "id_", "src_path", "imps", "tlvars_map", "consts",
       "init_func", "values", "closure", "initialized")
     _immutable_fields_ = ("is_bc", "bc", "name", "id_", "src_path", "imps", "tlvars_map",
       "init_func", "consts")
@@ -412,7 +445,6 @@ class Con_Module(Con_Boxed_Object):
 
         self.is_bc = is_bc # True for bytecode modules; False for RPython modules
         self.bc = bc
-        self.name = name
         self.id_ = id_
         self.src_path = src_path
         self.imps = imps
@@ -426,6 +458,9 @@ class Con_Module(Con_Boxed_Object):
             self.closure = None
         else:
             self.closure = [None] * len(tlvars_map)
+
+        self.set_slot(vm, "name", name)
+        self.set_slot(vm, "container", vm.get_builtin(BUILTIN_NULL_OBJ)) # XXX
 
         self.initialized = False
 
@@ -451,8 +486,9 @@ class Con_Module(Con_Boxed_Object):
     def get_closure_i(self, vm, n):
         i = self.tlvars_map.get(n, -1)
         if i == -1:
+            name = type_check_string(vm, self.get_slot(vm, "name")).v
             vm.raise_helper("Mod_Defn_Exception", \
-              [Builtins.Con_String(vm, "Definition '%s' not found in '%s'." % (n, self.name))])
+              [Builtins.Con_String(vm, "Definition '%s' not found in '%s'." % (n, name))])
         return i
 
 
@@ -474,9 +510,31 @@ class Con_Module(Con_Boxed_Object):
 
 
 
-def bootstrap_con_module():
-    pass
+def _Con_Module_path(vm):
+    (self, stop_at),_ = vm.decode_args("M", opt="o")
+    assert isinstance(self, Con_Module)
+    
+    if self is stop_at:
+        vm.return_(Con_String(vm, ""))
+    
+    name = type_check_string(vm, self.get_slot(vm, "name"))
+    container = self.get_slot(vm, "container")
+    if container is vm.get_builtin(BUILTIN_NULL_OBJ) or container is stop_at:
+        vm.return_(name)
+    else:
+        rtn = type_check_string(vm, vm.get_slot_apply(container, "path", [stop_at]))
+        if isinstance(container, Con_Module):
+            sep = "::"
+        else:
+            sep = "."
+        vm.return_(Con_String(vm, "%s%s%s" % (rtn.v, sep, name.v)))
 
+
+
+def bootstrap_con_module(vm):
+    module_class = vm.get_builtin(BUILTIN_MODULE_CLASS)
+
+    new_c_con_func_for_class(vm, "path", _Con_Module_path, module_class)
 
 
 def new_c_con_module(vm, name, id_, src_path, import_func, names):
@@ -485,15 +543,16 @@ def new_c_con_module(vm, name, id_, src_path, import_func, names):
     for j in names:
         tlvars_map[j] = i
         i += 1
-    mod = Con_Module(vm, False, lltype.nullptr(rffi.CCHARP.TO), name, id_, src_path, [], \
-      tlvars_map, 0, None)
+    mod = Con_Module(vm, False, lltype.nullptr(rffi.CCHARP.TO), Con_String(vm, name), id_, \
+      src_path, [], tlvars_map, 0, None)
     mod.init_func = new_c_con_func(vm, Con_String(vm, "$$init$$"), False, import_func, mod)
     
     return mod
 
 
 def new_bc_con_module(vm, bc, name, id_, src_path, imps, tlvars_map, num_consts):
-    return Con_Module(vm, True, bc, name, id_, src_path, imps, tlvars_map, num_consts, None)
+    return Con_Module(vm, True, bc, Con_String(vm, name), id_, src_path, imps, tlvars_map, \
+      num_consts, None)
 
 
 
@@ -548,7 +607,7 @@ def new_c_con_func_for_mod(vm, name, func, mod):
 
 
 ################################################################################
-# Con_Class
+# Con_Partial_Application
 #
 
 class Con_Partial_Application(Con_Boxed_Object):
@@ -656,7 +715,7 @@ def _Con_Int_mul(vm):
 
 
 def bootstrap_con_int(vm):
-    int_class = Con_Class(vm, "Int", [vm.get_builtin(BUILTIN_OBJECT_CLASS)], \
+    int_class = Con_Class(vm, Con_String(vm, "Int"), [vm.get_builtin(BUILTIN_OBJECT_CLASS)], \
       vm.get_builtin(BUILTIN_BUILTINS_MODULE))
     vm.set_builtin(BUILTIN_INT_CLASS, int_class)
 
@@ -693,9 +752,7 @@ def _Con_String_to_str(vm):
 
 
 def bootstrap_con_string(vm):
-    string_class = Con_Class(vm, "String", [vm.get_builtin(BUILTIN_OBJECT_CLASS)], \
-      vm.get_builtin(BUILTIN_BUILTINS_MODULE))
-    vm.set_builtin(BUILTIN_STRING_CLASS, string_class)
+    string_class = vm.get_builtin(BUILTIN_STRING_CLASS)
 
     new_c_con_func_for_class(vm, "to_str", _Con_String_to_str, string_class)
 
@@ -760,7 +817,7 @@ def _Con_List_set(vm):
 
 
 def bootstrap_con_list(vm):
-    list_class = Con_Class(vm, "List", [vm.get_builtin(BUILTIN_OBJECT_CLASS)], \
+    list_class = Con_Class(vm, Con_String(vm, "List"), [vm.get_builtin(BUILTIN_OBJECT_CLASS)], \
       vm.get_builtin(BUILTIN_BUILTINS_MODULE))
     vm.set_builtin(BUILTIN_LIST_CLASS, list_class)
 
@@ -818,7 +875,7 @@ def _Con_Set_to_str(vm):
 
 
 def bootstrap_con_set(vm):
-    set_class = Con_Class(vm, "Set", [vm.get_builtin(BUILTIN_OBJECT_CLASS)], \
+    set_class = Con_Class(vm, Con_String(vm, "Set"), [vm.get_builtin(BUILTIN_OBJECT_CLASS)], \
       vm.get_builtin(BUILTIN_BUILTINS_MODULE))
     vm.set_builtin(BUILTIN_SET_CLASS, set_class)
 
@@ -866,8 +923,8 @@ def _Con_Exception_to_str(vm):
 
 
 def bootstrap_con_exception(vm):
-    exception_class = Con_Class(vm, "Exception", [vm.get_builtin(BUILTIN_OBJECT_CLASS)], \
-      vm.get_builtin(BUILTIN_BUILTINS_MODULE))
+    exception_class = Con_Class(vm, Con_String(vm, "Exception"), \
+      [vm.get_builtin(BUILTIN_OBJECT_CLASS)], vm.get_builtin(BUILTIN_BUILTINS_MODULE))
     vm.set_builtin(BUILTIN_EXCEPTION_CLASS, exception_class)
     exception_class.new_func = \
       new_c_con_func(vm, Con_String(vm, "new_Exception"), False, _new_func_Con_Exception, \
@@ -911,6 +968,12 @@ def type_check_int(vm, o):
 def type_check_list(vm, o):
     if not isinstance(o, Con_List):
         vm.raise_helper("Type_Exception", [vm.get_builtin(BUILTIN_LIST_CLASS), o])
+    return o
+
+
+def type_check_module(vm, o):
+    if not isinstance(o, Con_Module):
+        vm.raise_helper("Type_Exception", [vm.get_builtin(BUILTIN_MODULE_CLASS), o])
     return o
 
 

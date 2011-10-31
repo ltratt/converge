@@ -347,13 +347,14 @@ class Code_Gen:
 
             fst := renamed_var_name.names[0]
             if ITree::IMod_Id_Import.instantiated(fst):
-                self._preorder(fst)
+                max_stack_size := self._preorder(fst)
             else:
                 self._prc_mod_lookup(renamed_var_name)
-                self._preorder(fst)
+                max_stack_size := self._preorder(fst)
 
             for name := renamed_var_name.names.iter(1, -1):
                 self._instructions.append(self._target.Instr_Module_Lookup.new(name.src_infos, name.name))
+                max_stack_size += 1
 
             self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(renamed_var_name.src_infos, "set_defn"))
             var := renamed_var_name.names[-1]
@@ -374,6 +375,9 @@ class Code_Gen:
                 self.closures[reversed_closures_offset][Core::CLOSURE_IMPORTS][var_name] := imp_mod_id
 
             self._instructions.append(self._target.Instr_Assign_Var.new(src_infos, closures_offset, var_num))
+            max_stack_size := 0
+
+        return max_stack_size
 
 
 
@@ -382,9 +386,10 @@ class Code_Gen:
         renamed_var_name, closures_offset, var_num := self._get_var_offsets(var_name, src_infos)
         
         if ITree::IModule_Lookup.instantiated(renamed_var_name):
-            self._preorder(renamed_var_name)
+            return self._preorder(renamed_var_name)
         else:
             self._instructions.append(self._target.Instr_Lookup_Var.new(src_infos, closures_offset, var_num))
+            return 1
 
 
 
@@ -409,6 +414,8 @@ class Code_Gen:
         
         for import_extra := import_extras.iter():
             self._instructions.append(self._target.Instr_Module_Lookup.new(src_infos, import_extra))
+
+        return 1
 
 
 
@@ -443,25 +450,37 @@ class Code_Gen:
 
     func _preorder(self, node):
     
-        self.get_slot("_t_" + node.instance_of.name.lower_cased())(node)
+        return self.get_slot("_t_" + node.instance_of.name.lower_cased())(node)
+
+
+
+    func _max(self, m1, m2):
+        if m1 > m2:
+            return m1
+        else:
+            return m2
 
 
 
     func _t_iexpr_seq(self, node):
     
+        max_stack_size := 0
         for expr := node.exprs.iter():
             end_of_expr_label := self._create_label()
             self._nesting.append([NEST_NORMAL])
             self._instructions.append(self._target.Instr_Add_Failure_Frame.new(expr.src_infos, end_of_expr_label))
             if (ITree::IFunc_Defn.instantiated(expr) | ITree::IClass_Defn.instantiated(expr)) \
               & not expr.name is null:
-                self._preorder(ITree::IAssignment.new(ITree::STD_ASSIGN, [expr.name], expr, expr.src_infos))
+                max_stack_size := self._max(max_stack_size, \
+                  1 + self._preorder(ITree::IAssignment.new(ITree::STD_ASSIGN, [expr.name], expr, expr.src_infos)))
             else:
-                self._preorder(expr)
+                max_stack_size := self._max(max_stack_size, 1 + self._preorder(expr))
 
             self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(expr.src_infos))
             self._nesting.del(-1)
             self._set_label(end_of_expr_label)
+
+        return max_stack_size
 
 
 
@@ -499,28 +518,35 @@ class Code_Gen:
         
         if node.metaclass_ is null:
             self._instructions.append(self._target.Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_CLASS_CLASS))
+            max_stack_size := 1
         else:
-            self._preorder(node.metaclass_)
+            max_stack_size := self._preorder(node.metaclass_)
         self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(node.src_infos, "new"))
+        max_stack_size += 1
         
         if node.name is null:
             self._instructions.append(self._target.Instr_String.new(node.src_infos, ""))
         else:
             self._instructions.append(self._target.Instr_String.new(node.name.src_infos, node.name.name))
+        max_stack_size += 1
         
         if node.supers.len() > 0:
+            max_loop_stack_size := 0
             for super_ := node.supers.iter():
-                self._preorder(super_)
+                max_loop_stack_size := self._max(max_loop_stack_size, self._preorder(super_))
             self._instructions.append(self._target.Instr_List.new(node.src_infos, node.supers.len()))
+            max_loop_stack_size := self._max(max_loop_stack_size, 1)
+            max_stack_size += max_loop_stack_size 
         else:
             // Object is the default superclass
             self._instructions.append(self._target.Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_OBJECT_CLASS))
             self._instructions.append(self._target.Instr_List.new(node.src_infos, 1))
+            max_stack_size += 1
         
         // XXX this is wrong for nested classes
         
         self._add_lookup_var("self_module", node.src_infos)
-        
+        max_stack_size += 1
         self._instructions.append(self._target.Instr_Apply.new(node.src_infos, 3))
 
         self._nesting.append([NEST_CLASS])
@@ -530,30 +556,32 @@ class Code_Gen:
             
             self._instructions.append(self._target.Instr_Dup.new(field.src_infos))
             self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(field.src_infos, "set_field"))
+            loop_stack_size := 1
         
             if ITree::IFunc_Defn.instantiated(field):
                 if field.name is null:
                     self._compiler.error("Functions as class fields can not be anonymous.", node.src_infos)
                 self._instructions.append(self._target.Instr_String.new(field.src_infos, field.name.name))
-                self._preorder(field)
+                loop_stack_size += 1 + self._preorder(field)
             elif ITree::IClass_Defn.instantiated(field):
                 if field.name is null:
                     self._compiler.error("Classes as class fields can not be anonymous.", node.src_infos)
                 self._instructions.append(self._target.Instr_String.new(field.src_infos, field.name))
-                self._preorder(field)
+                loop_stack_size += 1 + self._preorder(field)
             elif ITree::IAssignment.instantiated(field):
                 assert field.targets.len() == 1
                 self._instructions.append(self._target.Instr_String.new(field.src_infos, field.targets[0].name))
-                self._preorder(field.expr)
+                loop_stack_size += 1 + self._preorder(field.expr)
             else:
                 Sys::println(field.pp(0))
                 raise "XXX"
             self._instructions.append(self._target.Instr_Apply.new(field.src_infos, 2))
             self._instructions.append(self._target.Instr_Pop.new(field.src_infos))
+            max_stack_size := self._max(max_stack_size, 1 + loop_stack_size)
         self._nesting.del(-1)
 
         if node.name is null:
-            return
+            return max_stack_size
 
         inside_class := 0
         for nest := self._nesting.riter():
@@ -563,7 +591,9 @@ class Code_Gen:
                 break
 
         if inside_class == 0 & not node.name is null:
-            self._add_assign_to_var(node.name.name, node.src_infos)
+            max_stack_size := self._max(max_stack_size, 1 + self._add_assign_to_var(node.name.name, node.src_infos))
+
+        return max_stack_size
 
 
 
@@ -589,10 +619,13 @@ class Code_Gen:
             self._instructions.append(self._target.Instr_String.new(node.src_infos, node.name.name))
         self._instructions.append(self._target.Instr_Int.new(node.src_infos, bound_vars.len() + node.is_bound))
         self._instructions.append(self._target.Instr_Int.new(node.src_infos, node.params.len()))
-        self._instructions.append(self._target.Instr_Func_Defn.new(node.src_infos, node.is_bound))
+        max_stack_size := 3
+        func_defn_instr := self._target.Instr_Func_Defn.new(node.src_infos, node.is_bound)
+        self._instructions.append(func_defn_instr)
         end_of_func_body_label := self._create_label()
         self._instructions.append(self._target.Instr_Branch.new(node.src_infos, end_of_func_body_label))
         
+        max_func_stack_size := node.params.len()
         params_info := []
         for param := node.params.iter():
             renamed_var_name, closures_offset, var_num := self._get_var_offsets(param.var.name, param.var.src_infos)
@@ -619,23 +652,27 @@ class Code_Gen:
             assert not ITree::IModule_Lookup.instantiated(renamed_var_name)
             self._instructions.append(self._target.Instr_Is_Assigned.new(node.src_infos, closures_offset, var_num, next_param_label))
             self._instructions.append(self._target.Instr_Add_Failure_Frame.new(node.src_infos, next_param_label))
-            self._preorder(param.default)
-            self._add_assign_to_var(param.var.name, node.src_infos)
+            loop_stack_size := 1 + self._preorder(param.default)
+            loop_stack_size += self._add_assign_to_var(param.var.name, node.src_infos)
+            max_func_stack_size := self._max(max_func_stack_size, loop_stack_size)
+            max_stack_size := self._max(max_stack_size, loop_stack_size)
             self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
             self._nesting.del(-1)
             self._set_label(next_param_label)
 
-        self._preorder(node.body)
+        max_func_stack_size := self._max(max_func_stack_size, self._preorder(node.body))
         self._pop_vars()
         self._nesting.del(-1)
 
         self._instructions.append(self._target.Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_NULL_OBJ))
+        max_func_stack_size := self._max(max_func_stack_size, 1)
         self._instructions.append(self._target.Instr_Return.new(node.src_infos))
-        
+
+        func_defn_instr.max_stack_size := max_func_stack_size
         self._set_label(end_of_func_body_label)
         
         if node.name is null:
-            return
+            return max_stack_size
         
         inside_class := 0
         for nest := self._nesting.riter():
@@ -645,7 +682,9 @@ class Code_Gen:
                 break
 
         if inside_class == 0 & not node.name is null:
-            self._add_assign_to_var(node.name.name, node.src_infos)
+            max_stack_size := self._max(max_stack_size, 1 + self._add_assign_to_var(node.name.name, node.src_infos))
+
+        return max_stack_size
             
 
 
@@ -657,11 +696,12 @@ class Code_Gen:
     func _t_iif(self, node):
     
         end_of_if_label := self._create_label()
+        max_stack_size := 0
         for clause := node.clauses.iter():
             end_of_clause_label := self._create_label()
             self._nesting.append([NEST_NORMAL])
             self._instructions.append(self._target.Instr_Add_Failure_Frame.new(node.src_infos, end_of_clause_label))
-            self._preorder(clause.condition)
+            max_stack_size := self._max(max_stack_size, 1 + self._preorder(clause.condition))
             body_label := self._create_label()
             self._instructions.append(self._target.Instr_Branch_If_Not_Fail.new(node.src_infos, body_label))
             self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
@@ -669,25 +709,28 @@ class Code_Gen:
             self._instructions.append(self._target.Instr_Branch.new(node.src_infos, end_of_clause_label))
             self._set_label(body_label)
             self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
-            self._preorder(clause.body)
+            max_stack_size := self._max(max_stack_size, self._preorder(clause.body))
             self._instructions.append(self._target.Instr_Branch.new(node.src_infos, end_of_if_label))
             self._set_label(end_of_clause_label)
         
         if not node.else_body is null:
-            self._preorder(node.else_body)
+            max_stack_size := self._max(max_stack_size, self._preorder(node.else_body))
         
         self._set_label(end_of_if_label)
+        
+        return max_stack_size
 
 
 
     func _t_indif(self, node):
     
         end_of_ndif_label := self._create_label()
+        max_stack_size := 0
         for clause := node.clauses.iter():
             end_of_clause_label := self._create_label()
             self._nesting.append([NEST_NORMAL])
             self._instructions.append(self._target.Instr_Add_Failure_Frame.new(node.src_infos, end_of_clause_label))
-            self._preorder(clause.condition)
+            max_stack_size := self._max(max_stack_size, 1 + self._preorder(clause.condition))
             body_label := self._create_label()
             self._instructions.append(self._target.Instr_Branch_If_Not_Fail.new(node.src_infos, body_label))
             self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
@@ -695,16 +738,19 @@ class Code_Gen:
             self._instructions.append(self._target.Instr_Branch.new(node.src_infos, end_of_clause_label))
             self._set_label(body_label)
             self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
-            self._preorder(clause.body)
+            max_stack_size := self._max(max_stack_size, self._preorder(clause.body))
             self._instructions.append(self._target.Instr_Branch.new(node.src_infos, end_of_ndif_label))
             self._set_label(end_of_clause_label)
         
         self._add_mod_defn_lookup(["Exceptions", "NDIf_Exception"], node.src_infos)
         self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(node.src_infos, "new"))
         self._instructions.append(self._target.Instr_Apply.new(node.src_infos, 0))
+        max_stack_size := self._max(max_stack_size, 2)
         self._instructions.append(self._target.Instr_Raise.new(node.src_infos))
         
         self._set_label(end_of_ndif_label)
+        
+        return max_stack_size
 
 
 
@@ -725,12 +771,14 @@ class Code_Gen:
             self._instructions.append(self._target.Instr_Module_Lookup.new(node.src_infos, import_extra))
         
         self._add_assign_to_var(node.var_name, node.src_infos, imp_mod_id)
+        
+        return 1
 
 
 
     func _t_ivar(self, node):
     
-        self._add_lookup_var(node.name, node.src_infos)
+        return self._add_lookup_var(node.name, node.src_infos)
 
 
 
@@ -747,6 +795,8 @@ class Code_Gen:
             self._constants_instructions.append(self._target.Instr_Fail_Now.new(node.src_infos))
         
         self._instructions.append(self._target.Instr_Constant_Get.new(node.src_infos, self._constants[constant_name]))
+        
+        return 2
 
 
 
@@ -763,6 +813,8 @@ class Code_Gen:
             self._constants_instructions.append(self._target.Instr_Fail_Now.new(node.src_infos))
         
         self._instructions.append(self._target.Instr_Constant_Get.new(node.src_infos, self._constants[constant_name]))
+        
+        return 2
 
 
 
@@ -778,14 +830,14 @@ class Code_Gen:
             self._nesting.append([NEST_NORMAL])
             self._instructions.append(self._target.Instr_Add_Failure_Frame.new(node.src_infos, exhausted_body_label))
             self._set_label(start_of_while_label)
-            self._preorder(node.condition)
+            max_stack_size := 1 + self._preorder(node.condition)
             self._instructions.append(self._target.Instr_Branch_If_Not_Fail.new(node.src_infos, body_label))
             self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
             self._instructions.append(self._target.Instr_Branch.new(node.src_infos, exhausted_body_label))
             self._nesting.del(-1)
         else:
             self._set_label(start_of_while_label)
-            self._preorder(node.condition)
+            max_stack_size := self._preorder(node.condition)
             self._instructions.append(self._target.Instr_Branch_If_Not_Fail.new(node.src_infos, body_label))
             self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
             self._instructions.append(self._target.Instr_Fail_Now.new(node.src_infos))
@@ -794,14 +846,14 @@ class Code_Gen:
         if not node.body is null:
             self._nesting.append([NEST_WHILE, start_of_while_label, broken_body_label])
             self._instructions.append(self._target.Instr_Add_Failure_Frame.new(node.src_infos, start_of_while_label))
-            self._preorder(node.body)
+            max_stack_size := self._max(max_stack_size, 2 + self._preorder(node.body))
             self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
             self._nesting.del(-1)
         self._instructions.append(self._target.Instr_Branch.new(node.src_infos, start_of_while_label))
         
         if not node.exhausted_body is null:
             self._set_label(exhausted_body_label)
-            self._preorder(node.exhausted_body)
+            max_stack_size := self._max(max_stack_size, self._preorder(node.exhausted_body))
             self._instructions.append(self._target.Instr_Fail_Now.new(node.src_infos))
 
         self._set_label(broken_body_label)
@@ -809,8 +861,10 @@ class Code_Gen:
         if not node.exhausted_body is null:
             self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
         if not node.broken_body is null:
-            self._preorder(node.broken_body)
+            max_stack_size := self._max(max_stack_size, self._preorder(node.broken_body))
         self._instructions.append(self._target.Instr_Fail_Now.new(node.src_infos))
+        
+        return max_stack_size
 
 
 
@@ -824,7 +878,7 @@ class Code_Gen:
             self._instructions.append(self._target.Instr_Add_Failure_Frame.new(node.src_infos, exhausted_body_label))
             self._instructions.append(self._target.Instr_Add_Fail_Up_Frame.new(node.src_infos))
             self._nesting.append([NEST_NORMAL])
-            self._preorder(node.condition)
+            max_stack_size := 2 + self._preorder(node.condition)
             self._nesting.del(-1)
             self._instructions.append(self._target.Instr_Branch_If_Not_Fail.new(node.src_infos, body_label))
             self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
@@ -832,7 +886,7 @@ class Code_Gen:
         else:
             self._instructions.append(self._target.Instr_Add_Fail_Up_Frame.new(node.src_infos))
             self._nesting.append([NEST_NORMAL])
-            self._preorder(node.condition)
+            max_stack_size := 1 + self._preorder(node.condition)
             self._nesting.del(-1)
             self._instructions.append(self._target.Instr_Branch_If_Not_Fail.new(node.src_infos, body_label))
             self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
@@ -843,7 +897,7 @@ class Code_Gen:
             fail_now_label := self._create_label()
             self._nesting.append([NEST_FOR, broken_body_label])
             self._instructions.append(self._target.Instr_Add_Failure_Frame.new(node.src_infos, fail_now_label))
-            self._preorder(node.body)
+            max_stack_size := self._max(max_stack_size, 1 + self._preorder(node.body))
             self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
             self._nesting.del(-1)
             self._set_label(fail_now_label)
@@ -851,7 +905,7 @@ class Code_Gen:
 
         if not node.exhausted_body is null:
             self._set_label(exhausted_body_label)
-            self._preorder(node.exhausted_body)
+            max_stack_size := self._max(max_stack_size, 1 + self._preorder(node.exhausted_body))
             self._instructions.append(self._target.Instr_Fail_Now.new(node.src_infos))
 
         self._set_label(broken_body_label)
@@ -860,8 +914,10 @@ class Code_Gen:
         if not node.exhausted_body is null:
             self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
         if not node.broken_body is null:
-            self._preorder(node.broken_body)
+            max_stack_size := self._max(max_stack_size, 1 + self._preorder(node.broken_body))
         self._instructions.append(self._target.Instr_Fail_Now.new(node.src_infos))
+        
+        return max_stack_size
 
 
 
@@ -869,7 +925,7 @@ class Code_Gen:
     
         catches_label := self._create_label()
         self._instructions.append(self._target.Instr_Add_Exception_Frame.new(node.src_infos, catches_label))
-        self._preorder(node.body)
+        max_stack_size := 1 + self._preorder(node.body)
         self._instructions.append(self._target.Instr_Remove_Exception_Frame.new(node.src_infos))
         end_label := self._create_label()
         self._instructions.append(self._target.Instr_Branch.new(node.src_infos, end_label))
@@ -879,20 +935,23 @@ class Code_Gen:
             next_label := self._create_label()
             self._instructions.append(self._target.Instr_Dup.new(catch_.src_infos))
             self._instructions.append(self._target.Instr_Add_Failure_Frame.new(catch_.src_infos, next_label))
-            self._preorder(catch_.expr)
+            max_stack_size := self._max(max_stack_size, 3 + self._preorder(catch_.expr))
             self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(catch_.expr.src_infos, "instantiated"))
             self._instructions.append(self._target.Instr_Pull.new(catch_.expr.src_infos, 3))
+            max_stack_size := self._max(max_stack_size, 4)
             self._instructions.append(self._target.Instr_Apply.new(catch_.expr.src_infos, 1))
             self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(catch_.src_infos))
             if not catch_.var is null:
-                self._add_assign_to_var(catch_.var.name, catch_.var.src_infos)
+                max_stack_size := self._max(max_stack_size, 2 + self._add_assign_to_var(catch_.var.name, catch_.var.src_infos))
             self._instructions.append(self._target.Instr_Pop.new(catch_.src_infos))
-            self._preorder(catch_.body)
+            max_stack_size := self._max(max_stack_size, 1 + self._preorder(catch_.body))
             self._instructions.append(self._target.Instr_Branch.new(node.src_infos, end_label))
             self._set_label(next_label)
         self._instructions.append(self._target.Instr_Raise.new(node.src_infos))
         
         self._set_label(end_label)
+        
+        return max_stack_size
 
 
 
@@ -909,13 +968,19 @@ class Code_Gen:
             self._constants_instructions.append(self._target.Instr_Fail_Now.new(node.src_infos))
         
         self._instructions.append(self._target.Instr_Constant_Get.new(node.src_infos, self._constants[constant_name]))
+        
+        return 2
 
 
 
     func _t_islot_lookup(self, node):
     
-        self._preorder(node.target)
+        max_stack_size := self._preorder(node.target)
         self._instructions.append(self._target.Instr_Slot_Lookup.new(node.src_infos, node.slot_name))
+        max_stack_size := self._max(max_stack_size, 1)
+        
+        return max_stack_size
+        
 
 
 
@@ -932,95 +997,122 @@ class Code_Gen:
                 if var_num := self.closures[0][Core::CLOSURE_VARS].find(var.name):
                     self._instructions.append(self._target.Instr_Lookup_Var.new(var.src_infos, self.closures.len() - 1, var_num))
                     i := 2
+                    max_stack_size := 1
                 else:
                     // A variable doesn't exist with the name we were given. This almost certainly
                     // means someone, somewhere, has buggered up although there are some pathological
                     // cases where this is possible (although I doubt anyone would use them).
                     // Therefore we fall back to the "normal" way of evaluating things, which will
                     // either give the right behaviour or give an nice error message later.
-                    self._preorder(fst)
+                    max_stack_size := self._preorder(fst)
                     i := 1
             else:
-                self._preorder(fst)
+                max_stack_size := self._preorder(fst)
                 i := 1
         else:
             self._prc_mod_lookup(node)
 
-            self._preorder(node.names[0])
+            max_stack_size := self._preorder(node.names[0])
             
             i := 1
         
         if node.names.len() > i:
             for name := node.names.iter(i):
                 self._instructions.append(self._target.Instr_Module_Lookup.new(name.src_infos, name.name))
+            max_stack_size := self._max(max_stack_size, 2)
+
+        return max_stack_size
 
 
 
     func _t_ilist(self, node):
     
+        max_stack_size := 0
+        i := 0
         for elem := node.elems.iter():
-            self._preorder(elem)
+            max_stack_size := self._max(max_stack_size, i + self._preorder(elem))
         self._instructions.append(self._target.Instr_List.new(node.src_infos, node.elems.len()))
+        
+        return max_stack_size
 
 
 
     func _t_idict(self, node):
-    
+
+        max_stack_size := 0
+        i := 0
         for elem := node.elems.iter():
-            self._preorder(elem.key)
-            self._preorder(elem.val)
+            max_stack_size := self._max(max_stack_size, i + self._preorder(elem.key))
+            max_stack_size := self._max(max_stack_size, i + self._preorder(elem.val))
         self._instructions.append(self._target.Instr_Dict.new(node.src_infos, node.elems.len()))
+        
+        return max_stack_size
 
 
 
     func _t_iset(self, node):
-    
+
+        max_stack_size := 0
+        i := 0
         for elem := node.elems.iter():
-            self._preorder(elem)
+            max_stack_size := self._max(max_stack_size, i + self._preorder(elem))
         self._instructions.append(self._target.Instr_Set.new(node.src_infos, node.elems.len()))
+        
+        return max_stack_size
 
 
 
     func _t_iapplication(self, node):
     
         if ITree::ISlot_Lookup.instantiated(node.target):
-            self._preorder(node.target.target)
+            max_stack_size := self._preorder(node.target.target) + 1
             self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(node.target.src_infos, node.target.slot_name))
         else:
-            self._preorder(node.target)
+            max_stack_size := self._preorder(node.target)
             
+        args_stack_size := max_stack_size
         for arg := node.args.iter():
-            self._preorder(arg)
+            args_stack_size += 1
+            max_stack_size := self._max(max_stack_size, args_stack_size + self._preorder(arg))
             
         self._instructions.append(self._target.Instr_Apply.new(node.src_infos, node.args.len()))
+        max_stack_size := self._max(max_stack_size, 1)
+        
+        return max_stack_size
 
 
 
     func _t_iget(self, node):
 
-        self._preorder(node.target)
+        max_stack_size := self._preorder(node.target) + 1
         self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(node.src_infos, "get"))
-        self._preorder(node.index)
+        max_stack_size := self._max(max_stack_size, 1 + self._preorder(node.index))
         self._instructions.append(self._target.Instr_Apply.new(node.src_infos, 1))
+        
+        return max_stack_size
 
 
 
     func _t_islice(self, node):
     
-        self._preorder(node.target)
+        max_stack_size := self._preorder(node.target) + 1
         self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(node.src_infos, "get_slice"))
         
         if node.lower_bound is null:
             self._instructions.append(self._target.Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_NULL_OBJ))
+            max_stack_size := self._max(max_stack_size, 2)
         else:
-            self._preorder(node.lower_bound)
+            max_stack_size := self._max(max_stack_size, 1 + self._preorder(node.lower_bound))
             
         if node.upper_bound is null:
             self._instructions.append(self._target.Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_NULL_OBJ))
+            max_stack_size := self._max(max_stack_size, 3)
         else:
-            self._preorder(node.upper_bound)
+            max_stack_size := self._max(max_stack_size, 2 + self._preorder(node.upper_bound))
             
         self._instructions.append(self._target.Instr_Apply.new(node.src_infos, 2))
+        
+        return max_stack_size
 
 
 
@@ -1034,9 +1126,11 @@ class Code_Gen:
         exhausted:
             self._compiler.error("exbi can only be used when in scope of a bound function.", node.src_infos)
 
-        self._add_lookup_var("self", node.src_infos)
-        self._preorder(node.target)
+        max_stack_size := self._add_lookup_var("self", node.src_infos)
+        max_stack_size := self._max(max_stack_size, 1 + self._preorder(node.target))
         self._instructions.append(self._target.Instr_EXBI.new(node.src_infos, node.field_name))
+        
+        return max_stack_size
 
 
 
@@ -1045,11 +1139,12 @@ class Code_Gen:
         if node.expr is null:
             self._instructions.append(self._target.Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_NULL_OBJ))
             self._instructions.append(self._target.Instr_Return.new(node.src_infos))
+            max_stack_size := 1
         else:
             return_failed_label := self._create_label()
             self._instructions.append(self._target.Instr_Add_Failure_Frame.new(node.src_infos, return_failed_label))
             self._nesting.append([NEST_NORMAL])
-            self._preorder(node.expr)
+            max_stack_size := 1 + self._preorder(node.expr)
             self._nesting.del(-1)
             self._instructions.append(self._target.Instr_Return.new(node.src_infos))
 
@@ -1057,12 +1152,16 @@ class Code_Gen:
             self._instructions.append(self._target.Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_FAIL_OBJ))
             self._instructions.append(self._target.Instr_Return.new(node.src_infos))
 
+        return max_stack_size
+
 
 
     func _t_iyield(self, node):
     
-        self._preorder(node.expr)
+        max_stack_size := self._preorder(node.expr)
         self._instructions.append(self._target.Instr_Yield.new(node.src_infos))
+        
+        return max_stack_size
 
 
 
@@ -1070,13 +1169,17 @@ class Code_Gen:
     
         self._instructions.append(self._target.Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_FAIL_OBJ))
         self._instructions.append(self._target.Instr_Return.new(node.src_infos))
+        
+        return 1
 
 
 
     func _t_iraise(self, node):
     
-        self._preorder(node.expr)
+        max_stack_size := self._preorder(node.expr)
         self._instructions.append(self._target.Instr_Raise.new(node.src_infos))
+        
+        return max_stack_size
 
 
 
@@ -1087,18 +1190,20 @@ class Code_Gen:
         
         self._nesting.append([NEST_NORMAL])
         self._instructions.append(self._target.Instr_Add_Failure_Frame.new(node.src_infos, assert_failed_label))
-        self._preorder(node.expr)
+        max_stack_size := 1 + self._preorder(node.expr)
         self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
         self._nesting.del(-1)
         self._instructions.append(self._target.Instr_Branch.new(node.src_infos, assert_end_label))
         
         self._set_label(assert_failed_label)
-        self._add_mod_defn_lookup(["Exceptions", "Assert_Exception"], node.src_infos)
+        max_stack_size := self._max(max_stack_size, self._add_mod_defn_lookup(["Exceptions", "Assert_Exception"], node.src_infos) + 1)
         self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(node.src_infos, "new"))
         self._instructions.append(self._target.Instr_Apply.new(node.src_infos, 0))
         self._instructions.append(self._target.Instr_Raise.new(node.src_infos))
         
         self._set_label(assert_end_label)
+        
+        return max_stack_size
 
 
 
@@ -1117,6 +1222,8 @@ class Code_Gen:
             self._instructions.append(self._target.Instr_Branch.new(node.src_infos, self._nesting[i][1]))
         else:
             raise "XXX"
+        
+        return 0
 
 
 
@@ -1135,30 +1242,45 @@ class Code_Gen:
         elif self._nesting[i][0] == NEST_FOR:
             self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
             self._instructions.append(self._target.Instr_Fail_Now.new(node.src_infos))
+        
+        return 0
 
 
 
     func _t_iconjunction(self, node):
 
+        // XXX The max stack size calculation here is somewhat approximate. Working out exactly
+        // how big the stack might be in the presence of generators isn't obvious. This is
+        // therefore rather over-generous in its estimate of the needed room. The "* 2"
+        // hack takes into account stack duplication in the presence of generators; the "+1" the
+        // possibility that a generator frame will be put on the stack. At least, that's the
+        // idea...
+
+        max_stack_size := 0
         for i := 0.iter_to(node.exprs.len()):
             next_expr_label := self._create_label()
-            self._preorder(node.exprs[i])
             if i + 1 == node.exprs.len():
+                max_stack_size += 2 * self._preorder(node.exprs[i]) + 2
                 self._instructions.append(self._target.Instr_Dup.new(node.src_infos))
+            else:
+                max_stack_size += 2 * self._preorder(node.exprs[i]) + 1
             self._instructions.append(self._target.Instr_Branch_If_Not_Fail.new(node.src_infos, next_expr_label))
             self._instructions.append(self._target.Instr_Fail_Now.new(node.src_infos))
             self._set_label(next_expr_label)
+    
+        return max_stack_size
 
 
 
     func _t_ialternation(self, node):
 
         end_of_alternation_label := self._create_label()
+        max_stack_size := 0
         for expr := node.exprs.iter():
             next_expr_label := self._create_label()
             self._nesting.append([NEST_NORMAL])
             self._instructions.append(self._target.Instr_Add_Failure_Frame.new(node.src_infos, next_expr_label))
-            self._preorder(expr)
+            max_stack_size := self._max(max_stack_size, 1 + self._preorder(expr))
             self._instructions.append(self._target.Instr_EYield.new(node.src_infos))
             self._nesting.del(-1)
             self._instructions.append(self._target.Instr_Branch.new(node.src_infos, end_of_alternation_label))
@@ -1166,27 +1288,34 @@ class Code_Gen:
         self._instructions.append(self._target.Instr_Fail_Now.new(node.src_infos))
         
         self._set_label(end_of_alternation_label)
+        
+        return max_stack_size
 
 
 
     func _t_iassignment(self, node):
     
         if node.type != ITree::STD_ASSIGN:
+            max_stack_size := 0
             for target := node.targets.iter():
                 ndif ITree::IVar.instantiated(target):
                     self._add_lookup_var(target.name, target.src_infos)
+                    max_stack_size := self._max(max_stack_size, 1)
                 elif ITree::ISlot_Lookup.instantiated(target):
-                    self._preorder(target)
+                    max_stack_size := self._max(max_stack_size, self._preorder(target))
                 elif ITree::IGet.instantiated(target):
-                    self._preorder(target)
+                    max_stack_size := self._max(max_stack_size, self._preorder(target))
                 elif ITree::IModule_Lookup.instantiated(target):
-                    self._preorder(target)
-    
-        self._preorder(node.expr)
+                    max_stack_size := self._max(max_stack_size, self._preorder(target))
+            max_stack_size := self._max(max_stack_size, 1 + self._preorder(node.expr))
+        else:
+            max_stack_size := self._preorder(node.expr)
         
         if node.targets.len() > 1:
             self._instructions.append(self._target.Instr_Unpack_Assign.new(node.src_infos, node.targets.len()))
+            max_stack_size := self._max(max_stack_size, 1 + node.targets.len())
         
+        i := node.targets.len()
         for target := node.targets.iter():
             if node.type == ITree::ADD_ASSIGN:
                 self._instructions.append(self._target.Instr_Add.new(target.src_infos))
@@ -1200,27 +1329,28 @@ class Code_Gen:
             elif node.type == ITree::DIV_ASSIGN:
                 self._instructions.append(self._target.Instr_Pull.new(target.src_infos, 1))
                 self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(target.src_infos, "/"))
+
                 self._instructions.append(self._target.Instr_Pull.new(target.src_infos, 1))
                 self._instructions.append(self._target.Instr_Apply.new(target.src_infos, 1))
 
             ndif ITree::IVar.instantiated(target):
                 self._add_assign_to_var(target.name, target.src_infos)
             elif ITree::ISlot_Lookup.instantiated(target):
-                self._preorder(target.target)
+                max_stack_size := self._max(max_stack_size, 1 + i + self._preorder(target.target))
                 self._instructions.append(self._target.Instr_Assign_Slot.new(target.src_infos, target.slot_name))
             elif ITree::IGet.instantiated(target):
-                self._preorder(target.target)
+                max_stack_size := self._max(max_stack_size, 1 + i + self._preorder(target.target))
                 self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(target.src_infos, "set"))
-                self._preorder(target.index)
+                max_stack_size := self._max(max_stack_size, 1 + i + self._preorder(target.index))
                 self._instructions.append(self._target.Instr_Pull.new(target.src_infos, 2))
                 self._instructions.append(self._target.Instr_Apply.new(target.src_infos, 2))
             elif ITree::IModule_Lookup.instantiated(target):
                 fst := target.names[0]
                 if ITree::IMod_Id_Import.instantiated(fst):
-                    self._preorder(fst)
+                    max_stack_size := self._max(max_stack_size, 1 + i + self._preorder(fst))
                 else:
                     self._prc_mod_lookup(target)
-                    self._preorder(fst)
+                    max_stack_size := self._max(max_stack_size, 1 + i + self._preorder(fst))
 
                 for name := target.names.iter(1, -1):
                     self._instructions.append(self._target.Instr_Module_Lookup.new(name.src_infos, name.name))
@@ -1228,27 +1358,34 @@ class Code_Gen:
                 self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(target.src_infos, "set_defn"))
                 var := target.names[-1]
                 self._instructions.append(self._target.Instr_String.new(var.src_infos, var.name))
+                max_stack_size := self._max(max_stack_size, 1 + i + 1)
                 self._instructions.append(self._target.Instr_Pull.new(target.src_infos, 2))
                 self._instructions.append(self._target.Instr_Apply.new(target.src_infos, 2))
             elif ITree::ISlice.instantiated(target):
-                self._preorder(target.target)
+                max_stack_size := self._max(max_stack_size, 1 + i + self._preorder(target.target))
                 self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(target.src_infos, "set_slice"))
 
                 if target.lower_bound is null:
                     self._instructions.append(self._target.Instr_Builtin_Lookup.new(target.src_infos, _BUILTIN_NULL_OBJ))
+                    max_stack_size := self._max(max_stack_size, 1 + i + 1 + 1)
                 else:
-                    self._preorder(target.lower_bound)
+                    max_stack_size := self._max(max_stack_size, 1 + i + 1 + self._preorder(target.lower_bound))
 
                 if target.upper_bound is null:
                     self._instructions.append(self._target.Instr_Builtin_Lookup.new(target.src_infos, _BUILTIN_NULL_OBJ))
+                    max_stack_size := self._max(max_stack_size, 1 + i + 1 + 1 + 1)
                 else:
-                    self._preorder(target.upper_bound)
+                    max_stack_size := self._max(max_stack_size, 1 + i + 1 + 1 + self._preorder(target.upper_bound))
 
                 self._instructions.append(self._target.Instr_Pull.new(target.src_infos, 3))
                 self._instructions.append(self._target.Instr_Apply.new(target.src_infos, 3))
 
             if node.targets.len() > 1:
                 self._instructions.append(self._target.Instr_Pop.new(node.src_infos))
+            
+            i -= 1
+        
+        return max_stack_size
 
 
 
@@ -1257,7 +1394,7 @@ class Code_Gen:
         success_label := self._create_label()
         self._nesting.append([NEST_NORMAL])
         self._instructions.append(self._target.Instr_Add_Failure_Frame.new(node.src_infos, success_label))
-        self._preorder(node.expr)
+        max_stack_size := 1 + self._preorder(node.expr)
         self._instructions.append(self._target.Instr_Branch_If_Fail.new(node.src_infos, success_label))
         self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
         self._nesting.del(-1)
@@ -1265,21 +1402,23 @@ class Code_Gen:
         
         self._set_label(success_label)
         self._instructions.append(self._target.Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_NULL_OBJ))
+        
+        return max_stack_size
 
 
     
     func _t_ibinary(self, node):
 
         if node.type == ITree::BINARY_ADD:
-            self._preorder(node.lhs)
-            self._preorder(node.rhs)
+            max_stack_size := self._preorder(node.lhs)
+            max_stack_size := self._max(max_stack_size, 1 + self._preorder(node.rhs))
             self._instructions.append(self._target.Instr_Add.new(node.src_infos))
         elif node.type == ITree::BINARY_SUB:
-            self._preorder(node.lhs)
-            self._preorder(node.rhs)
+            max_stack_size := self._preorder(node.lhs)
+            max_stack_size := self._max(max_stack_size, 1 + self._preorder(node.rhs))
             self._instructions.append(self._target.Instr_Sub.new(node.src_infos))
         else:
-            self._preorder(node.lhs)
+            max_stack_size := self._preorder(node.lhs)
             ndif node.type == ITree::BINARY_MUL:
                 slot_name := "*"
             elif node.type == ITree::BINARY_DIV:
@@ -1288,15 +1427,17 @@ class Code_Gen:
                 slot_name := "%"
 
             self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(node.src_infos, slot_name))
-            self._preorder(node.rhs)
+            max_stack_size := self._max(max_stack_size, 1 + self._preorder(node.rhs))
             self._instructions.append(self._target.Instr_Apply.new(node.src_infos, 1))
+        
+        return max_stack_size
 
 
 
     func _t_icomparison(self, node):
 
-        self._preorder(node.lhs)
-        self._preorder(node.rhs)
+        max_stack_size := self._preorder(node.lhs)
+        max_stack_size := self._max(max_stack_size, 1 + self._preorder(node.rhs))
         if node.type == ITree::IS_COMPARISON:
             self._instructions.append(self._target.Instr_Is.new(node.src_infos))
         elif node.type == ITree::EQ_COMPARISON:
@@ -1311,18 +1452,20 @@ class Code_Gen:
             self._instructions.append(self._target.Instr_LE.new(node.src_infos))
         else:
             self._instructions.append(self._target.Instr_GE.new(node.src_infos))
+        
+        return max_stack_size
 
 
 
     func _t_ipass(self, node):
     
-        pass
+        return 0
 
 
 
     func _t_iquasi_quotes(self, node):
     
-        self._preorder(QQ_Mode::QQ_Mode.new().generate(self, node))
+        return self._preorder(QQ_Mode::QQ_Mode.new().generate(self, node))
 
 
 
@@ -1333,3 +1476,5 @@ class Code_Gen:
         else:
             self._imports[node.mod_id] := [self._imports.len(), node.src_path]
             self._instructions.append(self._target.Instr_Import.new(node.src_infos, self._imports.len() - 1))
+
+        return 1

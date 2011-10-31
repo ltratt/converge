@@ -566,7 +566,7 @@ class VM(object):
 
 
     def _instr_func_defn(self, instr, cf):
-        is_bound = Target.unpack_func_defn(instr)
+        is_bound, max_stack_size = Target.unpack_func_defn(instr)
         np_o = self._cf_stack_pop(cf)
         assert isinstance(np_o, Builtins.Con_Int)
         nv_o = self._cf_stack_pop(cf)
@@ -574,7 +574,7 @@ class VM(object):
         name = self._cf_stack_pop(cf)
         new_pc = BC_PC(cf.pc.mod, cf.bc_off + 2 * Target.INTSIZE)
         container = cf.func.get_slot(self, "container")
-        f = Builtins.Con_Func(self, name, is_bound, new_pc, np_o.v, nv_o.v, \
+        f = Builtins.Con_Func(self, name, is_bound, new_pc, max_stack_size, nv_o.v, \
           container, cf.closure)
         self._cf_stack_push(cf, f)
         cf.bc_off += Target.INTSIZE
@@ -810,7 +810,12 @@ class VM(object):
         else:
             closure = [[None] * func.num_vars]
 
-        cf = Stack_Continuation_Frame(func, pc, nargs, bc_off, closure, resumable)
+        if func.max_stack_size > nargs:
+            max_stack_size = func.max_stack_size
+        else:
+            max_stack_size = nargs
+
+        cf = Stack_Continuation_Frame(func, pc, max_stack_size, nargs, bc_off, closure, resumable)
         self.cf_stack.append(cf)
         
         return cf
@@ -916,11 +921,8 @@ class Stack_Continuation_Frame(Con_Thingy):
       "closure", "ct", "ffp", "gfp", "xfp", "resumable", "returned")
     _immutable_fields_ = ("stack", "ff_cache", "func", "closure", "pc", "nargs", "resumable")
 
-    def __init__(self, func, pc, nargs, bc_off, closure, resumable):
-        if isinstance(pc, BC_PC):
-            self.stack = [None] * 32
-        else:
-            self.stack = [None] * nargs
+    def __init__(self, func, pc, max_stack_size, nargs, bc_off, closure, resumable):
+        self.stack = [None] * max_stack_size
         debug.make_sure_not_resized(self.stack)
         self.func = func
         self.pc = pc

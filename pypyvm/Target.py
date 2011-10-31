@@ -182,7 +182,7 @@ if INTSIZE == 8:
 
     @elidable_promote()
     def unpack_func_defn(instr):
-        return (instr & 0x00000100) >> 8
+        return ((instr & 0x00000100) >> 8, (instr & 0x7ffffe00) >> 9)
 
     @elidable_promote()
     def unpack_list(instr):

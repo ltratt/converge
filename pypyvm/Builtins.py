@@ -164,7 +164,7 @@ class Con_Boxed_Object(Con_Object):
             return self.instance_of
         
         if o is None:
-            print o, n
+            #print o, n
             raise Exception("XXX")
         
         return o
@@ -471,17 +471,17 @@ def new_bc_con_module(vm, bc, name, id_, src_path, imps, tlvars_map, num_consts)
 #
 
 class Con_Func(Con_Boxed_Object):
-    __slots__ = ("name", "is_bound", "pc", "num_params", "num_vars", "container_closure")
-    _immutable_fields_ = ("name", "is_bound", "pc", "num_params", "num_vars", "container_closure")
+    __slots__ = ("name", "is_bound", "pc", "max_stack_size", "num_vars", "container_closure")
+    _immutable_fields_ = ("name", "is_bound", "pc", "max_stack_size", "num_vars", "container_closure")
 
 
-    def __init__(self, vm, name, is_bound, pc, num_params, num_vars, container, container_closure):
+    def __init__(self, vm, name, is_bound, pc, max_stack_size, num_vars, container, container_closure):
         Con_Boxed_Object.__init__(self, vm, vm.get_builtin(BUILTIN_FUNC_CLASS))
     
         self.name = name
         self.is_bound = is_bound
         self.pc = pc
-        self.num_params = num_params
+        self.max_stack_size = max_stack_size
         self.num_vars = num_vars
         self.container_closure = container_closure
         

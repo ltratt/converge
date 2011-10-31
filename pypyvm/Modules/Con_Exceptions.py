@@ -29,7 +29,7 @@ def init(vm):
     mod = new_c_con_module(vm, "Exceptions", "Exceptions", __file__, import_, \
       ["Exception", "User_Exception", "Internal_Exception",
        "Assert_Exception", "Import_Exception", "Mod_Defn_Exception", "Slot_Exception",
-       "System_Exit_Exception"])
+       "System_Exit_Exception", "Unassigned_Var_Exception"])
     vm.set_builtin(BUILTIN_EXCEPTIONS_MODULE, mod)
     
     return mod
@@ -47,6 +47,7 @@ def import_(vm):
     _mk_simple_exception(vm, mod, "Mod_Defn_Exception")
     _mk_simple_exception(vm, mod, "Slot_Exception", init_func=_Slot_Exception_init_func)
     _mk_simple_exception(vm, mod, "System_Exit_Exception", init_func=_System_Exit_Exception_init_func)
+    _mk_simple_exception(vm, mod, "Unassigned_Var_Exception")
 
     vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
 

@@ -449,7 +449,10 @@ class Con_Module(Con_Boxed_Object):
 
 
     def get_defn(self, vm, n):
-        return self.closure[self.get_closure_i(vm, n)]
+        o = self.closure[self.get_closure_i(vm, n)]
+        if o is None:
+            vm.raise_helper("Unassigned_Var_Exception")
+        return o
 
 
     def set_defn(self, vm, n, o):

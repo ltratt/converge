@@ -760,7 +760,7 @@ class VM(object):
             raise Exception("XXX")
         nm_start, nm_size = Target.unpack_mod_lookup(instr)
         nm = Target.extract_str(cf.pc.mod.bc, cf.bc_off + nm_start, nm_size)
-        self._cf_stack_push(cf, o.closure[o.get_closure_i(self, nm)])
+        self._cf_stack_push(cf, o.get_defn(self, nm))
         cf.bc_off += Target.align(nm_start + nm_size)
 
 

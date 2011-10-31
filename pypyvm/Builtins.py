@@ -328,9 +328,7 @@ def _new_func_Con_Class(vm):
 
 def _Con_Class_new(vm):
     _, v = vm.decode_args(vargs=True)
-    c = v[0]
-    vm.type_check(c, Con_Class)
-    assert isinstance(c, Con_Class)
+    c = type_check_class(vm, v[0])
     vm.return_(vm.apply(c.new_func, v))
 
 
@@ -594,50 +592,42 @@ class Con_Int(Con_Boxed_Object):
 
 
     def add(self, vm, o):
-        vm.type_check(o, Con_Int)
-        assert isinstance(o, Con_Int)
+        o = type_check_int(vm, o)
         return Con_Int(vm, self.v + o.v)
 
 
     def subtract(self, vm, o):
-        vm.type_check(o, Con_Int)
-        assert isinstance(o, Con_Int)
+        o = type_check_int(vm, o)
         return Con_Int(vm, self.v - o.v)
 
 
     def eq(self, vm, o):
-        vm.type_check(o, Con_Int)
-        assert isinstance(o, Con_Int)
+        o = type_check_int(vm, o)
         return self.v == o.v
 
 
     def neq(self, vm, o):
-        vm.type_check(o, Con_Int)
-        assert isinstance(o, Con_Int)
+        o = type_check_int(vm, o)
         return self.v != o.v
 
 
     def le(self, vm, o):
-        vm.type_check(o, Con_Int)
-        assert isinstance(o, Con_Int)
+        o = type_check_int(vm, o)
         return self.v < o.v
 
 
     def le_eq(self, vm, o):
-        vm.type_check(o, Con_Int)
-        assert isinstance(o, Con_Int)
+        o = type_check_int(vm, o)
         return self.v <= o.v
 
 
     def gr_eq(self, vm, o):
-        vm.type_check(o, Con_Int)
-        assert isinstance(o, Con_Int)
+        o = type_check_int(vm, o)
         return self.v >= o.v
 
 
     def gt(self, vm, o):
-        vm.type_check(o, Con_Int)
-        assert isinstance(o, Con_Int)
+        o = type_check_int(vm, o)
         return self.v > o.v
 
 
@@ -732,9 +722,7 @@ def _Con_List_to_str(vm):
     
     es = []
     for e in self.l:
-        s = vm.get_slot_apply(e, "to_str")
-        vm.type_check(s, Con_String)
-        assert isinstance(s, Con_String)
+        s = type_check_string(vm, vm.get_slot_apply(e, "to_str"))
         es.append(s.v)
 
     vm.return_(Con_String(vm, "[%s]" % ", ".join(es)))
@@ -823,9 +811,7 @@ def _Con_Set_to_str(vm):
     
     es = []
     for e in self.s.keys():
-        s = vm.get_slot_apply(e, "to_str")
-        vm.type_check(s, Con_String)
-        assert isinstance(s, Con_String)
+        s = type_check_string(vm, vm.get_slot_apply(e, "to_str"))
         es.append(s.v)
 
     vm.return_(Con_String(vm, "Set{%s}" % ", ".join(es)))
@@ -874,12 +860,8 @@ def _Con_Exception_init(vm):
 
 def _Con_Exception_to_str(vm):
     (self,),_ = vm.decode_args("O")
-    ex_name = self.get_slot(vm, "instance_of").get_slot(vm, "name")
-    vm.type_check(ex_name, Con_String)
-    assert isinstance(ex_name, Con_String)
-    msg = self.get_slot(vm, "msg")
-    vm.type_check(msg, Con_String)
-    assert isinstance(msg, Builtins.Con_String)
+    ex_name = type_check_string(vm, self.get_slot(vm, "instance_of").get_slot(vm, "name"))
+    msg = type_check_string(vm, self.get_slot(vm, "msg"))
     vm.return_(Con_String(vm, "%s: %s" % (ex_name.v, msg.v)))
 
 
@@ -893,3 +875,52 @@ def bootstrap_con_exception(vm):
 
     new_c_con_func_for_class(vm, "init", _Con_Exception_init, exception_class)
     new_c_con_func_for_class(vm, "to_str", _Con_Exception_to_str, exception_class)
+
+
+
+################################################################################
+# Convenience type checking functions
+#
+
+# Note that the returning of the object passed for type-checking is just about convenience -
+# calling functions can safely ignore the return value if that's easier for them. However,
+# if ignored, RPython doesn't infer that the object pointed to by o is of the correct type,
+# so generally one wants to write:
+#
+#   o = type_check_X(vm, z)
+
+
+def type_check_class(vm, o):
+    if not isinstance(o, Con_Class):
+        vm.raise_helper("Type_Exception", [vm.get_builtin(BUILTIN_CLASS_CLASS), o])
+    return o
+
+
+def type_check_exception(vm, o):
+    if not isinstance(o, Con_Exception):
+        vm.raise_helper("Type_Exception", [vm.get_builtin(BUILTIN_EXCEPTION_CLASS), o])
+    return o
+
+
+def type_check_int(vm, o):
+    if not isinstance(o, Con_Int):
+        vm.raise_helper("Type_Exception", [vm.get_builtin(BUILTIN_INT_CLASS), o])
+    return o
+
+
+def type_check_list(vm, o):
+    if not isinstance(o, Con_List):
+        vm.raise_helper("Type_Exception", [vm.get_builtin(BUILTIN_LIST_CLASS), o])
+    return o
+
+
+def type_check_set(vm, o):
+    if not isinstance(o, Con_Set):
+        vm.raise_helper("Type_Exception", [vm.get_builtin(BUILTIN_SET_CLASS), o])
+    return o
+
+
+def type_check_string(vm, o):
+    if not isinstance(o, Con_String):
+        vm.raise_helper("Type_Exception", [vm.get_builtin(BUILTIN_STRING_CLASS), o])
+    return o

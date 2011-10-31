@@ -54,11 +54,8 @@ def println(vm):
         if isinstance(o, Con_String):
             print o.v,
         else:
-            s = vm.get_slot_apply(o, "to_str")
-            if isinstance(s, Con_String):
-                print s.v,
-            else:
-                raise Exception("XXX")
+            s = type_check_string(vm, vm.get_slot_apply(o, "to_str"))
+            print s.v,
     print ""
 
     vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))

@@ -47,9 +47,7 @@ def setup_term(vm):
 
     fd = 1
     if file_o is not None:
-        file_no_o = file_o.get_slot(vm, "fileno")
-        vm.type_check(file_no_o, Con_Int)
-        assert isinstance(file_no_o, Con_Int)
+        file_no_o = type_check_int(vm, file_o.get_slot(vm, "fileno"))
         fd = file_no_o.v
 
     #_curses.setupterm(None, fd)

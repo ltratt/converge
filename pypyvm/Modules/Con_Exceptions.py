@@ -29,7 +29,7 @@ def init(vm):
     mod = new_c_con_module(vm, "Exceptions", "Exceptions", __file__, import_, \
       ["Exception", "User_Exception", "Internal_Exception",
        "Assert_Exception", "Import_Exception", "Mod_Defn_Exception", "Parameters_Exception", \
-       "Slot_Exception", "System_Exit_Exception", "Unassigned_Var_Exception"])
+       "Slot_Exception", "System_Exit_Exception", "Type_Exception", "Unassigned_Var_Exception"])
     vm.set_builtin(BUILTIN_EXCEPTIONS_MODULE, mod)
     
     return mod
@@ -48,6 +48,7 @@ def import_(vm):
     _mk_simple_exception(vm, mod, "Parameters_Exception")
     _mk_simple_exception(vm, mod, "Slot_Exception", init_func=_Slot_Exception_init_func)
     _mk_simple_exception(vm, mod, "System_Exit_Exception", init_func=_System_Exit_Exception_init_func)
+    _mk_simple_exception(vm, mod, "Type_Exception", init_func=_Type_Exception_init_func)
     _mk_simple_exception(vm, mod, "Unassigned_Var_Exception")
 
     vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
@@ -74,11 +75,8 @@ def _Import_Exception_init_func(vm):
 
 def _Slot_Exception_init_func(vm):
     (self, n, o),_ = vm.decode_args("OSO")
-    vm.type_check(n, Con_String)
     assert isinstance(n, Con_String)
-    inst_n_o = vm.get_slot_apply(o.get_slot(vm, "instance_of"), "to_str")
-    vm.type_check(inst_n_o, Con_String)
-    assert isinstance(inst_n_o, Con_String)
+    inst_n_o = type_check_string(vm, vm.get_slot_apply(o.get_slot(vm, "instance_of"), "to_str"))
     msg = "No such slot '%s' in instance of '%s'." % (n.v, inst_n_o.v)
     self.set_slot(vm, "msg", Con_String(vm, msg))
     vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
@@ -87,4 +85,19 @@ def _Slot_Exception_init_func(vm):
 def _System_Exit_Exception_init_func(vm):
     (self, code),_ = vm.decode_args("OO")
     self.set_slot(vm, "code", code)
+    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+
+
+def _Type_Exception_init_func(vm):
+    (self, should_be, o, extra),_ = vm.decode_args(mand="OOO", opt="O")
+    if extra:
+        msg = "Expected '%s' to be conformant to" % \
+          type_check_string(vm, vm.get_slot_apply(extra, "to_str")).v
+    else:
+        msg = "Expected to be conformant to"
+    msg += type_check_string(vm, vm.get_slot_apply(should_be, "to_str")).v
+    o_path = type_check_string(vm, vm.get_slot_apply(vm.get_slot_apply(o.get_slot(vm, "instance_of"), \
+      "path"), "to_str"))
+    msg += " but got instance of %s." % o_path.v
+    self.set_slot(vm, "msg", Con_String(vm, msg))
     vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))

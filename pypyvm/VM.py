@@ -84,15 +84,6 @@ class VM(object):
     #
 
 
-    # Check that 'o' is an instance of the Python class pyc. If not an appropriate exception is
-    # raised.
-
-    def type_check(self, o, pyc):
-        if not isinstance(o, pyc):
-            #print o, pyc
-            raise Exception("XXX")
-
-
     @jit.elidable
     def get_builtin(self, i):
         if DEBUG:
@@ -272,15 +263,15 @@ class VM(object):
             else:
                 o = cf.stack[cf.stackpe - nargs + i]
                 if t == "C":
-                    self.type_check(o, Builtins.Con_Class)
+                    Builtins.type_check_class(self, o)
                 elif t == "I":
-                    self.type_check(o, Builtins.Con_Int)
+                    Builtins.type_check_int(self, o)
                 elif t == "L":
-                    self.type_check(o, Builtins.Con_List)
+                    Builtins.type_check_list(self, o)
                 elif t == "S":
-                    self.type_check(o, Builtins.Con_String)
+                    Builtins.type_check_string(self, o)
                 elif t == "W":
-                    self.type_check(o, Builtins.Con_Set)
+                    Builtins.type_check_set(self, o)
                 else:
                     raise Exception("XXX")
                 nrmp[i] = o
@@ -321,8 +312,7 @@ class VM(object):
 
 
     def raise_(self, ex):
-        self.type_check(ex, Builtins.Con_Exception)
-        assert isinstance(ex, Builtins.Con_Exception)
+        ex = Builtins.type_check_exception(self, ex)
         if ex.call_chain is None:
             cc = [] # Call chain
             i = len(self.cf_stack) - 1

@@ -62,9 +62,7 @@ def entry_point(argv):
         ex_mod = vm.get_builtin(Builtins.BUILTIN_EXCEPTIONS_MODULE)
         sys_ex_class = ex_mod.get_defn(vm, "System_Exit_Exception")
         if vm.get_slot_apply(sys_ex_class, "instantiated", [e.ex_obj], allow_fail=True) is not None:
-            code = e.ex_obj.get_slot(vm, "code")
-            vm.type_check(code, Builtins.Con_Int)
-            assert isinstance(code, Builtins.Con_Int)
+            code = Builtins.type_check_int(vm, e.ex_obj.get_slot(vm, "code"))
             return code.v
         else:
             msg = vm.get_slot_apply(e.ex_obj, "to_str")

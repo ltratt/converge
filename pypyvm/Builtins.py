@@ -141,6 +141,10 @@ class Con_Boxed_Object(Con_Object):
         self.slots = None
 
 
+    def hash_(self, vm):
+        return hash(self)
+
+
     def get_slot(self, vm, n):
         o = self.get_slot_raw(vm, n)
         if isinstance(o, Con_Func):
@@ -572,6 +576,10 @@ class Con_Int(Con_Boxed_Object):
         self.v = v
 
 
+    def hash_(self, vm):
+        return hash(self.v)
+
+
     def add(self, vm, o):
         vm.type_check(o, Con_Int)
         assert isinstance(o, Con_Int)
@@ -669,6 +677,26 @@ class Con_String(Con_Boxed_Object):
         self.v = v
 
 
+    def hash_(self, vm):
+        return hash(self.v)
+
+
+
+def _Con_String_to_str(vm):
+    (self,),_ = vm.decode_args("S")
+    assert isinstance(self, Con_String)
+
+    vm.return_(Con_String(vm, '"%s"' % self.v))
+
+
+def bootstrap_con_string(vm):
+    string_class = Con_Class(vm, "String", [vm.get_builtin(BUILTIN_OBJECT_CLASS)], \
+      vm.get_builtin(BUILTIN_BUILTINS_MODULE))
+    vm.set_builtin(BUILTIN_STRING_CLASS, string_class)
+
+    new_c_con_func_for_class(vm, "to_str", _Con_String_to_str, string_class)
+
+
 
 ################################################################################
 # Con_List
@@ -740,6 +768,64 @@ def bootstrap_con_list(vm):
     new_c_con_func_for_class(vm, "append", _Con_List_append, list_class)
     new_c_con_func_for_class(vm, "get", _Con_List_get, list_class)
     new_c_con_func_for_class(vm, "set", _Con_List_set, list_class)
+
+
+
+################################################################################
+# Con_Set
+#
+
+class Con_Set(Con_Boxed_Object):
+    __slots__ = ("s",)
+    _immutable_fields_ = ("s",)
+
+
+    def __init__(self, vm, l):
+        Con_Boxed_Object.__init__(self, vm, vm.get_builtin(BUILTIN_SET_CLASS))
+        # RPython doesn't have sets, so we use dictionaries for the time being
+        self.s = {}
+        for e in l:
+            self.s[e] = None
+
+
+def _Con_Set_add(vm):
+    (self, o),_ = vm.decode_args("WO")
+    assert isinstance(self, Con_Set)
+    
+    self.s[o] = None
+
+    vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))
+
+
+def _Con_Set_len(vm):
+    (self,),_ = vm.decode_args("W")
+    assert isinstance(self, Con_Set)
+    
+    vm.return_(Con_Int(vm, len(self.s)))
+
+
+def _Con_Set_to_str(vm):
+    (self,),_ = vm.decode_args("W")
+    assert isinstance(self, Con_Set)
+    
+    es = []
+    for e in self.s.keys():
+        s = vm.get_slot_apply(e, "to_str")
+        vm.type_check(s, Con_String)
+        assert isinstance(s, Con_String)
+        es.append(s.v)
+
+    vm.return_(Con_String(vm, "Set{%s}" % ", ".join(es)))
+
+
+def bootstrap_con_set(vm):
+    set_class = Con_Class(vm, "Set", [vm.get_builtin(BUILTIN_OBJECT_CLASS)], \
+      vm.get_builtin(BUILTIN_BUILTINS_MODULE))
+    vm.set_builtin(BUILTIN_SET_CLASS, set_class)
+
+    new_c_con_func_for_class(vm, "add", _Con_Set_add, set_class)
+    new_c_con_func_for_class(vm, "len", _Con_Set_len, set_class)
+    new_c_con_func_for_class(vm, "to_str", _Con_Set_to_str, set_class)
 
 
 

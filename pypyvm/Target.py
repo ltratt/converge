@@ -114,7 +114,7 @@ if INTSIZE == 8:
     CON_INSTR_UNPACK_ARGS = 35            # bits 0-7 := 35, bits 8-15 := num normal args, bit 16 := has var args
                                           #  each variable is then a subsequent word:
                                           #  word 1: 0-11 := var number, bit 12 := is mandatory arg
-    CON_INSTR_SET = 36                    # bits 0-7 36
+    CON_INSTR_SET = 36                    # bits 0-7 36, bits 8-31 number of set elements
     CON_INSTR_BRANCH_IF_NOT_FAIL = 37     # bits 0-7 37, bits 8-30 pc offset, bit 31 offset sign
     CON_INSTR_BRANCH_IF_FAIL = 38         # bits 0-7 38, bits 8-30 pc offset, bit 31 offset sign
     CON_INSTR_CONST_GET = 39              # bits 0-7 39, bits 8-30 constant num
@@ -229,6 +229,10 @@ if INTSIZE == 8:
     @elidable_promote()
     def unpack_unpack_args(instr):
         return ((instr & 0x0000FF00) >> 8, (instr & 0x00010000) >> 16)
+
+    @elidable_promote()
+    def unpack_set(instr):
+        return (instr & 0xFFFFFF00) >> 8
 
     @elidable_promote()
     def unpack_unpack_args_is_mandatory(arg_info):

@@ -71,6 +71,8 @@ class VM(object):
         Builtins.bootstrap_con_class(self)
         Builtins.bootstrap_con_int(self)
         Builtins.bootstrap_con_list(self)
+        Builtins.bootstrap_con_set(self)
+        Builtins.bootstrap_con_string(self)
         Builtins.bootstrap_con_exception(self)
 
         self.get_mod("Exceptions").import_(self)
@@ -267,6 +269,8 @@ class VM(object):
                     self.type_check(o, Builtins.Con_List)
                 elif t == "S":
                     self.type_check(o, Builtins.Con_String)
+                elif t == "W":
+                    self.type_check(o, Builtins.Con_Set)
                 else:
                     raise Exception("XXX")
                 nrmp[i] = o
@@ -413,6 +417,8 @@ class VM(object):
                     self._instr_raise(instr, cf)
                 elif it == Target.CON_INSTR_UNPACK_ARGS:
                     self._instr_unpack_args(instr, cf)
+                elif it == Target.CON_INSTR_SET:
+                    self._instr_set(instr, cf)
                 elif it == Target.CON_INSTR_CONST_GET:
                     self._instr_const_get(instr, cf)
                 elif it == Target.CON_INSTR_CONST_SET:
@@ -667,6 +673,19 @@ class VM(object):
             raise Exception("XXX")
         else:
             cf.bc_off += Target.INTSIZE + num_fargs * Target.INTSIZE
+
+
+    @jit.unroll_safe
+    def _instr_set(self, instr, cf):
+        ne = Target.unpack_set(instr)
+        i = cf.stackpe - ne
+        assert i >= 0
+        j = cf.stackpe
+        assert j >= 0
+        l = cf.stack[i : j]
+        self._cf_stack_del_from(cf, cf.stackpe - ne)
+        self._cf_stack_push(cf, Builtins.Con_Set(self, l))
+        cf.bc_off += Target.INTSIZE
 
 
     def _instr_const_get(self, instr, cf):

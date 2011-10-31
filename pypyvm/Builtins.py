@@ -320,6 +320,23 @@ def _Con_Class_new(vm):
     vm.return_(vm.apply(c.new_func, v))
 
 
+def _Con_Class_get_field(vm):
+    (self, n),_ = vm.decode_args("CS")
+    assert isinstance(self, Con_Class)
+    assert isinstance(n, Con_String)
+
+    vm.return_(self.get_field(vm, n.v))
+
+
+def _Con_Class_set_field(vm):
+    (self, n, o),_ = vm.decode_args("CSO")
+    assert isinstance(self, Con_Class)
+    assert isinstance(n, Con_String)
+    self.set_field(vm, n.v, o)
+
+    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+
+
 def _Con_Class_to_str(vm):
     (self,),_ = vm.decode_args("C")
     assert isinstance(self, Con_Class)
@@ -358,9 +375,11 @@ def bootstrap_con_class(vm):
       new_c_con_func(vm, Con_String(vm, "new_Class"), False, _new_func_Con_Class, \
         vm.get_builtin(BUILTIN_BUILTINS_MODULE))
 
-    new_c_con_func_for_class(vm, "new", _Con_Class_new, class_class)
-    new_c_con_func_for_class(vm, "to_str", _Con_Class_to_str, class_class)
     new_c_con_func_for_class(vm, "instantiated", _Con_Class_instantiated, class_class)
+    new_c_con_func_for_class(vm, "new", _Con_Class_new, class_class)
+    new_c_con_func_for_class(vm, "get_field", _Con_Class_get_field, class_class)
+    new_c_con_func_for_class(vm, "set_field", _Con_Class_set_field, class_class)
+    new_c_con_func_for_class(vm, "to_str", _Con_Class_to_str, class_class)
 
 
 

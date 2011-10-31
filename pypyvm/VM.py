@@ -25,7 +25,7 @@ from pypy.rlib.rstacklet import StackletThread
 from pypy.rpython.lltypesystem import lltype, llmemory, rffi
 
 from Core import *
-import Builtins, Modules, Target
+import Builtins, Target
 
 
 
@@ -63,6 +63,7 @@ class VM(object):
     def init(self):
         self.st = StackletThread(self.pypy_config)
         
+        import Modules
         for init_func in Modules.BUILTIN_MODULES:
             self.set_mod(init_func(self))
 
@@ -108,7 +109,9 @@ class VM(object):
 
 
     def get_mod(self, mod_id):
-        m = self.mods[mod_id]
+        m = self.mods.get(mod_id, None)
+        if m is None:
+            self.raise_helper("Import_Exception", [Builtins.Con_String(self, mod_id)])
         if not m.initialized:
             m.import_(self)
         return m

@@ -20,15 +20,15 @@
 
 
 import sys
-import Builtins
+from Builtins import *
 
 
 
 
 def init(vm):
-    mod = Builtins.new_c_con_module(vm, "Sys", "Sys", __file__, import_, \
+    mod = new_c_con_module(vm, "Sys", "Sys", __file__, import_, \
       ["exit", "print", "println"])
-    vm.set_builtin(Builtins.BUILTIN_SYS_MODULE, mod)
+    vm.set_builtin(BUILTIN_SYS_MODULE, mod)
     
     return mod
 
@@ -36,10 +36,10 @@ def init(vm):
 def import_(vm):
     (mod,),_ = vm.decode_args("O")
 
-    Builtins.new_c_con_func_for_mod(vm, "exit", exit, mod)
-    Builtins.new_c_con_func_for_mod(vm, "println", println, mod)
+    new_c_con_func_for_mod(vm, "exit", exit, mod)
+    new_c_con_func_for_mod(vm, "println", println, mod)
     
-    vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))
+    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
 
 
 def exit(vm):
@@ -51,14 +51,14 @@ def exit(vm):
 def println(vm):
     _,vargs = vm.decode_args(vargs=True)
     for o in vargs:
-        if isinstance(o, Builtins.Con_String):
+        if isinstance(o, Con_String):
             print o.v,
         else:
             s = vm.get_slot_apply(o, "to_str")
-            if isinstance(s, Builtins.Con_String):
+            if isinstance(s, Con_String):
                 print s.v,
             else:
                 raise Exception("XXX")
     print ""
 
-    vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))
+    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))

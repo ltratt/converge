@@ -147,6 +147,10 @@ class Con_Boxed_Object(Con_Object):
 
     def get_slot(self, vm, n):
         o = self.get_slot_raw(vm, n)
+
+        if o is None:
+            vm.raise_helper("Slot_Exception", [Con_String(vm, n), self])
+
         if isinstance(o, Con_Func):
             return Con_Partial_Application(vm, self, o)
         
@@ -166,9 +170,6 @@ class Con_Boxed_Object(Con_Object):
         
         if o is None and n == "instance_of":
             return self.instance_of
-        
-        if o is None:
-            vm.raise_helper("Slot_Exception", [Con_String(vm, n), self])
         
         return o
 
@@ -279,6 +280,15 @@ class Con_Class(Con_Boxed_Object):
         self.fields = []
 
         self.set_slot(vm, "container", container)
+
+
+    def get_slot_raw(self, vm, n):
+        o = Con_Boxed_Object.get_slot_raw(self, vm, n)
+        if o is None:
+            if n == "name":
+                o = Con_String(vm, self.name)
+        
+        return o
 
 
     def get_field(self, vm, n):

@@ -486,17 +486,21 @@ class Con_Module(Con_Boxed_Object):
     def get_closure_i(self, vm, n):
         i = self.tlvars_map.get(n, -1)
         if i == -1:
-            name = type_check_string(vm, self.get_slot(vm, "name")).v
-            vm.raise_helper("Mod_Defn_Exception", \
-              [Builtins.Con_String(vm, "Definition '%s' not found in '%s'." % (n, name))])
+            self._no_such_defn(vm, n)
         return i
 
 
     def get_defn(self, vm, n):
         o = self.closure[self.get_closure_i(vm, n)]
         if o is None:
-            vm.raise_helper("Unassigned_Var_Exception")
+            self._no_such_defn(vm, n)
         return o
+
+
+    def _no_such_defn(self, vm, n):
+        name = type_check_string(vm, self.get_slot(vm, "name")).v
+        vm.raise_helper("Mod_Defn_Exception", \
+          [Builtins.Con_String(vm, "Definition '%s' not found in '%s'." % (n, name))])
 
 
     def set_defn(self, vm, n, o):

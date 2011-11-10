@@ -105,6 +105,14 @@ Returns a list of length two <code>[<em>&lt;path's directory&gt;</em>, <em>&lt;p
 Returns a list representing all the directories and the leaf name of <code>path</code>. The separator between the directories and leaf name is not present in the output. e.g. <code>split_names("/a/b/c.d")</code> returns <code>["a", "b", "c.d"]</code>.
 </function>
 
+<assignment name="DIR_SEP">
+The character(s) used to separate directory names (e.g. on Unix <q><code>/</code></q>).
+</assignment>
+
+<assignment name="EXT_SEP">
+The character(s) used to separate file names from their extensions (e.g. on Unix <q><code>.</code></q>).
+</assignment>
+
 
 <h3>File manipulation</h3>
 
@@ -121,5 +129,12 @@ Deletes <code>path</code>. If <code>path</code> is a directory, it recursively d
 <function name="temp_file">
 Returns a read / write <ref name="File" /> object in a temporary location. The file is not deleted upon close and must be manually deleted.
 </function>
+
+
+<h3>Miscellaneous</h3>
+
+<assignment name="NULL_DEV">
+The name of the <q>null</q> file (e.g. on Unix <q><code>/dev/null</code></q>).
+</assignment>
 
 </module>

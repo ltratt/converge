@@ -646,6 +646,7 @@ class Con_Int(Con_Boxed_Object):
 
     def __init__(self, vm, v):
         Con_Boxed_Object.__init__(self, vm, vm.get_builtin(BUILTIN_INT_CLASS))
+        assert v is not None
         self.v = v
 
 
@@ -739,6 +740,7 @@ class Con_String(Con_Boxed_Object):
 
     def __init__(self, vm, v):
         Con_Boxed_Object.__init__(self, vm, vm.get_builtin(BUILTIN_STRING_CLASS))
+        assert v is not None
         self.v = v
 
 

@@ -224,6 +224,10 @@ if INTSIZE == 8:
         return (instr & 0xFFFFFF00) >> 8
 
     @elidable_promote()
+    def unpack_assign_slot(instr):
+        return (4, (instr & 0xFFFFFF00) >> 8)
+
+    @elidable_promote()
     def unpack_add_exception_frame(instr):
         if (instr & 0x80000000) >> 8:
             return -((instr & 0x7FFFFF00) >> 8)

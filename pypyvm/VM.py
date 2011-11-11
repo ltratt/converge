@@ -422,6 +422,8 @@ class VM(object):
                     self._instr_string(instr, cf)
                 elif it == Target.CON_INSTR_BUILTIN_LOOKUP:
                     self._instr_builtin_lookup(instr, cf)
+                elif it == Target.CON_INSTR_ASSIGN_SLOT:
+                    self._instr_assign_slot(instr, cf)
                 elif it == Target.CON_INSTR_ADD_EXCEPTION_FRAME:
                     self._instr_add_exception_frame(instr, cf)
                 elif it == Target.CON_INSTR_REMOVE_EXCEPTION_FRAME:
@@ -654,6 +656,15 @@ class VM(object):
         bl = Target.unpack_builtin_lookup(instr)
         self._cf_stack_push(cf, self.get_builtin(bl))
         cf.bc_off += Target.INTSIZE
+
+
+    def _instr_assign_slot(self, instr, cf):
+        o = self._cf_stack_pop(cf)
+        v = cf.stack[cf.stackpe - 1]
+        nm_start, nm_size = Target.unpack_assign_slot(instr)
+        nm = Target.extract_str(cf.pc.mod.bc, nm_start + cf.bc_off, nm_size)
+        o.set_slot(self, nm, v)
+        cf.bc_off += Target.align(nm_start + nm_size)
 
 
     def _instr_add_exception_frame(self, instr, cf):

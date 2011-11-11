@@ -513,12 +513,12 @@ class VM(object):
 
     def _instr_is_assigned(self, instr, cf):
         closure_off, var_num = Target.unpack_var_lookup(instr)
-        if cf.closure[len(cf.closure) - 1 - closure_off][var_num] is None:
+        if cf.closure[len(cf.closure) - 1 - closure_off][var_num] is not None:
             pc = cf.pc
             assert isinstance(pc, BC_PC)
             mod_bc = pc.mod.bc
             instr2 = Target.read_word(mod_bc, cf.bc_off + Target.INTSIZE)
-            cf.bc_off += Target.unpack_is_assigned(instr)
+            cf.bc_off += Target.unpack_is_assigned(instr2)
         else:
             cf.bc_off += Target.INTSIZE + Target.INTSIZE
 

@@ -377,7 +377,7 @@ class VM(object):
                 prev_bc_off = bc_off
                 instr = Target.read_word(mod_bc, bc_off)
                 it = Target.get_instr(instr)
-                #print "%s %s %d [stackpe:%d ffp:%d gfp:%d xfp:%d]" % (Target.INSTR_NAMES[instr & 0xFF], str(cf.stack[:cf.stackpe]), bc_off, cf.stackpe, cf.ffp, cf.gfp, cf.xfp)
+                # x = cf.stackpe; assert x >= 0; print "%s %s %d [stackpe:%d ffp:%d gfp:%d xfp:%d]" % (Target.INSTR_NAMES[instr & 0xFF], str(cf.stack[:x]), bc_off, cf.stackpe, cf.ffp, cf.gfp, cf.xfp)
                 if it == Target.CON_INSTR_VAR_LOOKUP:
                     self._instr_var_lookup(instr, cf)
                 elif it == Target.CON_INSTR_VAR_ASSIGN:

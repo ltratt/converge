@@ -81,3 +81,18 @@ def translate_slice_idxs(i, j, upper):
         raise Exception("XXX")
 
     return i, j
+
+
+def translate_slice_idx_objs(i_o, j_o, upper):
+    if i_o is None:
+        i = 0
+    else:
+        assert isinstance(i_o, Builtins.Con_Int)
+        i = i_o.v
+    if j_o is None: 
+        j = upper
+    else:
+        assert isinstance(j_o, Builtins.Con_Int)
+        j = j_o.v
+
+    return translate_slice_idxs(i, j, upper)

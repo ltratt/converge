@@ -751,11 +751,94 @@ class Con_String(Con_Boxed_Object):
         return hash(self.v)
 
 
+    def add(self, vm, o):
+        o = type_check_string(vm, o)
+        return Con_String(vm, self.v + o.v)
+
+
+    def eq(self, vm, o):
+        o = type_check_string(vm, o)
+        return self.v == o.v
+
+
+    def neq(self, vm, o):
+        o = type_check_string(vm, o)
+        return self.v != o.v
+
+
+    def le(self, vm, o):
+        o = type_check_string(vm, o)
+        return self.v < o.v
+
+
+    def le_eq(self, vm, o):
+        o = type_check_string(vm, o)
+        return self.v <= o.v
+
+
+    def gr_eq(self, vm, o):
+        o = type_check_string(vm, o)
+        return self.v >= o.v
+
+
+    def gt(self, vm, o):
+        o = type_check_string(vm, o)
+        return self.v > o.v
+
+
     @jit.elidable
     def get_slice(self, vm, i, j):
         i, j = translate_slice_idxs(i, j, len(self.v))
         return Con_String(vm, self.v[i:j])
 
+
+def _Con_String_get(vm):
+    (self, i_o),_ = vm.decode_args("SI")
+    assert isinstance(self, Con_String)
+    assert isinstance(i_o, Con_Int)
+
+    vm.return_(Con_String(vm, self.v[i_o.v]))
+
+
+def _Con_String_get_slice(vm):
+    (self, i_o, j_o),_ = vm.decode_args("S", opt="ii")
+    assert isinstance(self, Con_String)
+
+    i, j = translate_slice_idx_objs(i_o, j_o, len(self.v))
+
+    vm.return_(Con_String(vm, self.v[i:j]))
+
+
+def _Con_String_int_val(vm):
+    (self, i_o),_ = vm.decode_args("S", opt="I")
+    assert isinstance(self, Con_String)
+
+    if i_o is not None:
+        assert isinstance(i_o, Con_Int)
+        i = translate_idx(i_o.v, len(self.v))
+    else:
+        i = translate_idx(0, len(self.v))
+
+    vm.return_(Con_Int(vm, ord(self.v[i])))
+
+
+def _Con_String_iter(vm):
+    (self, i_o, j_o),_ = vm.decode_args("S", opt="ii")
+    assert isinstance(self, Con_String)
+    
+    i, j = translate_slice_idx_objs(i_o, j_o, len(self.v))
+    while i < j:
+        vm.yield_(Con_String(vm, self.v[i]))
+        i += 1
+
+    vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+
+
+def _Con_String_len(vm):
+    (self,),_ = vm.decode_args("S")
+    assert isinstance(self, Con_String)
+
+    vm.return_(Con_Int(vm, len(self.v)))
 
 
 def _Con_String_to_str(vm):
@@ -768,6 +851,11 @@ def _Con_String_to_str(vm):
 def bootstrap_con_string(vm):
     string_class = vm.get_builtin(BUILTIN_STRING_CLASS)
 
+    new_c_con_func_for_class(vm, "get", _Con_String_get, string_class)
+    new_c_con_func_for_class(vm, "get_slice", _Con_String_get_slice, string_class)
+    new_c_con_func_for_class(vm, "int_val", _Con_String_int_val, string_class)
+    new_c_con_func_for_class(vm, "iter", _Con_String_iter, string_class)
+    new_c_con_func_for_class(vm, "len", _Con_String_len, string_class)
     new_c_con_func_for_class(vm, "to_str", _Con_String_to_str, string_class)
 
 

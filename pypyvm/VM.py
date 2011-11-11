@@ -580,7 +580,11 @@ class VM(object):
             gf = Stack_Generator_Frame(cf.gfp, cf.bc_off + Target.INTSIZE)
             cf.stack[fp] = gf
             cf.gfp = fp
-            new_cf = self._add_continuation_frame(func, len(args), True)
+            if isinstance(func, Builtins.Con_Partial_Application):
+                new_cf = self._add_continuation_frame(func.f, len(args) + 1, True)
+                self._cf_stack_push(new_cf, func.o)
+            else: 
+                new_cf = self._add_continuation_frame(func, len(args), True)
             self._cf_stack_extend(new_cf, args)
             o = self._apply_pump()
             if o is None:
@@ -952,6 +956,7 @@ class VM(object):
         assert isinstance(ff, Stack_Failure_Frame)
         self._cf_stack_del_from(cf, ffp)
         cf.ffp = ff.prev_ffp
+        cf.gfp = ff.prev_gfp
 
         self.spare_ff = ff
 
@@ -971,6 +976,7 @@ class VM(object):
             is_fail_up, fail_to_off = self._read_failure_frame()
             if is_fail_up:
                 has_rg = False
+                gf = None
                 if cf.gfp > -1:
                     gf = cf.stack[cf.gfp]
                     assert isinstance(gf, Stack_Generator_Frame)

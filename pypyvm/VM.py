@@ -710,19 +710,31 @@ class VM(object):
             for i in range(num_fargs - 1, -1, -1):
                 arg_offset -= Target.INTSIZE
                 arg_info = Target.read_word(cf.pc.mod.bc, arg_offset)
-                if i > nargs:
-                    if Target.unpack_unpack_args_is_mandatory(arg_info):
+                if i >= nargs:
+                    if not Target.unpack_unpack_args_is_mandatory(arg_info):
                         raise Exception("XXX")
                 else:
                     if nargs > num_fargs:
-                        raise Exception("XXX")
+                        o = self._cf_stack_pop_n(cf, nargs - num_fargs)
                     else:
                         o = self._cf_stack_pop(cf)
-                        assert isinstance(o, Builtins.Con_Object)
+                    assert isinstance(o, Builtins.Con_Object)
                     cf.closure[-1][Target.unpack_unpack_args_arg_num(arg_info)] = o
 
         if has_vargs:
-            raise Exception("XXX")
+            arg_offset = cf.bc_off + Target.INTSIZE + num_fargs * Target.INTSIZE
+            arg_info = Target.read_word(cf.pc.mod.bc, arg_offset)
+            l = []
+            if nargs <= num_fargs:
+                l = []
+            else:
+                j = cf.stackpe
+                i = j - (nargs - num_fargs)
+                assert i >= 0 and j >= 0
+                l = cf.stack[i : j]
+                cf.stackpe = i + 1
+            cf.closure[-1][Target.unpack_unpack_args_arg_num(arg_info)] = Builtins.Con_List(self, l)
+            cf.bc_off += Target.INTSIZE + (num_fargs + 1) * Target.INTSIZE
         else:
             cf.bc_off += Target.INTSIZE + num_fargs * Target.INTSIZE
 

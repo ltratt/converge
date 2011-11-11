@@ -69,6 +69,7 @@ class VM(object):
 
         Builtins.bootstrap_con_object(self)
         Builtins.bootstrap_con_class(self)
+        Builtins.bootstrap_con_dict(self)
         Builtins.bootstrap_con_int(self)
         Builtins.bootstrap_con_list(self)
         Builtins.bootstrap_con_module(self)
@@ -266,6 +267,8 @@ class VM(object):
                 if t < "a" or o is not None:
                     if t == "C":
                         Builtins.type_check_class(self, o)
+                    elif t == "D":
+                        Builtins.type_check_dict(self, o)
                     elif t == "I":
                         Builtins.type_check_int(self, o)
                     elif t == "L":
@@ -409,6 +412,8 @@ class VM(object):
                     self._instr_yield(instr, cf)
                 elif it == Target.CON_INSTR_IMPORT:
                     self._instr_import(instr, cf)
+                elif it == Target.CON_INSTR_DICT:
+                    self._instr_dict(instr, cf)
                 elif it == Target.CON_INSTR_DUP:
                     self._instr_dup(instr, cf)
                 elif it == Target.CON_INSTR_PULL:
@@ -610,6 +615,18 @@ class VM(object):
     def _instr_import(self, instr, cf):
         mod = self.get_mod(cf.pc.mod.imps[Target.unpack_import(instr)])
         self._cf_stack_push(cf, mod)
+        cf.bc_off += Target.INTSIZE
+
+
+    def _instr_dict(self, instr, cf):
+        ne = Target.unpack_dict(instr)
+        i = cf.stackpe - ne * 2
+        assert i >= 0
+        j = cf.stackpe
+        assert j >= 0
+        l = cf.stack[i : j]
+        self._cf_stack_del_from(cf, i)
+        self._cf_stack_push(cf, Builtins.Con_Dict(self, l))
         cf.bc_off += Target.INTSIZE
 
 

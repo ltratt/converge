@@ -897,6 +897,76 @@ def bootstrap_con_set(vm):
 
 
 ################################################################################
+# Con_Dict
+#
+
+class Con_Dict(Con_Boxed_Object):
+    __slots__ = ("d",)
+    _immutable_fields_ = ("d",)
+
+
+    def __init__(self, vm, l):
+        Con_Boxed_Object.__init__(self, vm, vm.get_builtin(BUILTIN_DICT_CLASS))
+        self.d = {}
+        i = 0
+        while i < len(l):
+            self.d[l[i]] = l[i + 1]
+            i += 2
+
+
+def _Con_Dict_get(vm):
+    (self, k),_ = vm.decode_args("DO")
+    assert isinstance(self, Con_Dict)
+    
+    r = self.d.get(k, None)
+    if r is None:
+        vm.raise_helper("Key_Exception", [k])
+    
+    vm.return_(r)
+
+
+def _Con_Dict_len(vm):
+    (self,),_ = vm.decode_args("D")
+    assert isinstance(self, Con_Dict)
+    
+    vm.return_(Con_Int(vm, len(self.d)))
+
+
+def _Con_Dict_set(vm):
+    (self, k, v),_ = vm.decode_args("DOO")
+    assert isinstance(self, Con_Dict)
+    
+    self.d[k] = v
+    
+    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+
+
+def _Con_Dict_to_str(vm):
+    (self,),_ = vm.decode_args("D")
+    assert isinstance(self, Con_Dict)
+    
+    es = []
+    for k, v in self.d.items():
+        ks = type_check_string(vm, vm.get_slot_apply(k, "to_str"))
+        vs = type_check_string(vm, vm.get_slot_apply(v, "to_str"))
+        es.append("%s : %s" % (ks.v, vs.v))
+
+    vm.return_(Con_String(vm, "Dict{%s}" % ", ".join(es)))
+
+
+def bootstrap_con_dict(vm):
+    dict_class = Con_Class(vm, Con_String(vm, "Dict"), [vm.get_builtin(BUILTIN_OBJECT_CLASS)], \
+      vm.get_builtin(BUILTIN_BUILTINS_MODULE))
+    vm.set_builtin(BUILTIN_DICT_CLASS, dict_class)
+
+    new_c_con_func_for_class(vm, "get", _Con_Dict_get, dict_class)
+    new_c_con_func_for_class(vm, "len", _Con_Dict_len, dict_class)
+    new_c_con_func_for_class(vm, "set", _Con_Dict_set, dict_class)
+    new_c_con_func_for_class(vm, "to_str", _Con_Dict_to_str, dict_class)
+
+
+
+################################################################################
 # Con_Exception
 #
 
@@ -961,6 +1031,12 @@ def bootstrap_con_exception(vm):
 def type_check_class(vm, o):
     if not isinstance(o, Con_Class):
         vm.raise_helper("Type_Exception", [vm.get_builtin(BUILTIN_CLASS_CLASS), o])
+    return o
+
+
+def type_check_dict(vm, o):
+    if not isinstance(o, Con_Dict):
+        vm.raise_helper("Type_Exception", [vm.get_builtin(BUILTIN_DICT_CLASS), o])
     return o
 
 

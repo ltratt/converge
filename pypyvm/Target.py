@@ -212,6 +212,10 @@ if INTSIZE == 8:
         return (instr & 0xFFFFFF00) >> 8
 
     @elidable_promote()
+    def unpack_dict(instr):
+        return (instr & 0xFFFFFF00) >> 8
+
+    @elidable_promote()
     def unpack_string(instr):
         return (4, (instr & 0xFFFFFF00) >> 8)
 

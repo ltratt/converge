@@ -28,9 +28,9 @@ from Builtins import *
 def init(vm):
     mod = new_c_con_module(vm, "Exceptions", "Exceptions", __file__, import_, \
       ["Exception", "User_Exception", "Internal_Exception",
-       "Assert_Exception", "File_Exception", "Import_Exception", "Mod_Defn_Exception", \
-       "Parameters_Exception", "Slot_Exception", "System_Exit_Exception", "Type_Exception", \
-       "Unassigned_Var_Exception"])
+       "Assert_Exception", "File_Exception", "Import_Exception", "Key_Exception", \
+       "Mod_Defn_Exception", "Parameters_Exception", "Slot_Exception", "System_Exit_Exception", \
+       "Type_Exception", "Unassigned_Var_Exception"])
     vm.set_builtin(BUILTIN_EXCEPTIONS_MODULE, mod)
     
     return mod
@@ -46,6 +46,7 @@ def import_(vm):
     _mk_simple_exception(vm, mod, "Assert_Exception")
     _mk_simple_exception(vm, mod, "File_Exception")
     _mk_simple_exception(vm, mod, "Import_Exception", init_func=_Import_Exception_init_func)
+    _mk_simple_exception(vm, mod, "Key_Exception", init_func=_Key_Exception_init_func)
     _mk_simple_exception(vm, mod, "Mod_Defn_Exception")
     _mk_simple_exception(vm, mod, "Parameters_Exception")
     _mk_simple_exception(vm, mod, "Slot_Exception", init_func=_Slot_Exception_init_func)
@@ -72,6 +73,13 @@ def _Import_Exception_init_func(vm):
     (self, mod_id),_ = vm.decode_args("OS")
     assert isinstance(mod_id, Con_String)
     self.set_slot(vm, "msg", Con_String(vm, "Unable to import '%s'." % mod_id.v))
+    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+
+
+def _Key_Exception_init_func(vm):
+    (self, k),_ = vm.decode_args("OO")
+    k_s = type_check_string(vm, vm.get_slot_apply(k, "to_str"))
+    self.set_slot(vm, "msg", Con_String(vm, "Key '%s' not found." % k_s.v))
     vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
 
 

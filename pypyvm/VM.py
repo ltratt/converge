@@ -354,12 +354,20 @@ class VM(object):
         cf = self.cf_stack[-1]
         cf.ct = ct
         pc = cf.pc
+        #print cf.func.name.v, pc.mod.id_
         if isinstance(pc, Py_PC):
-            pc.f(self)
+            try:
+                pc.f(self)
+            except Con_Raise_Exception, e:
+                if cf.xfp == -1:
+                    # There is no exception handler, so kill this continuation frame and propagate
+                    # the exception
+                    self._remove_continuation_frame()
+                    raise
+                raise Exception("XXX")
         else:
             self.bc_loop(cf)
         
-        #print "XXX"
         return ct
 
 
@@ -374,10 +382,11 @@ class VM(object):
                 if prev_bc_off != -1 and prev_bc_off > bc_off:
                     jitdriver.can_enter_jit(bc_off=bc_off, mod_bc=mod_bc, cf=cf, prev_bc_off=prev_bc_off, pc=pc, self=self)
                 jitdriver.jit_merge_point(bc_off=bc_off, mod_bc=mod_bc, cf=cf, prev_bc_off=prev_bc_off, pc=pc, self=self)
+                assert cf is self.cf_stack[-1]
                 prev_bc_off = bc_off
                 instr = Target.read_word(mod_bc, bc_off)
                 it = Target.get_instr(instr)
-                # x = cf.stackpe; assert x >= 0; print "%s %s %d [stackpe:%d ffp:%d gfp:%d xfp:%d]" % (Target.INSTR_NAMES[instr & 0xFF], str(cf.stack[:x]), bc_off, cf.stackpe, cf.ffp, cf.gfp, cf.xfp)
+                #x = cf.stackpe; assert x >= 0; print "%s %s %d [stackpe:%d ffp:%d gfp:%d xfp:%d]" % (Target.INSTR_NAMES[instr & 0xFF], str(cf.stack[:x]), bc_off, cf.stackpe, cf.ffp, cf.gfp, cf.xfp)
                 if it == Target.CON_INSTR_VAR_LOOKUP:
                     self._instr_var_lookup(instr, cf)
                 elif it == Target.CON_INSTR_VAR_ASSIGN:
@@ -818,6 +827,7 @@ class VM(object):
 
 
     def _cf_stack_pop(self, cf):
+        assert cf.stackpe > 0
         cf.stackpe -= 1
         o = cf.stack[cf.stackpe]
         cf.stack[cf.stackpe] = None
@@ -831,9 +841,9 @@ class VM(object):
         i = cf.stackpe - 1 - n
         o = cf.stack[i]
         # Shuffle the stack down
+        cf.stackpe -= 1
         for j in range(i, cf.stackpe):
             cf.stack[j] = cf.stack[j + 1]
-        cf.stackpe -= 1
         cf.stack[cf.stackpe] = None
         # If the frame pointers come after the popped item, they need to be rewritten
         if cf.ffp > i:
@@ -929,6 +939,7 @@ class VM(object):
 
     def _read_failure_frame(self):
         cf = self.cf_stack[-1]
+        assert cf.ffp >= 0
         ff = cf.stack[cf.ffp]
         assert isinstance(ff, Stack_Failure_Frame)
 

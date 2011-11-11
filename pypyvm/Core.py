@@ -51,3 +51,33 @@ class Py_PC(PC):
         assert isinstance(mod, Builtins.Con_Module)
         self.mod = mod
         self.f = f
+
+
+
+def translate_idx(i, upper):
+    if i < 0:
+        i = upper + i
+    
+    if i < 0 or i >= upper:
+        raise Exception("XXX")
+
+    return i
+
+
+def translate_slice_idx(i, upper):
+    if i < 0:
+        i = upper + i
+    
+    if i < 0 or i > upper:
+        raise Exception("XXX")
+
+    return i
+
+
+def translate_slice_idxs(i, j, upper):
+    i = translate_slice_idx(i, upper)
+    j = translate_slice_idx(j, upper)
+    if j < i:
+        raise Exception("XXX")
+
+    return i, j

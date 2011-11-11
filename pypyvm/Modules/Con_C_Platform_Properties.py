@@ -19,19 +19,41 @@
 # IN THE SOFTWARE.
 
 
+import os, sys
 from Builtins import *
 
+
+
+if sys.platform.startswith("win"):
+    CASE_SENSITIVE_FILENAMES = 1
+else:
+    CASE_SENSITIVE_FILENAMES = 0
+
+if sys.byteorder == "big":
+    ENDIANNESS = "BIG_ENDIAN"
+else:
+    ENDIANNESS = "LITTLE_ENDIAN"
+
+if sys.platform.startswith("openbsd"):
+    PLATFORM = os.uname()[0]
 
 
 
 def init(vm):
     return new_c_con_module(vm, "C_Platform_Properties", "C_Platform_Properties", __file__, \
       import_, \
-      ["word_bits", "LITTLE_ENDIAN", "BIG_ENDIAN", "endianness", "endianness", "osname",
-       "case_sensitive_filenames"])
+      ["word_bits", "LITTLE_ENDIAN", "BIG_ENDIAN", "endianness", "osname", \
+        "case_sensitive_filenames"])
 
 
 def import_(vm):
     (mod,),_ = vm.decode_args("O")
+
+    mod.set_defn(vm, "word_bits", Con_Int(vm, Target.INTSIZE * 8))
+    mod.set_defn(vm, "LITTLE_ENDIAN", Con_String(vm, "LITTLE_ENDIAN"))
+    mod.set_defn(vm, "BIG_ENDIAN", Con_String(vm, "BIG_ENDIAN"))
+    mod.set_defn(vm, "endianness", Con_String(vm, ENDIANNESS))
+    mod.set_defn(vm, "osname", Con_String(vm, PLATFORM))
+    mod.set_defn(vm, "case_sensitive_filenames", Con_Int(vm, CASE_SENSITIVE_FILENAMES))
     
     vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))

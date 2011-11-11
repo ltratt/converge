@@ -748,6 +748,12 @@ class Con_String(Con_Boxed_Object):
         return hash(self.v)
 
 
+    @jit.elidable
+    def get_slice(self, vm, i, j):
+        i, j = translate_slice_idxs(i, j, len(self.v))
+        return Con_String(vm, self.v[i:j])
+
+
 
 def _Con_String_to_str(vm):
     (self,),_ = vm.decode_args("S")

@@ -19,6 +19,7 @@
 # IN THE SOFTWARE.
 
 
+from pypy.rlib import rsocket
 from Builtins import *
 
 
@@ -32,4 +33,12 @@ def init(vm):
 def import_(vm):
     (mod,),_ = vm.decode_args("O")
     
+    new_c_con_func_for_mod(vm, "get_hostname", get_hostname, mod)
+    
     vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+
+
+def get_hostname(vm):
+    _,_ = vm.decode_args()
+
+    return Con_String(vm, rsocket.gethostname())

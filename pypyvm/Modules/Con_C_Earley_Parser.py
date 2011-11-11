@@ -32,4 +32,12 @@ def init(vm):
 def import_(vm):
     (mod,),_ = vm.decode_args("O")
     
+    mod.set_defn(vm, "Parser", \
+      Con_Class(vm, Con_String(vm, "Parser"), [vm.get_builtin(BUILTIN_OBJECT_CLASS)], mod))
+    new_c_con_func_for_mod(vm, "parse", parse, mod)
+    
     vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+
+
+def parse(vm):
+    raise Exception("XXX")

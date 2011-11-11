@@ -294,6 +294,11 @@ class VM(object):
         return (nrmp, vap)
 
 
+    def get_funcs_mod(self):
+        cf = self.cf_stack[-1]
+        return cf.pc.mod
+
+
     def return_(self, obj):
         assert isinstance(obj, Builtins.Con_Object)
         cf = self.cf_stack[-1]

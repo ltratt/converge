@@ -70,6 +70,13 @@ class File(Con_Boxed_Object):
         self.fd = fd
 
 
+    def get_slot_override(self, vm, n):
+        if n == "fileno":
+            return Con_Int(vm, self.fd)
+        else:
+            return Con_Boxed_Object.get_slot_override(self, vm, n)
+
+
 def _new_func_File(vm):
     (class_, path_o, mode_o), vargs = vm.decode_args("COS")
     assert isinstance(mode_o, Con_String)
@@ -80,7 +87,6 @@ def _new_func_File(vm):
         fd = os.open(path_s, flags, 0777)
     elif isinstance(path_o, Con_Int):
         path_s = None
-        assert isinstance(path_s, Con_Boxed_Object)
         fd = path_o.v
     else:
         raise Exception("XXX")

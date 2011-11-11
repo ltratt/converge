@@ -146,7 +146,18 @@ class Con_Boxed_Object(Con_Object):
 
 
     def get_slot(self, vm, n):
-        o = self.get_slot_raw(vm, n)
+        o = None
+        if self.slots is not None:
+            m = jit.promote(self.slots_map)
+            i = m.find(n)
+            if i != -1:
+                o = self.slots[i]
+    
+        if o is None:
+            o = self.get_slot_override(vm, n)
+    
+        if o is None:
+            o = self.instance_of.get_field(vm, n)
 
         if o is None:
             vm.raise_helper("Slot_Exception", [Con_String(vm, n), self])
@@ -157,21 +168,13 @@ class Con_Boxed_Object(Con_Object):
         return o
 
 
-    def get_slot_raw(self, vm, n):
-        o = None
-        if self.slots is not None:
-            m = jit.promote(self.slots_map)
-            i = m.find(n)
-            if i != -1:
-                o = self.slots[i]
-    
-        if o is None:
-            o = self.instance_of.get_field(vm, n)
-        
-        if o is None and n == "instance_of":
+    # This is the method to override in subclasses.
+
+    def get_slot_override(self, vm, n):
+        if n == "instance_of":
             return self.instance_of
         
-        return o
+        return None
 
 
     def set_slot(self, vm, n, v):

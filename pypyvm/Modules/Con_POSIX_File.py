@@ -70,6 +70,13 @@ class File(Con_Boxed_Object):
         self.fd = fd
 
 
+    def has_slot_override(self, vm, n):
+        if n == "fileno":
+            return True
+        else:
+            return False
+
+
     def get_slot_override(self, vm, n):
         if n == "fileno":
             return Con_Int(vm, self.fd)

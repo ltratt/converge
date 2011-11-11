@@ -145,6 +145,29 @@ class Con_Boxed_Object(Con_Object):
         return hash(self)
 
 
+    def has_slot(self, vm, n):
+        if self.slots is not None:
+            m = jit.promote(self.slots_map)
+            i = m.find(n)
+            if i != -1:
+                return True
+
+        if self.has_slot_override(vm, n) or self.instance_of.has_field(vm, n):
+            return True
+
+        return False
+
+
+    # This is the method to override in subclasses.
+
+    def has_slot_override(self, vm, n):
+        if n == "instance_of":
+            return True
+        
+        return False
+
+
+
     def get_slot(self, vm, n):
         o = None
         if self.slots is not None:
@@ -319,6 +342,20 @@ class Con_Class(Con_Boxed_Object):
         return None
 
 
+    def has_field(self, vm, n):
+        m = jit.promote(self.fields_map)
+        i = m.find(n)
+        if i != -1:
+            return True
+        
+        for s in self.supers:
+            assert isinstance(s, Con_Class)
+            if s.has_field(vm, n):
+                return True
+
+        return False
+
+
     def set_field(self, vm, n, o):
         m = jit.promote(self.fields_map)
         i = m.find(n)
@@ -391,6 +428,27 @@ def _Con_Class_to_str(vm):
     vm.return_(Con_String(vm, "<Class %s>" % nm.v))
 
 
+def _Con_Class_conformed_by(vm):
+    (self, o),_ = vm.decode_args("CO")
+    assert isinstance(self, Con_Class)
+    assert isinstance(o, Con_Boxed_Object)
+
+    if o.instance_of is self:
+        # We optimise the easy case.
+        vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    else:
+        stack = [self]
+        while len(stack) > 0:
+            cnd = stack.pop()
+            assert isinstance(cnd, Con_Class)
+            for f in cnd.fields_map.index_map.keys():
+                if not o.has_slot(vm, f):
+                    vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+            stack.extend(cnd.supers)  
+
+    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+
+
 def _Con_Class_instantiated(vm):
     (self, o),_ = vm.decode_args("CO")
     assert isinstance(self, Con_Class)
@@ -422,6 +480,7 @@ def bootstrap_con_class(vm):
       new_c_con_func(vm, Con_String(vm, "new_Class"), False, _new_func_Con_Class, \
         vm.get_builtin(BUILTIN_BUILTINS_MODULE))
 
+    new_c_con_func_for_class(vm, "conformed_by", _Con_Class_conformed_by, class_class)
     new_c_con_func_for_class(vm, "instantiated", _Con_Class_instantiated, class_class)
     new_c_con_func_for_class(vm, "new", _Con_Class_new, class_class)
     new_c_con_func_for_class(vm, "get_field", _Con_Class_get_field, class_class)

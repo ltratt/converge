@@ -260,27 +260,34 @@ class VM(object):
             else:
                 t = opt[i - len(mand)]
         
+            o = cf.stack[cf.stackpe - nargs + i]
+            if t >= "a":
+                if o is self.get_builtin(Builtins.BUILTIN_NULL_OBJ):
+                    nrmp[i] = None
+                    i += 1
+                    continue
+                t = chr(ord("A") + ord(t) - ord("a"))
+        
             if t == "O":
-                nrmp[i] = cf.stack[cf.stackpe - nargs + i]
+                nrmp[i] = o
             else:
-                o = cf.stack[cf.stackpe - nargs + i]
-                if t < "a" or o is not None:
-                    if t == "C":
-                        Builtins.type_check_class(self, o)
-                    elif t == "D":
-                        Builtins.type_check_dict(self, o)
-                    elif t == "I":
-                        Builtins.type_check_int(self, o)
-                    elif t == "L":
-                        Builtins.type_check_list(self, o)
-                    elif t == "M":
-                        Builtins.type_check_module(self, o)
-                    elif t == "S":
-                        Builtins.type_check_string(self, o)
-                    elif t == "W":
-                        Builtins.type_check_set(self, o)
-                    else:
-                        raise Exception("XXX")
+                if t == "C":
+                    Builtins.type_check_class(self, o)
+                elif t == "D":
+                    Builtins.type_check_dict(self, o)
+                elif t == "I":
+                    Builtins.type_check_int(self, o)
+                elif t == "L":
+                    Builtins.type_check_list(self, o)
+                elif t == "M":
+                    Builtins.type_check_module(self, o)
+                elif t == "S":
+                    Builtins.type_check_string(self, o)
+                elif t == "W":
+                    Builtins.type_check_set(self, o)
+                else:
+                    print t
+                    raise Exception("XXX")
                 nrmp[i] = o
             
             i += 1

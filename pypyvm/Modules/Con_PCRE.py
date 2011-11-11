@@ -181,6 +181,10 @@ class Match(Con_Boxed_Object):
         self.s = s
 
 
+    def __del__(self):
+        lltype.free(self.ovect, flavor="raw")
+
+
 def Match_get(vm):
     (self, i_o),_ = vm.decode_args(mand="OI")
     assert isinstance(self, Match)

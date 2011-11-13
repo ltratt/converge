@@ -27,19 +27,24 @@ from Builtins import *
 
 def init(vm):
     return new_c_con_module(vm, "Curses", "Curses", __file__, import_, \
-      ["Curses_Exception", "setup_term", "tigetstr"])
+      ["Curses_Exception", "setupterm", "tigetstr"])
 
 
 def import_(vm):
     (mod,),_ = vm.decode_args("O")
     
-    new_c_con_func_for_mod(vm, "setup_term", setup_term, mod)
+    class_class = vm.get_builtin(BUILTIN_CLASS_CLASS)
+    int_exception_class = vm.get_mod("Exceptions").get_defn(vm, "Internal_Exception")
+    curses_exception = vm.get_slot_apply(class_class, "new", \
+      [Con_String(vm, "Curses_Exception"), Con_List(vm, [int_exception_class]), mod])
+    mod.set_defn(vm, "Curses_Exception", curses_exception)
+    new_c_con_func_for_mod(vm, "setupterm", setupterm, mod)
     new_c_con_func_for_mod(vm, "tigetstr", tigetstr, mod)
 
     vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
 
 
-def setup_term(vm):
+def setupterm(vm):
     (term_o, file_o), _ = vm.decode_args(opt="sO")
     
     if term_o is not None:

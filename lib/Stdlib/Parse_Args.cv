@@ -55,14 +55,16 @@ class _Args_Parser:
     
         self._usage_callback := usage_callback
         self._opt_specs := []
+        self._opt_spec_names := Set{}
 
 
 
     func add(self, opt_spec):
     
-        if self._opt_specs.find(opt_spec.name):
+        if self._opt_spec_names.find(opt_spec.name):
             raise Exceptions::User_Exception.new(Strings::format("Option '%s' has already been specified.", opt_spec.name))
             
+        self._opt_spec_names.add(opt_spec.name)
         self._opt_specs.append(opt_spec)
 
 

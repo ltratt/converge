@@ -272,7 +272,7 @@ def bootstrap_con_object(vm):
     module_class.set_slot(vm, "container", builtins_module)
     builtins_module.set_defn(vm, "Object", object_class)
     builtins_module.set_defn(vm, "Class", class_class)
-    builtins_module.set_defn(vm, "String", class_class)
+    builtins_module.set_defn(vm, "String", string_class)
     builtins_module.set_defn(vm, "Module", module_class)
 
     object_class.new_func = \

@@ -106,7 +106,7 @@ def add_mod(vm, bc, mod_off):
     mod = new_bc_con_module(vm, mod_bc, name, id_, src_path, imps, tlvars_map, num_consts)
     init_func_off = read_word(mod_bc, BC_MOD_INSTRUCTIONS)
     pc = BC_PC(mod, init_func_off)
-    max_stack_size = 64 # XXX!
+    max_stack_size = 512 # XXX!
     mod.init_func = Con_Func(vm, Con_String(vm, "$$init$$"), False, pc, max_stack_size, num_vars, \
       mod, None)
 

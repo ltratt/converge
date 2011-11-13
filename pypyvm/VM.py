@@ -227,7 +227,7 @@ class VM(object):
 
 
     @jit.unroll_safe
-    def decode_args(self, mand="", opt="", vargs=False):
+    def decode_args(self, mand="", opt="", vargs=False, self_of=None):
         cf = self.cf_stack[-1]
         nargs = cf.nargs # Number of arguments passed
 
@@ -261,6 +261,15 @@ class VM(object):
                 t = opt[i - len(mand)]
         
             o = cf.stack[cf.stackpe - nargs + i]
+            
+            if t == "!":
+                assert self_of is not None
+                if not isinstance(o, self_of):
+                    raise Exception("XXX")
+                nrmp[i] = o
+                i += 1
+                continue
+            
             if t >= "a":
                 if o is self.get_builtin(Builtins.BUILTIN_NULL_OBJ):
                     nrmp[i] = None

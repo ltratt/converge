@@ -98,7 +98,7 @@ def Pattern_search(vm):
 
 def _Pattern_match_search(vm, anchored):
     mod = vm.get_funcs_mod()
-    (self, s_o, sp_o),_ = vm.decode_args(mand="OS", opt="I")
+    (self, s_o, sp_o),_ = vm.decode_args(mand="!S", opt="I", self_of=Pattern)
     assert isinstance(self, Pattern)
     assert isinstance(s_o, Con_String)
     
@@ -186,7 +186,7 @@ class Match(Con_Boxed_Object):
 
 
 def Match_get(vm):
-    (self, i_o),_ = vm.decode_args(mand="OI")
+    (self, i_o),_ = vm.decode_args(mand="!I", self_of=Match)
     assert isinstance(self, Match)
     assert isinstance(i_o, Con_Int)
     

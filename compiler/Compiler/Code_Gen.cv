@@ -1031,6 +1031,7 @@ class Code_Gen:
         i := 0
         for elem := node.elems.iter():
             max_stack_size := self._max(max_stack_size, i + self._preorder(elem))
+            i += 1
         self._instructions.append(self._target.Instr_List.new(node.src_infos, node.elems.len()))
         
         return max_stack_size
@@ -1044,6 +1045,7 @@ class Code_Gen:
         for elem := node.elems.iter():
             max_stack_size := self._max(max_stack_size, i + self._preorder(elem.key))
             max_stack_size := self._max(max_stack_size, i + self._preorder(elem.val))
+            i += 1
         self._instructions.append(self._target.Instr_Dict.new(node.src_infos, node.elems.len()))
         
         return max_stack_size
@@ -1056,6 +1058,7 @@ class Code_Gen:
         i := 0
         for elem := node.elems.iter():
             max_stack_size := self._max(max_stack_size, i + self._preorder(elem))
+            i += 1
         self._instructions.append(self._target.Instr_Set.new(node.src_infos, node.elems.len()))
         
         return max_stack_size

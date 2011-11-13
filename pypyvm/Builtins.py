@@ -685,6 +685,10 @@ class Con_Partial_Application(Con_Boxed_Object):
         self.f = f
 
 
+    def __repr__(self):
+        return "<Partial_Application %s>" % self.f.name.v
+
+
 
 
 ################################################################################

@@ -27,14 +27,17 @@ from Builtins import *
 
 def init(vm):
     mod = new_c_con_module(vm, "Sys", "Sys", __file__, import_, \
-      ["exit", "print", "println"])
+      ["print", "println", "stdin", "stdout", "stderr", "vm_path", "program_path", "argv", \
+       "version", "version_date", "exit"])
     vm.set_builtin(BUILTIN_SYS_MODULE, mod)
-    
+        
     return mod
 
 
 def import_(vm):
     (mod,),_ = vm.decode_args("O")
+
+    mod.set_defn(vm, "argv", Con_List(vm, [Con_String(vm, x) for x in vm.argv[2:]]))
 
     new_c_con_func_for_mod(vm, "exit", exit, mod)
     new_c_con_func_for_mod(vm, "println", println, mod)

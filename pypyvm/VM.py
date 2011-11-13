@@ -461,6 +461,8 @@ class VM(object):
                     # function, which has the correct semantics, but may perhaps not be fully
                     # optimised.
                     self._instr_slot_lookup(instr, cf)
+                elif it == Target.CON_INSTR_UNPACK_ASSIGN:
+                    self._instr_unpack_assign(instr, cf)
                 elif it == Target.CON_INSTR_BRANCH_IF_NOT_FAIL:
                     self._instr_branch_if_not_fail(instr, cf)
                 elif it == Target.CON_INSTR_BRANCH_IF_FAIL:
@@ -773,6 +775,19 @@ class VM(object):
         const_num = Target.unpack_constant_set(instr)
         cf.pc.mod.consts[const_num] = self._cf_stack_pop(cf)
         cf.bc_off += Target.INTSIZE
+
+
+    def _instr_unpack_assign(self, instr, cf):
+        o = cf.stack[cf.stackpe - 1]
+        if isinstance(o, Builtins.Con_List):
+            ne = len(o.l)
+            if ne != Target.unpack_unpack_assign(instr):
+                raise Exception("XXX")
+            for i in range(ne - 1, -1, -1):
+                self._cf_stack_push(cf, o.l[i])
+            cf.bc_off += Target.INTSIZE
+        else:
+            raise Exception("XXX")
 
 
     def _instr_branch_if_not_fail(self, instr, cf):

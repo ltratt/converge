@@ -259,6 +259,10 @@ if INTSIZE == 8:
         return (instr & 0xFFFFFF00) >> 8
 
     @elidable_promote()
+    def unpack_unpack_assign(instr):
+        return (instr & 0xFFFFFF00) >> 8
+
+    @elidable_promote()
     def unpack_branch_if_not_fail(instr):
         if (instr & 0x80000000) >> 8:
             return -((instr & 0x7FFFFF00) >> 8)

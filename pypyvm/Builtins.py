@@ -214,6 +214,13 @@ class Con_Boxed_Object(Con_Object):
             self.slots = [v]
 
 
+    def eq(self, vm, o):
+        if vm.get_slot_apply(self, "==", [o], allow_fail=True):
+            return True
+        else:   
+            return False
+
+
 def _new_func_Con_Object(vm):
     (c,), vargs = vm.decode_args("O", vargs=True)
     o = Con_Boxed_Object(vm, c)
@@ -226,9 +233,17 @@ def _Con_Object_init(vm):
     vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
 
 
+def _Con_Object_is(vm):
+    (self, o),_ = vm.decode_args("OO")
+    if self is o:
+        vm.return_(o)
+    else:
+        vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+
+
 def _Con_Object_to_str(vm):
-    (o,),_ = vm.decode_args("O")
-    vm.return_(Con_String(vm, "<Object@%x>" % id(o)))
+    (self,),_ = vm.decode_args("O")
+    vm.return_(Con_String(vm, "<Object@%x>" % id(self)))
 
 
 def bootstrap_con_object(vm):
@@ -259,7 +274,7 @@ def bootstrap_con_object(vm):
     
     # In order that later objects can refer to the Builtins module, we have to create it now.
     builtins_module = new_c_con_module(vm, "Builtins", "Builtins", __file__, None, \
-      ["Object", "Class", "String", "Module"])
+      ["Object", "Class", "String", "Module", "Int", "List", "Set", "Dict"])
     # We effectively initialize the Builtins module through the bootstrapping process, so it doesn't
     # need a separate initialization function.
     builtins_module.initialized = True
@@ -280,6 +295,7 @@ def bootstrap_con_object(vm):
         builtins_module)
 
     new_c_con_func_for_class(vm, "init", _Con_Object_init, object_class)
+    new_c_con_func_for_class(vm, "is", _Con_Object_is, object_class)
     new_c_con_func_for_class(vm, "to_str", _Con_Object_to_str, object_class)
 
 
@@ -788,6 +804,8 @@ def bootstrap_con_int(vm):
     int_class = Con_Class(vm, Con_String(vm, "Int"), [vm.get_builtin(BUILTIN_OBJECT_CLASS)], \
       vm.get_builtin(BUILTIN_BUILTINS_MODULE))
     vm.set_builtin(BUILTIN_INT_CLASS, int_class)
+    builtins_module = vm.get_builtin(BUILTIN_BUILTINS_MODULE)
+    builtins_module.set_defn(vm, "Int", int_class)
 
     new_c_con_func_for_class(vm, "to_str", _Con_Int_to_str, int_class)
     new_c_con_func_for_class(vm, "idiv", _Con_Int_idiv, int_class)
@@ -937,19 +955,6 @@ class Con_List(Con_Boxed_Object):
         self.l = l
 
 
-
-def _Con_List_to_str(vm):
-    (self,),_ = vm.decode_args("L")
-    assert isinstance(self, Con_List)
-    
-    es = []
-    for e in self.l:
-        s = type_check_string(vm, vm.get_slot_apply(e, "to_str"))
-        es.append(s.v)
-
-    vm.return_(Con_String(vm, "[%s]" % ", ".join(es)))
-
-
 def _Con_List_append(vm):
     (self, o),_ = vm.decode_args("LO")
     assert isinstance(self, Con_List)
@@ -958,12 +963,44 @@ def _Con_List_append(vm):
     vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))
 
 
+def _Con_List_find(vm):
+    (self, o),_ = vm.decode_args("LO")
+    assert isinstance(self, Con_List)
+    
+    for e in self.l:
+        if e.eq(vm, o):
+            vm.yield_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    
+    vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+
+
 def _Con_List_get(vm):
     (self, i),_ = vm.decode_args("LI")
     assert isinstance(self, Con_List)
     assert isinstance(i, Con_Int)
     
     vm.return_(self.l[i.v])
+
+
+def _Con_List_get_slice(vm):
+    (self, i_o, j_o),_ = vm.decode_args("L", opt="ii")
+    assert isinstance(self, Con_List)
+
+    i, j = translate_slice_idx_objs(i_o, j_o, len(self.l))
+
+    vm.return_(Con_List(vm, self.l[i:j]))
+
+
+def _Con_List_iter(vm):
+    (self, i_o, j_o),_ = vm.decode_args("L", opt="ii")
+    assert isinstance(self, Con_List)
+    
+    i, j = translate_slice_idx_objs(i_o, j_o, len(self.l))
+    while i < j:
+        vm.yield_(self.l[i])
+        i += 1
+
+    vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
 
 
 def _Con_List_len(vm):
@@ -981,16 +1018,33 @@ def _Con_List_set(vm):
     vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))
 
 
+def _Con_List_to_str(vm):
+    (self,),_ = vm.decode_args("L")
+    assert isinstance(self, Con_List)
+    
+    es = []
+    for e in self.l:
+        s = type_check_string(vm, vm.get_slot_apply(e, "to_str"))
+        es.append(s.v)
+
+    vm.return_(Con_String(vm, "[%s]" % ", ".join(es)))
+
+
 def bootstrap_con_list(vm):
     list_class = Con_Class(vm, Con_String(vm, "List"), [vm.get_builtin(BUILTIN_OBJECT_CLASS)], \
       vm.get_builtin(BUILTIN_BUILTINS_MODULE))
     vm.set_builtin(BUILTIN_LIST_CLASS, list_class)
+    builtins_module = vm.get_builtin(BUILTIN_BUILTINS_MODULE)
+    builtins_module.set_defn(vm, "List", list_class)
 
-    new_c_con_func_for_class(vm, "to_str", _Con_List_to_str, list_class)
-    new_c_con_func_for_class(vm, "len", _Con_List_len, list_class)
     new_c_con_func_for_class(vm, "append", _Con_List_append, list_class)
+    new_c_con_func_for_class(vm, "find", _Con_List_find, list_class)
     new_c_con_func_for_class(vm, "get", _Con_List_get, list_class)
+    new_c_con_func_for_class(vm, "get_slice", _Con_List_get_slice, list_class)
+    new_c_con_func_for_class(vm, "iter", _Con_List_iter, list_class)
+    new_c_con_func_for_class(vm, "len", _Con_List_len, list_class)
     new_c_con_func_for_class(vm, "set", _Con_List_set, list_class)
+    new_c_con_func_for_class(vm, "to_str", _Con_List_to_str, list_class)
 
 
 
@@ -1020,6 +1074,16 @@ def _Con_Set_add(vm):
     vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))
 
 
+def _Con_Set_find(vm):
+    (self, o),_ = vm.decode_args("WO")
+    assert isinstance(self, Con_Set)
+    
+    if o in self.s:
+        vm.yield_(o)
+    
+    vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+
+
 def _Con_Set_len(vm):
     (self,),_ = vm.decode_args("W")
     assert isinstance(self, Con_Set)
@@ -1043,8 +1107,11 @@ def bootstrap_con_set(vm):
     set_class = Con_Class(vm, Con_String(vm, "Set"), [vm.get_builtin(BUILTIN_OBJECT_CLASS)], \
       vm.get_builtin(BUILTIN_BUILTINS_MODULE))
     vm.set_builtin(BUILTIN_SET_CLASS, set_class)
+    builtins_module = vm.get_builtin(BUILTIN_BUILTINS_MODULE)
+    builtins_module.set_defn(vm, "Set", set_class)
 
     new_c_con_func_for_class(vm, "add", _Con_Set_add, set_class)
+    new_c_con_func_for_class(vm, "find", _Con_Set_find, set_class)
     new_c_con_func_for_class(vm, "len", _Con_Set_len, set_class)
     new_c_con_func_for_class(vm, "to_str", _Con_Set_to_str, set_class)
 
@@ -1077,6 +1144,16 @@ def _Con_Dict_get(vm):
         vm.raise_helper("Key_Exception", [k])
     
     vm.return_(r)
+
+
+def _Con_Dict_iter(vm):
+    (self,),_ = vm.decode_args("D")
+    assert isinstance(self, Con_Dict)
+
+    for k, v in self.d.items():
+        vm.yield_(Con_List(vm, [k, v]))
+
+    vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
 
 
 def _Con_Dict_len(vm):
@@ -1112,8 +1189,11 @@ def bootstrap_con_dict(vm):
     dict_class = Con_Class(vm, Con_String(vm, "Dict"), [vm.get_builtin(BUILTIN_OBJECT_CLASS)], \
       vm.get_builtin(BUILTIN_BUILTINS_MODULE))
     vm.set_builtin(BUILTIN_DICT_CLASS, dict_class)
+    builtins_module = vm.get_builtin(BUILTIN_BUILTINS_MODULE)
+    builtins_module.set_defn(vm, "Dict", dict_class)
 
     new_c_con_func_for_class(vm, "get", _Con_Dict_get, dict_class)
+    new_c_con_func_for_class(vm, "iter", _Con_Dict_iter, dict_class)
     new_c_con_func_for_class(vm, "len", _Con_Dict_len, dict_class)
     new_c_con_func_for_class(vm, "set", _Con_Dict_set, dict_class)
     new_c_con_func_for_class(vm, "to_str", _Con_Dict_to_str, dict_class)

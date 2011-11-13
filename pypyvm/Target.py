@@ -101,7 +101,6 @@ if INTSIZE == 8:
     CON_INSTR_DICT = 21                   # bits 0-7 21, bits 8-31 number of dictionary elements
     CON_INSTR_DUP = 22                    # bits 0-7 22
     CON_INSTR_PULL = 23                   # bits 0-7 23, bits 8-31 := number of entries back in the stack to pull the value from
-    CON_INSTR_CHANGE_FAIL_POINT = 24      # bits 0-7 24, bits 8-30 pc offset, bit 31 offset sign
     CON_INSTR_STRING = 25                 # bits 0-7 25, bits 8-31 size of string, bits 32-.. string
     CON_INSTR_BUILTIN_LOOKUP = 26         # bits 0-7 26, bits 8-15 builtin number
     CON_INSTR_ASSIGN_SLOT = 27            # bits 0-7 13, bits 8-31 size of slot name, bits 32-.. slot name

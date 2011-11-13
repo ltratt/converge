@@ -453,6 +453,8 @@ class VM(object):
                     self._instr_builtin_lookup(instr, cf)
                 elif it == Target.CON_INSTR_ASSIGN_SLOT:
                     self._instr_assign_slot(instr, cf)
+                elif it == Target.CON_INSTR_EYIELD:
+                    self._instr_eyield(instr, cf)
                 elif it == Target.CON_INSTR_ADD_EXCEPTION_FRAME:
                     self._instr_add_exception_frame(instr, cf)
                 elif it == Target.CON_INSTR_REMOVE_EXCEPTION_FRAME:
@@ -713,6 +715,27 @@ class VM(object):
         nm = Target.extract_str(cf.pc.mod.bc, nm_start + cf.bc_off, nm_size)
         o.set_slot(self, nm, v)
         cf.bc_off += Target.align(nm_start + nm_size)
+
+
+    def _instr_eyield(self, instr, cf):
+        o = self._cf_stack_pop(cf)
+        is_fail_up, resume_bc_off = self._read_failure_frame()
+        self._remove_failure_frame(cf)
+        prev_gfp = cf.gfp
+        egf = Stack_Generator_EYield_Frame(prev_gfp, resume_bc_off)
+        cf.gfp = cf.stackpe
+        self._cf_stack_push(cf, egf)
+        # At this point the Con_Stack looks like:
+        #   [..., <gen obj 1>, ..., <gen obj n>, <eyield frame>]
+        gen_objs_s = prev_gfp + 1 # start of generator objects
+        if cf.ffp > gen_objs_s:
+            gen_objs_s = cf.ffp + 1
+        gen_objs_e = cf.stackpe - 1
+        assert gen_objs_s >= 0
+        assert gen_objs_e >= gen_objs_s
+        self._cf_stack_extend(cf, cf.stack[gen_objs_s : gen_objs_e])
+        self._cf_stack_push(cf, o)
+        cf.bc_off += Target.INTSIZE
 
 
     def _instr_add_exception_frame(self, instr, cf):
@@ -976,10 +999,12 @@ class VM(object):
 
     def _remove_generator_frame(self, cf):
         gf = cf.stack[cf.gfp]
-        assert isinstance(gf, Stack_Generator_Frame)
-
         self._cf_stack_del_from(cf, cf.gfp)
-        cf.gfp = gf.prev_gfp
+        if isinstance(gf, Stack_Generator_Frame):
+            cf.gfp = gf.prev_gfp
+        else:
+            assert isinstance(gf, Stack_Generator_EYield_Frame)
+            cf.gfp = gf.prev_gfp
 
 
     def _add_failure_frame(self, cf, is_fail_up, new_off=-1):
@@ -1024,26 +1049,27 @@ class VM(object):
         while 1:
             is_fail_up, fail_to_off = self._read_failure_frame()
             if is_fail_up:
+                if cf.gfp == -1:
+                    self._remove_failure_frame(cf)
+                    continue
                 has_rg = False
-                gf = None
-                if cf.gfp > -1:
-                    gf = cf.stack[cf.gfp]
+                gf = cf.stack[cf.gfp]
+                if isinstance(gf, Stack_Generator_EYield_Frame):
+                    self._remove_generator_frame(cf)
+                    cf.bc_off = gf.resume_bc_off
+                    return
+                else:
                     assert isinstance(gf, Stack_Generator_Frame)
-                    has_rg = not gf.returned
-                
-                if has_rg:
                     o = self._apply_pump(True)
                     if o is not None:
                         cf = self.cf_stack[-1]
                         self._cf_stack_push(cf, o)
                         cf.bc_off = gf.resume_bc_off
                         return
-                else:
-                    self._remove_failure_frame(cf)
             else:
                 cf.bc_off = fail_to_off
                 self._remove_failure_frame(cf)
-                break
+                return
 
 
     def _add_exception_frame(self, cf, bc_off):
@@ -1110,6 +1136,15 @@ class Stack_Generator_Frame(Con_Thingy):
         self.prev_gfp = prev_gfp
         self.resume_bc_off = resume_bc_off
         self.returned = False
+
+
+class Stack_Generator_EYield_Frame(Con_Thingy):
+    __slots__ = ("prev_gfp", "resume_bc_off")
+    _immutable_fields_ = ("prev_gfp", "resume_bc_off")
+    
+    def __init__(self, prev_gfp, resume_bc_off):
+        self.prev_gfp = prev_gfp
+        self.resume_bc_off = resume_bc_off
 
 
 class Stack_Exception_Frame(Con_Thingy):

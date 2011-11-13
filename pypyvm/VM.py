@@ -79,6 +79,7 @@ class VM(object):
         Builtins.bootstrap_con_exception(self)
 
         self.get_mod("Exceptions").import_(self)
+        self.get_mod("POSIX_File").import_(self)
         self.get_mod("Sys").import_(self)
 
 

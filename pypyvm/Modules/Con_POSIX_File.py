@@ -51,6 +51,8 @@ def import_(vm):
     new_c_con_func_for_mod(vm, "rm", rm, mod)
     new_c_con_func_for_mod(vm, "temp_file", temp_file, mod)
     
+    vm.set_builtin(BUILTIN_C_FILE_MODULE, mod)
+    
     vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
 
 
@@ -135,10 +137,25 @@ def _sflags(vm, mode_s):
     vm.raise_helper("File_Exception", [Con_String(vm, "Illegal mode '%s'" % mode_s)])
 
 
+def File_writeln(vm):
+    (self, s_o),_ = vm.decode_args(mand="!S", self_of=File)
+    assert isinstance(self, File)
+    assert isinstance(s_o, Con_String)
+    
+    s = s_o.v + "\n"
+    i = 0
+    while i < len(s):
+        i += os.write(self.fd, s[i:])
+
+    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+
+
 def bootstrap_file_class(vm, mod):
     file_class = Con_Class(vm, Con_String(vm, "File"), [vm.get_builtin(BUILTIN_OBJECT_CLASS)], mod)
     mod.set_defn(vm, "File", file_class)
     file_class.new_func = new_c_con_func(vm, Con_String(vm, "new_File"), False, _new_func_File, mod)
+
+    new_c_con_func_for_class(vm, "writeln", File_writeln, file_class)
 
 
 

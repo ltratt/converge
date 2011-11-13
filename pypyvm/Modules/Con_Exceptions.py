@@ -99,13 +99,14 @@ def _System_Exit_Exception_init_func(vm):
 
 
 def _Type_Exception_init_func(vm):
-    (self, should_be, o, extra),_ = vm.decode_args(mand="OOO", opt="O")
+    (self, should_be, o, extra),_ = vm.decode_args(mand="OSO", opt="O")
+    assert isinstance(should_be, Con_String)
     if extra:
         msg = "Expected '%s' to be conformant to " % \
           type_check_string(vm, extra).v
     else:
         msg = "Expected to be conformant to "
-    msg += type_check_string(vm, vm.get_slot_apply(should_be, "path")).v
+    msg += should_be.v
     o_path = type_check_string(vm, vm.get_slot_apply(o.get_slot(vm, "instance_of"), "path"))
     msg += ", but got instance of %s." % o_path.v
     self.set_slot(vm, "msg", Con_String(vm, msg))

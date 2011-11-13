@@ -419,6 +419,8 @@ class VM(object):
                     self._instr_remove_failure_frame(instr, cf)
                 elif it == Target.CON_INSTR_IS_ASSIGNED:
                     self._instr_is_assigned(instr, cf)
+                elif it == Target.CON_INSTR_IS:
+                    self._instr_is(instr, cf)
                 elif it == Target.CON_INSTR_FAIL_NOW:
                     self._instr_fail_now(instr, cf)
                 elif it == Target.CON_INSTR_POP:
@@ -552,6 +554,17 @@ class VM(object):
             cf.bc_off += Target.unpack_is_assigned(instr2)
         else:
             cf.bc_off += Target.INTSIZE + Target.INTSIZE
+
+
+    def _instr_is(self, instr, cf):
+        o1 = self._cf_stack_pop(cf)
+        o2 = self._cf_stack_pop(cf)
+        r = self.get_slot_apply(o1, "is", [o2], allow_fail=True)
+        if not r:
+            self._fail_now(cf)
+            return
+        self._cf_stack_push(cf, r)
+        cf.bc_off += Target.INTSIZE
 
 
     def _instr_pop(self, instr, cf):

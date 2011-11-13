@@ -51,7 +51,7 @@ func format(format, *args):
                     i += 2
                     j += 1
                 else:
-                    raise Exceptions::Exception("Unknown identifier '" + format[i + 1] + "'")
+                    raise Exceptions::Exception.new("Unknown identifier '" + format[i + 1] + "'")
         else:
             str += format[i]
             i += 1

@@ -1,0 +1,112 @@
+// Copyright (c) 2011 King's College London, created by Laurence Tratt
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to
+// deal in the Software without restriction, including without limitation the
+// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+// sell copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+// IN THE SOFTWARE.
+
+
+import Sys
+
+
+
+func test_casing():
+    assert "abcdef".lower_cased() == "abcdef"
+    assert "ABCdef".lower_cased() == "abcdef"
+    assert "ABCDEF".lower_cased() == "abcdef"
+    assert "abcdef".upper_cased() == "ABCDEF"
+    assert "abcDEF".upper_cased() == "ABCDEF"
+    assert "ABCDEF".upper_cased() == "ABCDEF"
+
+
+func test_equality():
+    assert "abc" == "abc"
+    assert "a" != "b"
+    assert "a" < "b"
+    assert not "b" < "a"
+    assert "b" > "a"
+    assert not "a" > "b"
+
+
+func test_finding():
+    assert "abc".find("a") == "a"
+    assert "abc".find("c") == "c"
+    assert "abc".find("abc") == "abc"
+    assert not "abc".find("d")
+    assert not "abc".find("abcd")
+    i := 0
+    for x := "abcaa".find("a"):
+        assert x == "a"
+        i += 1
+    assert i == 3
+    i := 0
+    for x := "abcaa".find_index("a"):
+        if i == 0:
+            assert x == 0
+        elif i == 1:
+            assert x == 3
+        elif i == 2:
+            assert x == 4
+        i += 1
+    assert i == 3
+    i := 0
+    for x := "abcaa".rfind_index("a"):
+        if i == 0:
+            assert x == 4
+        elif i == 1:
+            assert x == 3
+        elif i == 2:
+            assert x == 0
+        i += 1
+    assert i == 3
+
+
+func test_prefixing_suffixing():
+    assert "abc".prefixed_by("a")
+    assert "abc".prefixed_by("abc")
+    assert not "abc".prefixed_by("bc")
+    assert "abc".prefixed_by("bc", 1)
+    assert "abc".suffixed_by("c")
+    assert "abc".suffixed_by("abc")
+    assert "abc".suffixed_by("ab", -1)
+    assert not "abc".suffixed_by("ab")
+
+
+func test_replacing():
+    assert "abc".replaced("a", "d") == "dbc"
+    assert "abc".replaced("c", "d") == "abd"
+    assert "abc".replaced("d", "") == "abc"
+    assert "abc".replaced("abc", "def") == "def"
+    assert "aa".replaced("a", "b") == "bb"
+    assert "aa".replaced("a", "ab") == "abab"
+    assert "aa".replaced("a", "bc") == "bcbc"
+    assert "aa".replaced("a", "ba") == "baba"
+
+
+func test_stripping():
+    assert " \t \tabc ".stripped() == "abc"
+    assert " \t \tabc \t \t".lstripped() == "abc \t \t"
+    assert "abc".stripped() == "abc"
+
+
+func main():
+
+    test_casing()
+    test_equality()
+    test_finding()
+    test_replacing()
+    test_stripping()
+    test_prefixing_suffixing()

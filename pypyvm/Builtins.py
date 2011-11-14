@@ -209,10 +209,53 @@ class Con_Boxed_Object(Con_Object):
             self.slots = [v]
 
 
+    def add(self, vm, o):
+        return vm.get_slot_apply(self, "+", [o])
+
+
+    def subtract(self, vm, o):
+        return vm.get_slot_apply(self, "-", [o])
+
+
     def eq(self, vm, o):
         if vm.get_slot_apply(self, "==", [o], allow_fail=True):
             return True
-        else:   
+        else:
+            return False
+
+
+    def neq(self, vm, o):
+        if vm.get_slot_apply(self, "!=", [o], allow_fail=True):
+            return True
+        else:
+            return False
+
+
+    def le(self, vm, o):
+        if vm.get_slot_apply(self, "<", [o], allow_fail=True):
+            return True
+        else:
+            return False
+
+
+    def le_eq(self, vm, o):
+        if vm.get_slot_apply(self, "<=", [o], allow_fail=True):
+            return True
+        else:
+            return False
+
+
+    def gr_eq(self, vm, o):
+        if vm.get_slot_apply(self, ">", [o], allow_fail=True):
+            return True
+        else:
+            return False
+
+
+    def gt(self, vm, o):
+        if vm.get_slot_apply(self, ">=", [o], allow_fail=True):
+            return True
+        else:
             return False
 
 
@@ -890,6 +933,36 @@ def _Con_String_eq(vm):
         vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
 
 
+def _Con_String_find(vm):
+    (self, o_o),_ = vm.decode_args("SS")
+    assert isinstance(self, Con_String)
+    assert isinstance(o_o, Con_String)
+
+    v = self.v
+    o = o_o.v
+    o_len = len(o)
+    for i in range(0, len(v) - o_len + 1):
+        if v[i:i+o_len] == o:
+            vm.yield_(o_o)
+
+    vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+
+
+def _Con_String_find_index(vm):
+    (self, o_o),_ = vm.decode_args("SS")
+    assert isinstance(self, Con_String)
+    assert isinstance(o_o, Con_String)
+
+    v = self.v
+    o = o_o.v
+    o_len = len(o)
+    for i in range(0, len(v) - o_len + 1):
+        if v[i:i+o_len] == o:
+            vm.yield_(Con_Int(vm, i))
+
+    vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+
+
 def _Con_String_get(vm):
     (self, i_o),_ = vm.decode_args("SI")
     assert isinstance(self, Con_String)
@@ -946,6 +1019,132 @@ def _Con_String_len(vm):
     vm.return_(Con_Int(vm, len(self.v)))
 
 
+def _Con_String_lower_cased(vm):
+    (self,),_ = vm.decode_args("S")
+    assert isinstance(self, Con_String)
+    
+    vm.return_(Con_String(vm, self.v.lower()))
+
+
+def _Con_String_lstripped(vm):
+    (self,),_ = vm.decode_args("S")
+    assert isinstance(self, Con_String)
+    
+    v = self.v
+    v_len = len(v)
+    i = 0
+    while i < v_len:
+        if v[i] not in " \t\n\r":
+            break
+        i += 1
+
+    vm.return_(Con_String(vm, self.v[i:]))
+
+
+def _Con_String_neq(vm):
+    (self, o_o),_ = vm.decode_args("SS")
+    assert isinstance(self, Con_String)
+    assert isinstance(o_o, Con_String)
+
+    if self.v != o_o.v:
+        vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    else:
+        vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+
+
+def _Con_String_prefixed_by(vm):
+    (self, o_o, i_o),_ = vm.decode_args("SS", opt="I")
+    assert isinstance(self, Con_String)
+    assert isinstance(o_o, Con_String)
+
+    i = translate_slice_idx_obj(i_o, len(self.v))
+
+    if self.v[i:].startswith(o_o.v):
+        vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    else:
+        vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+
+
+def _Con_String_rfind_index(vm):
+    (self, o_o),_ = vm.decode_args("SS")
+    assert isinstance(self, Con_String)
+    assert isinstance(o_o, Con_String)
+
+    v = self.v
+    o = o_o.v
+    o_len = len(o)
+    for i in range(len(v) - o_len, -1, -1):
+        if v[i:i+o_len] == o:
+            vm.yield_(Con_Int(vm, i))
+
+    vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+
+
+def _Con_String_replaced(vm):
+    (self, old_o, new_o),_ = vm.decode_args("SSS")
+    assert isinstance(self, Con_String)
+    assert isinstance(old_o, Con_String)
+    assert isinstance(new_o, Con_String)
+
+    v = self.v
+    v_len = len(v)
+    old = old_o.v
+    old_len = len(old)
+    new = new_o.v
+    out = []
+    i = 0
+    while i < v_len:
+        j = v.find(old, i)
+        if j == -1:
+            break
+        assert j >= i
+        out.append(v[i:j])
+        out.append(new)
+        i = j + old_len
+    if i < v_len:
+        out.append(v[i:])
+
+    vm.return_(Con_String(vm, "".join(out)))
+
+
+def _Con_String_stripped(vm):
+    (self,),_ = vm.decode_args("S")
+    assert isinstance(self, Con_String)
+
+    v = self.v
+    v_len = len(v)
+    i = 0
+    while i < v_len:
+        if v[i] not in " \t\n\r":
+            break
+        i += 1
+    j = v_len - 1
+    while j >= i:
+        if v[j] not in " \t\n\r":
+            break
+        j -= 1
+    j += 1
+
+    assert j >= i
+    vm.return_(Con_String(vm, self.v[i:j]))
+
+
+def _Con_String_suffixed_by(vm):
+    (self, o_o, i_o),_ = vm.decode_args("SS", opt="I")
+    assert isinstance(self, Con_String)
+    assert isinstance(o_o, Con_String)
+
+    if i_o is None:
+        i = len(self.v)
+    else:
+        i = translate_slice_idx_obj(i_o, len(self.v))
+
+    if self.v[:i].endswith(o_o.v):
+        vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    else:
+        vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+
+
 def _Con_String_to_str(vm):
     (self,),_ = vm.decode_args("S")
     assert isinstance(self, Con_String)
@@ -953,17 +1152,35 @@ def _Con_String_to_str(vm):
     vm.return_(Con_String(vm, '"%s"' % self.v))
 
 
+def _Con_String_upper_cased(vm):
+    (self,),_ = vm.decode_args("S")
+    assert isinstance(self, Con_String)
+    
+    vm.return_(Con_String(vm, self.v.upper()))
+
+
 def bootstrap_con_string(vm):
     string_class = vm.get_builtin(BUILTIN_STRING_CLASS)
 
     new_c_con_func_for_class(vm, "==", _Con_String_eq, string_class)
+    new_c_con_func_for_class(vm, "find", _Con_String_find, string_class)
+    new_c_con_func_for_class(vm, "find_index", _Con_String_find_index, string_class)
     new_c_con_func_for_class(vm, "get", _Con_String_get, string_class)
     new_c_con_func_for_class(vm, "get_slice", _Con_String_get_slice, string_class)
     new_c_con_func_for_class(vm, "hash", _Con_String_hash, string_class)
     new_c_con_func_for_class(vm, "int_val", _Con_String_int_val, string_class)
     new_c_con_func_for_class(vm, "iter", _Con_String_iter, string_class)
     new_c_con_func_for_class(vm, "len", _Con_String_len, string_class)
+    new_c_con_func_for_class(vm, "lower_cased", _Con_String_lower_cased, string_class)
+    new_c_con_func_for_class(vm, "lstripped", _Con_String_lstripped, string_class)
+    new_c_con_func_for_class(vm, "!=", _Con_String_neq, string_class)
+    new_c_con_func_for_class(vm, "prefixed_by", _Con_String_prefixed_by, string_class)
+    new_c_con_func_for_class(vm, "replaced", _Con_String_replaced, string_class)
+    new_c_con_func_for_class(vm, "rfind_index", _Con_String_rfind_index, string_class)
+    new_c_con_func_for_class(vm, "stripped", _Con_String_stripped, string_class)
+    new_c_con_func_for_class(vm, "suffixed_by", _Con_String_suffixed_by, string_class)
     new_c_con_func_for_class(vm, "to_str", _Con_String_to_str, string_class)
+    new_c_con_func_for_class(vm, "upper_cased", _Con_String_upper_cased, string_class)
 
 
 

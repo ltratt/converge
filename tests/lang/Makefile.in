@@ -4,20 +4,24 @@ include @abs_top_srcdir@/Makefile.inc
 OBJ_FILES = Lang_Test.cvb
 
 
-all: 
+all:
+	cd builtins && ${MAKE} ${MFLAGS}
 	cd namespaces && ${MAKE} ${MFLAGS}
 	cd splicing && ${MAKE} ${MFLAGS}
 
 clean:
+	cd builtins && ${MAKE} ${MFLAGS} clean
 	cd namespaces && ${MAKE} ${MFLAGS} clean
 	cd splicing && ${MAKE} ${MFLAGS} clean
 	rm -f ${OBJ_FILES}
 
 distclean: clean
+	cd builtins && ${MAKE} ${MFLAGS} distclean
 	cd namespaces && ${MAKE} ${MFLAGS} distclean
 	cd splicing && ${MAKE} ${MFLAGS} distclean
 	rm -f Makefile
 
 regress:
+	cd builtins && ${MAKE} ${MFLAGS} regress
 	cd namespaces && ${MAKE} ${MFLAGS} regress
 	cd splicing && ${MAKE} ${MFLAGS} regress

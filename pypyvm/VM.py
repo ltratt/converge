@@ -164,7 +164,31 @@ class VM(object):
         return o, cf.closure[-1]
 
 
-    def _apply_pump(self, remove_generator_frames=False):
+    def pre_get_slot_apply_pump(self, o, n, args=None):
+        return self.pre_apply_pump(o.get_slot(self, n), args)
+
+
+    def pre_apply_pump(self, func, args=None):
+        if not args:
+            nargs = 0
+        else:
+            nargs = len(args)
+
+        cf = self.cf_stack[-1]
+        gf = Stack_Generator_Frame(cf.gfp, -1)
+        cf.gfp = cf.stackpe
+        self._cf_stack_push(cf, gf)
+        if isinstance(func, Builtins.Con_Partial_Application):
+            new_cf = self._add_continuation_frame(func.f, nargs + 1, True)
+            self._cf_stack_push(new_cf, func.o)
+        else: 
+            new_cf = self._add_continuation_frame(func, nargs, True)
+
+        if args:
+            self._cf_stack_extend(new_cf, list(args))
+
+
+    def apply_pump(self, remove_generator_frames=False):
         # At this point, we're in one of two situations:
         #
         #   1) A generator frame has been added but not yet used. So the con stacks look like:
@@ -631,7 +655,7 @@ class VM(object):
             else: 
                 new_cf = self._add_continuation_frame(func, len(args), True)
             self._cf_stack_extend(new_cf, args)
-            o = self._apply_pump()
+            o = self.apply_pump()
             if o is None:
                 self._fail_now(cf)
                 return
@@ -1075,7 +1099,7 @@ class VM(object):
                     return
                 else:
                     assert isinstance(gf, Stack_Generator_Frame)
-                    o = self._apply_pump(True)
+                    o = self.apply_pump(True)
                     if o is not None:
                         cf = self.cf_stack[-1]
                         self._cf_stack_push(cf, o)

@@ -18,8 +18,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-from pypy.rlib import debug, jit
-from pypy.rlib.objectmodel import UnboxedValue
+from pypy.rlib import debug, jit, objectmodel
 from pypy.rpython.lltypesystem import lltype, rffi
 
 NUM_BUILTINS = 41
@@ -139,10 +138,6 @@ class Con_Boxed_Object(Con_Object):
             self.instance_of = instance_of
         self.slots_map = _EMPTY_MAP
         self.slots = None
-
-
-    def hash_(self, vm):
-        return hash(self)
 
 
     def has_slot(self, vm, n):
@@ -732,10 +727,6 @@ class Con_Int(Con_Boxed_Object):
         self.v = v
 
 
-    def hash_(self, vm):
-        return hash(self.v)
-
-
     def add(self, vm, o):
         o = type_check_int(vm, o)
         return Con_Int(vm, self.v + o.v)
@@ -776,12 +767,22 @@ class Con_Int(Con_Boxed_Object):
         return self.v > o.v
 
 
+def _Con_Int_eq(vm):
+    (self, o_o),_ = vm.decode_args("II")
+    assert isinstance(self, Con_Int)
+    assert isinstance(o_o, Con_Int)
 
-def _Con_Int_to_str(vm):
+    if self.v == o_o.v:
+        vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    else:
+        vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+
+
+def _Con_Int_hash(vm):
     (self,),_ = vm.decode_args("I")
     assert isinstance(self, Con_Int)
 
-    vm.return_(Con_String(vm, str(self.v)))
+    vm.return_(Con_Int(vm, objectmodel.compute_hash(self.v)))
 
 
 def _Con_Int_idiv(vm):
@@ -800,6 +801,13 @@ def _Con_Int_mul(vm):
     vm.return_(Con_Int(vm, self.v * o.v))
 
 
+def _Con_Int_to_str(vm):
+    (self,),_ = vm.decode_args("I")
+    assert isinstance(self, Con_Int)
+
+    vm.return_(Con_String(vm, str(self.v)))
+
+
 def bootstrap_con_int(vm):
     int_class = Con_Class(vm, Con_String(vm, "Int"), [vm.get_builtin(BUILTIN_OBJECT_CLASS)], \
       vm.get_builtin(BUILTIN_BUILTINS_MODULE))
@@ -807,9 +815,11 @@ def bootstrap_con_int(vm):
     builtins_module = vm.get_builtin(BUILTIN_BUILTINS_MODULE)
     builtins_module.set_defn(vm, "Int", int_class)
 
-    new_c_con_func_for_class(vm, "to_str", _Con_Int_to_str, int_class)
+    new_c_con_func_for_class(vm, "==", _Con_Int_eq, int_class)
+    new_c_con_func_for_class(vm, "hash", _Con_Int_hash, int_class)
     new_c_con_func_for_class(vm, "idiv", _Con_Int_idiv, int_class)
     new_c_con_func_for_class(vm, "*", _Con_Int_mul, int_class)
+    new_c_con_func_for_class(vm, "to_str", _Con_Int_to_str, int_class)
 
 
 
@@ -826,10 +836,6 @@ class Con_String(Con_Boxed_Object):
         Con_Boxed_Object.__init__(self, vm, vm.get_builtin(BUILTIN_STRING_CLASS))
         assert v is not None
         self.v = v
-
-
-    def hash_(self, vm):
-        return hash(self.v)
 
 
     def add(self, vm, o):
@@ -873,6 +879,17 @@ class Con_String(Con_Boxed_Object):
         return Con_String(vm, self.v[i:j])
 
 
+def _Con_String_eq(vm):
+    (self, o_o),_ = vm.decode_args("SS")
+    assert isinstance(self, Con_String)
+    assert isinstance(o_o, Con_String)
+
+    if self.v == o_o.v:
+        vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    else:
+        vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+
+
 def _Con_String_get(vm):
     (self, i_o),_ = vm.decode_args("SI")
     assert isinstance(self, Con_String)
@@ -888,6 +905,13 @@ def _Con_String_get_slice(vm):
     i, j = translate_slice_idx_objs(i_o, j_o, len(self.v))
 
     vm.return_(Con_String(vm, self.v[i:j]))
+
+
+def _Con_String_hash(vm):
+    (self,),_ = vm.decode_args("S")
+    assert isinstance(self, Con_String)
+
+    vm.return_(Con_Int(vm, objectmodel.compute_hash(self.v)))
 
 
 def _Con_String_int_val(vm):
@@ -932,8 +956,10 @@ def _Con_String_to_str(vm):
 def bootstrap_con_string(vm):
     string_class = vm.get_builtin(BUILTIN_STRING_CLASS)
 
+    new_c_con_func_for_class(vm, "==", _Con_String_eq, string_class)
     new_c_con_func_for_class(vm, "get", _Con_String_get, string_class)
     new_c_con_func_for_class(vm, "get_slice", _Con_String_get_slice, string_class)
+    new_c_con_func_for_class(vm, "hash", _Con_String_hash, string_class)
     new_c_con_func_for_class(vm, "int_val", _Con_String_int_val, string_class)
     new_c_con_func_for_class(vm, "iter", _Con_String_iter, string_class)
     new_c_con_func_for_class(vm, "len", _Con_String_len, string_class)
@@ -1053,14 +1079,14 @@ def bootstrap_con_list(vm):
 #
 
 class Con_Set(Con_Boxed_Object):
-    __slots__ = ("s",)
+    __slots__ = ("s", "vm")
     _immutable_fields_ = ("s",)
 
 
     def __init__(self, vm, l):
         Con_Boxed_Object.__init__(self, vm, vm.get_builtin(BUILTIN_SET_CLASS))
         # RPython doesn't have sets, so we use dictionaries for the time being
-        self.s = {}
+        self.s = objectmodel.r_dict(_dict_key_eq, _dict_key_hash)
         for e in l:
             self.s[e] = None
 
@@ -1128,11 +1154,35 @@ class Con_Dict(Con_Boxed_Object):
 
     def __init__(self, vm, l):
         Con_Boxed_Object.__init__(self, vm, vm.get_builtin(BUILTIN_DICT_CLASS))
-        self.d = {}
+        self.d = objectmodel.r_dict(_dict_key_eq, _dict_key_hash)
         i = 0
         while i < len(l):
             self.d[l[i]] = l[i + 1]
             i += 2
+
+
+def _dict_key_hash(k):
+    vm = VM.global_vm # XXX Offensively gross hack!
+    return Builtins.type_check_int(vm, vm.get_slot_apply(k, "hash")).v
+
+
+def _dict_key_eq(k1, k2):
+    vm = VM.global_vm # XXX Offensively gross hack!
+    if vm.get_slot_apply(k1, "==", [k2], allow_fail=True):
+        return True
+    else:
+        return False
+
+
+def _Con_Dict_find(vm):
+    (self, k),_ = vm.decode_args("DO")
+    assert isinstance(self, Con_Dict)
+    
+    r = self.d.get(k, None)
+    if r is None:
+        vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+    
+    vm.return_(r)
 
 
 def _Con_Dict_get(vm):
@@ -1192,6 +1242,7 @@ def bootstrap_con_dict(vm):
     builtins_module = vm.get_builtin(BUILTIN_BUILTINS_MODULE)
     builtins_module.set_defn(vm, "Dict", dict_class)
 
+    new_c_con_func_for_class(vm, "find", _Con_Dict_find, dict_class)
     new_c_con_func_for_class(vm, "get", _Con_Dict_get, dict_class)
     new_c_con_func_for_class(vm, "iter", _Con_Dict_iter, dict_class)
     new_c_con_func_for_class(vm, "len", _Con_Dict_len, dict_class)

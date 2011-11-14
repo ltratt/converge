@@ -21,6 +21,7 @@
 
 import sys
 from Builtins import *
+from Version import *
 
 
 
@@ -43,6 +44,8 @@ def import_(vm):
     new_c_con_func_for_mod(vm, "exit", exit, mod)
     new_c_con_func_for_mod(vm, "println", println, mod)
     
+    # Setup stdin, stderr, and stout
+    
     file_mod = vm.get_builtin(BUILTIN_C_FILE_MODULE)
     file_class = file_mod.get_defn(vm, "File")
     mod.set_defn(vm, "stdin", \
@@ -51,6 +54,11 @@ def import_(vm):
       vm.get_slot_apply(file_class, "new", [Con_Int(vm, 1), Con_String(vm, "w")]))
     mod.set_defn(vm, "stderr", \
       vm.get_slot_apply(file_class, "new", [Con_Int(vm, 2), Con_String(vm, "w")]))
+    
+    # Version info
+    
+    mod.set_defn(vm, "version", Con_String(vm, VERSION))
+    mod.set_defn(vm, "version_date", Con_String(vm, VERSION_DATE))
     
     vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
 

@@ -51,7 +51,7 @@ def entry_point(argv):
     vm_path = os.path.abspath(argv[0])
 
     useful_bc = rffi.str2charp(bc[start:])
-    vm = VM.new_vm(argv)
+    vm = VM.new_vm(vm_path, argv)
     _import_lib(vm, "Stdlib.cvl", vm_path, STDLIB_DIRS)
     _import_lib(vm, "Compiler.cvl", vm_path, COMPILER_DIRS)
     try:

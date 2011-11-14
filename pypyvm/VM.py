@@ -44,8 +44,8 @@ jitdriver = jit.JitDriver(greens=["bc_off", "mod_bc", "pc"], reds=["prev_bc_off"
 
 
 class VM(object):
-    __slots__ = ("argv", "builtins", "cf_stack", "mods", "spare_ff", "pypy_config", "st", "st_exception")
-    _immutable_fields = ("argv", "builtins", "cf_stack", "mods")
+    __slots__ = ("argv", "builtins", "cf_stack", "mods", "spare_ff", "pypy_config", "st", "st_exception", "vm_path")
+    _immutable_fields = ("argv", "builtins", "cf_stack", "mods", "vm_path")
 
     def __init__(self): 
         self.builtins = [None] * Builtins.NUM_BUILTINS
@@ -60,7 +60,8 @@ class VM(object):
         self.pypy_config = None
 
 
-    def init(self, argv):
+    def init(self, vm_path,argv):
+        self.vm_path = vm_path
         self.argv = argv
         self.st = StackletThread(self.pypy_config)
         
@@ -1196,6 +1197,6 @@ def switch_hack(ct, arg):
 
 global_vm = VM()
 
-def new_vm(argv):
-    global_vm.init(argv)
+def new_vm(vm_path, argv):
+    global_vm.init(vm_path, argv)
     return global_vm

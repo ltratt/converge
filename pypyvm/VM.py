@@ -19,8 +19,10 @@
 # IN THE SOFTWARE.
 
 
+import sys
+
 from pypy.config.pypyoption import get_pypy_config
-from pypy.rlib import debug, jit
+from pypy.rlib import debug, jit, objectmodel
 from pypy.rlib.rstacklet import StackletThread
 from pypy.rpython.lltypesystem import lltype, llmemory, rffi
 
@@ -208,7 +210,10 @@ class VM(object):
             st_exception = self.st_exception
             if st_exception:
                 self.st_exception = None
-                raise st_exception
+                if objectmodel.we_are_translated():
+                    raise st_exception
+                else:
+                    raise st_exception[0], st_exception[1], st_exception[2]
             cf = self.cf_stack[-1]
         else:
             # We're in case 2) from above.
@@ -223,7 +228,10 @@ class VM(object):
             st_exception = self.st_exception
             if st_exception:
                 self.st_exception = None
-                raise st_exception
+                if objectmodel.we_are_translated():
+                    raise st_exception
+                else:
+                    raise st_exception[0], st_exception[1], st_exception[2]
 
         o = self._cf_stack_pop(cf)
         if cf.returned:
@@ -407,7 +415,7 @@ class VM(object):
         pc = cf.pc
         self.st_exception = None
         try:
-            #print cf.func.name.v, pc.mod.id_
+            #print " " * len(self.cf_stack), Builtins.type_check_string(self, cf.func.name).v, pc.mod.id_
             if isinstance(pc, Py_PC):
                 try:
                     pc.f(self)
@@ -420,10 +428,15 @@ class VM(object):
                     raise Exception("XXX")
             else:
                 self.bc_loop(cf)
+        except Con_Return_Exception:
+            pass
         except Exception, e:
             if not ct:
                 raise
-            self.st_exception = e
+            if objectmodel.we_are_translated():
+                self.st_exception = e
+            else:
+                self.st_exception = sys.exc_info()
 
         return ct
 
@@ -1023,6 +1036,10 @@ class VM(object):
 
         if func.max_stack_size > nargs:
             max_stack_size = func.max_stack_size
+        elif nargs == 0:
+            # We make the stack size at least 1 so that RPython functions have room for 1 generator
+            # frame. If they need more than that, they'll have to be clever.
+            max_stack_size = 1
         else:
             max_stack_size = nargs
 

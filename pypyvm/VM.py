@@ -44,7 +44,7 @@ jitdriver = jit.JitDriver(greens=["bc_off", "mod_bc", "pc"], reds=["prev_bc_off"
 
 
 class VM(object):
-    __slots__ = ("argv", "builtins", "cf_stack", "mods", "spare_ff", "pypy_config", "st")
+    __slots__ = ("argv", "builtins", "cf_stack", "mods", "spare_ff", "pypy_config", "st", "st_exception")
     _immutable_fields = ("argv", "builtins", "cf_stack", "mods")
 
     def __init__(self): 
@@ -180,6 +180,10 @@ class VM(object):
         if cf.gfp == -1:
             # We're in case 1) from above.
             ct = self.st.new(switch_hack)
+            st_exception = self.st_exception
+            if st_exception:
+                self.st_exception = None
+                raise st_exception
             cf = self.cf_stack[-1]
         else:
             # We're in case 2) from above.
@@ -191,6 +195,10 @@ class VM(object):
             cf = gf.saved_cf
             self.cf_stack.append(cf)
             ct = self.st.switch(gf.ct)
+            st_exception = self.st_exception
+            if st_exception:
+                self.st_exception = None
+                raise st_exception
 
         o = self._cf_stack_pop(cf)
         if cf.returned:
@@ -372,20 +380,26 @@ class VM(object):
         cf = self.cf_stack[-1]
         cf.ct = ct
         pc = cf.pc
-        #print cf.func.name.v, pc.mod.id_
-        if isinstance(pc, Py_PC):
-            try:
-                pc.f(self)
-            except Con_Raise_Exception, e:
-                if cf.xfp == -1:
-                    # There is no exception handler, so kill this continuation frame and propagate
-                    # the exception
-                    self._remove_continuation_frame()
-                    raise
-                raise Exception("XXX")
-        else:
-            self.bc_loop(cf)
-        
+        self.st_exception = None
+        try:
+            #print cf.func.name.v, pc.mod.id_
+            if isinstance(pc, Py_PC):
+                try:
+                    pc.f(self)
+                except Con_Raise_Exception, e:
+                    if cf.xfp == -1:
+                        # There is no exception handler, so kill this continuation frame and propagate
+                        # the exception
+                        self._remove_continuation_frame()
+                        raise
+                    raise Exception("XXX")
+            else:
+                self.bc_loop(cf)
+        except Exception, e:
+            if not ct:
+                raise
+            self.st_exception = e
+
         return ct
 
 

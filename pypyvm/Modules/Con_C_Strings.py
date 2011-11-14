@@ -32,4 +32,21 @@ def init(vm):
 def import_(vm):
     (mod,),_ = vm.decode_args("O")
     
+    new_c_con_func_for_mod(vm, "join", join, mod)
+    
     vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+
+
+def join(vm):
+    (list_o, sep_o),_ = vm.decode_args("OS")
+    assert isinstance(sep_o, Con_String)
+    
+    out = []
+    vm.pre_get_slot_apply_pump(list_o, "iter")
+    while 1:
+        e_o = vm.apply_pump()
+        if not e_o:
+            break
+        out.append(type_check_string(vm, e_o).v)
+
+    vm.return_(Con_String(vm, sep_o.v.join(out)))

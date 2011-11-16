@@ -52,7 +52,7 @@ def setupterm(vm):
 
     fd = 1
     if file_o is not None:
-        file_no_o = type_check_int(vm, file_o.get_slot(vm, "fileno"))
+        file_no_o = type_check_int(vm, vm.get_slot_apply(file_o, "fileno"))
         fd = file_no_o.v
 
     #_curses.setupterm(None, fd)

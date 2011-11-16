@@ -28,7 +28,7 @@ from Builtins import *
 def init(vm):
     return new_c_con_module(vm, "POSIX_File", "POSIX_File", __file__, import_, \
       ["DIR_SEP", "EXT_SEP", "NULL_DEV", "File_Atom_Def", "File", "canon_path", "exists", "is_dir",
-       "is_file", "chmod", "rdmod", "iter_dir_entries", "mtime", "rm", "temp_file"])
+       "is_file", "chmod", "iter_dir_entries", "mtime", "rm", "temp_file"])
 
 
 def import_(vm):
@@ -47,7 +47,6 @@ def import_(vm):
     new_c_con_func_for_mod(vm, "is_file", is_file, mod)
     new_c_con_func_for_mod(vm, "iter_dir_entries", iter_dir_entries, mod)
     new_c_con_func_for_mod(vm, "mtime", mtime, mod)
-    new_c_con_func_for_mod(vm, "rdmod", rdmod, mod)
     new_c_con_func_for_mod(vm, "rm", rm, mod)
     new_c_con_func_for_mod(vm, "temp_file", temp_file, mod)
     
@@ -195,10 +194,6 @@ def iter_dir_entries(vm):
 
 
 def mtime(vm):
-    raise Exception("XXX")
-
-
-def rdmod(vm):
     raise Exception("XXX")
 
 

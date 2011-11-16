@@ -19,7 +19,7 @@
 # IN THE SOFTWARE.
 
 
-import sys
+import os, sys
 
 from pypy.config.pypyoption import get_pypy_config
 from pypy.rlib import debug, jit, objectmodel
@@ -115,6 +115,33 @@ class VM(object):
         if not m.initialized:
             m.import_(self)
         return m
+
+
+    def get_stdlib_mod(self, ptl_mod_id):
+        if not ptl_mod_id.startswith(os.sep):
+            return self.get_mod(ptl_mod_id)
+        
+        for cnd_mod_id in self.mods.keys():
+            bt_cnd_mod_id = cnd_mod_id
+
+            # XXX. The next two operations are pure evil and are basically a poor-man's
+            # bootstrapping. They're intended to convert between module IDs across different
+            # platforms. The potential problems with the below are fairly obvious, although
+            # unlikely to actually manifest themselves in real life.
+            if CASE_SENSITIVE_FILENAMES:
+                bt_cnd_mod_id = bt_cnd_mod_id.lower()
+
+            if os.sep == "/":
+                bt_cnd_mod_id = bt_cnd_mod_id.replace("\\", "/")
+            elif os.sep == "\\":
+                bt_cnd_mod_id = bt_cnd_mod_id.replace("/", "\\")
+            else:
+                raise Exception("Unknown separator %s." % (os.sep))
+
+            if bt_cnd_mod_id.endswith(ptl_mod_id):
+                return self.get_mod(cnd_mod_id)
+
+        self.raise_helper("Import_Exception", [Builtins.Con_String(self, ptl_mod_id)])
 
 
     def has_mod(self, mod_id):

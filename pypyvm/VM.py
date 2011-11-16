@@ -67,10 +67,6 @@ class VM(object):
         self.argv = argv
         self.st = StackletThread(self.pypy_config)
         
-        import Modules
-        for init_func in Modules.BUILTIN_MODULES:
-            self.set_mod(init_func(self))
-
         Builtins.bootstrap_con_object(self)
         Builtins.bootstrap_con_class(self)
         Builtins.bootstrap_con_dict(self)
@@ -80,6 +76,10 @@ class VM(object):
         Builtins.bootstrap_con_set(self)
         Builtins.bootstrap_con_string(self)
         Builtins.bootstrap_con_exception(self)
+
+        import Modules
+        for init_func in Modules.BUILTIN_MODULES:
+            self.set_mod(init_func(self))
 
         self.get_mod("Exceptions").import_(self)
         self.get_mod("POSIX_File").import_(self)

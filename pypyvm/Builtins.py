@@ -162,7 +162,6 @@ class Con_Boxed_Object(Con_Object):
         return False
 
 
-
     def get_slot(self, vm, n):
         o = None
         if self.slots is not None:
@@ -195,18 +194,19 @@ class Con_Boxed_Object(Con_Object):
         return None
 
 
-    def set_slot(self, vm, n, v):
+    def set_slot(self, vm, n, o):
+        assert o is not None
         m = jit.promote(self.slots_map)
         if self.slots is not None:
             i = m.find(n)
             if i == -1:
                 self.slots_map = m.extend(n)
-                self.slots.append(v)
+                self.slots.append(o)
             else:
-                self.slots[i] = v
+                self.slots[i] = o
         else:
             self.slots_map = m.extend(n)
-            self.slots = [v]
+            self.slots = [o]
 
 
     def add(self, vm, o):
@@ -378,7 +378,8 @@ class Con_Class(Con_Boxed_Object):
         self.fields = []
 
         self.set_slot(vm, "name", name)
-        self.set_slot(vm, "container", container)
+        if container:
+            self.set_slot(vm, "container", container)
 
 
     def get_field(self, vm, n):
@@ -411,6 +412,7 @@ class Con_Class(Con_Boxed_Object):
 
 
     def set_field(self, vm, n, o):
+        assert o is not None
         m = jit.promote(self.fields_map)
         i = m.find(n)
         if i == -1:
@@ -576,7 +578,7 @@ class Con_Module(Con_Boxed_Object):
             self.closure = [None] * len(tlvars_map)
 
         self.set_slot(vm, "name", name)
-        self.set_slot(vm, "container", vm.get_builtin(BUILTIN_NULL_OBJ)) # XXX
+        self.set_slot(vm, "container", vm.get_builtin(BUILTIN_NULL_OBJ))
 
         self.initialized = False
 

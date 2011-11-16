@@ -1540,41 +1540,41 @@ def type_check_class(vm, o):
 
 def type_check_dict(vm, o):
     if not isinstance(o, Con_Dict):
-        vm.raise_helper("Type_Exception", [vm.get_builtin(BUILTIN_DICT_CLASS), o])
+        vm.raise_helper("Type_Exception", [Con_String(vm, "Dict"), o])
     return o
 
 
 def type_check_exception(vm, o):
     if not isinstance(o, Con_Exception):
-        vm.raise_helper("Type_Exception", [vm.get_builtin(BUILTIN_EXCEPTION_CLASS), o])
+        vm.raise_helper("Type_Exception", [Con_String(vm, "Exception"), o])
     return o
 
 
 def type_check_int(vm, o):
     if not isinstance(o, Con_Int):
-        vm.raise_helper("Type_Exception", [vm.get_builtin(BUILTIN_INT_CLASS), o])
+        vm.raise_helper("Type_Exception", [Con_String(vm, "Int"), o])
     return o
 
 
 def type_check_list(vm, o):
     if not isinstance(o, Con_List):
-        vm.raise_helper("Type_Exception", [vm.get_builtin(BUILTIN_LIST_CLASS), o])
+        vm.raise_helper("Type_Exception", [Con_String(vm, "List"), o])
     return o
 
 
 def type_check_module(vm, o):
     if not isinstance(o, Con_Module):
-        vm.raise_helper("Type_Exception", [vm.get_builtin(BUILTIN_MODULE_CLASS), o])
+        vm.raise_helper("Type_Exception", [Con_String(vm, "Module"), o])
     return o
 
 
 def type_check_set(vm, o):
     if not isinstance(o, Con_Set):
-        vm.raise_helper("Type_Exception", [vm.get_builtin(BUILTIN_SET_CLASS), o])
+        vm.raise_helper("Type_Exception", [Con_String(vm, "Set"), o])
     return o
 
 
 def type_check_string(vm, o):
     if not isinstance(o, Con_String):
-        vm.raise_helper("Type_Exception", [vm.get_builtin(BUILTIN_STRING_CLASS), o])
+        vm.raise_helper("Type_Exception", [Con_String(vm, "String"), o])
     return o

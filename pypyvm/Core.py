@@ -19,14 +19,37 @@
 # IN THE SOFTWARE.
 
 
+import sys
 import Builtins
 
 
 
 
+
+################################################################################
+# Configuration
+#
+
+if sys.platform.startswith("win"):
+    CASE_SENSITIVE_FILENAMES = 1
+else:
+    CASE_SENSITIVE_FILENAMES = 0
+
+
+
+
+################################################################################
+# The root object
+#
+
 class Con_Thingy(object):
     __slots__ = ()
 
+
+
+################################################################################
+# PC objects
+#
 
 class PC(object):
     __slots__ = ("mod")
@@ -53,6 +76,11 @@ class Py_PC(PC):
         self.f = f
 
 
+
+
+################################################################################
+# Index translation
+#
 
 def translate_idx(i, upper):
     if i < 0:

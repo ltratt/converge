@@ -21,13 +21,9 @@
 
 import os, sys
 from Builtins import *
+from Core import *
 
 
-
-if sys.platform.startswith("win"):
-    CASE_SENSITIVE_FILENAMES = 1
-else:
-    CASE_SENSITIVE_FILENAMES = 0
 
 if sys.byteorder == "big":
     ENDIANNESS = "BIG_ENDIAN"

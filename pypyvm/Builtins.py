@@ -444,7 +444,11 @@ def _Con_Class_get_field(vm):
     assert isinstance(self, Con_Class)
     assert isinstance(n, Con_String)
 
-    vm.return_(self.get_field(vm, n.v))
+    o = self.get_field(vm, n.v)
+    if o is None:
+        vm.raise_helper("Field_Exception", [n, self])
+
+    vm.return_(o)
 
 
 def _Con_Class_set_field(vm):
@@ -630,6 +634,13 @@ class Con_Module(Con_Boxed_Object):
         return off
 
 
+def _Con_Module_get_defn(vm):
+    (self, n),_ = vm.decode_args("MS")
+    assert isinstance(self, Con_Module)
+    assert isinstance(n, Con_String)
+
+    vm.return_(self.get_defn(vm, n.v))
+
 
 def _Con_Module_path(vm):
     (self, stop_at),_ = vm.decode_args("M", opt="o")
@@ -651,10 +662,10 @@ def _Con_Module_path(vm):
         vm.return_(Con_String(vm, "%s%s%s" % (rtn.v, sep, name.v)))
 
 
-
 def bootstrap_con_module(vm):
     module_class = vm.get_builtin(BUILTIN_MODULE_CLASS)
 
+    new_c_con_func_for_class(vm, "get_defn", _Con_Module_get_defn, module_class)
     new_c_con_func_for_class(vm, "path", _Con_Module_path, module_class)
 
 
@@ -920,7 +931,7 @@ class Con_String(Con_Boxed_Object):
 
     @jit.elidable
     def get_slice(self, vm, i, j):
-        i, j = translate_slice_idxs(i, j, len(self.v))
+        i, j = translate_slice_idxs(vm, i, j, len(self.v))
         return Con_String(vm, self.v[i:j])
 
 
@@ -977,7 +988,7 @@ def _Con_String_get_slice(vm):
     (self, i_o, j_o),_ = vm.decode_args("S", opt="ii")
     assert isinstance(self, Con_String)
 
-    i, j = translate_slice_idx_objs(i_o, j_o, len(self.v))
+    i, j = translate_slice_idx_objs(vm, i_o, j_o, len(self.v))
 
     vm.return_(Con_String(vm, self.v[i:j]))
 
@@ -995,9 +1006,9 @@ def _Con_String_int_val(vm):
 
     if i_o is not None:
         assert isinstance(i_o, Con_Int)
-        i = translate_idx(i_o.v, len(self.v))
+        i = translate_idx(vm, i_o.v, len(self.v))
     else:
-        i = translate_idx(0, len(self.v))
+        i = translate_idx(vm, 0, len(self.v))
 
     vm.return_(Con_Int(vm, ord(self.v[i])))
 
@@ -1006,7 +1017,7 @@ def _Con_String_iter(vm):
     (self, i_o, j_o),_ = vm.decode_args("S", opt="ii")
     assert isinstance(self, Con_String)
     
-    i, j = translate_slice_idx_objs(i_o, j_o, len(self.v))
+    i, j = translate_slice_idx_objs(vm, i_o, j_o, len(self.v))
     while i < j:
         vm.yield_(Con_String(vm, self.v[i]))
         i += 1
@@ -1059,7 +1070,7 @@ def _Con_String_prefixed_by(vm):
     assert isinstance(self, Con_String)
     assert isinstance(o_o, Con_String)
 
-    i = translate_slice_idx_obj(i_o, len(self.v))
+    i = translate_slice_idx_obj(vm, i_o, len(self.v))
 
     if self.v[i:].startswith(o_o.v):
         vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
@@ -1139,7 +1150,7 @@ def _Con_String_suffixed_by(vm):
     if i_o is None:
         i = len(self.v)
     else:
-        i = translate_slice_idx_obj(i_o, len(self.v))
+        i = translate_slice_idx_obj(vm, i_o, len(self.v))
 
     if self.v[:i].endswith(o_o.v):
         vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
@@ -1220,18 +1231,20 @@ def _Con_List_find(vm):
 
 
 def _Con_List_get(vm):
-    (self, i),_ = vm.decode_args("LI")
+    (self, i_o),_ = vm.decode_args("LI")
     assert isinstance(self, Con_List)
-    assert isinstance(i, Con_Int)
+    assert isinstance(i_o, Con_Int)
+
+    i = translate_idx(vm, i_o.v, len(self.l))
     
-    vm.return_(self.l[i.v])
+    vm.return_(self.l[i])
 
 
 def _Con_List_get_slice(vm):
     (self, i_o, j_o),_ = vm.decode_args("L", opt="ii")
     assert isinstance(self, Con_List)
 
-    i, j = translate_slice_idx_objs(i_o, j_o, len(self.l))
+    i, j = translate_slice_idx_objs(vm, i_o, j_o, len(self.l))
 
     vm.return_(Con_List(vm, self.l[i:j]))
 
@@ -1240,7 +1253,7 @@ def _Con_List_iter(vm):
     (self, i_o, j_o),_ = vm.decode_args("L", opt="ii")
     assert isinstance(self, Con_List)
     
-    i, j = translate_slice_idx_objs(i_o, j_o, len(self.l))
+    i, j = translate_slice_idx_objs(vm, i_o, j_o, len(self.l))
     while i < j:
         vm.yield_(self.l[i])
         i += 1

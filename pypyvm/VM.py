@@ -188,7 +188,8 @@ class VM(object):
         if o is self.get_builtin(Builtins.BUILTIN_FAIL_OBJ):
             o = None
         if not allow_fail and o is None:
-            raise Exception("XXX")
+            self.raise_helper("VM_Exception", [Builtins.Con_String(self, \
+              "Function attempting to return fail, but caller can not handle failure.")])
         
         return o, cf.closure[-1]
 
@@ -593,7 +594,7 @@ class VM(object):
         closure_off, var_num = Target.unpack_var_lookup(instr)
         v = cf.closure[closure_off - 1][var_num]
         if v is None:
-            raise Exception("XXX")
+            self.raise_helper("Unassigned_Var_Exception")
         self._cf_stack_push(cf, v)
         cf.bc_off += Target.INTSIZE
 
@@ -837,7 +838,9 @@ class VM(object):
         num_fargs, has_vargs = Target.unpack_unpack_args(instr)
         nargs = cf.nargs
         if nargs > num_fargs and not has_vargs:
-            raise Exception("XXX")
+            msg = "Too many parameters (%d passed, but a maximum of %d allowed)." % \
+              (nargs, num_fargs)
+            self.raise_helper("Parameters_Exception", [Builtins.Con_String(self, msg)])
 
         if num_fargs > 0:
             arg_offset = cf.bc_off + Target.INTSIZE + num_fargs * Target.INTSIZE
@@ -846,7 +849,8 @@ class VM(object):
                 arg_info = Target.read_word(cf.pc.mod.bc, arg_offset)
                 if i >= nargs:
                     if not Target.unpack_unpack_args_is_mandatory(arg_info):
-                        raise Exception("XXX")
+                        msg = "No value passed for parameter %d." % i
+                        self.raise_helper("Parameters_Exception", [Builtins.Con_String(self, msg)])
                 else:
                     if nargs > num_fargs:
                         o = self._cf_stack_pop_n(cf, nargs - num_fargs)
@@ -905,15 +909,15 @@ class VM(object):
 
     def _instr_unpack_assign(self, instr, cf):
         o = cf.stack[cf.stackpe - 1]
-        if isinstance(o, Builtins.Con_List):
-            ne = len(o.l)
-            if ne != Target.unpack_unpack_assign(instr):
-                raise Exception("XXX")
-            for i in range(ne - 1, -1, -1):
-                self._cf_stack_push(cf, o.l[i])
-            cf.bc_off += Target.INTSIZE
-        else:
-            raise Exception("XXX")
+        o = Builtins.type_check_list(self, o)
+        ne = len(o.l)
+        if ne != Target.unpack_unpack_assign(instr):
+            self.raise_helper("Unpack_Exception", \
+              [Builtins.Con_Int(self, Target.unpack_unpack_assign(instr)), \
+               Builtins.Con_Int(self, ne)])
+        for i in range(ne - 1, -1, -1):
+            self._cf_stack_push(cf, o.l[i])
+        cf.bc_off += Target.INTSIZE
 
 
     def _instr_branch_if_not_fail(self, instr, cf):
@@ -976,11 +980,13 @@ class VM(object):
 
     def _instr_module_lookup(self, instr, cf):
         o = self._cf_stack_pop(cf)
-        if not isinstance(o, Builtins.Con_Module):
-            raise Exception("XXX")
         nm_start, nm_size = Target.unpack_mod_lookup(instr)
         nm = Target.extract_str(cf.pc.mod.bc, cf.bc_off + nm_start, nm_size)
-        self._cf_stack_push(cf, o.get_defn(self, nm))
+        if isinstance(o, Builtins.Con_Module):
+            v = o.get_defn(self, nm)
+        else:
+            v = self.get_slot_apply(o, "get_defn", [Builtins.Con_String(self, nm)])
+        self._cf_stack_push(cf, v)
         cf.bc_off += Target.align(nm_start + nm_size)
 
 
@@ -1047,8 +1053,7 @@ class VM(object):
 
     def _add_continuation_frame(self, func, nargs, resumable=False):
         if not isinstance(func, Builtins.Con_Func):
-            print func
-            raise Exception("XXX")
+            self.raise_helper("Apply_Exception", [func])
 
         pc = func.pc
         if isinstance(pc, BC_PC):

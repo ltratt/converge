@@ -192,7 +192,7 @@ def Match_get(vm):
     
     # Group 0 in the match is the entire match, so when translating indices, we need to add 1 onto
 	# num_captures.
-    i = translate_idx(i_o.v, 1 + self.num_caps)
+    i = translate_idx(vm, i_o.v, 1 + self.num_caps)
     
     vm.return_(self.s.get_slice(vm, int(self.ovect[i * 2]), int(self.ovect[i * 2 + 1])))
 

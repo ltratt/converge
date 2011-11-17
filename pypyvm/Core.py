@@ -82,45 +82,48 @@ class Py_PC(PC):
 # Index translation
 #
 
-def translate_idx(i, upper):
+def translate_idx(vm, i, upper):
     if i < 0:
         i = upper + i
     
     if i < 0 or i >= upper:
-        raise Exception("XXX")
+        vm.raise_helper("Bounds_Exception", \
+          [Builtins.Con_Int(vm, i), Builtins.Con_Int(vm, upper)])
 
     return i
 
 
-def translate_slice_idx(i, upper):
+def translate_slice_idx(vm, i, upper):
     if i < 0:
         i = upper + i
     
     if i < 0 or i > upper:
-        raise Exception("XXX")
+        vm.raise_helper("Bounds_Exception", \
+          [Builtins.Con_Int(vm, i), Builtins.Con_Int(vm, upper)])
 
     return i
 
 
-def translate_slice_idxs(i, j, upper):
-    i = translate_slice_idx(i, upper)
-    j = translate_slice_idx(j, upper)
-    if j < i:
-        raise Exception("XXX")
-
-    return i, j
-
-
-def translate_slice_idx_obj(i_o, upper):
+def translate_slice_idx_obj(vm, i_o, upper):
     if i_o is None:
         i = 0
     else:
         assert isinstance(i_o, Builtins.Con_Int)
         i = i_o.v
-    return translate_slice_idx(i, upper)
+    return translate_slice_idx(vm, i, upper)
 
 
-def translate_slice_idx_objs(i_o, j_o, upper):
+def translate_slice_idxs(vm, i, j, upper):
+    i = translate_slice_idx(vm, i, upper)
+    j = translate_slice_idx(vm, j, upper)
+    if j < i:
+        vm.raise_helper("Indices_Exception", \
+          [Builtins.Con_Int(vm, i), Builtins.Con_Int(vm, j)])
+
+    return i, j
+
+
+def translate_slice_idx_objs(vm, i_o, j_o, upper):
     if i_o is None:
         i = 0
     else:
@@ -132,4 +135,4 @@ def translate_slice_idx_objs(i_o, j_o, upper):
         assert isinstance(j_o, Builtins.Con_Int)
         j = j_o.v
 
-    return translate_slice_idxs(i, j, upper)
+    return translate_slice_idxs(vm, i, j, upper)

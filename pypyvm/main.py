@@ -57,6 +57,7 @@ def entry_point(argv):
     try:
         main_mod_id = Bytecode.add_exec(vm, useful_bc)
         mod = vm.get_mod(main_mod_id)
+        mod.import_(vm)
         vm.apply(mod.get_defn(vm, "main"))
     except VM.Con_Raise_Exception, e:
         ex_mod = vm.get_builtin(Builtins.BUILTIN_EXCEPTIONS_MODULE)

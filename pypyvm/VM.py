@@ -108,16 +108,18 @@ class VM(object):
         self.mods[mod.id_] = mod
 
 
+    def find_mod(self, mod_id):
+        return self.mods.get(mod_id, None)
+
+
     def get_mod(self, mod_id):
-        m = self.mods.get(mod_id, None)
+        m = self.find_mod(mod_id)
         if m is None:
             self.raise_helper("Import_Exception", [Builtins.Con_String(self, mod_id)])
-        if not m.initialized:
-            m.import_(self)
         return m
 
 
-    def get_stdlib_mod(self, ptl_mod_id):
+    def import_stdlib_mod(self, ptl_mod_id):
         if not ptl_mod_id.startswith(os.sep):
             return self.get_mod(ptl_mod_id)
         
@@ -139,7 +141,9 @@ class VM(object):
                 raise Exception("Unknown separator %s." % (os.sep))
 
             if bt_cnd_mod_id.endswith(ptl_mod_id):
-                return self.get_mod(cnd_mod_id)
+                mod = self.get_mod(cnd_mod_id)
+                mod.import_(self)
+                return mod
 
         self.raise_helper("Import_Exception", [Builtins.Con_String(self, ptl_mod_id)])
 
@@ -746,6 +750,7 @@ class VM(object):
 
     def _instr_import(self, instr, cf):
         mod = self.get_mod(cf.pc.mod.imps[Target.unpack_import(instr)])
+        mod.import_(self)
         self._cf_stack_push(cf, mod)
         cf.bc_off += Target.INTSIZE
 

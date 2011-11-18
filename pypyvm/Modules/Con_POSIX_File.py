@@ -397,7 +397,7 @@ def mtime(vm):
     (p_o,),_ = vm.decode_args("S")
     assert isinstance(p_o, Con_String)
     
-    time_mod = vm.get_stdlib_mod(Stdlib_Modules.STDLIB_TIME)
+    time_mod = vm.import_stdlib_mod(Stdlib_Modules.STDLIB_TIME)
     mk_timespec = time_mod.get_defn(vm, "mk_timespec")
 
     # XXX Ideally we'd use our own stat implementation here, but it's a cross-platform nightmare, so

@@ -32,5 +32,14 @@ def init(vm):
 
 def import_(vm):
     (mod,),_ = vm.decode_args("O")
+
+    new_c_con_func_for_mod(vm, "find_module", find_module, mod)
     
     vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+
+
+def find_module(vm):
+    (mod_id_o,),_ = vm.decode_args("S")
+    assert isinstance(mod_id_o, Con_String)
+    
+    vm.return_(vm.get_mod(mod_id_o.v))

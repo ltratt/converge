@@ -1238,11 +1238,62 @@ class Con_List(Con_Boxed_Object):
         self.l = l
 
 
+def _Con_List_add(vm):
+    (self, o_o),_ = vm.decode_args("LL")
+    assert isinstance(self, Con_List)
+    assert isinstance(o_o, Con_List)
+    
+    vm.return_(Con_List(vm, self.l + o_o.l))
+
+
 def _Con_List_append(vm):
     (self, o),_ = vm.decode_args("LO")
     assert isinstance(self, Con_List)
     
     self.l.append(o)
+    vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))
+
+
+def _Con_List_del(vm):
+    (self, i_o),_ = vm.decode_args("LI")
+    assert isinstance(self, Con_List)
+    assert isinstance(i_o, Con_Int)
+
+    del self.l[translate_idx(vm, i_o.v, len(self.l))]
+
+    vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))
+
+
+def _Con_List_extend(vm):
+    (self, o_o),_ = vm.decode_args("LO")
+    assert isinstance(self, Con_List)
+    
+    if isinstance(o_o, Con_List):
+        self.l.extend(o_o.l)
+    else:
+        vm.pre_get_slot_apply_pump(o_o, "iter")
+        while 1:
+            e_o = vm.apply_pump()
+            if not e_o:
+                break
+            self.l.append(e_o)
+    vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))
+
+
+def _Con_List_eq(vm):
+    (self, o_o),_ = vm.decode_args("LL")
+    assert isinstance(self, Con_List)
+    assert isinstance(o_o, Con_List)
+    
+    self_len = len(self.l)
+    if self_len != len(o_o.l):
+        vm.return_(vm.get_builtin(Builtins.BUILTIN_FAIL_OBJ))
+
+    self_l = self.l
+    o_l = o_o.l
+    for i in range(0, self_len):
+        if not self_l[i].eq(vm, o_l[i]):
+            vm.return_(vm.get_builtin(Builtins.BUILTIN_FAIL_OBJ))
     vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))
 
 
@@ -1255,6 +1306,33 @@ def _Con_List_find(vm):
             vm.yield_(vm.get_builtin(BUILTIN_NULL_OBJ))
     
     vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+
+
+def _Con_List_find_index(vm):
+    (self, o),_ = vm.decode_args("LO")
+    assert isinstance(self, Con_List)
+    
+    i = 0
+    for e in self.l:
+        if e.eq(vm, o):
+            vm.yield_(Con_Int(vm, i))
+        i += 1
+    
+    vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+
+
+def _Con_List_flattened(vm):
+    (self,),_ = vm.decode_args("L")
+    assert isinstance(self, Con_List)
+    
+    f = []
+    for e in self.l:
+        if isinstance(e, Con_List):
+            f.extend(type_check_list(vm, vm.get_slot_apply(e, "flattened")).l)
+        else:
+            f.append(e)
+    
+    vm.return_(Con_List(vm, f))
 
 
 def _Con_List_get(vm):
@@ -1276,6 +1354,16 @@ def _Con_List_get_slice(vm):
     vm.return_(Con_List(vm, self.l[i:j]))
 
 
+def _Con_List_insert(vm):
+    (self, i_o, o_o),_ = vm.decode_args("LIO")
+    assert isinstance(self, Con_List)
+    assert isinstance(i_o, Con_Int)
+    
+    self.l.insert(translate_slice_idx(vm, i_o.v, len(self.l)), o_o)
+
+    vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+
+
 def _Con_List_iter(vm):
     (self, i_o, j_o),_ = vm.decode_args("L", opt="ii")
     assert isinstance(self, Con_List)
@@ -1295,11 +1383,92 @@ def _Con_List_len(vm):
     vm.return_(Con_Int(vm, len(self.l)))
 
 
+def _Con_List_mult(vm):
+    (self, i_o),_ = vm.decode_args("LI")
+    assert isinstance(self, Con_List)
+    assert isinstance(i_o, Con_Int)
+
+    vm.return_(Con_List(vm, self.l * i_o.v))
+
+
+def _Con_List_neq(vm):
+    (self, o_o),_ = vm.decode_args("LL")
+    assert isinstance(self, Con_List)
+    assert isinstance(o_o, Con_List)
+    
+    self_len = len(self.l)
+    if self_len != len(o_o.l):
+        vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))
+
+    self_l = self.l
+    o_l = o_o.l
+    for i in range(0, self_len):
+        if not self_l[i].neq(vm, o_l[i]):
+            vm.return_(vm.get_builtin(Builtins.BUILTIN_FAIL_OBJ))
+    vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))
+
+
+def _Con_List_pop(vm):
+    (self,),_ = vm.decode_args("L")
+    assert isinstance(self, Con_List)
+    
+    translate_slice_idx(vm, -1, len(self.l))
+
+    vm.return_(self.l.pop())
+
+
+def _Con_List_remove(vm):
+    (self, o_o),_ = vm.decode_args("LO")
+    assert isinstance(self, Con_List)
+
+    i = 0
+    l = self.l
+    while i < len(l):
+        e = l[i]
+        if o_o.eq(vm, e):
+            del l[i]
+            vm.yield_(e)
+        else:
+            i += 1
+
+    vm.return_(vm.get_builtin(Builtins.BUILTIN_FAIL_OBJ))
+
+
+def _Con_List_riter(vm):
+    (self, i_o, j_o),_ = vm.decode_args("L", opt="ii")
+    assert isinstance(self, Con_List)
+    
+    i, j = translate_slice_idx_objs(vm, i_o, j_o, len(self.l))
+    j -= 1
+    while j >= i:
+        vm.yield_(self.l[j])
+        j -= 1
+
+    vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+
+
 def _Con_List_set(vm):
     (self, i, o),_ = vm.decode_args("LIO")
     assert isinstance(self, Con_List)
     assert isinstance(i, Con_Int)
     self.l[i.v] = o
+    vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))
+
+
+def _Con_List_set_slice(vm):
+    (self, i_o, j_o, o_o),_ = vm.decode_args("LiiL")
+    assert isinstance(self, Con_List)
+    assert isinstance(o_o, Con_List)
+
+    i, j = translate_slice_idx_objs(vm, i_o, j_o, len(self.l))
+    # Setting slices in RPython is currently broken.
+    # self.l[i:j] = o_o.l
+    # For the time, use a slow but simple work around.
+    del self.l[i:j]
+    for e in o_o.l:
+        self.l.insert(i, e)
+        i += 1
+
     vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))
 
 
@@ -1322,13 +1491,26 @@ def bootstrap_con_list(vm):
     builtins_module = vm.get_builtin(BUILTIN_BUILTINS_MODULE)
     builtins_module.set_defn(vm, "List", list_class)
 
+    new_c_con_func_for_class(vm, "+", _Con_List_add, list_class)
     new_c_con_func_for_class(vm, "append", _Con_List_append, list_class)
+    new_c_con_func_for_class(vm, "del", _Con_List_del, list_class)
+    new_c_con_func_for_class(vm, "extend", _Con_List_extend, list_class)
+    new_c_con_func_for_class(vm, "==", _Con_List_eq, list_class)
     new_c_con_func_for_class(vm, "find", _Con_List_find, list_class)
+    new_c_con_func_for_class(vm, "find_index", _Con_List_find_index, list_class)
+    new_c_con_func_for_class(vm, "flattened", _Con_List_flattened, list_class)
     new_c_con_func_for_class(vm, "get", _Con_List_get, list_class)
     new_c_con_func_for_class(vm, "get_slice", _Con_List_get_slice, list_class)
+    new_c_con_func_for_class(vm, "insert", _Con_List_insert, list_class)
     new_c_con_func_for_class(vm, "iter", _Con_List_iter, list_class)
     new_c_con_func_for_class(vm, "len", _Con_List_len, list_class)
+    new_c_con_func_for_class(vm, "*", _Con_List_mult, list_class)
+    new_c_con_func_for_class(vm, "!=", _Con_List_neq, list_class)
+    new_c_con_func_for_class(vm, "pop", _Con_List_pop, list_class)
+    new_c_con_func_for_class(vm, "remove", _Con_List_remove, list_class)
+    new_c_con_func_for_class(vm, "riter", _Con_List_riter, list_class)
     new_c_con_func_for_class(vm, "set", _Con_List_set, list_class)
+    new_c_con_func_for_class(vm, "set_slice", _Con_List_set_slice, list_class)
     new_c_con_func_for_class(vm, "to_str", _Con_List_to_str, list_class)
 
 

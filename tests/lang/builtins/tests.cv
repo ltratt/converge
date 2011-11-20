@@ -27,6 +27,8 @@ import Lang_Test
 
 tests := $<<Lang_Test::tests>>:
     "str1.cv"
+    
+    "list1.cv"
 
 
 

@@ -27,12 +27,16 @@ from Builtins import *
 
 def init(vm):
     mod = new_c_con_module(vm, "Exceptions", "Exceptions", __file__, import_, \
-      ["Exception", "User_Exception", "Internal_Exception",
-       "Apply_Exception", "Assert_Exception", "Bounds_Exception", "Field_Exception",
-       "File_Exception", "Import_Exception", "Indices_Exception", "Key_Exception", 
-       "Mod_Defn_Exception", "Number_Exception", "Parameters_Exception", "Slot_Exception",
-       "System_Exit_Exception", "Type_Exception", "Unassigned_Var_Exception", 
-       "Unpack_Exception", "VM_Exception"])
+      ["Exception",
+       "Internal_Exception",
+         "VM_Exception", "System_Exit_Exception",
+       "User_Exception",
+         "Apply_Exception", "Assert_Exception", "Bounds_Exception", "Field_Exception",
+         "Import_Exception", "Indices_Exception", "Key_Exception", "Mod_Defn_Exception",
+         "Number_Exception", "Parameters_Exception", "Slot_Exception", "Type_Exception",
+         "Unassigned_Var_Exception", "Unpack_Exception",
+       "IO_Exception",
+         "File_Exception"])
     vm.set_builtin(BUILTIN_EXCEPTIONS_MODULE, mod)
     
     return mod
@@ -42,15 +46,19 @@ def import_(vm):
     (mod,),_ = vm.decode_args("O")
 
     mod.set_defn(vm, "Exception", vm.get_builtin(BUILTIN_EXCEPTION_CLASS))
-    _mk_simple_exception(vm, mod, "User_Exception", superclass=vm.get_builtin(BUILTIN_EXCEPTION_CLASS))
-    _mk_simple_exception(vm, mod, "Internal_Exception", superclass=vm.get_builtin(BUILTIN_EXCEPTION_CLASS))
 
+    internal_exception = _mk_simple_exception(vm, mod, "Internal_Exception", \
+      superclass=vm.get_builtin(BUILTIN_EXCEPTION_CLASS))
+    _mk_simple_exception(vm, mod, "System_Exit_Exception", \
+      init_func=_System_Exit_Exception_init_func, superclass=internal_exception)
+    _mk_simple_exception(vm, mod, "VM_Exception", superclass=internal_exception)
+
+    _mk_simple_exception(vm, mod, "User_Exception", superclass=vm.get_builtin(BUILTIN_EXCEPTION_CLASS))
     _mk_simple_exception(vm, mod, "Apply_Exception", init_func=_Apply_Exception_init_func)
     _mk_simple_exception(vm, mod, "Assert_Exception")
     _mk_simple_exception(vm, mod, "Bounds_Exception", init_func=_Bounds_Exception_init_func)
     _mk_simple_exception(vm, mod, "Assert_Exception")
     _mk_simple_exception(vm, mod, "Field_Exception", init_func=_Field_Exception_init_func)
-    _mk_simple_exception(vm, mod, "File_Exception")
     _mk_simple_exception(vm, mod, "Import_Exception", init_func=_Import_Exception_init_func)
     _mk_simple_exception(vm, mod, "Indices_Exception", init_func=_Indices_Exception_init_func)
     _mk_simple_exception(vm, mod, "Key_Exception", init_func=_Key_Exception_init_func)
@@ -58,11 +66,12 @@ def import_(vm):
     _mk_simple_exception(vm, mod, "Number_Exception")
     _mk_simple_exception(vm, mod, "Parameters_Exception")
     _mk_simple_exception(vm, mod, "Slot_Exception", init_func=_Slot_Exception_init_func)
-    _mk_simple_exception(vm, mod, "System_Exit_Exception", init_func=_System_Exit_Exception_init_func)
     _mk_simple_exception(vm, mod, "Type_Exception", init_func=_Type_Exception_init_func)
-    _mk_simple_exception(vm, mod, "Unpack_Exception", init_func=_Unpack_Exception_init_func)
     _mk_simple_exception(vm, mod, "Unassigned_Var_Exception")
-    _mk_simple_exception(vm, mod, "VM_Exception")
+    _mk_simple_exception(vm, mod, "Unpack_Exception", init_func=_Unpack_Exception_init_func)
+
+    io_exception = _mk_simple_exception(vm, mod, "IO_Exception")
+    _mk_simple_exception(vm, mod, "File_Exception", superclass=io_exception)
 
     vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
 
@@ -77,6 +86,7 @@ def _mk_simple_exception(vm, mod, n, init_func=None, superclass=None):
     if init_func is not None:
         ex.set_field(vm, "init", new_c_con_func(vm, Con_String(vm, "init"), True, init_func, ex))
     mod.set_defn(vm, n, ex)
+    return ex
 
 
 def _Apply_Exception_init_func(vm):

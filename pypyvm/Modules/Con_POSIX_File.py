@@ -429,7 +429,6 @@ def rm(vm):
             if os.path.isdir(p):
                 leafs = os.listdir(p)
                 if len(leafs) == 0:
-                    print "rmdir", p
                     os.rmdir(p)
                     del st[i]
                 else:

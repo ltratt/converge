@@ -70,6 +70,7 @@ class VM(object):
         Builtins.bootstrap_con_object(self)
         Builtins.bootstrap_con_class(self)
         Builtins.bootstrap_con_dict(self)
+        Builtins.bootstrap_con_func(self)
         Builtins.bootstrap_con_int(self)
         Builtins.bootstrap_con_list(self)
         Builtins.bootstrap_con_module(self)
@@ -359,6 +360,10 @@ class VM(object):
                     Builtins.type_check_class(self, o)
                 elif t == "D":
                     Builtins.type_check_dict(self, o)
+                elif t == "E":
+                    Builtins.type_check_exception(self, o)
+                elif t == "F":
+                    Builtins.type_check_func(self, o)
                 elif t == "I":
                     Builtins.type_check_int(self, o)
                 elif t == "L":

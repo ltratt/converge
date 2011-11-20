@@ -312,7 +312,7 @@ def bootstrap_con_object(vm):
     
     # In order that later objects can refer to the Builtins module, we have to create it now.
     builtins_module = new_c_con_module(vm, "Builtins", "Builtins", __file__, None, \
-      ["Object", "Class", "String", "Module", "Int", "List", "Set", "Dict"])
+      ["Object", "Class", "Func", "String", "Module", "Int", "List", "Set", "Dict"])
     # We effectively initialize the Builtins module through the bootstrapping process, so it doesn't
     # need a separate initialization function.
     builtins_module.initialized = True
@@ -716,8 +716,35 @@ class Con_Func(Con_Boxed_Object):
         return "<Func %s>" % self.name.v
 
 
-def bootstrap_con_func():
-    pass
+def _Con_Func_path(vm):
+    (self, stop_at),_ = vm.decode_args("F", opt="o")
+    assert isinstance(self, Con_Func)
+    
+    if self is stop_at:
+        vm.return_(Con_String(vm, ""))
+    
+    container = self.get_slot(vm, "container")
+    if container is vm.get_builtin(BUILTIN_NULL_OBJ) or container is stop_at:
+        vm.return_(self.name)
+    else:
+        rtn = type_check_string(vm, vm.get_slot_apply(container, "path", [stop_at]))
+        if isinstance(container, Con_Module):
+            sep = "::"
+        else:
+            sep = "."
+        name = self.name
+        assert isinstance(name, Con_String)
+        vm.return_(Con_String(vm, "%s%s%s" % (rtn.v, sep, name.v)))
+
+
+def bootstrap_con_func(vm):
+    func_class = Con_Class(vm, Con_String(vm, "Func"), \
+      [vm.get_builtin(BUILTIN_OBJECT_CLASS)], vm.get_builtin(BUILTIN_BUILTINS_MODULE))
+    vm.set_builtin(BUILTIN_FUNC_CLASS, func_class)
+    builtins_module = vm.get_builtin(BUILTIN_BUILTINS_MODULE)
+    builtins_module.set_defn(vm, "Func", func_class)
+    
+    new_c_con_func_for_class(vm, "path", _Con_Func_path, func_class)
 
 
 def new_c_con_func(vm, name, is_bound, func, container):
@@ -1566,6 +1593,12 @@ def type_check_exception(vm, o):
 def type_check_int(vm, o):
     if not isinstance(o, Con_Int):
         vm.raise_helper("Type_Exception", [Con_String(vm, "Int"), o])
+    return o
+
+
+def type_check_func(vm, o):
+    if not isinstance(o, Con_Func):
+        vm.raise_helper("Type_Exception", [Con_String(vm, "Func"), o])
     return o
 
 

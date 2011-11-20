@@ -18,7 +18,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-from pypy.rlib import debug, jit, objectmodel
+from pypy.rlib import debug, jit, objectmodel, rarithmetic
 from pypy.rpython.lltypesystem import lltype, rffi
 
 NUM_BUILTINS = 41
@@ -587,6 +587,11 @@ class Con_Module(Con_Boxed_Object):
         self.initialized = False
 
 
+    def get_slot_override(self, vm, n):
+        if n == "src_path":
+            return Con_String(vm, self.src_path)
+
+
     def import_(self, vm):
         if self.initialized:
             return
@@ -634,12 +639,136 @@ class Con_Module(Con_Boxed_Object):
         return off
 
 
+    def bc_off_to_src_infos(self, vm, bc_off):
+        bc = self.bc
+        cur_bc_off = Target.read_word(bc, Target.BC_MOD_INSTRUCTIONS)
+        instr_i = 0
+        while cur_bc_off < bc_off:
+            instr = Target.read_word(bc, cur_bc_off)
+            it = Target.get_instr(instr)
+            if it == Target.CON_INSTR_EXBI:
+                start, size = Target.unpack_exbi(instr)
+                cur_bc_off += Target.align(start + size)
+            elif it == Target.CON_INSTR_IS_ASSIGNED:
+                cur_bc_off += Target.INTSIZE + Target.INTSIZE
+            elif it == Target.CON_INSTR_SLOT_LOOKUP or it == Target.CON_INSTR_PRE_SLOT_LOOKUP_APPLY:
+                start, size = Target.unpack_slot_lookup(instr)
+                cur_bc_off += Target.align(start + size)
+            elif it == Target.CON_INSTR_STRING:
+                start, size = Target.unpack_string(instr)
+                cur_bc_off += Target.align(start + size)
+            elif it == Target.CON_INSTR_ASSIGN_SLOT:
+                start, size = Target.unpack_assign_slot(instr)
+                cur_bc_off += Target.align(start + size)
+            elif it == Target.CON_INSTR_UNPACK_ARGS:
+                num_args, has_vargs = Target.unpack_unpack_args(instr)
+                cur_bc_off += Target.INTSIZE + num_args * Target.INTSIZE
+                if has_vargs:
+                    cur_bc_off += Target.INTSIZE
+            elif it == Target.CON_INSTR_MODULE_LOOKUP:
+                start, size = Target.unpack_mod_lookup(instr)
+                cur_bc_off += Target.align(start + size)
+            elif it == Target.CON_INSTR_VAR_LOOKUP \
+              or it == Target.CON_INSTR_VAR_ASSIGN \
+              or it == Target.CON_INSTR_INT \
+              or it == Target.CON_INSTR_ADD_FAILURE_FRAME \
+              or it == Target.CON_INSTR_ADD_FAIL_UP_FRAME \
+              or it == Target.CON_INSTR_REMOVE_FAILURE_FRAME \
+              or it == Target.CON_INSTR_IS \
+              or it == Target.CON_INSTR_FAIL_NOW \
+              or it == Target.CON_INSTR_POP \
+              or it == Target.CON_INSTR_IMPORT \
+              or it == Target.CON_INSTR_LIST \
+              or it == Target.CON_INSTR_APPLY \
+              or it == Target.CON_INSTR_FUNC_DEFN \
+              or it == Target.CON_INSTR_RETURN \
+              or it == Target.CON_INSTR_BRANCH \
+              or it == Target.CON_INSTR_YIELD \
+              or it == Target.CON_INSTR_DICT \
+              or it == Target.CON_INSTR_DUP \
+              or it == Target.CON_INSTR_PULL \
+              or it == Target.CON_INSTR_BUILTIN_LOOKUP \
+              or it == Target.CON_INSTR_EYIELD \
+              or it == Target.CON_INSTR_ADD_EXCEPTION_FRAME \
+              or it == Target.CON_INSTR_REMOVE_EXCEPTION_FRAME \
+              or it == Target.CON_INSTR_RAISE \
+              or it == Target.CON_INSTR_SET \
+              or it == Target.CON_INSTR_BRANCH_IF_NOT_FAIL \
+              or it == Target.CON_INSTR_BRANCH_IF_FAIL \
+              or it == Target.CON_INSTR_CONST_GET \
+              or it == Target.CON_INSTR_CONST_SET \
+              or it == Target.CON_INSTR_UNPACK_ASSIGN \
+              or it == Target.CON_INSTR_EQ \
+              or it == Target.CON_INSTR_NEQ \
+              or it == Target.CON_INSTR_GT \
+              or it == Target.CON_INSTR_LE \
+              or it == Target.CON_INSTR_LE_EQ \
+              or it == Target.CON_INSTR_GR_EQ \
+              or it == Target.CON_INSTR_ADD \
+              or it == Target.CON_INSTR_SUBTRACT:
+                cur_bc_off += Target.INTSIZE
+            else:
+                print it
+                raise Exception("XXX")
+        
+            instr_i += 1
+
+        assert cur_bc_off == bc_off
+        
+        src_info_pos = src_info_num = 0
+        src_infos_off = Target.read_word(bc, Target.BC_MOD_SRC_POSITIONS)
+        while 1:
+            src_info1 = Target.read_32bit_word(bc, src_infos_off + src_info_pos * 4)
+            if src_info_num + (src_info1 & ((1 << 4) - 1)) > instr_i:
+                break
+            src_info_num += src_info1 & ((1 << 4) - 1)
+            while src_info1 & (1 << 4):
+                src_info_pos += 2
+                src_info1 = Target.read_32bit_word(bc, src_infos_off + src_info_pos * 4)
+            src_info_pos += 2
+
+        src_infos = []
+        while 1:
+            src_info1 = Target.read_32bit_word(bc, src_infos_off + src_info_pos * 4)
+            src_info2 = Target.read_32bit_word(bc, src_infos_off + (src_info_pos + 1) * 4)
+
+            if src_info2 & ((1 << 12) - 1) == ((1 << 12) - 1):
+                mod_id = self.id_
+            else:
+                mod_id = self.imps[src_info2 & ((1 << 12) - 1)]
+
+            src_off = (src_info1 >> 5) & ((1 << (31 - 5)) - 1)
+            src_len = src_info2 >> 12
+            src_info = Con_List(vm, \
+              [Con_String(vm, mod_id), Con_Int(vm, src_off), Con_Int(vm, src_len)])
+            src_infos.append(src_info)
+
+            if not (src_info1 & (1 << 4)):
+                break
+
+            src_info_pos += 2
+        
+        return Con_List(vm, src_infos)
+
+
 def _Con_Module_get_defn(vm):
     (self, n),_ = vm.decode_args("MS")
     assert isinstance(self, Con_Module)
     assert isinstance(n, Con_String)
 
     vm.return_(self.get_defn(vm, n.v))
+
+
+def _Con_Module_iter_newlines(vm):
+    (self,),_ = vm.decode_args("M")
+    assert isinstance(self, Con_Module)
+
+    bc = self.bc
+    newlines_off = Target.read_word(bc, Target.BC_MOD_NEWLINES)
+    for i in range(Target.read_word(bc, Target.BC_MOD_NUM_NEWLINES)):
+        vm.yield_(Con_Int(vm, Target.read_word(bc, newlines_off + i * Target.INTSIZE)))
+    
+    vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
 
 
 def _Con_Module_path(vm):
@@ -666,6 +795,7 @@ def bootstrap_con_module(vm):
     module_class = vm.get_builtin(BUILTIN_MODULE_CLASS)
 
     new_c_con_func_for_class(vm, "get_defn", _Con_Module_get_defn, module_class)
+    new_c_con_func_for_class(vm, "iter_newlines", _Con_Module_iter_newlines, module_class)
     new_c_con_func_for_class(vm, "path", _Con_Module_path, module_class)
 
 
@@ -673,6 +803,7 @@ def new_c_con_module(vm, name, id_, src_path, import_func, names):
     tlvars_map = {}
     i = 0
     for j in names:
+        assert j not in tlvars_map
         tlvars_map[j] = i
         i += 1
     mod = Con_Module(vm, False, lltype.nullptr(rffi.CCHARP.TO), Con_String(vm, name), id_, \
@@ -1722,8 +1853,22 @@ def _Con_Exception_init(vm):
     vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))
 
 
+def _Con_Exception_iter_call_chain(vm):
+    (self,),_ = vm.decode_args("E")
+    assert isinstance(self, Con_Exception)
+
+    for pc, func, bc_off in self.call_chain:
+        if isinstance(pc, BC_PC):
+            src_infos = pc.mod.bc_off_to_src_infos(vm, bc_off)
+        else:
+            assert isinstance(pc, Py_PC)
+            src_infos = vm.get_builtin(BUILTIN_NULL_OBJ)
+        vm.yield_(Con_List(vm, [func, src_infos]))
+    vm.return_(vm.get_builtin(Builtins.BUILTIN_FAIL_OBJ))
+
+
 def _Con_Exception_to_str(vm):
-    (self,),_ = vm.decode_args("O")
+    (self,),_ = vm.decode_args("E")
     ex_name = type_check_string(vm, self.get_slot(vm, "instance_of").get_slot(vm, "name"))
     msg = type_check_string(vm, self.get_slot(vm, "msg"))
     vm.return_(Con_String(vm, "%s: %s" % (ex_name.v, msg.v)))
@@ -1738,6 +1883,7 @@ def bootstrap_con_exception(vm):
         vm.get_builtin(BUILTIN_BUILTINS_MODULE))
 
     new_c_con_func_for_class(vm, "init", _Con_Exception_init, exception_class)
+    new_c_con_func_for_class(vm, "iter_call_chain", _Con_Exception_iter_call_chain, exception_class)
     new_c_con_func_for_class(vm, "to_str", _Con_Exception_to_str, exception_class)
 
 

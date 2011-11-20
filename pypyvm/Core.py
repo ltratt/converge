@@ -93,6 +93,15 @@ def translate_idx(vm, i, upper):
     return i
 
 
+def translate_idx_obj(vm, i_o, upper):
+    if i_o is None:
+        i = 0
+    else:
+        assert isinstance(i_o, Builtins.Con_Int)
+        i = i_o.v
+    return translate_idx(vm, i, upper)
+
+
 def translate_slice_idx(vm, i, upper):
     if i < 0:
         i = upper + i

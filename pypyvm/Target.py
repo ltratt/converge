@@ -139,11 +139,17 @@ if INTSIZE == 8:
     def read_word(bc, i):
         return rffi.cast(rffi.LONGP, bc)[i / INTSIZE]
 
+    @elidable_promote("1")
+    def read_32bit_word(bc, i):
+        return rffi.cast(rffi.LONG, rffi.cast(rffi.INTP, bc)[i / 4])
+
     @elidable_promote()
     def align(i):
         return (i + 7) & ~7
-        #if i % 8 == 0: return i
-        #else: return i - (i % 8) + 8
+
+    @elidable_promote()
+    def unpack_exbi(instr):
+        return (4, (instr & 0xFFFFFF00) >> 8)
 
     @elidable_promote()
     def get_instr(instr):

@@ -426,7 +426,7 @@ class VM(object):
             i = len(self.cf_stack) - 1
             while i >= 0:
                 cf = self.cf_stack[i]
-                cc.append((cf.pc, cf.bc_off))
+                cc.append((cf.pc, cf.func, cf.bc_off))
                 i -= 1
             ex.call_chain = cc
         raise Con_Raise_Exception(ex)

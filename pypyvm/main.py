@@ -29,7 +29,7 @@ from pypy.config.config import Config
 from pypy.rlib.jit import *
 from pypy.rpython.lltypesystem import lltype, rffi
 import os, os.path, sys
-import Builtins, Bytecode, VM
+import Builtins, Bytecode, Stdlib_Modules, VM
 
 
 
@@ -66,10 +66,9 @@ def entry_point(argv):
             code = Builtins.type_check_int(vm, e.ex_obj.get_slot(vm, "code"))
             return code.v
         else:
-            msg = vm.get_slot_apply(e.ex_obj, "to_str")
-            assert isinstance(msg, Builtins.Con_String)
-            print msg.v
-            raise
+            pb = vm.import_stdlib_mod(Stdlib_Modules.STDLIB_BACKTRACE).get_defn(vm, "print_best")
+            vm.apply(pb, [e.ex_obj])
+            return 1
     
     return 0
 

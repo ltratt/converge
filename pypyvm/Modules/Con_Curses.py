@@ -20,8 +20,34 @@
 
 
 import sys
+from pypy.rpython.lltypesystem import lltype, rffi
+from pypy.rpython.tool import rffi_platform as platform
+from pypy.translator.tool.cbuild import ExternalCompilationInfo
 from Builtins import *
 
+
+
+eci             = ExternalCompilationInfo(includes=["curses.h", "term.h", "unistd.h"], \
+                    libraries=["curses"])
+
+
+if platform.has("setupterm", "#include <curses.h>\n#include <term.h>"):
+    HAVE_CURSES = True
+    setupterm   = rffi.llexternal("setupterm", [rffi.CCHARP, rffi.INT, rffi.INTP], rffi.INT, \
+                    compilation_info=eci)
+    tigetstr    = rffi.llexternal("tigetstr", [rffi.CCHARP], rffi.CCHARP, compilation_info=eci)
+else:
+    HAVE_CURSES = False
+
+class CConfig:
+    _compilation_info_ = eci
+    OK                 = platform.DefinedConstantInteger("OK")
+    STDOUT_FILENO      = platform.DefinedConstantInteger("STDOUT_FILENO")
+
+cconfig = platform.configure(CConfig)
+
+OK                     = cconfig["OK"]
+STDOUT_FILENO          = cconfig["STDOUT_FILENO"]
 
 
 
@@ -34,33 +60,64 @@ def import_(vm):
     (mod,),_ = vm.decode_args("O")
     
     class_class = vm.get_builtin(BUILTIN_CLASS_CLASS)
-    int_exception_class = vm.get_mod("Exceptions").get_defn(vm, "Internal_Exception")
+    int_exception_class = vm.get_builtin(BUILTIN_EXCEPTIONS_MODULE). \
+      get_defn(vm, "Internal_Exception")
     curses_exception = vm.get_slot_apply(class_class, "new", \
       [Con_String(vm, "Curses_Exception"), Con_List(vm, [int_exception_class]), mod])
     mod.set_defn(vm, "Curses_Exception", curses_exception)
-    new_c_con_func_for_mod(vm, "setupterm", setupterm, mod)
-    new_c_con_func_for_mod(vm, "tigetstr", tigetstr, mod)
+    new_c_con_func_for_mod(vm, "setupterm", setupterm_func, mod)
+    new_c_con_func_for_mod(vm, "tigetstr", tigetstr_func, mod)
 
     vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
 
 
-def setupterm(vm):
+def setupterm_func(vm):
+    mod = vm.get_funcs_mod()
     (term_o, file_o), _ = vm.decode_args(opt="sO")
     
-    if term_o is not None:
+    if HAVE_CURSES:
+        if term_o:
+            assert isinstance(term_o, Con_String)
+            raise Exception("XXX")
+        else:
+            term = None
+
+        if file_o:
+            fd = type_check_int(vm, vm.get_slot_apply(file_o, "fileno")).v
+        else:
+            fd = STDOUT_FILENO
+
+        with lltype.scoped_alloc(rffi.INTP.TO, 1) as erret:
+            if setupterm(term, fd, erret) != OK:
+                ec = int(erret[0])
+                if ec == -1:
+                    msg = "Can't find terminfo database."
+                elif ec == 0:
+                    msg = "Terminal not found or not enough information known about it."
+                elif ec == 1:
+                    msg = "Terminal is hardcopy."
+                else:
+                    raise Exception("XXX")
+
+                cex_class = mod.get_defn(vm, "Curses_Exception")
+                vm.raise_(vm.get_slot_apply(cex_class, "new", [Con_String(vm, msg)]))
+    else:
         raise Exception("XXX")
-
-    fd = 1
-    if file_o is not None:
-        file_no_o = type_check_int(vm, vm.get_slot_apply(file_o, "fileno"))
-        fd = file_no_o.v
-
-    #_curses.setupterm(None, fd)
     
     vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
 
 
-def tigetstr(vm):
-    (capname_o), _ = vm.decode_args(opt="S")
+def tigetstr_func(vm):
+    mod = vm.get_funcs_mod()
+    (capname_o,), _ = vm.decode_args("S")
+    assert isinstance(capname_o, Con_String)
 
-    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    if HAVE_CURSES:
+        r = tigetstr(capname_o.v)
+        if rffi.cast(rffi.LONG, r) == -1 or rffi.cast(rffi.LONG, r) == -1:
+            msg = "'%s' not found or absent." % capname_o.v
+            cex_class = mod.get_defn(vm, "Curses_Exception")
+            vm.raise_(vm.get_slot_apply(cex_class, "new", [Con_String(vm, msg)]))
+        vm.return_(Con_String(vm, rffi.charp2str(r)))
+    else:
+        raise Exception("XXX")

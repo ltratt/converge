@@ -19,16 +19,45 @@
 # IN THE SOFTWARE.
 
 
-__all__ = ["Con_Array", "Con_C_Earley_Parser", "Con_C_Platform_Exec", "Con_C_Platform_Host",
-  "Con_C_Platform_Properties", "Con_C_Strings", "Con_C_Time", "Con_Curses", "Con_Exceptions",
-  "Con_PCRE", "Con_POSIX_File", "Con_Sys", "Con_Thread", "Con_VM"]
+import os
+from pypy.rpython.lltypesystem import lltype, rffi
+from pypy.rpython.tool import rffi_platform as platform
+from pypy.rlib import rarithmetic, rposix
+from pypy.translator.tool.cbuild import ExternalCompilationInfo
+from Builtins import *
 
-import Con_Array, Con_C_Earley_Parser, Con_C_Platform_Exec, Con_C_Platform_Host, \
-  Con_C_Platform_Properties, Con_C_Strings, Con_C_Time, Con_Curses, Con_Exceptions, \
-  Con_PCRE, Con_POSIX_File, Con_Sys, Con_Thread, Con_VM
 
-BUILTIN_MODULES = \
-  [Con_Array.init, Con_C_Earley_Parser.init, Con_C_Platform_Exec.init, Con_C_Platform_Host.init, \
-   Con_C_Platform_Properties.init, Con_C_Strings.init, Con_C_Time.init, Con_Curses.init, \
-   Con_Exceptions.init, Con_PCRE.init, Con_POSIX_File.init, Con_Sys.init, Con_Thread.init, \
-   Con_VM.init]
+
+eci    = ExternalCompilationInfo(includes=["stdlib.h"])
+
+system = rffi.llexternal("system", [rffi.CCHARP], rffi.INT, compilation_info=eci)
+
+class CConfig:
+    _compilation_info_ = eci
+
+cconfig = platform.configure(CConfig)
+
+
+
+def init(vm):
+    return new_c_con_module(vm, "C_Platform_Exec", "C_Platform_Exec", __file__, import_, \
+      ["sh_cmd"])
+
+
+def import_(vm):
+    (mod,),_ = vm.decode_args("O")
+    
+    new_c_con_func_for_mod(vm, "sh_cmd", sh_cmd, mod)
+    
+    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+
+
+def sh_cmd(vm):
+    (cmd_o,),_ = vm.decode_args("S")
+    assert isinstance(cmd_o, Con_String)
+
+    r = system(cmd_o.v)
+    if r == -1:
+        vm.raise_helper("Exception", [Con_String(vm, os.strerror(rposix.get_errno()))])
+
+    vm.return_(Con_Int(vm, r))

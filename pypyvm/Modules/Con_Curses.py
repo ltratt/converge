@@ -60,10 +60,10 @@ def import_(vm):
     (mod,),_ = vm.decode_args("O")
     
     class_class = vm.get_builtin(BUILTIN_CLASS_CLASS)
-    int_exception_class = vm.get_builtin(BUILTIN_EXCEPTIONS_MODULE). \
-      get_defn(vm, "Internal_Exception")
+    user_exception_class = vm.get_builtin(BUILTIN_EXCEPTIONS_MODULE). \
+      get_defn(vm, "User_Exception")
     curses_exception = vm.get_slot_apply(class_class, "new", \
-      [Con_String(vm, "Curses_Exception"), Con_List(vm, [int_exception_class]), mod])
+      [Con_String(vm, "Curses_Exception"), Con_List(vm, [user_exception_class]), mod])
     mod.set_defn(vm, "Curses_Exception", curses_exception)
     new_c_con_func_for_mod(vm, "setupterm", setupterm_func, mod)
     new_c_con_func_for_mod(vm, "tigetstr", tigetstr_func, mod)

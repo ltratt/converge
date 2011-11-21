@@ -35,6 +35,11 @@ if sys.platform.startswith("win"):
 else:
     CASE_SENSITIVE_FILENAMES = 0
 
+if sys.byteorder == "big":
+    ENDIANNESS = "BIG_ENDIAN"
+else:
+    ENDIANNESS = "LITTLE_ENDIAN"
+
 
 
 

@@ -25,10 +25,7 @@ from Core import *
 
 
 
-if sys.byteorder == "big":
-    ENDIANNESS = "BIG_ENDIAN"
-else:
-    ENDIANNESS = "LITTLE_ENDIAN"
+
 
 if sys.platform.startswith("openbsd"):
     PLATFORM = os.uname()[0]

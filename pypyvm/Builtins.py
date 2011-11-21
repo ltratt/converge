@@ -981,12 +981,50 @@ class Con_Int(Con_Boxed_Object):
         return self.v > o.v
 
 
+def _Con_Int_add(vm):
+    (self, o),_ = vm.decode_args("II")
+    assert isinstance(self, Con_Int)
+    assert isinstance(o, Con_Int)
+
+    vm.return_(Con_Int(vm, self.v + o.v))
+
+
+def _Con_Int_and(vm):
+    (self, o),_ = vm.decode_args("II")
+    assert isinstance(self, Con_Int)
+    assert isinstance(o, Con_Int)
+
+    vm.return_(Con_Int(vm, self.v & o.v))
+
+
 def _Con_Int_eq(vm):
     (self, o_o),_ = vm.decode_args("II")
     assert isinstance(self, Con_Int)
     assert isinstance(o_o, Con_Int)
 
     if self.v == o_o.v:
+        vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    else:
+        vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+
+
+def _Con_Int_gt(vm):
+    (self, o_o),_ = vm.decode_args("II")
+    assert isinstance(self, Con_Int)
+    assert isinstance(o_o, Con_Int)
+
+    if self.v >= o_o.v:
+        vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    else:
+        vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+
+
+def _Con_Int_gtq(vm):
+    (self, o_o),_ = vm.decode_args("II")
+    assert isinstance(self, Con_Int)
+    assert isinstance(o_o, Con_Int)
+
+    if self.v >= o_o.v:
         vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
     else:
         vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
@@ -1007,12 +1045,94 @@ def _Con_Int_idiv(vm):
     vm.return_(Con_Int(vm, self.v / o.v))
 
 
+def _Con_Int_iter_to(vm):
+    (self, to_o, step_o),_ = vm.decode_args("II", opt="I")
+    assert isinstance(self, Con_Int)
+    assert isinstance(to_o, Con_Int)
+    
+    if step_o is None:
+        step = 1
+    else:
+        assert isinstance(step_o, Con_Int)
+        step = step_o.v
+
+    for i in range(self.v, to_o.v, step):
+        vm.yield_(Con_Int(vm, i))
+
+    vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+
+
+def _Con_Int_le(vm):
+    (self, o_o),_ = vm.decode_args("II")
+    assert isinstance(self, Con_Int)
+    assert isinstance(o_o, Con_Int)
+
+    if self.v < o_o.v:
+        vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    else:
+        vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+
+
+def _Con_Int_leq(vm):
+    (self, o_o),_ = vm.decode_args("II")
+    assert isinstance(self, Con_Int)
+    assert isinstance(o_o, Con_Int)
+
+    if self.v <= o_o.v:
+        vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    else:
+        vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+
+
+def _Con_Int_lsl(vm):
+    (self, o),_ = vm.decode_args("II")
+    assert isinstance(self, Con_Int)
+    assert isinstance(o, Con_Int)
+
+    vm.return_(Con_Int(vm, self.v << o.v))
+
+
+def _Con_Int_lsr(vm):
+    (self, o),_ = vm.decode_args("II")
+    assert isinstance(self, Con_Int)
+    assert isinstance(o, Con_Int)
+
+    vm.return_(Con_Int(vm, self.v >> o.v))
+
+
 def _Con_Int_mul(vm):
     (self, o),_ = vm.decode_args("II")
     assert isinstance(self, Con_Int)
     assert isinstance(o, Con_Int)
 
     vm.return_(Con_Int(vm, self.v * o.v))
+
+
+def _Con_Int_or(vm):
+    (self, o),_ = vm.decode_args("II")
+    assert isinstance(self, Con_Int)
+    assert isinstance(o, Con_Int)
+
+    vm.return_(Con_Int(vm, self.v | o.v))
+
+
+def _Con_Int_sub(vm):
+    (self, o),_ = vm.decode_args("II")
+    assert isinstance(self, Con_Int)
+    assert isinstance(o, Con_Int)
+
+    vm.return_(Con_Int(vm, self.v - o.v))
+
+
+def _Con_Int_str_val(vm):
+    (self,),_ = vm.decode_args("I")
+    assert isinstance(self, Con_Int)
+
+    v = self.v
+    if v < 0 or v > 255:
+        vm.raise_helper("Number_Exception", [Con_String(vm, "'%d' out of ASCII range." % v)])
+
+    vm.return_(Con_String(vm, chr(v)))
 
 
 def _Con_Int_to_str(vm):
@@ -1029,10 +1149,22 @@ def bootstrap_con_int(vm):
     builtins_module = vm.get_builtin(BUILTIN_BUILTINS_MODULE)
     builtins_module.set_defn(vm, "Int", int_class)
 
+    new_c_con_func_for_class(vm, "+", _Con_Int_add, int_class)
+    new_c_con_func_for_class(vm, "and", _Con_Int_and, int_class)
     new_c_con_func_for_class(vm, "==", _Con_Int_eq, int_class)
+    new_c_con_func_for_class(vm, ">", _Con_Int_gt, int_class)
+    new_c_con_func_for_class(vm, ">=", _Con_Int_gtq, int_class)
     new_c_con_func_for_class(vm, "hash", _Con_Int_hash, int_class)
     new_c_con_func_for_class(vm, "idiv", _Con_Int_idiv, int_class)
+    new_c_con_func_for_class(vm, "iter_to", _Con_Int_iter_to, int_class)
+    new_c_con_func_for_class(vm, "<", _Con_Int_le, int_class)
+    new_c_con_func_for_class(vm, "<=", _Con_Int_leq, int_class)
+    new_c_con_func_for_class(vm, "lsl", _Con_Int_lsl, int_class)
+    new_c_con_func_for_class(vm, "lsr", _Con_Int_lsr, int_class)
     new_c_con_func_for_class(vm, "*", _Con_Int_mul, int_class)
+    new_c_con_func_for_class(vm, "or", _Con_Int_or, int_class)
+    new_c_con_func_for_class(vm, "str_val", _Con_Int_str_val, int_class)
+    new_c_con_func_for_class(vm, "-", _Con_Int_sub, int_class)
     new_c_con_func_for_class(vm, "to_str", _Con_Int_to_str, int_class)
 
 

@@ -23,6 +23,7 @@ try:
     import pypy
 except:
     import os, sys
+    sys.setrecursionlimit(5000)
     sys.path.append(os.getenv("PYPY_SRC"))
     
 from pypy.config.config import Config

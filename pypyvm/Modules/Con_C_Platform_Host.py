@@ -41,4 +41,4 @@ def import_(vm):
 def get_hostname(vm):
     _,_ = vm.decode_args()
 
-    return Con_String(vm, rsocket.gethostname())
+    vm.return_(Con_String(vm, rsocket.gethostname()))

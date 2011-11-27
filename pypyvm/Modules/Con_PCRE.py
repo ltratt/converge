@@ -102,18 +102,13 @@ def _Pattern_match_search(vm, anchored):
     assert isinstance(self, Pattern)
     assert isinstance(s_o, Con_String)
     
-    if sp_o is None:
-        sp = 0
-    else:
-        assert isinstance(sp_o, Con_Int)
-        raise Exception("XXX")
-
     ovect_size = (1 + self.num_caps) * 3
     ovect = lltype.malloc(rffi.INTP.TO, ovect_size, flavor="raw")
     if anchored:
         flags = PCRE_ANCHORED
     else:
         flags = 0
+    sp = translate_idx_obj(vm, sp_o, len(s_o.v))
     r = int(pcre_exec(self.cp, None, s_o.v, len(s_o.v), sp, flags, ovect, ovect_size))
     if r < 0:
         if r == PCRE_ERROR_NOMATCH:

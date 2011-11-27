@@ -281,7 +281,7 @@ def _Con_Object_is(vm):
 
 def _Con_Object_to_str(vm):
     (self,),_ = vm.decode_args("O")
-    vm.return_(Con_String(vm, "<Object@%x>" % id(self)))
+    vm.return_(Con_String(vm, "<Object@%x>" % objectmodel.current_object_addr_as_int(self)))
 
 
 def bootstrap_con_object(vm):

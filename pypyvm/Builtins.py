@@ -997,6 +997,14 @@ def _Con_Int_and(vm):
     vm.return_(Con_Int(vm, self.v & o.v))
 
 
+def _Con_Int_div(vm):
+    (self, o),_ = vm.decode_args("II")
+    assert isinstance(self, Con_Int)
+    assert isinstance(o, Con_Int)
+
+    vm.return_(Con_Int(vm, self.v / o.v))
+
+
 def _Con_Int_eq(vm):
     (self, o_o),_ = vm.decode_args("II")
     assert isinstance(self, Con_Int)
@@ -1042,7 +1050,7 @@ def _Con_Int_idiv(vm):
     assert isinstance(self, Con_Int)
     assert isinstance(o, Con_Int)
 
-    vm.return_(Con_Int(vm, self.v / o.v))
+    vm.return_(Con_Int(vm, self.v // o.v))
 
 
 def _Con_Int_iter_to(vm):
@@ -1100,6 +1108,14 @@ def _Con_Int_lsr(vm):
     vm.return_(Con_Int(vm, self.v >> o.v))
 
 
+def _Con_Int_mod(vm):
+    (self, o),_ = vm.decode_args("II")
+    assert isinstance(self, Con_Int)
+    assert isinstance(o, Con_Int)
+
+    vm.return_(Con_Int(vm, self.v % o.v))
+
+
 def _Con_Int_mul(vm):
     (self, o),_ = vm.decode_args("II")
     assert isinstance(self, Con_Int)
@@ -1151,6 +1167,7 @@ def bootstrap_con_int(vm):
 
     new_c_con_func_for_class(vm, "+", _Con_Int_add, int_class)
     new_c_con_func_for_class(vm, "and", _Con_Int_and, int_class)
+    new_c_con_func_for_class(vm, "/", _Con_Int_div, int_class)
     new_c_con_func_for_class(vm, "==", _Con_Int_eq, int_class)
     new_c_con_func_for_class(vm, ">", _Con_Int_gt, int_class)
     new_c_con_func_for_class(vm, ">=", _Con_Int_gtq, int_class)
@@ -1161,6 +1178,7 @@ def bootstrap_con_int(vm):
     new_c_con_func_for_class(vm, "<=", _Con_Int_leq, int_class)
     new_c_con_func_for_class(vm, "lsl", _Con_Int_lsl, int_class)
     new_c_con_func_for_class(vm, "lsr", _Con_Int_lsr, int_class)
+    new_c_con_func_for_class(vm, "%", _Con_Int_mod, int_class)
     new_c_con_func_for_class(vm, "*", _Con_Int_mul, int_class)
     new_c_con_func_for_class(vm, "or", _Con_Int_or, int_class)
     new_c_con_func_for_class(vm, "str_val", _Con_Int_str_val, int_class)

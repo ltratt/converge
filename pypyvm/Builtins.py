@@ -179,7 +179,7 @@ class Con_Boxed_Object(Con_Object):
         if o is None:
             vm.raise_helper("Slot_Exception", [Con_String(vm, n), self])
 
-        if isinstance(o, Con_Func):
+        if isinstance(o, Con_Func) and o.is_bound:
             return Con_Partial_Application(vm, self, o)
         
         return o

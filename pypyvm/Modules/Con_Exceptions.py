@@ -33,8 +33,8 @@ def init(vm):
        "User_Exception",
          "Apply_Exception", "Assert_Exception", "Bounds_Exception", "Field_Exception",
          "Import_Exception", "Indices_Exception", "Key_Exception", "Mod_Defn_Exception",
-         "Number_Exception", "Parameters_Exception", "Slot_Exception", "Type_Exception",
-         "Unassigned_Var_Exception", "Unpack_Exception",
+         "NDIf_Exception", "Number_Exception", "Parameters_Exception", "Slot_Exception",
+         "Type_Exception", "Unassigned_Var_Exception", "Unpack_Exception",
        "IO_Exception",
          "File_Exception"])
     vm.set_builtin(BUILTIN_EXCEPTIONS_MODULE, mod)
@@ -57,12 +57,12 @@ def import_(vm):
     _mk_simple_exception(vm, mod, "Apply_Exception", init_func=_Apply_Exception_init_func)
     _mk_simple_exception(vm, mod, "Assert_Exception")
     _mk_simple_exception(vm, mod, "Bounds_Exception", init_func=_Bounds_Exception_init_func)
-    _mk_simple_exception(vm, mod, "Assert_Exception")
     _mk_simple_exception(vm, mod, "Field_Exception", init_func=_Field_Exception_init_func)
     _mk_simple_exception(vm, mod, "Import_Exception", init_func=_Import_Exception_init_func)
     _mk_simple_exception(vm, mod, "Indices_Exception", init_func=_Indices_Exception_init_func)
     _mk_simple_exception(vm, mod, "Key_Exception", init_func=_Key_Exception_init_func)
     _mk_simple_exception(vm, mod, "Mod_Defn_Exception")
+    _mk_simple_exception(vm, mod, "NDIf_Exception")
     _mk_simple_exception(vm, mod, "Number_Exception")
     _mk_simple_exception(vm, mod, "Parameters_Exception")
     _mk_simple_exception(vm, mod, "Slot_Exception", init_func=_Slot_Exception_init_func)

@@ -1243,6 +1243,14 @@ class Con_String(Con_Boxed_Object):
         return Con_String(vm, self.v[i:j])
 
 
+def _Con_String_add(vm):
+    (self, o_o),_ = vm.decode_args("SS")
+    assert isinstance(self, Con_String)
+    assert isinstance(o_o, Con_String)
+    
+    vm.return_(Con_String(vm, self.v + o_o.v))
+
+
 def _Con_String_eq(vm):
     (self, o_o),_ = vm.decode_args("SS")
     assert isinstance(self, Con_String)
@@ -1360,6 +1368,14 @@ def _Con_String_lstripped(vm):
         i += 1
 
     vm.return_(Con_String(vm, self.v[i:]))
+
+
+def _Con_String_mul(vm):
+    (self, i_o),_ = vm.decode_args("SI")
+    assert isinstance(self, Con_String)
+    assert isinstance(i_o, Con_Int)
+    
+    vm.return_(Con_String(vm, self.v * i_o.v))
 
 
 def _Con_String_neq(vm):
@@ -1483,6 +1499,7 @@ def _Con_String_upper_cased(vm):
 def bootstrap_con_string(vm):
     string_class = vm.get_builtin(BUILTIN_STRING_CLASS)
 
+    new_c_con_func_for_class(vm, "+", _Con_String_add, string_class)
     new_c_con_func_for_class(vm, "==", _Con_String_eq, string_class)
     new_c_con_func_for_class(vm, "find", _Con_String_find, string_class)
     new_c_con_func_for_class(vm, "find_index", _Con_String_find_index, string_class)
@@ -1494,6 +1511,7 @@ def bootstrap_con_string(vm):
     new_c_con_func_for_class(vm, "len", _Con_String_len, string_class)
     new_c_con_func_for_class(vm, "lower_cased", _Con_String_lower_cased, string_class)
     new_c_con_func_for_class(vm, "lstripped", _Con_String_lstripped, string_class)
+    new_c_con_func_for_class(vm, "*", _Con_String_mul, string_class)
     new_c_con_func_for_class(vm, "!=", _Con_String_neq, string_class)
     new_c_con_func_for_class(vm, "prefixed_by", _Con_String_prefixed_by, string_class)
     new_c_con_func_for_class(vm, "replaced", _Con_String_replaced, string_class)

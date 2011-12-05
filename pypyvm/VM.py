@@ -749,7 +749,7 @@ class VM(object):
 
 
     def _instr_yield(self, instr, cf):
-        self.yield_(self._cf_stack_pop(cf))
+        self.yield_(cf.stack[cf.stackpe - 1])
         cf.bc_off += Target.INTSIZE
 
 

@@ -897,7 +897,7 @@ class Code_Gen:
             fail_now_label := self._create_label()
             self._nesting.append([NEST_FOR, broken_body_label])
             self._instructions.append(self._target.Instr_Add_Failure_Frame.new(node.src_infos, fail_now_label))
-            max_stack_size := self._max(max_stack_size, 1 + self._preorder(node.body))
+            max_stack_size := self._max(max_stack_size, 3 + self._preorder(node.body))
             self._instructions.append(self._target.Instr_Remove_Failure_Frame.new(node.src_infos))
             self._nesting.del(-1)
             self._set_label(fail_now_label)
@@ -1082,7 +1082,7 @@ class Code_Gen:
         self._instructions.append(self._target.Instr_Apply.new(node.src_infos, node.args.len()))
         max_stack_size := self._max(max_stack_size, 1)
         
-        return max_stack_size
+        return max_stack_size + 1 // Allow for a generator frame
 
 
 

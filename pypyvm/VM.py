@@ -1005,6 +1005,7 @@ class VM(object):
     #
     
     def _cf_stack_push(self, cf, x):
+        assert cf.stackpe < len(cf.stack)
         cf.stack[cf.stackpe] = x
         cf.stackpe += 1
 

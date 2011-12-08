@@ -162,7 +162,7 @@ class Con_Boxed_Object(Con_Object):
         return False
 
 
-    def get_slot(self, vm, n):
+    def get_slot(self, vm, n, find_mode=False):
         o = None
         if self.slots is not None:
             m = jit.promote(self.slots_map)
@@ -177,7 +177,10 @@ class Con_Boxed_Object(Con_Object):
             o = self.instance_of.get_field(vm, n)
 
         if o is None:
-            vm.raise_helper("Slot_Exception", [Con_String(vm, n), self])
+            if find_mode:
+                return None
+            else:
+                vm.raise_helper("Slot_Exception", [Con_String(vm, n), self])
 
         if isinstance(o, Con_Func) and o.is_bound:
             return Con_Partial_Application(vm, self, o)
@@ -266,6 +269,23 @@ def _new_func_Con_Object(vm):
     vm.return_(o)
 
 
+def _Con_Object_find_slot(vm):
+    (self, sn_o),_ = vm.decode_args("OS")
+    assert isinstance(sn_o, Con_String)
+
+    v = self.get_slot(vm, sn_o.v, find_mode=True)
+    if not v:
+        v = vm.get_builtin(BUILTIN_FAIL_OBJ)
+    vm.return_(v)
+
+
+def _Con_Object_get_slot(vm):
+    (self, sn_o),_ = vm.decode_args("OS")
+    assert isinstance(sn_o, Con_String)
+
+    vm.return_(self.get_slot(vm, sn_o.v))
+
+
 def _Con_Object_init(vm):
     (self,), vargs = vm.decode_args("O", vargs=True)
     vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
@@ -332,6 +352,8 @@ def bootstrap_con_object(vm):
       new_c_con_func(vm, Con_String(vm, "new_Object"), False, _new_func_Con_Object, \
         builtins_module)
 
+    new_c_con_func_for_class(vm, "find_slot", _Con_Object_find_slot, object_class)
+    new_c_con_func_for_class(vm, "get_slot", _Con_Object_get_slot, object_class)
     new_c_con_func_for_class(vm, "init", _Con_Object_init, object_class)
     new_c_con_func_for_class(vm, "is", _Con_Object_is, object_class)
     new_c_con_func_for_class(vm, "to_str", _Con_Object_to_str, object_class)

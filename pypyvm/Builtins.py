@@ -1862,6 +1862,49 @@ def _Con_Set_add(vm):
     vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))
 
 
+def _Con_Set_add_plus(vm):
+    (self, o_o),_ = vm.decode_args("WO")
+    assert isinstance(self, Con_Set)
+    
+    n_o = Con_Set(vm, self.s.keys())
+    vm.get_slot_apply(n_o, "extend", [o_o])
+
+    vm.return_(n_o)
+
+
+def _Con_Set_complement(vm):
+    (self, o_o),_ = vm.decode_args("WO")
+    assert isinstance(self, Con_Set)
+
+    n_s = []
+    for k in self.s.keys():
+        if isinstance(o_o, Con_Set):
+            if k not in o_o.s:
+                n_s.append(k)
+        else:
+            raise Exception("XXX")
+    
+    vm.return_(Con_Set(vm, n_s))
+
+
+def _Con_Set_extend(vm):
+    (self, o_o),_ = vm.decode_args("WO")
+    assert isinstance(self, Con_Set)
+
+    if isinstance(o_o, Con_Set):
+        for k in o_o.s.keys():
+            self.s[k] = None
+    else:
+        vm.pre_get_slot_apply_pump(o_o, "iter")
+        while 1:
+            e_o = vm.apply_pump()
+            if not e_o:
+                break
+            self.s[e_o] = None
+
+    vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))
+
+
 def _Con_Set_find(vm):
     (self, o),_ = vm.decode_args("WO")
     assert isinstance(self, Con_Set)
@@ -1872,11 +1915,28 @@ def _Con_Set_find(vm):
     vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
 
 
+def _Con_Set_iter(vm):
+    (self,),_ = vm.decode_args("W")
+    assert isinstance(self, Con_Set)
+    
+    for k in self.s.keys():
+        vm.yield_(k)
+    
+    vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+
+
 def _Con_Set_len(vm):
     (self,),_ = vm.decode_args("W")
     assert isinstance(self, Con_Set)
     
     vm.return_(Con_Int(vm, len(self.s)))
+
+
+def _Con_Set_scopy(vm):
+    (self,),_ = vm.decode_args("W")
+    assert isinstance(self, Con_Set)
+    
+    vm.return_(Con_Set(vm, self.s.keys()))
 
 
 def _Con_Set_to_str(vm):
@@ -1899,8 +1959,13 @@ def bootstrap_con_set(vm):
     builtins_module.set_defn(vm, "Set", set_class)
 
     new_c_con_func_for_class(vm, "add", _Con_Set_add, set_class)
+    new_c_con_func_for_class(vm, "+", _Con_Set_add_plus, set_class)
+    new_c_con_func_for_class(vm, "complement", _Con_Set_complement, set_class)
+    new_c_con_func_for_class(vm, "extend", _Con_Set_extend, set_class)
     new_c_con_func_for_class(vm, "find", _Con_Set_find, set_class)
+    new_c_con_func_for_class(vm, "iter", _Con_Set_iter, set_class)
     new_c_con_func_for_class(vm, "len", _Con_Set_len, set_class)
+    new_c_con_func_for_class(vm, "scopy", _Con_Set_scopy, set_class)
     new_c_con_func_for_class(vm, "to_str", _Con_Set_to_str, set_class)
 
 
@@ -1968,6 +2033,26 @@ def _Con_Dict_iter(vm):
     vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
 
 
+def _Con_Dict_iter_keys(vm):
+    (self,),_ = vm.decode_args("D")
+    assert isinstance(self, Con_Dict)
+
+    for v in self.d.keys():
+        vm.yield_(v)
+
+    vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+
+
+def _Con_Dict_iter_vals(vm):
+    (self,),_ = vm.decode_args("D")
+    assert isinstance(self, Con_Dict)
+
+    for v in self.d.values():
+        vm.yield_(v)
+
+    vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+
+
 def _Con_Dict_len(vm):
     (self,),_ = vm.decode_args("D")
     assert isinstance(self, Con_Dict)
@@ -1982,6 +2067,17 @@ def _Con_Dict_set(vm):
     self.d[k] = v
     
     vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+
+
+def _Con_Dict_scopy(vm):
+    (self,),_ = vm.decode_args("D")
+    assert isinstance(self, Con_Dict)
+
+    n_o = Con_Dict(vm, [])
+    for k, v in self.d.items():
+        n_o.d[k] = v
+
+    vm.return_(n_o)
 
 
 def _Con_Dict_to_str(vm):
@@ -2007,7 +2103,10 @@ def bootstrap_con_dict(vm):
     new_c_con_func_for_class(vm, "find", _Con_Dict_find, dict_class)
     new_c_con_func_for_class(vm, "get", _Con_Dict_get, dict_class)
     new_c_con_func_for_class(vm, "iter", _Con_Dict_iter, dict_class)
+    new_c_con_func_for_class(vm, "iter_keys", _Con_Dict_iter_keys, dict_class)
+    new_c_con_func_for_class(vm, "iter_vals", _Con_Dict_iter_vals, dict_class)
     new_c_con_func_for_class(vm, "len", _Con_Dict_len, dict_class)
+    new_c_con_func_for_class(vm, "scopy", _Con_Dict_scopy, dict_class)
     new_c_con_func_for_class(vm, "set", _Con_Dict_set, dict_class)
     new_c_con_func_for_class(vm, "to_str", _Con_Dict_to_str, dict_class)
 

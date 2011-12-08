@@ -870,7 +870,7 @@ class Con_Func(Con_Boxed_Object):
 
 
 def _Con_Func_path(vm):
-    (self, stop_at),_ = vm.decode_args("F", opt="o")
+    (self, stop_at),_ = vm.decode_args("Fo")
     assert isinstance(self, Con_Func)
     
     if self is stop_at:

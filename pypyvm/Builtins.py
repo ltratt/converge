@@ -1003,6 +1003,19 @@ class Con_Int(Con_Boxed_Object):
         return self.v > o.v
 
 
+def _new_func_Con_Int(vm):
+    (class_, o_o), vargs = vm.decode_args("CO", vargs=True)
+    if isinstance(o_o, Con_Int):
+        vm.return_(o_o)
+    elif isinstance(o_o, Con_String):
+        v = None
+        try:
+            v = int(o_o.v)
+        except ValueError:
+            vm.raise_helper("Number_Exception", [o_o])
+        vm.return_(Con_Int(vm, v))
+
+
 def _Con_Int_add(vm):
     (self, o),_ = vm.decode_args("II")
     assert isinstance(self, Con_Int)
@@ -1184,6 +1197,9 @@ def bootstrap_con_int(vm):
     int_class = Con_Class(vm, Con_String(vm, "Int"), [vm.get_builtin(BUILTIN_OBJECT_CLASS)], \
       vm.get_builtin(BUILTIN_BUILTINS_MODULE))
     vm.set_builtin(BUILTIN_INT_CLASS, int_class)
+    int_class.new_func = \
+      new_c_con_func(vm, Con_String(vm, "new_Int"), False, _new_func_Con_Int, \
+        vm.get_builtin(BUILTIN_BUILTINS_MODULE))
     builtins_module = vm.get_builtin(BUILTIN_BUILTINS_MODULE)
     builtins_module.set_defn(vm, "Int", int_class)
 

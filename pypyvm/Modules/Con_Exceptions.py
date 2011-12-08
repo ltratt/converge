@@ -63,7 +63,7 @@ def import_(vm):
     _mk_simple_exception(vm, mod, "Key_Exception", init_func=_Key_Exception_init_func)
     _mk_simple_exception(vm, mod, "Mod_Defn_Exception")
     _mk_simple_exception(vm, mod, "NDIf_Exception")
-    _mk_simple_exception(vm, mod, "Number_Exception")
+    _mk_simple_exception(vm, mod, "Number_Exception", init_func=_Number_Exception_init_func)
     _mk_simple_exception(vm, mod, "Parameters_Exception")
     _mk_simple_exception(vm, mod, "Slot_Exception", init_func=_Slot_Exception_init_func)
     _mk_simple_exception(vm, mod, "Type_Exception", init_func=_Type_Exception_init_func)
@@ -137,6 +137,13 @@ def _Key_Exception_init_func(vm):
     (self, k),_ = vm.decode_args("OO")
     k_s = type_check_string(vm, vm.get_slot_apply(k, "to_str"))
     self.set_slot(vm, "msg", Con_String(vm, "Key '%s' not found." % k_s.v))
+    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+
+
+def _Number_Exception_init_func(vm):
+    (self, o),_ = vm.decode_args("OO")
+    o_s = type_check_string(vm, vm.get_slot_apply(o, "to_str"))
+    self.set_slot(vm, "msg", Con_String(vm, "Number '%s' not valid." % o_s.v))
     vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
 
 

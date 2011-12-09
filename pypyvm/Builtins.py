@@ -332,7 +332,8 @@ def bootstrap_con_object(vm):
     
     # In order that later objects can refer to the Builtins module, we have to create it now.
     builtins_module = new_c_con_module(vm, "Builtins", "Builtins", __file__, None, \
-      ["Object", "Class", "Func", "String", "Module", "Int", "List", "Set", "Dict"])
+      ["Object", "Class", "Func", "Partial_Application", "String", "Module", "Int", "List", "Set", \
+       "Dict", "Exception"])
     # We effectively initialize the Builtins module through the bootstrapping process, so it doesn't
     # need a separate initialization function.
     builtins_module.initialized = True
@@ -347,6 +348,29 @@ def bootstrap_con_object(vm):
     builtins_module.set_defn(vm, "Class", class_class)
     builtins_module.set_defn(vm, "String", string_class)
     builtins_module.set_defn(vm, "Module", module_class)
+
+    func_class = Con_Class(vm, Con_String(vm, "Func"), [object_class], builtins_module)
+    vm.set_builtin(BUILTIN_FUNC_CLASS, func_class)
+    builtins_module.set_defn(vm, "Func", func_class)
+    partial_application_class = Con_Class(vm, Con_String(vm, "Partial_Application"), \
+      [object_class], builtins_module)
+    vm.set_builtin(BUILTIN_PARTIAL_APPLICATION_CLASS, partial_application_class)
+    builtins_module.set_defn(vm, "Partial_Application", partial_application_class)
+    int_class = Con_Class(vm, Con_String(vm, "Int"), [object_class], builtins_module)
+    vm.set_builtin(BUILTIN_INT_CLASS, int_class)
+    builtins_module.set_defn(vm, "Int", int_class)
+    list_class = Con_Class(vm, Con_String(vm, "List"), [object_class], builtins_module)
+    vm.set_builtin(BUILTIN_LIST_CLASS, list_class)
+    builtins_module.set_defn(vm, "List", list_class)
+    set_class = Con_Class(vm, Con_String(vm, "Set"), [object_class], builtins_module)
+    vm.set_builtin(BUILTIN_SET_CLASS, set_class)
+    builtins_module.set_defn(vm, "Set", set_class)
+    dict_class = Con_Class(vm, Con_String(vm, "Dict"), [object_class], builtins_module)
+    vm.set_builtin(BUILTIN_DICT_CLASS, dict_class)
+    builtins_module.set_defn(vm, "Dict", dict_class)
+    exception_class = Con_Class(vm, Con_String(vm, "Exception"), [object_class], builtins_module)
+    vm.set_builtin(BUILTIN_EXCEPTION_CLASS, exception_class)
+    builtins_module.set_defn(vm, "Exception", exception_class)
 
     object_class.new_func = \
       new_c_con_func(vm, Con_String(vm, "new_Object"), False, _new_func_Con_Object, \
@@ -556,8 +580,8 @@ def _Con_Class_instantiated(vm):
 
 
 def bootstrap_con_class(vm):
-    class_class = type_check_class(vm, vm.get_builtin(BUILTIN_CLASS_CLASS))
-
+    class_class = vm.get_builtin(BUILTIN_CLASS_CLASS)
+    assert isinstance(class_class, Con_Class)
     class_class.new_func = \
       new_c_con_func(vm, Con_String(vm, "new_Class"), False, _new_func_Con_Class, \
         vm.get_builtin(BUILTIN_BUILTINS_MODULE))
@@ -815,6 +839,7 @@ def _Con_Module_path(vm):
 
 def bootstrap_con_module(vm):
     module_class = vm.get_builtin(BUILTIN_MODULE_CLASS)
+    assert isinstance(module_class, Con_Class)
 
     new_c_con_func_for_class(vm, "get_defn", _Con_Module_get_defn, module_class)
     new_c_con_func_for_class(vm, "iter_newlines", _Con_Module_iter_newlines, module_class)
@@ -891,9 +916,9 @@ def _Con_Func_path(vm):
 
 
 def bootstrap_con_func(vm):
-    func_class = Con_Class(vm, Con_String(vm, "Func"), \
-      [vm.get_builtin(BUILTIN_OBJECT_CLASS)], vm.get_builtin(BUILTIN_BUILTINS_MODULE))
-    vm.set_builtin(BUILTIN_FUNC_CLASS, func_class)
+    func_class = vm.get_builtin(BUILTIN_FUNC_CLASS)
+    assert isinstance(func_class, Con_Class)
+    
     builtins_module = vm.get_builtin(BUILTIN_BUILTINS_MODULE)
     builtins_module.set_defn(vm, "Func", func_class)
     
@@ -1194,14 +1219,11 @@ def _Con_Int_to_str(vm):
 
 
 def bootstrap_con_int(vm):
-    int_class = Con_Class(vm, Con_String(vm, "Int"), [vm.get_builtin(BUILTIN_OBJECT_CLASS)], \
-      vm.get_builtin(BUILTIN_BUILTINS_MODULE))
-    vm.set_builtin(BUILTIN_INT_CLASS, int_class)
+    int_class = vm.get_builtin(BUILTIN_INT_CLASS)
+    assert isinstance(int_class, Con_Class)
     int_class.new_func = \
       new_c_con_func(vm, Con_String(vm, "new_Int"), False, _new_func_Con_Int, \
         vm.get_builtin(BUILTIN_BUILTINS_MODULE))
-    builtins_module = vm.get_builtin(BUILTIN_BUILTINS_MODULE)
-    builtins_module.set_defn(vm, "Int", int_class)
 
     new_c_con_func_for_class(vm, "+", _Con_Int_add, int_class)
     new_c_con_func_for_class(vm, "and", _Con_Int_and, int_class)
@@ -1536,6 +1558,7 @@ def _Con_String_upper_cased(vm):
 
 def bootstrap_con_string(vm):
     string_class = vm.get_builtin(BUILTIN_STRING_CLASS)
+    assert isinstance(string_class, Con_Class)
 
     new_c_con_func_for_class(vm, "+", _Con_String_add, string_class)
     new_c_con_func_for_class(vm, "==", _Con_String_eq, string_class)
@@ -1822,11 +1845,8 @@ def _Con_List_to_str(vm):
 
 
 def bootstrap_con_list(vm):
-    list_class = Con_Class(vm, Con_String(vm, "List"), [vm.get_builtin(BUILTIN_OBJECT_CLASS)], \
-      vm.get_builtin(BUILTIN_BUILTINS_MODULE))
-    vm.set_builtin(BUILTIN_LIST_CLASS, list_class)
-    builtins_module = vm.get_builtin(BUILTIN_BUILTINS_MODULE)
-    builtins_module.set_defn(vm, "List", list_class)
+    list_class = vm.get_builtin(BUILTIN_LIST_CLASS)
+    assert isinstance(list_class, Con_Class)
 
     new_c_con_func_for_class(vm, "+", _Con_List_add, list_class)
     new_c_con_func_for_class(vm, "append", _Con_List_append, list_class)
@@ -1968,11 +1988,8 @@ def _Con_Set_to_str(vm):
 
 
 def bootstrap_con_set(vm):
-    set_class = Con_Class(vm, Con_String(vm, "Set"), [vm.get_builtin(BUILTIN_OBJECT_CLASS)], \
-      vm.get_builtin(BUILTIN_BUILTINS_MODULE))
-    vm.set_builtin(BUILTIN_SET_CLASS, set_class)
-    builtins_module = vm.get_builtin(BUILTIN_BUILTINS_MODULE)
-    builtins_module.set_defn(vm, "Set", set_class)
+    set_class = vm.get_builtin(BUILTIN_SET_CLASS)
+    assert isinstance(set_class, Con_Class)
 
     new_c_con_func_for_class(vm, "add", _Con_Set_add, set_class)
     new_c_con_func_for_class(vm, "+", _Con_Set_add_plus, set_class)
@@ -2110,11 +2127,8 @@ def _Con_Dict_to_str(vm):
 
 
 def bootstrap_con_dict(vm):
-    dict_class = Con_Class(vm, Con_String(vm, "Dict"), [vm.get_builtin(BUILTIN_OBJECT_CLASS)], \
-      vm.get_builtin(BUILTIN_BUILTINS_MODULE))
-    vm.set_builtin(BUILTIN_DICT_CLASS, dict_class)
-    builtins_module = vm.get_builtin(BUILTIN_BUILTINS_MODULE)
-    builtins_module.set_defn(vm, "Dict", dict_class)
+    dict_class = vm.get_builtin(BUILTIN_DICT_CLASS)
+    assert isinstance(dict_class, Con_Class)
 
     new_c_con_func_for_class(vm, "find", _Con_Dict_find, dict_class)
     new_c_con_func_for_class(vm, "get", _Con_Dict_get, dict_class)
@@ -2180,9 +2194,8 @@ def _Con_Exception_to_str(vm):
 
 
 def bootstrap_con_exception(vm):
-    exception_class = Con_Class(vm, Con_String(vm, "Exception"), \
-      [vm.get_builtin(BUILTIN_OBJECT_CLASS)], vm.get_builtin(BUILTIN_BUILTINS_MODULE))
-    vm.set_builtin(BUILTIN_EXCEPTION_CLASS, exception_class)
+    exception_class = vm.get_builtin(BUILTIN_EXCEPTION_CLASS)
+    assert isinstance(exception_class, Con_Class)
     exception_class.new_func = \
       new_c_con_func(vm, Con_String(vm, "new_Exception"), False, _new_func_Con_Exception, \
         vm.get_builtin(BUILTIN_BUILTINS_MODULE))

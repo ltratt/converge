@@ -42,6 +42,7 @@ def import_(vm):
     mod.set_defn(vm, "argv", Con_List(vm, [Con_String(vm, x) for x in vm.argv[2:]]))
 
     new_c_con_func_for_mod(vm, "exit", exit, mod)
+    new_c_con_func_for_mod(vm, "print", print_, mod)
     new_c_con_func_for_mod(vm, "println", println, mod)
     
     # Setup stdin, stderr, and stout
@@ -67,6 +68,18 @@ def exit(vm):
     (c,),_ = vm.decode_args(opt="I")
 
     raise vm.raise_helper("System_Exit_Exception", [c])
+
+
+def print_(vm):
+    _,vargs = vm.decode_args(vargs=True)
+    for o in vargs:
+        if isinstance(o, Con_String):
+            print o.v,
+        else:
+            s = type_check_string(vm, vm.get_slot_apply(o, "to_str"))
+            print s.v,
+
+    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
 
 
 def println(vm):

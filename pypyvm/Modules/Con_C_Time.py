@@ -19,9 +19,27 @@
 # IN THE SOFTWARE.
 
 
+from pypy.rpython.lltypesystem import lltype, rffi
+from pypy.rpython.tool import rffi_platform as platform
+from pypy.translator.tool.cbuild import ExternalCompilationInfo
 from Builtins import *
 
 
+
+eci     = ExternalCompilationInfo(includes=["sys/time.h"])
+
+TIMEVAL      = lltype.Struct('struct timeval', ('tv_sec', rffi.LONG), ('tv_usec', rffi.LONG))
+TIMEVALP     = lltype.Ptr(TIMEVAL)
+# Since we don't care about the second argument to gettimeofday, we don't try and fight RFFI's type
+# system.
+gettimeofday = rffi.llexternal('gettimeofday', [TIMEVALP, rffi.CCHARP], rffi.INT)
+
+class CConfig:
+    _compilation_info_ = eci
+
+cconfig = platform.configure(CConfig)
+
+    
 
 
 def init(vm):
@@ -32,4 +50,18 @@ def init(vm):
 def import_(vm):
     (mod,),_ = vm.decode_args("O")
     
+    new_c_con_func_for_mod(vm, "current", current, mod)
+
     vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+
+
+def current(vm):
+    _,_ = vm.decode_args()
+
+    with lltype.scoped_alloc(TIMEVAL) as tp:
+        if gettimeofday(tp, None) != 0:
+            raise Exception("XXX")
+        sec = tp.tv_sec
+        usec = tp.tv_usec
+
+    vm.return_(Con_List(vm, [Con_Int(vm, sec), Con_Int(vm, usec)]))

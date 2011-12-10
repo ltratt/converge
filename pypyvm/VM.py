@@ -601,8 +601,8 @@ class VM(object):
 
     def _instr_var_lookup(self, instr, cf):
         closure_off, var_num = Target.unpack_var_lookup(instr)
-        v = cf.closure[closure_off - 1][var_num]
-        if v is None:
+        v = cf.closure[-(closure_off + 1)][var_num]
+        if not v:
             self.raise_helper("Unassigned_Var_Exception")
         self._cf_stack_push(cf, v)
         cf.bc_off += Target.INTSIZE

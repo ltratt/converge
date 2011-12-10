@@ -174,7 +174,7 @@ class Con_Boxed_Object(Con_Object):
             o = self.get_slot_override(vm, n)
     
         if o is None:
-            o = self.instance_of.get_field(vm, n)
+            o = self.instance_of.find_field(vm, n)
 
         if o is None:
             if find_mode:
@@ -428,7 +428,7 @@ class Con_Class(Con_Boxed_Object):
             self.set_slot(vm, "container", container)
 
 
-    def get_field(self, vm, n):
+    def find_field(self, vm, n):
         m = jit.promote(self.fields_map)
         i = m.find(n)
         if i != -1:
@@ -436,8 +436,8 @@ class Con_Class(Con_Boxed_Object):
         
         for s in self.supers:
             assert isinstance(s, Con_Class)
-            o = s.get_field(vm, n)
-            if not None:
+            o = s.find_field(vm, n)
+            if o is not None:
                 return o
 
         return None
@@ -490,7 +490,7 @@ def _Con_Class_get_field(vm):
     assert isinstance(self, Con_Class)
     assert isinstance(n, Con_String)
 
-    o = self.get_field(vm, n.v)
+    o = self.find_field(vm, n.v)
     if o is None:
         vm.raise_helper("Field_Exception", [n, self])
 

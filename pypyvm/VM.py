@@ -74,6 +74,7 @@ class VM(object):
         Builtins.bootstrap_con_int(self)
         Builtins.bootstrap_con_list(self)
         Builtins.bootstrap_con_module(self)
+        Builtins.bootstrap_con_partial_application(self)
         Builtins.bootstrap_con_set(self)
         Builtins.bootstrap_con_string(self)
         Builtins.bootstrap_con_exception(self)

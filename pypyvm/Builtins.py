@@ -948,18 +948,57 @@ def new_c_con_func_for_mod(vm, name, func, mod):
 #
 
 class Con_Partial_Application(Con_Boxed_Object):
-    __slots__ = ("o", "f")
+    __slots__ = ("o", "f", "args")
     _immutable_fields_ = ("o", "f")
 
 
-    def __init__(self, vm, o, f):
+    def __init__(self, vm, o, f, args=None):
+        Con_Boxed_Object.__init__(self, vm, vm.get_builtin(BUILTIN_PARTIAL_APPLICATION_CLASS))
         self.o = o
         self.f = f
+        self.args = args
 
 
     def __repr__(self):
         return "<Partial_Application %s>" % self.f.name.v
 
+
+
+def _new_func_Con_Partial_Application(vm):
+    raise Exception("XXX")
+
+
+def _Con_Partial_Application_apply(vm):
+    (self, args_o),_ = vm.decode_args("!O", self_of=Con_Partial_Application)
+    assert isinstance(self, Con_Partial_Application)
+    
+    if self.args:
+        args = self.args[:]
+    else:
+        args = []
+    
+    if isinstance(args_o, Con_List):
+        args.extend(args_o.l)
+    else:
+        raise Exception("XXX")
+    
+    vm.pre_apply_pump(self.f, args)
+    while 1:
+        e_o = vm.apply_pump()
+        if not e_o:
+            break
+        vm.yield_(e_o)
+    vm.return_(vm.get_builtin(Builtins.BUILTIN_FAIL_OBJ))
+
+
+def bootstrap_con_partial_application(vm):
+    partial_application_class = vm.get_builtin(BUILTIN_PARTIAL_APPLICATION_CLASS)
+    assert isinstance(partial_application_class, Con_Class)
+    partial_application_class.new_func = \
+      new_c_con_func(vm, Con_String(vm, "new_Partial_Application"), False, \
+        _new_func_Con_Partial_Application, vm.get_builtin(BUILTIN_BUILTINS_MODULE))
+
+    new_c_con_func_for_class(vm, "apply", _Con_Partial_Application_apply, partial_application_class)
 
 
 

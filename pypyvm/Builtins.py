@@ -249,14 +249,14 @@ class Con_Boxed_Object(Con_Object):
 
 
     def gr_eq(self, vm, o):
-        if vm.get_slot_apply(self, ">", [o], allow_fail=True):
+        if vm.get_slot_apply(self, ">=", [o], allow_fail=True):
             return True
         else:
             return False
 
 
     def gt(self, vm, o):
-        if vm.get_slot_apply(self, ">=", [o], allow_fail=True):
+        if vm.get_slot_apply(self, ">", [o], allow_fail=True):
             return True
         else:
             return False

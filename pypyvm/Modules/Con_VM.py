@@ -42,4 +42,8 @@ def find_module(vm):
     (mod_id_o,),_ = vm.decode_args("S")
     assert isinstance(mod_id_o, Con_String)
     
-    vm.return_(vm.get_mod(mod_id_o.v))
+    m_o = vm.find_mod(mod_id_o.v)
+    if m_o is None:
+        m_o = vm.get_builtin(BUILTIN_FAIL_OBJ)
+    
+    vm.return_(m_o)

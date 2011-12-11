@@ -65,9 +65,11 @@ def import_(vm):
 
 
 def exit(vm):
-    (c,),_ = vm.decode_args(opt="I")
+    (c_o,),_ = vm.decode_args(opt="I")
 
-    raise vm.raise_helper("System_Exit_Exception", [c])
+    if c_o is None:
+        c_o = Con_Int(vm, 0)
+    raise vm.raise_helper("System_Exit_Exception", [c_o])
 
 
 def print_(vm):

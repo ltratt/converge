@@ -518,6 +518,8 @@ def _Con_Class_path(vm):
     if container is vm.get_builtin(BUILTIN_NULL_OBJ) or container is stop_at:
         vm.return_(name)
     else:
+        if stop_at is None:
+            stop_at = vm.get_builtin(BUILTIN_NULL_OBJ)
         rtn = type_check_string(vm, vm.get_slot_apply(container, "path", [stop_at]))
         if isinstance(container, Con_Module):
             sep = "::"
@@ -829,6 +831,8 @@ def _Con_Module_path(vm):
     if container is vm.get_builtin(BUILTIN_NULL_OBJ) or container is stop_at:
         vm.return_(name)
     else:
+        if stop_at is None:
+            stop_at = vm.get_builtin(BUILTIN_NULL_OBJ)
         rtn = type_check_string(vm, vm.get_slot_apply(container, "path", [stop_at]))
         if isinstance(container, Con_Module):
             sep = "::"
@@ -973,9 +977,9 @@ def _Con_Partial_Application_apply(vm):
     assert isinstance(self, Con_Partial_Application)
     
     if self.args:
-        args = self.args[:]
+        args = [self.o] + self.args[:]
     else:
-        args = []
+        args = [self.o]
     
     if isinstance(args_o, Con_List):
         args.extend(args_o.l)
@@ -2204,10 +2208,10 @@ def _new_func_Con_Exception(vm):
 
 def _Con_Exception_init(vm):
     (self, msg),_ = vm.decode_args("O", opt="O")
-    if msg:
-        self.set_slot(vm, "msg", msg)
-    else:
+    if msg is None:
         self.set_slot(vm, "msg", Con_String(vm, ""))
+    else:
+        self.set_slot(vm, "msg", msg)
     vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))
 
 

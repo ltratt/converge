@@ -165,7 +165,7 @@ def _System_Exit_Exception_init_func(vm):
 def _Type_Exception_init_func(vm):
     (self, should_be, o, extra),_ = vm.decode_args(mand="OSO", opt="O")
     assert isinstance(should_be, Con_String)
-    if extra:
+    if extra is not None:
         msg = "Expected '%s' to be conformant to " % \
           type_check_string(vm, extra).v
     else:

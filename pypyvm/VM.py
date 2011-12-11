@@ -269,8 +269,11 @@ class VM(object):
 
         o = self._cf_stack_pop(cf)
         if cf.returned:
-            self.st.destroy(ct)
             self._remove_continuation_frame()
+            cf = self.cf_stack[-1]
+            gf = cf.stack[cf.gfp]
+            assert isinstance(gf, Stack_Generator_Frame)
+            gf.ct = ct
             self._remove_generator_frame(self.cf_stack[-1])
         else:
             saved_cf = self.cf_stack.pop()
@@ -1094,6 +1097,9 @@ class VM(object):
 
 
     def _remove_continuation_frame(self):
+        cf = self.cf_stack[-1]
+        while cf.gfp != -1:
+            self._remove_generator_frame(cf)
         del self.cf_stack[-1]
 
 
@@ -1102,6 +1108,8 @@ class VM(object):
         self._cf_stack_del_from(cf, cf.gfp)
         if isinstance(gf, Stack_Generator_Frame):
             cf.gfp = gf.prev_gfp
+            if gf.ct:
+                self.st.destroy(gf.ct)
         else:
             assert isinstance(gf, Stack_Generator_EYield_Frame)
             cf.gfp = gf.prev_gfp
@@ -1126,6 +1134,8 @@ class VM(object):
 
     def _remove_failure_frame(self, cf):
         ffp = cf.ffp
+        while cf.gfp > ffp:
+            self._remove_generator_frame(cf)
         ff = cf.stack[ffp]
         assert isinstance(ff, Stack_Failure_Frame)
         self._cf_stack_del_from(cf, ffp)
@@ -1180,6 +1190,8 @@ class VM(object):
 
     def _remove_exception_frame(self, cf):
         ef = cf.stack[cf.xfp]
+        while cf.gfp > cf.xfp:
+            self._remove_generator_frame(cf)
         assert isinstance(ef, Stack_Exception_Frame)
         cf.ffp = ef.prev_ffp
         cf.gfp = ef.prev_gfp

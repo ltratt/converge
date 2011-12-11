@@ -132,7 +132,7 @@ class VM(object):
             # bootstrapping. They're intended to convert between module IDs across different
             # platforms. The potential problems with the below are fairly obvious, although
             # unlikely to actually manifest themselves in real life.
-            if CASE_SENSITIVE_FILENAMES:
+            if CASE_SENSITIVE_FILENAMES == 0:
                 bt_cnd_mod_id = bt_cnd_mod_id.lower()
 
             if os.sep == "/":
@@ -140,7 +140,7 @@ class VM(object):
             elif os.sep == "\\":
                 bt_cnd_mod_id = bt_cnd_mod_id.replace("/", "\\")
             else:
-                raise Exception("Unknown separator %s." % (os.sep))
+                self.raise_helper("VM_Exception", [Con_String(vm, "Unknown separator %s." % os.sep)])
 
             if bt_cnd_mod_id.endswith(ptl_mod_id):
                 mod = self.get_mod(cnd_mod_id)

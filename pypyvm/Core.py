@@ -31,9 +31,9 @@ import Builtins
 #
 
 if sys.platform.startswith("win"):
-    CASE_SENSITIVE_FILENAMES = 1
-else:
     CASE_SENSITIVE_FILENAMES = 0
+else:
+    CASE_SENSITIVE_FILENAMES = 1
 
 if sys.byteorder == "big":
     ENDIANNESS = "BIG_ENDIAN"

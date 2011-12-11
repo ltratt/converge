@@ -24,7 +24,7 @@ from pypy.rpython.lltypesystem import lltype, rffi
 NUM_BUILTINS = 41
 
 from Core import *
-import Target, VM
+import Bytecode, Target, VM
 
 
 
@@ -482,6 +482,10 @@ def _new_func_Con_Class(vm):
 def _Con_Class_new(vm):
     _, v = vm.decode_args(vargs=True)
     c = type_check_class(vm, v[0])
+    if c.new_func is None:
+        p = type_check_string(vm, vm.get_slot_apply(c, "path")).v
+        msg = "Instance of %s has no new_func." % p
+        vm.raise_helper("VM_Exception", [Con_String(vm, msg)])
     vm.return_(vm.apply(c.new_func, v))
 
 
@@ -799,6 +803,15 @@ class Con_Module(Con_Boxed_Object):
         return Con_List(vm, src_infos)
 
 
+def _new_func_Con_Module(vm):
+    (class_, bc_o), vargs = vm.decode_args("CS", vargs=True)
+    assert isinstance(bc_o, Con_String)
+    
+    bc = rffi.str2charp(bc_o.v)
+    mod = Bytecode.mk_mod(vm, bc, 0)
+    vm.return_(mod)
+
+
 def _Con_Module_get_defn(vm):
     (self, n),_ = vm.decode_args("MS")
     assert isinstance(self, Con_Module)
@@ -844,6 +857,10 @@ def _Con_Module_path(vm):
 def bootstrap_con_module(vm):
     module_class = vm.get_builtin(BUILTIN_MODULE_CLASS)
     assert isinstance(module_class, Con_Class)
+    module_class.new_func = \
+      new_c_con_func(vm, Con_String(vm, "new_Module"), False, \
+        _new_func_Con_Module, vm.get_builtin(BUILTIN_BUILTINS_MODULE))
+
 
     new_c_con_func_for_class(vm, "get_defn", _Con_Module_get_defn, module_class)
     new_c_con_func_for_class(vm, "iter_newlines", _Con_Module_iter_newlines, module_class)

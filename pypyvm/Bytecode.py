@@ -21,9 +21,9 @@
 from pypy.rlib import jit
 from pypy.rpython.lltypesystem import lltype, rffi
 
-from Builtins import *
 from Target import *
 from VM import *
+import Builtins
 
 
 
@@ -40,9 +40,10 @@ def add_exec(vm, bc):
     main_mod_id = None
     for i in range(read_word(bc, BC_HD_NUM_MODULES)):
         mod_off = read_word(bc, BC_HD_MODULES + i * INTSIZE)
-        id_ = add_mod(vm, bc, mod_off)
+        mod = mk_mod(vm, bc, mod_off)
+        vm.set_mod(mod)
         if main_mod_id is None:
-            main_mod_id = id_
+            main_mod_id = mod.id_
 
     return main_mod_id
 
@@ -63,12 +64,12 @@ def add_lib(vm, bc):
         mod_bc = rffi.ptradd(bc, mod_off)
         id_ = _extract_sstr(mod_bc, BC_MOD_ID, BC_MOD_ID_SIZE)
         if not vm.has_mod(id_):
-            add_mod(vm, bc, mod_off)
+            vm.set_mod(mk_mod(vm, bc, mod_off))
 
 
-def add_mod(vm, bc, mod_off):
+def mk_mod(vm, bc, mod_off):
     mod_size = read_word(bc, mod_off + BC_MOD_SIZE)
-    assert mod_off > 0 and mod_size > 0
+    assert mod_off >= 0 and mod_size >= 0
 
     mod_bc = rffi.ptradd(bc, mod_off)
 
@@ -103,13 +104,11 @@ def add_mod(vm, bc, mod_off):
 
     num_consts = read_word(mod_bc, BC_MOD_NUM_CONSTANTS)
 
-    mod = new_bc_con_module(vm, mod_bc, name, id_, src_path, imps, tlvars_map, num_consts)
+    mod = Builtins.new_bc_con_module(vm, mod_bc, name, id_, src_path, imps, tlvars_map, num_consts)
     init_func_off = read_word(mod_bc, BC_MOD_INSTRUCTIONS)
     pc = BC_PC(mod, init_func_off)
     max_stack_size = 512 # XXX!
-    mod.init_func = Con_Func(vm, Con_String(vm, "$$init$$"), False, pc, max_stack_size, num_vars, \
-      mod, None)
-
-    vm.set_mod(mod)
+    mod.init_func = Builtins.Con_Func(vm, Builtins.Con_String(vm, "$$init$$"), False, pc, \
+      max_stack_size, num_vars, mod, None)
     
-    return id_
+    return mod

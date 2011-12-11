@@ -1636,9 +1636,35 @@ class Con_List(Con_Boxed_Object):
     _immutable_fields_ = ("l",)
 
 
-    def __init__(self, vm, l):
-        Con_Boxed_Object.__init__(self, vm, vm.get_builtin(BUILTIN_LIST_CLASS))
+    def __init__(self, vm, l, instance_of=None):
+        if instance_of is None:
+            Con_Boxed_Object.__init__(self, vm, vm.get_builtin(BUILTIN_LIST_CLASS))
+        else:
+            Con_Boxed_Object.__init__(self, vm, instance_of)
         self.l = l
+
+
+
+def _new_func_Con_List(vm):
+    (class_, o_o), vargs = vm.decode_args("C", opt="O", vargs=True)
+    
+    if o_o is None:
+        o_o = vm.get_builtin(BUILTIN_NULL_OBJ)
+        l = []
+    elif isinstance(o_o, Con_List):
+        l = o_o.l[:]
+    else:
+        vm.pre_get_slot_apply_pump(o_o, "iter")
+        l = []
+        while 1:
+            e_o = vm.apply_pump()
+            if not e_o:
+                break
+            l.append(e_o)
+    o = Con_List(vm, l, class_)
+    vm.apply(o.get_slot(vm, "init"), [o_o] + vargs)
+    vm.return_(o)
+
 
 
 def _Con_List_add(vm):
@@ -1890,6 +1916,9 @@ def _Con_List_to_str(vm):
 def bootstrap_con_list(vm):
     list_class = vm.get_builtin(BUILTIN_LIST_CLASS)
     assert isinstance(list_class, Con_Class)
+    list_class.new_func = \
+      new_c_con_func(vm, Con_String(vm, "new_List"), False, _new_func_Con_List, \
+        vm.get_builtin(BUILTIN_BUILTINS_MODULE))
 
     new_c_con_func_for_class(vm, "+", _Con_List_add, list_class)
     new_c_con_func_for_class(vm, "append", _Con_List_append, list_class)

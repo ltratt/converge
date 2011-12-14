@@ -1095,7 +1095,10 @@ def _new_func_Con_Int(vm):
     elif isinstance(o_o, Con_String):
         v = None
         try:
-            v = int(o_o.v)
+            if o_o.v.startswith("0x") or o_o.v.startswith("0X"):
+                v = int(o_o.v[2:], 16)
+            else:
+                v = int(o_o.v)
         except ValueError:
             vm.raise_helper("Number_Exception", [o_o])
         vm.return_(Con_Int(vm, v))

@@ -660,10 +660,11 @@ class Con_Module(Con_Boxed_Object):
         if self.is_bc:
             # Bytecode modules use the old "push a Con_Int onto the stack to signify how many
             # parameters are being passed" hack. To add insult injury, they simply pop this object
-            # off without using it. So we pass null as a 'magic' first parameter, knowing that it
-            # won't actually be used for anything.
+            # off without using it. So we pass null as a 'magic' parameter (since it will be popped
+            # first, it's actually the second parameter), knowing that it won't actually be used for
+            # anything.
             v, self.closure = vm.apply_closure(self.init_func, \
-              [vm.get_builtin(BUILTIN_NULL_OBJ), self])
+              [self, vm.get_builtin(BUILTIN_NULL_OBJ)])
         else:
             vm.apply(self.init_func, [self])
         self.initialized = True

@@ -644,12 +644,13 @@ class Con_Module(Con_Boxed_Object):
             return Con_String(vm, self.src_path)
         elif n == "mod_id":
             return Con_String(vm, self.id_)
+        return Con_Boxed_Object.get_slot_override(self, vm, n)
 
 
     def has_slot_override(self, vm, n):
         if n in ("src_path", "mod_id"):
             return True
-        return False
+        return Con_Boxed_Object.has_slot_override(self, vm, n)
 
 
     def import_(self, vm):

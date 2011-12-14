@@ -642,6 +642,14 @@ class Con_Module(Con_Boxed_Object):
     def get_slot_override(self, vm, n):
         if n == "src_path":
             return Con_String(vm, self.src_path)
+        elif n == "mod_id":
+            return Con_String(vm, self.id_)
+
+
+    def has_slot_override(self, vm, n):
+        if n in ("src_path", "mod_id"):
+            return True
+        return False
 
 
     def import_(self, vm):
@@ -909,6 +917,17 @@ class Con_Func(Con_Boxed_Object):
         self.container_closure = container_closure
         
         self.set_slot(vm, "container", container)
+
+
+    def get_slot_override(self, vm, n):
+        if n == "name":
+            return self.name
+
+
+    def has_slot_override(self, vm, n):
+        if n == "name":
+            return True
+        return False
 
 
     def __repr__(self):

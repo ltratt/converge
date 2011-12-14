@@ -32,4 +32,19 @@ def init(vm):
 def import_(vm):
     (mod,),_ = vm.decode_args("O")
     
+    new_c_con_func_for_mod(vm, "get_continuation_src_infos", get_continuation_src_infos, mod)
+    
     vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+
+
+def get_continuation_src_infos(vm):
+    (levs_o,),_ = vm.decode_args("I")
+    assert isinstance(levs_o, Con_Int)
+
+    cf = vm.cf_stack[-(levs_o.v + 1)]
+    if isinstance(cf.pc, BC_PC):
+        src_infos = cf.pc.mod.bc_off_to_src_infos(vm, cf.bc_off)
+    else:
+        src_infos = vm.get_builtin(BUILTIN_NULL_OBJ)
+
+    vm.return_(src_infos)

@@ -262,7 +262,10 @@ class IMod_Gen:
         mods_to_add := [Builtins::Module.new(tmp_bc_mod.serialize())]
         i := 0
         known_mod_ids := Set{}
-        for known_mod_ids.add(VM::vm.modules.iter_keys())
+        if VM.has_defn("iter_mods"): // XXX gross hack
+            for known_mod_ids.add(VM::iter_mods().mod_id)
+        else:
+            for known_mod_ids.add(VM::vm.modules.iter_keys())
         for known_mod_ids.add(Core::BUILTIN_MODULES.iter())
         while bc_mod_stack.len() > 0:
             bc_mod := bc_mod_stack.pop()
@@ -290,7 +293,10 @@ class IMod_Gen:
         // version of the "real" module which (seemingly inexplicably) will appear to be missing
         // some of its definitions.
 
-        VM::vm.modules.del(self._mod_id)
+        if VM.has_defn("del_mod"): // XXX gross hack
+            VM::del_mod(self._mod_id)
+        else:
+            VM::vm.modules.del(self._mod_id)
         
         if got_val == 1:
             return out_itree

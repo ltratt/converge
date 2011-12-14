@@ -27,14 +27,44 @@ from Builtins import *
 def init(vm):
     return new_c_con_module(vm, "VM", "VM", __file__, \
       import_, \
-      ["add_modules", "find_module", "import_module", "vm"])
+      ["add_modules", "del_mod", "find_module", "import_module", "iter_mods"])
 
 
 def import_(vm):
     (mod,),_ = vm.decode_args("O")
 
+    new_c_con_func_for_mod(vm, "add_modules", add_modules, mod)
+    new_c_con_func_for_mod(vm, "del_mod", del_mod, mod)
     new_c_con_func_for_mod(vm, "find_module", find_module, mod)
+    new_c_con_func_for_mod(vm, "import_module", import_module, mod)
+    new_c_con_func_for_mod(vm, "iter_mods", iter_mods, mod)
     
+    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+
+
+def add_modules(vm):
+    (mods_o,),_ = vm.decode_args("O")
+
+    vm.pre_get_slot_apply_pump(mods_o, "iter")
+    while 1:
+        e_o = vm.apply_pump()
+        if not e_o:
+            break
+        e_o = type_check_module(vm, e_o)
+        vm.mods[e_o.id_] = e_o
+    
+    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+
+
+def del_mod(vm):
+    (mod_id_o,),_ = vm.decode_args("S")
+    assert isinstance(mod_id_o, Con_String)
+
+    if mod_id_o.v not in vm.mods:
+        vm.raise_helper("Key_Exception", [mod_id_o])
+
+    del vm.mods[mod_id_o.v]
+
     vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
 
 
@@ -47,3 +77,20 @@ def find_module(vm):
         m_o = vm.get_builtin(BUILTIN_FAIL_OBJ)
     
     vm.return_(m_o)
+
+
+def import_module(vm):
+    (mod_o,),_ = vm.decode_args("M")
+    assert isinstance(mod_o, Con_Module)
+
+    mod_o.import_(vm)
+    vm.return_(mod_o)
+
+
+def iter_mods(vm):
+    _,_ = vm.decode_args("")
+    
+    for mod in vm.mods.values():
+        vm.yield_(mod)
+
+    vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))

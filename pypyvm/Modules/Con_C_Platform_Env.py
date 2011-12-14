@@ -19,16 +19,17 @@
 # IN THE SOFTWARE.
 
 
-__all__ = ["Con_Array", "Con_C_Earley_Parser", "Con_C_Platform_Env", "Con_C_Platform_Exec", \
-  "Con_C_Platform_Host", "Con_C_Platform_Properties", "Con_C_Strings", "Con_C_Time", "Con_Curses", \
-  "Con_Exceptions", "Con_PCRE", "Con_POSIX_File", "Con_Sys", "Con_Thread", "Con_VM", "libXML2"]
+from Builtins import *
 
-import Con_Array, Con_C_Earley_Parser, Con_C_Platform_Env, Con_C_Platform_Exec, \
-  Con_C_Platform_Host, Con_C_Platform_Properties, Con_C_Strings, Con_C_Time, Con_Curses, \
-  Con_Exceptions, Con_PCRE, Con_POSIX_File, Con_Sys, Con_Thread, Con_VM, libXML2
 
-BUILTIN_MODULES = \
-  [Con_Array.init, Con_C_Earley_Parser.init, Con_C_Platform_Env.init, Con_C_Platform_Exec.init, \
-   Con_C_Platform_Host.init, Con_C_Platform_Properties.init, Con_C_Strings.init, Con_C_Time.init, \
-   Con_Curses.init, Con_Exceptions.init, Con_PCRE.init, Con_POSIX_File.init, Con_Sys.init, \
-   Con_Thread.init, Con_VM.init, libXML2.init]
+
+
+def init(vm):
+    return new_c_con_module(vm, "C_Platform_Env", "C_Platform_Env", __file__, import_, \
+      ["find_var", "get_var", "set_var"])
+
+
+def import_(vm):
+    (mod,),_ = vm.decode_args("O")
+    
+    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))

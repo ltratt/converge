@@ -690,6 +690,12 @@ class Con_Module(Con_Boxed_Object):
         return o
 
 
+    def has_defn(self, vm, n):
+        if self.tlvars_map.get(n, -1) == -1:
+            return False
+        return True
+
+
     def set_defn(self, vm, n, o):
         self.closure[self.get_closure_i(vm, n)] = o
 
@@ -829,6 +835,29 @@ def _Con_Module_get_defn(vm):
     vm.return_(self.get_defn(vm, n.v))
 
 
+def _Con_Module_has_defn(vm):
+    (self, n),_ = vm.decode_args("MS")
+    assert isinstance(self, Con_Module)
+    assert isinstance(n, Con_String)
+
+    if self.has_defn(vm, n.v):
+        r_o = vm.get_builtin(BUILTIN_NULL_OBJ)
+    else:
+        r_o = vm.get_builtin(BUILTIN_FAIL_OBJ)
+
+    vm.return_(r_o)
+
+
+def _Con_Module_iter_defns(vm):
+    (self,),_ = vm.decode_args("M")
+    assert isinstance(self, Con_Module)
+
+    for d in self.tlvars_map.keys():
+        vm.yield_(Con_List(vm, [Con_String(vm, d), self.get_defn(vm, d)]))
+
+    vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+
+
 def _Con_Module_iter_newlines(vm):
     (self,),_ = vm.decode_args("M")
     assert isinstance(self, Con_Module)
@@ -872,6 +901,8 @@ def bootstrap_con_module(vm):
 
 
     new_c_con_func_for_class(vm, "get_defn", _Con_Module_get_defn, module_class)
+    new_c_con_func_for_class(vm, "has_defn", _Con_Module_has_defn, module_class)
+    new_c_con_func_for_class(vm, "iter_defns", _Con_Module_iter_defns, module_class)
     new_c_con_func_for_class(vm, "iter_newlines", _Con_Module_iter_newlines, module_class)
     new_c_con_func_for_class(vm, "path", _Con_Module_path, module_class)
 

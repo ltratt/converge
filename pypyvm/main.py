@@ -23,7 +23,7 @@ try:
     import pypy
 except:
     import os, sys
-    sys.setrecursionlimit(5000)
+    sys.setrecursionlimit(20000)
     sys.path.append(os.getenv("PYPY_SRC"))
     
 from pypy.config.config import Config
@@ -103,7 +103,8 @@ def _import_lib(vm, leaf, vm_path, cnd_dirs):
         if os.path.exists(path):
             break
     else:
-        raise Exception("XXX")
+        print "Warning: Can't find %s." % leaf
+        return
 
     bc, start = _read_bc(path, "CONVLIBR")
     if start != 0:

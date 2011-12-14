@@ -186,8 +186,6 @@ func get_std_libraries(comp_link):
         if File::exists(cnd_path):
             libraries.append(File::canon_path(cnd_path))
             break
-    exhausted:
-        comp_link.warning("Can't find Compiler.cvl.")
 
     // Find Stdlib.cvl
 
@@ -199,8 +197,6 @@ func get_std_libraries(comp_link):
         if File::exists(cnd_path):
             libraries.append(File::canon_path(cnd_path))
             break
-    exhausted:
-        comp_link.warning("Can't find Stdlib.cvl.")
 
     return libraries
 

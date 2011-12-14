@@ -31,5 +31,12 @@ def init(vm):
 
 def import_(vm):
     (mod,),_ = vm.decode_args("O")
-    
+
+    class_class = vm.get_builtin(BUILTIN_CLASS_CLASS)
+    user_exception_class = vm.get_builtin(BUILTIN_EXCEPTIONS_MODULE). \
+      get_defn(vm, "User_Exception")
+    xml_exception = vm.get_slot_apply(class_class, "new", \
+      [Con_String(vm, "XML_Exception"), Con_List(vm, [user_exception_class]), mod])
+    mod.set_defn(vm, "XML_Exception", xml_exception)
+
     vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))

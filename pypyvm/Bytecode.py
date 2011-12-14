@@ -109,6 +109,6 @@ def mk_mod(vm, bc, mod_off):
     pc = BC_PC(mod, init_func_off)
     max_stack_size = 512 # XXX!
     mod.init_func = Builtins.Con_Func(vm, Builtins.Con_String(vm, "$$init$$"), False, pc, \
-      max_stack_size, num_vars, mod, None)
+      max_stack_size, 0, num_vars, mod, None)
     
     return mod

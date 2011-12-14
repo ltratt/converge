@@ -737,7 +737,7 @@ class VM(object):
         name = self._cf_stack_pop(cf)
         new_pc = BC_PC(cf.pc.mod, cf.bc_off + 2 * Target.INTSIZE)
         container = cf.func.get_slot(self, "container")
-        f = Builtins.Con_Func(self, name, is_bound, new_pc, max_stack_size, nv_o.v, \
+        f = Builtins.Con_Func(self, name, is_bound, new_pc, max_stack_size, np_o.v, nv_o.v, \
           container, cf.closure)
         self._cf_stack_push(cf, f)
         cf.bc_off += Target.INTSIZE

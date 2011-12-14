@@ -938,7 +938,8 @@ class Con_Func(Con_Boxed_Object):
     _immutable_fields_ = ("name", "is_bound", "pc", "max_stack_size", "num_vars", "container_closure")
 
 
-    def __init__(self, vm, name, is_bound, pc, max_stack_size, num_vars, container, container_closure):
+    def __init__(self, vm, name, is_bound, pc, max_stack_size, num_params, num_vars, container, \
+      container_closure):
         Con_Boxed_Object.__init__(self, vm, vm.get_builtin(BUILTIN_FUNC_CLASS))
     
         self.name = name
@@ -949,17 +950,19 @@ class Con_Func(Con_Boxed_Object):
         self.container_closure = container_closure
         
         self.set_slot(vm, "container", container)
+        self.set_slot(vm, "num_params", Con_Int(vm, num_params))
 
 
     def get_slot_override(self, vm, n):
         if n == "name":
             return self.name
+        return Con_Boxed_Object.get_slot_override(self, vm, n)
 
 
     def has_slot_override(self, vm, n):
         if n == "name":
             return True
-        return False
+        return Con_Boxed_Object.has_slot_override(self, vm, n)
 
 
     def __repr__(self):
@@ -1001,7 +1004,7 @@ def new_c_con_func(vm, name, is_bound, func, container):
     cnd = container
     while not (isinstance(cnd, Con_Module)):
         cnd = cnd.get_slot(vm, "container")
-    return Con_Func(vm, name, is_bound, VM.Py_PC(cnd, func), 0, 0, container, None)
+    return Con_Func(vm, name, is_bound, VM.Py_PC(cnd, func), 0, -1, 0, container, None)
 
 
 def new_c_con_func_for_class(vm, name, func, class_):

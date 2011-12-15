@@ -73,25 +73,29 @@ def exit(vm):
 
 
 def print_(vm):
+    mod = vm.get_funcs_mod()
     _,vargs = vm.decode_args(vargs=True)
+    stdout = mod.get_defn(vm, "stdout")
+
     for o in vargs:
         if isinstance(o, Con_String):
-            print o.v,
+            vm.get_slot_apply(stdout, "write", [o])
         else:
-            s = type_check_string(vm, vm.get_slot_apply(o, "to_str"))
-            print s.v,
+            vm.get_slot_apply(stdout, "write", [vm.get_slot_apply(o, "to_str")])
 
     vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
 
 
 def println(vm):
+    mod = vm.get_funcs_mod()
     _,vargs = vm.decode_args(vargs=True)
+    stdout = mod.get_defn(vm, "stdout")
+
     for o in vargs:
         if isinstance(o, Con_String):
-            print o.v,
+            vm.get_slot_apply(stdout, "write", [o])
         else:
-            s = type_check_string(vm, vm.get_slot_apply(o, "to_str"))
-            print s.v,
-    print ""
+            vm.get_slot_apply(stdout, "write", [vm.get_slot_apply(o, "to_str")])
+    vm.get_slot_apply(stdout, "write", [Con_String(vm, "\n")])
 
     vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))

@@ -39,7 +39,8 @@ class Eval_Compiler:
         self.includes := []
         self.mod_id := Strings::format(Core::UNIQUE_EVAL_NAME_TEMPLATE, Core::fresh_name())
         self.src_path := self.mod_id
-        self.internal_target := self.target := Available::TARGETS[Strings::format("%dbit", Properties::word_bits)].new()
+        self.target := Available::TARGETS[Strings::format("%dbit", Properties::word_bits)].new()
+        self.internal_target := self.target
 
         self.newlines := []
         
@@ -53,7 +54,8 @@ class Eval_Compiler:
         self.includes := includes[ : ]
         self.mod_id := Strings::format(Core::UNIQUE_EVAL_NAME_TEMPLATE, Core::fresh_name())
         self.src_path := self.mod_id
-        self.internal_target := self.target := Available::TARGETS[Strings::format("%dbit", Properties::word_bits)].new()
+        self.target := Available::TARGETS[Strings::format("%dbit", Properties::word_bits)].new()
+        self.internal_target := self.target
 
         for lib_path := Core::get_std_libraries(self).iter():
             lib_file := File::open(lib_path, "r")

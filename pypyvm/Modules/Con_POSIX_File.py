@@ -38,7 +38,7 @@ fdopen      = rffi.llexternal("fdopen", [rffi.INT, rffi.CCHARP], FILEP, compilat
 feof        = rffi.llexternal("feof", [FILEP], rffi.INT, compilation_info=eci)
 ferror      = rffi.llexternal("ferror", [FILEP], rffi.INT, compilation_info=eci)
 fflush      = rffi.llexternal("fflush", [FILEP], rffi.INT, compilation_info=eci)
-fgetln      = rffi.llexternal("fgetln", [FILEP, rffi.INTP], rffi.CCHARP, compilation_info=eci)
+fgetln      = rffi.llexternal("fgetln", [FILEP, rffi.SIZE_TP], rffi.CCHARP, compilation_info=eci)
 fileno      = rffi.llexternal("fileno", [FILEP], rffi.INT, compilation_info=eci)
 flockfile   = rffi.llexternal("flockfile", [FILEP], lltype.Void, compilation_info=eci)
 fopen       = rffi.llexternal("fopen", [rffi.CCHARP, rffi.CCHARP], FILEP, compilation_info=eci)
@@ -240,7 +240,7 @@ def File_readln(vm):
     _check_open(vm, self)
     
     while 1:
-        with lltype.scoped_alloc(rffi.INTP.TO, 1) as lenp:
+        with lltype.scoped_alloc(rffi.SIZE_TP.TO, 1) as lenp:
             l = fgetln(self.filep, lenp)
             if not l:
                 if feof(self.filep) != 0:

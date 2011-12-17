@@ -29,15 +29,6 @@ from Core import *
 
 
 eci = ExternalCompilationInfo(includes = ["pcre.h"], libraries = ["pcre"])
-pcrep = rffi.CStructPtr("pcre")
-pcre_compile = rffi.llexternal("pcre_compile", \
-  [rffi.CCHARP, rffi.INT, rffi.CCHARPP, rffi.INTP, rffi.VOIDP], pcrep, compilation_info=eci)
-pcre_fullinfo = rffi.llexternal("pcre_fullinfo", \
-  [pcrep, rffi.VOIDP, rffi.INT, rffi.INTP], rffi.INT, compilation_info=eci)
-pcre_exec = rffi.llexternal("pcre_exec", \
-  [pcrep, rffi.VOIDP, rffi.CCHARP, rffi.INT, rffi.INT, rffi.INT, rffi.INTP, rffi.INT], \
-  rffi.INT, compilation_info=eci)
-
 
 class CConfig:
     _compilation_info_     = eci
@@ -49,11 +40,20 @@ class CConfig:
 
 cconfig = platform.configure(CConfig)
 
+PCREP                  = rffi.COpaquePtr("pcre")
 PCRE_DOTALL            = cconfig["PCRE_DOTALL"]
 PCRE_MULTILINE         = cconfig["PCRE_MULTILINE"]
 PCRE_INFO_CAPTURECOUNT = cconfig["PCRE_INFO_CAPTURECOUNT"]
 PCRE_ANCHORED          = cconfig["PCRE_ANCHORED"]
 PCRE_ERROR_NOMATCH     = cconfig["PCRE_ERROR_NOMATCH"]
+
+pcre_compile = rffi.llexternal("pcre_compile", \
+  [rffi.CCHARP, rffi.INT, rffi.CCHARPP, rffi.INTP, rffi.VOIDP], PCREP)
+pcre_fullinfo = rffi.llexternal("pcre_fullinfo", \
+  [PCREP, rffi.VOIDP, rffi.INT, rffi.INTP], rffi.INT, compilation_info=eci)
+pcre_exec = rffi.llexternal("pcre_exec", \
+  [PCREP, rffi.VOIDP, rffi.CCHARP, rffi.INT, rffi.INT, rffi.INT, rffi.INTP, rffi.INT], \
+  rffi.INT)
 
 
 

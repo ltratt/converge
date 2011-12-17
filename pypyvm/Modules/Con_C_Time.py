@@ -28,17 +28,19 @@ from Builtins import *
 
 eci     = ExternalCompilationInfo(includes=["sys/time.h"])
 
-TIMEVAL      = lltype.Struct('struct timeval', ('tv_sec', rffi.LONG), ('tv_usec', rffi.LONG))
-TIMEVALP     = lltype.Ptr(TIMEVAL)
-# Since we don't care about the second argument to gettimeofday, we don't try and fight RFFI's type
-# system.
-gettimeofday = rffi.llexternal('gettimeofday', [TIMEVALP, rffi.CCHARP], rffi.INT)
-
 class CConfig:
     _compilation_info_ = eci
+    TIMEVAL            = platform.Struct("struct timeval", [("tv_sec", rffi.LONG), ("tv_usec", rffi.LONG)])
+    TIMEZONE           = platform.Struct("struct timezone", [])
 
-cconfig = platform.configure(CConfig)
+cconfig      = platform.configure(CConfig)
 
+TIMEVAL      = cconfig["TIMEVAL"]
+TIMEVALP     = lltype.Ptr(TIMEVAL)
+TIMEZONE     = cconfig["TIMEZONE"]
+TIMEZONEP    = lltype.Ptr(TIMEZONE)
+
+gettimeofday = rffi.llexternal('gettimeofday', [TIMEVALP, TIMEZONEP], rffi.INT)
     
 
 
@@ -59,9 +61,9 @@ def current(vm):
     _,_ = vm.decode_args()
 
     with lltype.scoped_alloc(TIMEVAL) as tp:
-        if gettimeofday(tp, None) != 0:
+        if gettimeofday(tp, lltype.nullptr(TIMEZONEP.TO)) != 0:
             raise Exception("XXX")
-        sec = tp.tv_sec
-        usec = tp.tv_usec
+        sec = tp.c_tv_sec
+        usec = tp.c_tv_usec
 
     vm.return_(Con_List(vm, [Con_Int(vm, sec), Con_Int(vm, usec)]))

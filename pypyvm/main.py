@@ -27,10 +27,29 @@ except:
     sys.path.append(os.getenv("PYPY_SRC"))
     
 from pypy.config.config import Config
+from pypy.rlib import rarithmetic, rposix
 from pypy.rlib.jit import *
 from pypy.rpython.lltypesystem import lltype, rffi
+from pypy.rpython.tool import rffi_platform as platform
+from pypy.translator.tool.cbuild import ExternalCompilationInfo
 import os, os.path, sys
 import Builtins, Bytecode, Stdlib_Modules, VM
+
+
+
+eci         = ExternalCompilationInfo(includes=["limits.h", "stdlib.h", "string.h"])
+
+class CConfig:
+    _compilation_info_ = eci
+    BUFSIZ             = platform.DefinedConstantInteger("BUFSIZ")
+    PATH_MAX           = platform.DefinedConstantInteger("PATH_MAX")
+
+cconfig  = platform.configure(CConfig)
+
+BUFSIZ   = cconfig["BUFSIZ"]
+PATH_MAX = cconfig["PATH_MAX"]
+realpath = rffi.llexternal("realpath", [rffi.CCHARP, rffi.CCHARP], rffi.CCHARP, compilation_info=eci)
+strlen   = rffi.llexternal("strlen", [rffi.CCHARP], rffi.SIZE_T, compilation_info=eci)
 
 
 
@@ -41,18 +60,61 @@ COMPILER_DIRS = ["../lib/converge-%s/" % VM_VERSION, "../compiler/"]
 
 
 def entry_point(argv):
-    try:
-        filename = argv[1]
-    except IndexError:
-        print "You must supply a filename"
+    vm_path = _canon_path(argv[0])
+
+    verbosity = 0
+    mk_fresh = False
+    i = 1
+    for i in range(1, len(argv)):
+        arg = argv[i]
+        if len(arg) == 0 or (len(arg) == 1 and arg[0] == "-"):
+            _usage(vm_path)
+            return 1
+        if arg[0] == "-":
+            for c in arg[1:]:
+                if c == "v":
+                    verbosity += 1
+                elif c == "f":
+                    mk_fresh = True
+                else:
+                    _usage(vm_path)
+                    return 1
+        else:
+            break
+    if i < len(argv):
+        filename = argv[i]
+        if i + 1 < len(argv):
+            args = argv[i + 1 : ]
+        else:
+            args = []
+    else:
+        filename = None
+        args = []
+
+    if filename is None:
+        convergeip = _find_con_exec(vm_path, "convergei")
+        if convergeip is None:
+            return 1
+        filename = convergeip
+
+    progp = _canon_path(filename)
+    bc, start = _read_bc(progp, "CONVEXEC")
+    if len(bc) == 0:
+        _error(vm_path, "No such file '%s'." % filename)
         return 1
     
-    bc, start = _read_bc(argv[1], "CONVEXEC")
+    if start == -1:
+        bc, start, rtn = _make_mode(vm_path, progp, bc, verbosity, mk_fresh)
+        if rtn != 0:
+            return rtn
 
-    vm_path = os.path.abspath(argv[0])
+    if start == -1:
+        _error(vm_path, "No valid bytecode to run.")
+        return 1
 
+    assert start >= 0
     useful_bc = rffi.str2charp(bc[start:])
-    vm = VM.new_vm(vm_path, argv)
+    vm = VM.new_vm(vm_path, args)
     _import_lib(vm, "Stdlib.cvl", vm_path, STDLIB_DIRS)
     _import_lib(vm, "Compiler.cvl", vm_path, COMPILER_DIRS)
     try:
@@ -75,35 +137,34 @@ def entry_point(argv):
 
 
 def _read_bc(path, id_):
-    s = os.stat(path).st_size
-    f = os.open(path, os.O_RDONLY, 0777)
-    bc = ""
-    i = 0
-    while i < s:
-        d = os.read(f, 64 * 1024)
-        bc += d
-        i += len(d)
+    try:
+        s = os.stat(path).st_size
+        f = os.open(path, os.O_RDONLY, 0777)
+        bc = ""
+        i = 0
+        while i < s:
+            d = os.read(f, 64 * 1024)
+            bc += d
+            i += len(d)
+        os.close(f)
 
-    i = 0
-    s = os.stat(path).st_size
-    while i < s:
-        if bc[i:].startswith(id_):
-            break
-        i += 1
-    else:
-        raise Exception("XXX")
+        i = 0
+        s = os.stat(path).st_size
+        i = bc.find(id_)
+    except OSError:
+        return "", -1
 
     return bc, i
 
 
 def _import_lib(vm, leaf, vm_path, cnd_dirs):
-    vm_dir = dirname(vm_path)
+    vm_dir = _dirname(vm_path)
     for d in cnd_dirs:
         path = "%s/%s/%s" % (vm_dir, d, leaf)
         if os.path.exists(path):
             break
     else:
-        print "Warning: Can't find %s." % leaf
+        _warning(vm_path, "Warning: Can't find %s." % leaf)
         return
 
     bc, start = _read_bc(path, "CONVLIBR")
@@ -112,13 +173,176 @@ def _import_lib(vm, leaf, vm_path, cnd_dirs):
     Bytecode.add_lib(vm, rffi.str2charp(bc))
 
 
-def dirname(p): # An RPython compatible version since that in os.path currently isn't...
-    i = p.rfind('/') + 1
+def _make_mode(vm_path, path, bc, verbosity, mk_fresh):
+    # Try to work out a plausible cached path name.
+    dp = path.find(".")
+    if dp >= 0:
+        cp = path[:dp]
+    else:
+        cp = None
+    
+    if not cp or mk_fresh:
+        return _do_make_mode(vm_path, path, None, verbosity, mk_fresh)
+    else:
+		# There is a cached path, so now we try and load it and see if it is upto date. If any part
+		# of this fails, we simply go straight to full make mode.
+        try:
+            st = os.stat(cp)
+        except OSError:
+            return _do_make_mode(vm_path, path, cp, verbosity, mk_fresh)
+        
+        cbc, start = _read_bc(cp, "CONVEXEC")
+        if start == -1:
+            return _do_make_mode(vm_path, path, cp, verbosity, mk_fresh)
+        
+        assert start >= 0
+        useful_bc = cbc[start:]
+        if Bytecode.exec_upto_date(None, rffi.str2charp(useful_bc), st.st_mtime):
+            return cbc, start, 0
+        
+        return _do_make_mode(vm_path, path, cp, verbosity, mk_fresh)
+
+
+def _do_make_mode(vm_path, path, cp, verbosity, mk_fresh):
+	# Fire up convergec -m on progpath. We do this by creating a pipe, forking, getting the child
+    # to output to the pipe (although note that we leave stdin and stdout unmolested on the child
+	# process, as user programs might want to print stuff to screen) and reading from that pipe
+	# to get the necessary bytecode.
+
+    convergecp = _find_con_exec(vm_path, "convergec")
+    if convergecp is None:
+        return None, 0, 1
+    
+    rfd, wfd = os.pipe()
+    pid = os.fork()
+    if pid == -1:
+        raise Exception("XXX")
+    elif pid == 0:
+        # Child process.
+        fdp = "/dev/fd/%d" % wfd
+        
+        args = [vm_path, convergecp, "-m", "-o", fdp]
+        while verbosity > 0:
+            args.append("-v")
+            verbosity -= 1
+        if mk_fresh:
+            args.append("-f")
+        
+        args.append(path)
+        os.execv(vm_path, args)
+        _error(vm_path, "Couldn't execv convergec.")
+        return None, -1, 1
+    
+    # Parent process
+    
+    os.close(wfd)
+    
+    # Read in the output from the child process.
+    
+    bc = ""
+    while 1:
+        try:
+            r = os.read(rfd, BUFSIZ)
+        except OSError:
+            # Reading from a pipe seems to throw an exception when finished, which isn't the
+            # documented behaviour...
+            break
+        if r == "":
+            break
+        bc += r
+
+	# Now we've read all the data from the child convergec, we check its return status; if it
+	# returned something other than 0 then we return that value and do not continue.
+
+    _, status = os.waitpid(pid, 0)
+    if os.WIFEXITED(status):
+        rtn = os.WEXITSTATUS(status)
+        if rtn != 0:
+            return None, -1, rtn
+
+    start = bc.find("CONVEXEC")
+    if start == -1:
+        _error(vm_path, "convergec failed to produce valid output.")
+        return None, -1, 1
+
+    if cp:
+        # Try and write the file to its cached equivalent. Since this isn't strictly necessary, if
+        # at any point anything fails, we simply give up without reporting an error.
+        s = -1
+        try:
+            s = os.stat(cp).st_size
+        except OSError:
+            pass
+
+        if s > 0:
+            try:
+                f = os.open(cp, os.O_RDONLY, 0777)
+                d = os.read(f, 512)
+                os.close(f)
+            except OSError:
+                return bc, start, 0
+
+            if d.find("CONVEXEC") == -1:
+                return bc, start, 0
+
+        try:
+            f = os.open(cp, os.O_WRONLY | os.O_CREAT, 0777)
+            os.write(f, bc)
+            os.close(f)
+        except OSError:
+            try:
+                os.unlink(cp)
+            except OSError:
+                pass
+
+    return bc, start, 0
+
+
+def _find_con_exec(vm_path, leaf):
+    cnds = ["", os.path.join(_dirname(_dirname(vm_path)), "compiler")]
+    for cl in cnds:
+        cp = os.path.join(cl, leaf)
+        if os.path.exists(cp):
+            return cp
+    _error(vm_path, "Unable to locate %s." % leaf)
+    return None
+
+
+def _dirname(path): # An RPython compatible version since that in os.path currently isn't...
+    i = path.rfind('/') + 1
     assert i > 0
-    head = p[:i]
-    if head and head != '/'*len(head):
+    head = path[:i]
+    if head and head != '/' * len(head):
         head = head.rstrip('/')
     return head
+
+
+def _leafname(path):
+    i = path.rfind('/') + 1
+    assert i > 0
+    return path[i:]
+
+
+# Attempt to canonicalise path 'p'; at the very worst, 'p' is returned unchanged.
+
+def _canon_path(path):
+    with lltype.scoped_alloc(rffi.CCHARP.TO, PATH_MAX) as rp:
+        r = realpath(path, rp)
+        if not r:
+            return path
+        return rffi.charpsize2str(rp, rarithmetic.intmask(strlen(rp)))
+
+
+def _error(vm_path, msg):
+    print "%s: %s" % (_leafname(vm_path), msg)
+
+
+def _warning(vm_path, msg):
+    print "%s: %s" % (_leafname(vm_path), msg)
+
+
+def _usage(vm_path):
+    print "Usage: %s [-vf] [source file | executable file]" % _leafname(vm_path)
 
 
 def target(driver, args):

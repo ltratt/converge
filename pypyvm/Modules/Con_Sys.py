@@ -39,7 +39,7 @@ def import_(vm):
     (mod,),_ = vm.decode_args("O")
 
     mod.set_defn(vm, "vm_path", Con_String(vm, vm.vm_path))
-    mod.set_defn(vm, "argv", Con_List(vm, [Con_String(vm, x) for x in vm.argv[2:]]))
+    mod.set_defn(vm, "argv", Con_List(vm, [Con_String(vm, x) for x in vm.argv]))
 
     new_c_con_func_for_mod(vm, "exit", exit, mod)
     new_c_con_func_for_mod(vm, "print", print_, mod)

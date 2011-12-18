@@ -112,3 +112,19 @@ def mk_mod(vm, bc, mod_off):
       max_stack_size, 0, num_vars, mod, None)
     
     return mod
+
+
+def exec_upto_date(vm, bc, mtime):
+    for i in range(read_word(bc, BC_HD_NUM_MODULES)):
+        mod_off = read_word(bc, BC_HD_MODULES + i * INTSIZE)
+        mod_bc = rffi.ptradd(bc, mod_off)
+        src_path = _extract_sstr(mod_bc, BC_MOD_SRC_PATH, BC_MOD_SRC_PATH_SIZE)
+        
+        try:
+            st = os.stat(src_path)
+        except OSError:
+            continue
+        if st.st_mtime > mtime:
+            return False
+
+    return True

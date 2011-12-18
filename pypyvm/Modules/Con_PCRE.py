@@ -194,8 +194,19 @@ def Match_get(vm):
     vm.return_(self.s.get_slice(vm, int(self.ovect[i * 2]), int(self.ovect[i * 2 + 1])))
 
 
+def Match_get_indexes(vm):
+    (self, i_o),_ = vm.decode_args(mand="!I", self_of=Match)
+    assert isinstance(self, Match)
+    assert isinstance(i_o, Con_Int)
+    
+    i = translate_idx(vm, i_o.v, 1 + self.num_caps)
+    
+    vm.return_(Con_List(vm, [Con_Int(vm, int(self.ovect[i * 2])), Con_Int(vm, int(self.ovect[i * 2 + 1]))]))
+
+
 def bootstrap_match_class(vm, mod):
     match_class = Con_Class(vm, Con_String(vm, "Match"), [vm.get_builtin(BUILTIN_OBJECT_CLASS)], mod)
     mod.set_defn(vm, "Match", match_class)
 
     new_c_con_func_for_class(vm, "get", Match_get, match_class)
+    new_c_con_func_for_class(vm, "get_indexes", Match_get_indexes, match_class)

@@ -48,12 +48,12 @@ PCRE_ANCHORED          = cconfig["PCRE_ANCHORED"]
 PCRE_ERROR_NOMATCH     = cconfig["PCRE_ERROR_NOMATCH"]
 
 pcre_compile = rffi.llexternal("pcre_compile", \
-  [rffi.CCHARP, rffi.INT, rffi.CCHARPP, rffi.INTP, rffi.VOIDP], PCREP)
+  [rffi.CCHARP, rffi.INT, rffi.CCHARPP, rffi.INTP, rffi.VOIDP], PCREP, compilation_info=eci)
 pcre_fullinfo = rffi.llexternal("pcre_fullinfo", \
   [PCREP, rffi.VOIDP, rffi.INT, rffi.INTP], rffi.INT, compilation_info=eci)
 pcre_exec = rffi.llexternal("pcre_exec", \
   [PCREP, rffi.VOIDP, rffi.CCHARP, rffi.INT, rffi.INT, rffi.INT, rffi.INTP, rffi.INT], \
-  rffi.INT)
+  rffi.INT, compilation_info=eci)
 
 
 

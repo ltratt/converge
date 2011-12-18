@@ -40,7 +40,7 @@ TIMEVALP     = lltype.Ptr(TIMEVAL)
 TIMEZONE     = cconfig["TIMEZONE"]
 TIMEZONEP    = lltype.Ptr(TIMEZONE)
 
-gettimeofday = rffi.llexternal('gettimeofday', [TIMEVALP, TIMEZONEP], rffi.INT)
+gettimeofday = rffi.llexternal('gettimeofday', [TIMEVALP, TIMEZONEP], rffi.INT, compilation_info=eci)
     
 
 

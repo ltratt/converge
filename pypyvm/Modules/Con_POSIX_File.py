@@ -58,8 +58,7 @@ else:
 realpath    = rffi.llexternal("realpath", \
                 [rffi.CCHARP, rffi.CCHARP], rffi.CCHARP, compilation_info=eci)
 
-strlen= rffi.llexternal("strlen", \
-                [rffi.CCHARP], rffi.SIZE_T, compilation_info=eci)
+strlen      = rffi.llexternal("strlen", [rffi.CCHARP], rffi.SIZE_T, compilation_info=eci)
 
 class CConfig:
     _compilation_info_ = eci

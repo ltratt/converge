@@ -614,8 +614,11 @@ class Con_Module(Con_Boxed_Object):
 
 
 
-    def __init__(self, vm, is_bc, bc, name, id_, src_path, imps, tlvars_map, num_consts, init_func):
-        Con_Boxed_Object.__init__(self, vm, vm.get_builtin(BUILTIN_MODULE_CLASS))
+    def __init__(self, vm, is_bc, bc, name, id_, src_path, imps, tlvars_map, num_consts, init_func, \
+      instance_of=None):
+        if instance_of is None:
+            instance_of = vm.get_builtin(BUILTIN_MODULE_CLASS)
+        Con_Boxed_Object.__init__(self, vm, instance_of)
 
         self.is_bc = is_bc # True for bytecode modules; False for RPython modules
         self.bc = bc
@@ -940,8 +943,10 @@ class Con_Func(Con_Boxed_Object):
 
 
     def __init__(self, vm, name, is_bound, pc, max_stack_size, num_params, num_vars, container, \
-      container_closure):
-        Con_Boxed_Object.__init__(self, vm, vm.get_builtin(BUILTIN_FUNC_CLASS))
+      container_closure, instance_of=None):
+        if instance_of is None:
+            instance_of = vm.get_builtin(BUILTIN_FUNC_CLASS)
+        Con_Boxed_Object.__init__(self, vm, instance_of)
     
         self.name = name
         self.is_bound = is_bound
@@ -1028,8 +1033,10 @@ class Con_Partial_Application(Con_Boxed_Object):
     _immutable_fields_ = ("o", "f")
 
 
-    def __init__(self, vm, o, f, args=None):
-        Con_Boxed_Object.__init__(self, vm, vm.get_builtin(BUILTIN_PARTIAL_APPLICATION_CLASS))
+    def __init__(self, vm, o, f, args=None, instance_of=None):
+        if instance_of is None:
+            instance_of = vm.get_builtin(BUILTIN_PARTIAL_APPLICATION_CLASS)
+        Con_Boxed_Object.__init__(self, vm, instance_of)
         self.o = o
         self.f = f
         self.args = args
@@ -1097,8 +1104,10 @@ class Con_Int(Con_Boxed_Object):
     _immutable_fields_ = ("v",)
 
 
-    def __init__(self, vm, v):
-        Con_Boxed_Object.__init__(self, vm, vm.get_builtin(BUILTIN_INT_CLASS))
+    def __init__(self, vm, v, instance_of=None):
+        if instance_of is None:
+            instance_of = vm.get_builtin(BUILTIN_INT_CLASS)
+        Con_Boxed_Object.__init__(self, vm, instance_of)
         assert v is not None
         self.v = v
 
@@ -1710,36 +1719,36 @@ class Con_List(Con_Boxed_Object):
     __slots__ = ("l",)
     _immutable_fields_ = ("l",)
 
-
     def __init__(self, vm, l, instance_of=None):
         if instance_of is None:
-            Con_Boxed_Object.__init__(self, vm, vm.get_builtin(BUILTIN_LIST_CLASS))
-        else:
-            Con_Boxed_Object.__init__(self, vm, instance_of)
+            instance_of = vm.get_builtin(BUILTIN_LIST_CLASS)
+        Con_Boxed_Object.__init__(self, vm, instance_of)
         self.l = l
 
 
-
 def _new_func_Con_List(vm):
-    (class_, o_o), vargs = vm.decode_args("C", opt="O", vargs=True)
+    (class_,), vargs = vm.decode_args("C", vargs=True)
     
-    if o_o is None:
-        o_o = vm.get_builtin(BUILTIN_NULL_OBJ)
-        l = []
-    elif isinstance(o_o, Con_List):
-        l = o_o.l[:]
-    else:
+    o = Con_List(vm, [], class_)
+    vm.apply(o.get_slot(vm, "init"), vargs)
+    vm.return_(o)
+
+
+def _Con_List_init(vm):
+    (self, o_o,), _ = vm.decode_args("L", opt="O")
+    assert isinstance(self, Con_List)
+    
+    if isinstance(o_o, Con_List):
+        self.l = o_o.l[:]
+    elif o_o:
         vm.pre_get_slot_apply_pump(o_o, "iter")
-        l = []
         while 1:
             e_o = vm.apply_pump()
             if not e_o:
                 break
-            l.append(e_o)
-    o = Con_List(vm, l, class_)
-    vm.apply(o.get_slot(vm, "init"), [o_o] + vargs)
-    vm.return_(o)
+            self.l.append(e_o)
 
+    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
 
 
 def _Con_List_add(vm):
@@ -1995,6 +2004,7 @@ def bootstrap_con_list(vm):
       new_c_con_func(vm, Con_String(vm, "new_List"), False, _new_func_Con_List, \
         vm.get_builtin(BUILTIN_BUILTINS_MODULE))
 
+    new_c_con_func_for_class(vm, "init", _Con_List_init, list_class)
     new_c_con_func_for_class(vm, "+", _Con_List_add, list_class)
     new_c_con_func_for_class(vm, "append", _Con_List_append, list_class)
     new_c_con_func_for_class(vm, "del", _Con_List_del, list_class)
@@ -2028,8 +2038,10 @@ class Con_Set(Con_Boxed_Object):
     _immutable_fields_ = ("s",)
 
 
-    def __init__(self, vm, l):
-        Con_Boxed_Object.__init__(self, vm, vm.get_builtin(BUILTIN_SET_CLASS))
+    def __init__(self, vm, l, instance_of=None):
+        if instance_of is None:
+            instance_of = vm.get_builtin(BUILTIN_SET_CLASS)
+        Con_Boxed_Object.__init__(self, vm, instance_of)
         # RPython doesn't have sets, so we use dictionaries for the time being
         self.s = objectmodel.r_dict(_dict_key_eq, _dict_key_hash)
         for e in l:
@@ -2159,8 +2171,10 @@ class Con_Dict(Con_Boxed_Object):
     _immutable_fields_ = ("d",)
 
 
-    def __init__(self, vm, l):
-        Con_Boxed_Object.__init__(self, vm, vm.get_builtin(BUILTIN_DICT_CLASS))
+    def __init__(self, vm, l, instance_of=None):
+        if instance_of is None:
+            instance_of = vm.get_builtin(BUILTIN_DICT_CLASS)
+        Con_Boxed_Object.__init__(self, vm, instance_of)
         self.d = objectmodel.r_dict(_dict_key_eq, _dict_key_hash)
         i = 0
         while i < len(l):
@@ -2298,7 +2312,9 @@ class Con_Exception(Con_Boxed_Object):
     _immutable_fields_ = ()
 
 
-    def __init__(self, vm, instance_of):
+    def __init__(self, vm, instance_of=None):
+        if instance_of is None:
+            instance_of = vm.get_builtin(BUILTIN_EXCEPTION_CLASS)
         Con_Boxed_Object.__init__(self, vm, instance_of)
         self.call_chain = None
 

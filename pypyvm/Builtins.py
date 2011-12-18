@@ -1123,13 +1123,15 @@ class Con_Int(Con_Boxed_Object):
 
 
     def eq(self, vm, o):
-        o = type_check_int(vm, o)
-        return self.v == o.v
+        if isinstance(o, Con_Int):
+            return self.v == o.v
+        return False
 
 
     def neq(self, vm, o):
-        o = type_check_int(vm, o)
-        return self.v != o.v
+        if isinstance(o, Con_Int):
+            return self.v != o.v
+        return True
 
 
     def le(self, vm, o):
@@ -1193,14 +1195,13 @@ def _Con_Int_div(vm):
 
 
 def _Con_Int_eq(vm):
-    (self, o_o),_ = vm.decode_args("II")
+    (self, o_o),_ = vm.decode_args("IO")
     assert isinstance(self, Con_Int)
-    assert isinstance(o_o, Con_Int)
-
-    if self.v == o_o.v:
-        vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
-    else:
-        vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+    
+    if isinstance(o_o, Con_Int):
+        if self.v == o_o.v:
+            vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
 
 
 def _Con_Int_gt(vm):
@@ -1395,13 +1396,15 @@ class Con_String(Con_Boxed_Object):
 
 
     def eq(self, vm, o):
-        o = type_check_string(vm, o)
-        return self.v == o.v
+        if isinstance(o, Con_String):
+            return self.v == o.v
+        return False
 
 
     def neq(self, vm, o):
-        o = type_check_string(vm, o)
-        return self.v != o.v
+        if isinstance(o, Con_String):
+            return self.v != o.v
+        return True
 
 
     def le(self, vm, o):
@@ -1439,14 +1442,13 @@ def _Con_String_add(vm):
 
 
 def _Con_String_eq(vm):
-    (self, o_o),_ = vm.decode_args("SS")
+    (self, o_o),_ = vm.decode_args("SO")
     assert isinstance(self, Con_String)
-    assert isinstance(o_o, Con_String)
-
-    if self.v == o_o.v:
-        vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
-    else:
-        vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+    
+    if isinstance(o_o, Con_String):
+        if self.v == o_o.v:
+            vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
 
 
 def _Con_String_find(vm):
@@ -1566,14 +1568,15 @@ def _Con_String_mul(vm):
 
 
 def _Con_String_neq(vm):
-    (self, o_o),_ = vm.decode_args("SS")
+    (self, o_o),_ = vm.decode_args("SO")
     assert isinstance(self, Con_String)
-    assert isinstance(o_o, Con_String)
 
-    if self.v != o_o.v:
-        vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
-    else:
-        vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+    if isinstance(o_o, Con_String):
+        if self.v != o_o.v:
+            vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+        else:
+            vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
 
 
 def _Con_String_prefixed_by(vm):
@@ -1794,20 +1797,22 @@ def _Con_List_extend(vm):
 
 
 def _Con_List_eq(vm):
-    (self, o_o),_ = vm.decode_args("LL")
+    (self, o_o),_ = vm.decode_args("LO")
     assert isinstance(self, Con_List)
-    assert isinstance(o_o, Con_List)
     
-    self_len = len(self.l)
-    if self_len != len(o_o.l):
-        vm.return_(vm.get_builtin(Builtins.BUILTIN_FAIL_OBJ))
-
-    self_l = self.l
-    o_l = o_o.l
-    for i in range(0, self_len):
-        if not self_l[i].eq(vm, o_l[i]):
+    if isinstance(o_o, Con_List):
+        self_len = len(self.l)
+        if self_len != len(o_o.l):
             vm.return_(vm.get_builtin(Builtins.BUILTIN_FAIL_OBJ))
-    vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))
+
+        self_l = self.l
+        o_l = o_o.l
+        for i in range(0, self_len):
+            if not self_l[i].eq(vm, o_l[i]):
+                vm.return_(vm.get_builtin(Builtins.BUILTIN_FAIL_OBJ))
+        vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))
+
+    vm.return_(vm.get_builtin(Builtins.BUILTIN_FAIL_OBJ))
 
 
 def _Con_List_find(vm):
@@ -1815,7 +1820,7 @@ def _Con_List_find(vm):
     assert isinstance(self, Con_List)
     
     for e in self.l:
-        if e.eq(vm, o):
+        if o.eq(vm, e):
             vm.yield_(vm.get_builtin(BUILTIN_NULL_OBJ))
     
     vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
@@ -1907,18 +1912,20 @@ def _Con_List_mult(vm):
 def _Con_List_neq(vm):
     (self, o_o),_ = vm.decode_args("LL")
     assert isinstance(self, Con_List)
-    assert isinstance(o_o, Con_List)
     
-    self_len = len(self.l)
-    if self_len != len(o_o.l):
-        vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))
+    if isinstance(o_o, Con_List):
+        self_len = len(self.l)
+        if self_len != len(o_o.l):
+            vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))
 
-    self_l = self.l
-    o_l = o_o.l
-    for i in range(0, self_len):
-        if not self_l[i].neq(vm, o_l[i]):
-            vm.return_(vm.get_builtin(Builtins.BUILTIN_FAIL_OBJ))
-    vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))
+        self_l = self.l
+        o_l = o_o.l
+        for i in range(0, self_len):
+            if not self_l[i].neq(vm, o_l[i]):
+                vm.return_(vm.get_builtin(Builtins.BUILTIN_FAIL_OBJ))
+        vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))
+    else:
+        vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))
 
 
 def _Con_List_pop(vm):

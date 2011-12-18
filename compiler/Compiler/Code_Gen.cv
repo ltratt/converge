@@ -1156,7 +1156,7 @@ class Code_Gen:
             self._instructions.append(self._target.Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_FAIL_OBJ))
             self._instructions.append(self._target.Instr_Return.new(node.src_infos))
 
-        return max_stack_size
+        return max_stack_size + 1
 
 
 
@@ -1165,7 +1165,7 @@ class Code_Gen:
         max_stack_size := self._preorder(node.expr)
         self._instructions.append(self._target.Instr_Yield.new(node.src_infos))
         
-        return max_stack_size
+        return max_stack_size + 1
 
 
 

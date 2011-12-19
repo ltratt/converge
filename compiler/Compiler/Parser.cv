@@ -250,12 +250,11 @@ not ::= "NOT" expr
 
 neg ::= "-" expr
 
-binary    ::= expr binary_op expr
-binary_op ::= "*"       %precedence 40
-            | "/"       %precedence 30
-            | "%"       %precedence 30
-            | "+"       %precedence 20
-            | "-"       %precedence 20
+binary    ::= expr "*" expr      %precedence 40
+            | expr "/" expr      %precedence 30
+            | expr "%" expr      %precedence 30
+            | expr "+" expr      %precedence 20
+            | expr "-" expr      %precedence 20
 
 comparison    ::= expr comparison_op expr
 comparison_op ::= "IS"

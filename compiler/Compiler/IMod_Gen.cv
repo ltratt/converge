@@ -1243,10 +1243,15 @@ class IMod_Gen:
 
     func _t_binary(self, node, extra_src_infos):
     
-        // binary ::= expr binary_op expr
+        // binary    ::= expr "*" expr
+        //             | expr "/" expr
+        //             | expr "%" expr
+        //             | expr "+" expr
+        //             | expr "-" expr
 
-        op_node := node[1][0]
-        if op_node.type == "*":
+
+        op_node := node[1]
+        ndif op_node.type == "*":
             type := ITree::BINARY_MUL
         elif op_node.type == "/":
             type := ITree::BINARY_DIV

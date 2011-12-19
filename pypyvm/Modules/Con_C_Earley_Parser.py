@@ -518,49 +518,9 @@ def _resolve_ambiguities(vm, alts, tok_os, rn_os, n):
                     return
 
         ffamilies = [_flatten_kids(k) for k in n.families]
-        rn_ss = [type_check_string(vm, x).v for x in rn_os]
-        #i = 1
-        #for ks in ffamilies:
-        #    print "possibility", i
-        #    i += 1
-        #    for c in ks:
-        #        print c.pp(2, names=rn_ss, alts=alts)
-        #    print "\n"
         for fkids in ffamilies:
             if len(fkids) != len(ffamilies[0]):
                 break
-        else:
-            # This is a hack to maintain compatibility with the old VMs somewhat broken parser.
-            for i in range(len(ffamilies[0])):
-                precs = []
-                for j in range(len(ffamilies)):
-                    c = ffamilies[j][i]
-                    if isinstance(c, Tree_Term):
-                        precs.append(0)
-                    else:
-                        assert isinstance(c, Tree_Non_Term)
-                        precs.append(alts[c.s].precedence)
-
-                lp = precs[0]
-                for p in precs:
-                    lp = min(lp, p)
-                if lp == 0:
-                    continue
-                nlp = 0
-                for p in precs:
-                    if p == lp:
-                        nlp += 1
-                #print i, precs, lp, nlp#, ffamilies
-                if nlp < len(precs):
-                    j = 0
-                    while j < len(ffamilies):
-                        if precs[j] != lp:
-                            del precs[j]
-                            del ffamilies[j]
-                        else:
-                            j += 1
-                    if len(ffamilies) == 1:
-                        break
         
         if len(ffamilies) > 1:
             # We still have ambiguities left, so, as a sensible default, we prefer

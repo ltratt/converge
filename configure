@@ -49,6 +49,7 @@ fi
 
 if [[ X$TRANSLATE_PY == "X" ]]; then
     echo "not found (try setting \$PYPY_SRC)."
+    exit 1
 fi
 echo $TRANSLATE_PY
 
@@ -75,6 +76,71 @@ case $machine_type in
 	*) echo Unknown machine type "$machine_type"; exit 1;;
 esac
 
+#
+# Find libpcre.a
+#
+
+echo -n "Checking for pcre-config... "
+which pcre-config > /dev/null 2> /dev/null
+if [ $? -ne 0 ]; then
+    echo "not found."
+    exit 1
+fi
+which pcre-config
+
+echo -n "Checking for libpcre.a... "
+libpcre_a=""
+for dir in `pcre-config --libs | tr " " "\n" | grep "^-L" | sort -u | sed "s/^-L//"`; do
+	cnd=$dir/libpcre.a
+	if [[ -f $cnd ]]; then
+		libpcre_a=$cnd
+		break
+	fi
+done
+if [[ "X$libpcre_a" == "X" ]]; then
+	echo "not found."
+    exit 1
+fi
+echo $libpcre_a
+libpcre_include_dirs=`pcre-config --cflags | tr " " "\n"  | grep "^-I" | sed "s/-I//g" | tr "\n" " " | sed "s/ *$//g"`
+libpcre_library_dirs=`pcre-config --libs | tr " " "\n"  | grep "^-L" | sed "s/-L//g" | tr "\n" " " | sed "s/ *$//g"`
+libpcre_link_flags=`pcre-config --libs`
+
+#
+# Find libxml2.a
+#
+
+echo -n "Checking for xml2-config... "
+which xml2-config > /dev/null 2> /dev/null
+if [ $? -ne 0 ]; then
+    echo "not found."
+    exit 1
+fi
+which xml2-config
+
+echo -n "Checking for libxml2.a... "
+libxml2_a=""
+for dir in `xml2-config --libs | tr " " "\n" | grep "^-L" | sort -u | sed "s/^-L//"` ; do
+	cnd=$dir/libxml2.a
+	if [[ -f $cnd ]]; then
+		libxml2_a=$cnd
+		break
+	fi
+done
+if [[ "X$libpcre_a" == "X" ]]; then
+	echo "not found."
+    exit 1
+fi
+echo $libxml2_a
+libxml2_include_dirs=`xml2-config --cflags | tr " " "\n"  | grep "^-I" | sed "s/-I//g" | tr "\n" " " | sed "s/ *$//g"`
+libxml2_library_dirs=`xml2-config --libs | tr " " "\n"  | grep "^-L" | sed "s/-L//g" | tr "\n" " " | sed "s/ *$//g"`
+libxml2_link_flags=`xml2-config --libs`
+
+
+#
+# Bootstrap compiler
+#
+
 echo -n "Copying bootstrap compiler... "
 
 cp -p $bootstrap_dir/convergec.bootstrap compiler/convergec
@@ -84,7 +150,7 @@ echo "done."
 
 echo -n "Writing .in files... "
 
-rewriter=`mktemp`
+rewriter=`mktemp XXXXXXXXXX`
 cat << EOF > $rewriter
 import sys
 fin=file(sys.argv[1], "r")
@@ -101,7 +167,7 @@ EOF
 abs_top_srcdir=`pwd`
 for p_in in `find . -name "*.in"`; do
     p=`echo $p_in | sed "s/.in$//g"`
-    $PYTHON $rewriter $p_in $p "@abs_top_srcdir@" "$abs_top_srcdir" "@PYTHON@" "$PYTHON" "@TRANSLATE_PY@" "$TRANSLATE_PY" "@RPYTHON_OPT@" "$rpython_opt" "@prefix@" "$prefix" "@bindir@" "$prefix/bin" "@libdir@" "$prefix/share" "@libdir@" "$prefix/lib" "@INSTALL@" "$abs_top_srcdir/install.sh" "@CONVERGE_VERSION@" "$converge_version" "@CONVERGE_DATE@"  "$converge_date" "@PLATFORM@" "$operating_system" "@EXEC_EXT" "$exec_ext" "@DIR_SEP@" "$DIR_SEP"
+    $PYTHON $rewriter $p_in $p "@abs_top_srcdir@" "$abs_top_srcdir" "@PYTHON@" "$PYTHON" "@TRANSLATE_PY@" "$TRANSLATE_PY" "@RPYTHON_OPT@" "$rpython_opt" "@prefix@" "$prefix" "@bindir@" "$prefix/bin" "@libdir@" "$prefix/share" "@libdir@" "$prefix/lib" "@INSTALL@" "$abs_top_srcdir/install.sh" "@CONVERGE_VERSION@" "$converge_version" "@CONVERGE_DATE@"  "$converge_date" "@PLATFORM@" "$operating_system" "@EXEC_EXT" "$exec_ext" "@DIR_SEP@" "$DIR_SEP" "@LIBPCRE_INCLUDE_DIRS@" "$libpcre_include_dirs" "@LIBPCRE_LINK_DIRS@" "$libpcre_library_dirs" "@LIBPCRE_A@" "$libpcre_a" "@LIBPCRE_LINK_FLAGS@" "$libpcre_link_flags" "@LIBXML2_A@" "$libxml2_a" "@LIBXML2_INCLUDE_DIRS@" "$libxml2_include_dirs" "@LIBXML2_LINK_DIRS@" "$libxml2_library_dirs" "@LIBXML2_LINK_FLAGS@" "$libxml2_link_flags"
 done
 rm -f $rewriter
 

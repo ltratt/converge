@@ -1119,7 +1119,7 @@ class Con_Int(Con_Boxed_Object):
             instance_of = vm.get_builtin(BUILTIN_INT_CLASS)
         Con_Boxed_Object.__init__(self, vm, instance_of)
         assert v is not None
-        self.v = v
+        self.v = rffi.cast(lltype.Signed, v)
 
 
     def add(self, vm, o):
@@ -2210,7 +2210,7 @@ class Con_Dict(Con_Boxed_Object):
 
 def _dict_key_hash(k):
     vm = VM.global_vm # XXX Offensively gross hack!
-    return Builtins.type_check_int(vm, vm.get_slot_apply(k, "hash")).v
+    return int(Builtins.type_check_int(vm, vm.get_slot_apply(k, "hash")).v)
 
 
 def _dict_key_eq(k1, k2):

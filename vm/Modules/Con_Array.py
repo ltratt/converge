@@ -234,7 +234,7 @@ def Array_get_slice(vm):
 
     i, j = translate_slice_idx_objs(vm, i_o, j_o, self.num_entries)
     # This does a double allocation, so isn't very efficient. It is pleasingly simple though.
-    data = rffi.charpsize2str(rffi.ptradd(self.data, i * self.type_size), (j - i) * self.type_size)
+    data = rffi.charpsize2str(rffi.ptradd(self.data, i * self.type_size), int((j - i) * self.type_size))
     vm.return_(Array(vm, mod.get_defn(vm, "Array"), self.type_name, Con_String(vm, data)))
 
 
@@ -318,7 +318,7 @@ def _get_obj(vm, self, i):
 
 def _set_obj(vm, self, i, o):
     if self.type == TYPE_I64:
-        rffi.cast(rffi.LONGP, self.data)[i] = type_check_int(vm, o).v
+        rffi.cast(rffi.LONGP, self.data)[i] = rffi.cast(rffi.LONG, type_check_int(vm, o).v)
     elif self.type == TYPE_I32:
         rffi.cast(rffi.INTP, self.data)[i] = rffi.cast(rffi.INT, type_check_int(vm, o).v)
     else:

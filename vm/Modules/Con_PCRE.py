@@ -23,12 +23,17 @@ from pypy.rpython.lltypesystem import lltype, rffi
 from pypy.rpython.tool import rffi_platform as platform
 from pypy.rlib.rsre import rsre_re
 from pypy.translator.tool.cbuild import ExternalCompilationInfo
+import Config
 from Builtins import *
 from Core import *
 
 
 
-eci = ExternalCompilationInfo(includes = ["pcre.h"], libraries = ["pcre"])
+eci                        = ExternalCompilationInfo(includes=["pcre.h"], 
+                               include_dirs=Config.LIBPCRE_INCLUDE_DIRS, \
+                               library_dirs=Config.LIBPCRE_LIBRARY_DIRS, \
+                               link_extra=[Config.LIBPCRE_LINK_FLAGS], \
+                               link_files=[Config.LIBPCRE_A])
 
 class CConfig:
     _compilation_info_     = eci

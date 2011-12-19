@@ -20,8 +20,8 @@
 
 
 import sys
+import Config
 from Builtins import *
-from Version import *
 
 
 
@@ -58,8 +58,8 @@ def import_(vm):
     
     # Version info
     
-    mod.set_defn(vm, "version", Con_String(vm, CON_VERSION))
-    mod.set_defn(vm, "version_date", Con_String(vm, CON_DATE))
+    mod.set_defn(vm, "version", Con_String(vm, Config.CON_VERSION))
+    mod.set_defn(vm, "version_date", Con_String(vm, Config.CON_DATE))
     
     vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
 

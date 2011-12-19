@@ -333,7 +333,7 @@ def chmod(vm):
     assert isinstance(mode_o, Con_Int)
     
     try:
-        os.chmod(p_o.v, mode_o.v)
+        os.chmod(p_o.v, int(mode_o.v))
     except OSError, e:
         _errno_raise(vm, p_o.v)
 

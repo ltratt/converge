@@ -128,7 +128,7 @@ def entry_point(argv):
         sys_ex_class = ex_mod.get_defn(vm, "System_Exit_Exception")
         if vm.get_slot_apply(sys_ex_class, "instantiated", [e.ex_obj], allow_fail=True) is not None:
             code = Builtins.type_check_int(vm, e.ex_obj.get_slot(vm, "code"))
-            return code.v
+            return int(code.v)
         else:
             pb = vm.import_stdlib_mod(Stdlib_Modules.STDLIB_BACKTRACE).get_defn(vm, "print_best")
             vm.apply(pb, [e.ex_obj])

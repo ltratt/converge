@@ -20,15 +20,11 @@
 
 
 import os, sys
+import Config
 from Builtins import *
 from Core import *
 
 
-
-
-
-if sys.platform.startswith("openbsd"):
-    PLATFORM = os.uname()[0]
 
 
 
@@ -46,7 +42,7 @@ def import_(vm):
     mod.set_defn(vm, "LITTLE_ENDIAN", Con_String(vm, "LITTLE_ENDIAN"))
     mod.set_defn(vm, "BIG_ENDIAN", Con_String(vm, "BIG_ENDIAN"))
     mod.set_defn(vm, "endianness", Con_String(vm, ENDIANNESS))
-    mod.set_defn(vm, "osname", Con_String(vm, PLATFORM))
+    mod.set_defn(vm, "osname", Con_String(vm, Config.PLATFORM))
     mod.set_defn(vm, "case_sensitive_filenames", Con_Int(vm, CASE_SENSITIVE_FILENAMES))
     
     vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))

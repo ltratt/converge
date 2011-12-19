@@ -1,4 +1,4 @@
-CONVERGE_DIR=@abs_srcdir@
+CONVERGE_DIR=@abs_top_srcdir@
 
 CONVERGE_VM_DIR=${CONVERGE_DIR}/vm
 CONVERGE_VM=${CONVERGE_VM_DIR}/converge

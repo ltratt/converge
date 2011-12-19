@@ -1,0 +1,108 @@
+#! /bin/sh
+
+# If shipping a production release, these two variables should be changed
+# to e.g.:
+#
+#   converge_version=0.7
+#   converge_date=2006/01/04
+
+converge_version=current
+converge_date=`date '+%Y/%m/%d %H:%M:%S'`
+
+prefix=""
+rpython_opt="jit"
+while [ $# -ge 1 ]; do
+    case $1 in
+        --prefix=* ) prefix=`echo $1 | sed "s/--prefix=//g"`; shift;;
+        --opt=*    ) rpython_opt=`echo $1 | sed "s/--opt=//g"`; shift;;
+        *          ) echo "Unknown switch $1"; exit 1;;
+    esac
+done
+
+if [[ X$prefix == "X" ]]; then
+    prefix="/usr/local/"
+fi
+
+echo -n "Checking for Python interpreter... "
+
+which pypy-c 2> /dev/null > /dev/null
+if [ $? -eq 0 ]; then
+    PYTHON=`which pypy-c`
+elif [ $? -ne 0 ]; then
+    which python 2> /dev/null > /dev/null
+    if [ $? -eq 0 ]; then
+        PYTHON=`which python`
+    else
+        echo "not found."
+        exit 1
+    fi
+fi
+echo $PYTHON
+
+echo -n "Checking for RPython translate.py... "
+if [[ X$PYPY_SRC != "X" ]]; then
+    TRANSLATE_PY=$PYPY_SRC/pypy/translator/goal/translate.py
+    if [[ ! -f $TRANSLATE_PY ]]; then
+        TRANSLATE_PY=""
+    fi
+fi
+
+if [[ X$TRANSLATE_PY == "X" ]]; then
+    echo "not found (try setting \$PYPY_SRC)."
+fi
+echo $TRANSLATE_PY
+
+operating_system=`uname -s`
+machine_type=`uname -m`
+if [[ $operating_system == "Darwin" && $machine_type == "i386" ]]; then
+	# On modern Darwin machine it now seems that it's easier to build 64 bit
+    # binaries than 32 bit. Why? I don't know.
+	machine_type=x86_64
+fi
+case $operating_system in
+    CYGWIN_NT* | MINGW* )
+        EXEC_EXT=".exe"
+        DIR_SEP="\\";;
+    * )
+        DIR_SEP="/";;
+esac
+
+case $machine_type in
+	i386 | i686 )
+        bootstrap_dir="bootstrap/32bit_little_endian";;
+	amd64 | x86_64 )
+        bootstrap_dir="bootstrap/64bit_little_endian";;
+	*) echo Unknown machine type "$machine_type"; exit 1;;
+esac
+
+echo -n "Copying bootstrap compiler... "
+
+cp -p $bootstrap_dir/convergec.bootstrap compiler/convergec
+cp -p $bootstrap_dir/convergel.bootstrap compiler/convergel
+
+echo "done."
+
+echo -n "Writing .in files... "
+
+rewriter=`mktemp`
+cat << EOF > $rewriter
+import sys
+fin=file(sys.argv[1], "r")
+d=fin.read(-1)
+fin.close()
+i = 3
+while i < len(sys.argv):
+    d=d.replace(sys.argv[i], sys.argv[i + 1])
+    i += 2
+fout=file(sys.argv[2], "w")
+fout.write(d)
+fout.close()
+EOF
+abs_top_srcdir=`pwd`
+for p_in in `find . -name "*.in"`; do
+    p=`echo $p_in | sed "s/.in$//g"`
+    $PYTHON $rewriter $p_in $p "@abs_top_srcdir@" "$abs_top_srcdir" "@PYTHON@" "$PYTHON" "@TRANSLATE_PY@" "$TRANSLATE_PY" "@RPYTHON_OPT@" "$rpython_opt" "@prefix@" "$prefix" "@bindir@" "$prefix/bin" "@libdir@" "$prefix/share" "@libdir@" "$prefix/lib" "@INSTALL@" "$abs_top_srcdir/install.sh" "@CONVERGE_VERSION@" "$converge_version" "@CONVERGE_DATE@"  "$converge_date" "@PLATFORM@" "$operating_system" "@EXEC_EXT" "$exec_ext" "@DIR_SEP@" "$DIR_SEP"
+done
+rm -f $rewriter
+
+echo "done."

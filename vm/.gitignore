@@ -1,6 +1,3 @@
-Config.h
-Config.h.in
-Version.h
+*.pyc
 converge
-libconverge.a
-Std_Modules.[ch]
+Version.py

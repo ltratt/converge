@@ -1,57 +1,18 @@
-CC=@CC@
-CFLAGS=@CFLAGS@
-LDFLAGS=@LDFLAGS@
-LIBS=@LIBS@
-prefix = @prefix@
-exec_prefix = @exec_prefix@
-bindir = @bindir@
-INSTALL = @INSTALL@
-
-.SUFFIXES: .c .S .o
-
-.c.o:
-	${CC} ${CFLAGS} -I. -I/usr/local/include -c -o $@ $<
-
-.S.o:
-	${AS} -o $@ $<
-
-
-OBJ_FILES = @CON_THREAD_ATOM_OBJ@ @CON_THREAD_CLASS_OBJ@ @CON_THREAD_MODULE_OBJ@ \
-	Bootstrap.o Target.o Builtins/Atom_Def_Atom.o Builtins/Class/Atom.o \
-	Builtins/Class/Class.o Builtins/Closure/Atom.o Builtins/Closure/Class.o \
-	Builtins/Con_Stack/Atom.o Builtins/Con_Stack/Class.o Builtins/Dict/Atom.o \
-	Builtins/Dict/Class.o Builtins/Exception/Atom.o Builtins/Exception/Class.o \
-	Builtins/Func/Atom.o Builtins/Func/Class.o Builtins/Int/Atom.o \
-	Builtins/Int/Class.o Builtins/List/Atom.o Builtins/List/Class.o \
-	Builtins/Module/Atom.o Builtins/Module/Class.o Builtins/Object/Class.o \
-	Builtins/Partial_Application/Atom.o Builtins/Partial_Application/Class.o \
-	Builtins/Set/Atom.o Builtins/Set/Class.o \
-	Builtins/Slots_Atom_Def.o Builtins/String/Atom.o Builtins/String/Class.o \
-	Builtins/Unique_Atom_Def.o Builtins/VM/Atom.o Builtins/VM/Class.o Bytecode.o \
-	Builtins/Number/Class.o Builtins/Float/Atom.o Builtins/Float/Class.o \
-	Hash.o Memory.o Misc.o Numbers.o Object.o Platform/Arch/@CON_ARCH@/Arch.o @CON_MEMMOVE@ \
-	Slots.o main.o Modules/Thread.o Modules.o Std_Modules.o \
-	@PLATFORM_FGETLN@ @PLATFORM_ERR@ @PLATFORM_REALPATH@ \
-	@PLATFORM_STRLCAT@ @PLATFORM_STRLCPY@ \
-	@MODULES@
-	
+PYTHON=@PYTHON@
+TRANSLATE_PY=@TRANSLATE_PY@
+INSTALL=@INSTALL@
 
 all: converge
+
+converge: *.py Modules/*.py
+	${PYTHON} ${TRANSLATE_PY} --opt=@RPYTHON_OPT@ --continuation --output=converge main.py
 
 install:
 	${INSTALL} -d ${DESTDIR}${bindir}
 	${INSTALL} -c -m 555 converge@EXEC_EXT@ ${DESTDIR}${bindir}
 
-libconverge.a: ${OBJ_FILES}
-	rm -f libconverge.a
-	ar cru libconverge.a ${OBJ_FILES}
-	ranlib libconverge.a
-
-converge: libconverge.a
-	${CC} ${LDFLAGS} -o converge main.o libconverge.a ${LIBS}
-
 clean:
-	rm -rf *.core libconverge.a converge ${OBJ_FILES}
+	rm -rf converge
 
 distclean: clean
-	rm -f Makefile Config.h Config.h.in Version.h
+	rm -f Makefile

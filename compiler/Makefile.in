@@ -1,7 +1,5 @@
 include @abs_top_srcdir@/Makefile.inc
 
-prefix = @prefix@
-exec_prefix = @exec_prefix@
 bindir = @bindir@
 libdir = @libdir@
 conlibdir = ${libdir}/converge-@CONVERGE_VERSION@
@@ -43,21 +41,21 @@ endif
 	${INSTALL} -c -m 444 Compiler.cvl ${DESTDIR}${conlibdir}
 
 
-ifdef TARGET
-CROSS_OBJS = ${OBJS:.cvb=.${TARGET}.cvb}
+ifdef CON_TARGET
+CROSS_OBJS = ${OBJS:.cvb=.${CON_TARGET}.cvb}
 
-%.${TARGET}.cvb: %.cv
-	${CONVERGE_VM} ${CONVERGEC} -T ${TARGET} -I ${CONVERGE_STDLIB_DIR} -o $@ $<
+%.${CON_TARGET}.cvb: %.cv
+	${CONVERGE_VM} ${CONVERGEC} -T ${CON_TARGET} -I ${CONVERGE_STDLIB_DIR} -o $@ $<
 
-%.${TARGET}.cvb: %
-	${CONVERGE_VM} ${CONVERGEC} -T ${TARGET} -o $@ $<
+%.${CON_TARGET}.cvb: %
+	${CONVERGE_VM} ${CONVERGEC} -T ${CON_TARGET} -o $@ $<
 
-cross: ${CROSS_OBJS} ${CONVERGE_LIB_DIR}/Stdlib.${TARGET}.cvl
-	${CONVERGE_VM} ${CONVERGEL} -T ${TARGET} -o convergec.${TARGET} convergec.${TARGET}.cvb ${CROSS_OBJS} ${CONVERGE_LIB_DIR}/Stdlib.${TARGET}.cvl
-	${CONVERGE_VM} ${CONVERGEL} -T ${TARGET} -o convergel.${TARGET} convergel.${TARGET}.cvb ${CROSS_OBJS} ${CONVERGE_LIB_DIR}/Stdlib.${TARGET}.cvl
+cross: ${CROSS_OBJS} ${CONVERGE_LIB_DIR}/Stdlib.${CON_TARGET}.cvl
+	${CONVERGE_VM} ${CONVERGEL} -T ${CON_TARGET} -o convergec.${CON_TARGET} convergec.${CON_TARGET}.cvb ${CROSS_OBJS} ${CONVERGE_LIB_DIR}/Stdlib.${CON_TARGET}.cvl
+	${CONVERGE_VM} ${CONVERGEL} -T ${CON_TARGET} -o convergel.${CON_TARGET} convergel.${CON_TARGET}.cvb ${CROSS_OBJS} ${CONVERGE_LIB_DIR}/Stdlib.${CON_TARGET}.cvl
 
 cross-clean:
-	rm -f ${CROSS_OBJS} convergec.${TARGET} convergel.${TARGET}
+	rm -f ${CROSS_OBJS} convergec.${CON_TARGET} convergel.${CON_TARGET}
 endif
 
 

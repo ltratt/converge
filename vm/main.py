@@ -48,6 +48,7 @@ cconfig  = platform.configure(CConfig)
 
 BUFSIZ   = cconfig["BUFSIZ"]
 PATH_MAX = cconfig["PATH_MAX"]
+getenv   = rffi.llexternal("getenv", [rffi.CCHARP], rffi.CCHARP, compilation_info=eci)
 realpath = rffi.llexternal("realpath", [rffi.CCHARP, rffi.CCHARP], rffi.CCHARP, compilation_info=eci)
 strlen   = rffi.llexternal("strlen", [rffi.CCHARP], rffi.SIZE_T, compilation_info=eci)
 
@@ -60,8 +61,8 @@ COMPILER_DIRS = ["../lib/converge-%s/" % VM_VERSION, "../compiler/"]
 
 
 def entry_point(argv):
-    vm_path = _canon_path(argv[0])
-
+    vm_path = _get_vm_path(argv)
+    
     verbosity = 0
     mk_fresh = False
     i = 1
@@ -134,6 +135,26 @@ def entry_point(argv):
             return 1
     
     return 0
+
+
+def _get_vm_path(argv):
+    if os.path.exists(argv[0]):
+        # argv[0] points to a real file - job done.
+        return _canon_path(argv[0])
+
+    # We fall back on searching through $PATH (if it's available) to see if we can find an
+    # executable of the name argv[0]
+    raw_PATH = getenv("PATH")
+    if raw_PATH:
+        PATH = rffi.charp2str(raw_PATH)
+        for d in PATH.split(":"):
+            d = d.strip(" ")
+            cnd = os.path.join(d, argv[0])
+            if os.path.exists(cnd):
+                return _canon_path(cnd)
+
+    # At this point, everything we've tried has failed
+    return ""
 
 
 def _read_bc(path, id_):

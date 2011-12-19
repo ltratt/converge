@@ -1,4 +1,0 @@
-#define CON_NAME "Converge"
-#define CON_VERSION "@CONVERGE_VERSION@"
-#define CON_DATE "@CONVERGE_DATE@"
-#define CON_COPYRIGHT "Copyright (C)King's College London 2003-2006, Created by Laurence Tratt"

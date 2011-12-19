@@ -35,20 +35,20 @@ install: all
 	${INSTALL} -c -m 444 Stdlib.cvl ${DESTDIR}${conlibdir}
 
 
-ifdef TARGET
-CROSS_OBJS = ${ALL_OBJS:.cvb=.${TARGET}.cvb}
+ifdef CON_TARGET
+CROSS_OBJS = ${ALL_OBJS:.cvb=.${CON_TARGET}.cvb}
 
-%.${TARGET}.cvb: %.cv
-	${CONVERGE_VM} ${CONVERGEC} -T ${TARGET} -I ${CONVERGE_COMPILER_DIR} -o $@ $<
+%.${CON_TARGET}.cvb: %.cv
+	${CONVERGE_VM} ${CONVERGEC} -T ${CON_TARGET} -I ${CONVERGE_COMPILER_DIR} -o $@ $<
 
-%.${TARGET}.cvb: %
-	${CONVERGE_VM} ${CONVERGEC} -T ${TARGET} -o $@ $<
+%.${CON_TARGET}.cvb: %
+	${CONVERGE_VM} ${CONVERGEC} -T ${CON_TARGET} -o $@ $<
 
 cross: ${CROSS_OBJS}
-	${CONVERGE_VM} ${CONVERGEL} -l -T ${TARGET} -o Stdlib.${TARGET}.cvl Stdlib.${TARGET}.cvb ${CROSS_OBJS}
+	${CONVERGE_VM} ${CONVERGEL} -l -T ${CON_TARGET} -o Stdlib.${CON_TARGET}.cvl Stdlib.${CON_TARGET}.cvb ${CROSS_OBJS}
 
 cross-clean:
-	rm -f ${CROSS_OBJS} Stdlib.${TARGET}.cvl
+	rm -f ${CROSS_OBJS} Stdlib.${CON_TARGET}.cvl
 endif
 
 

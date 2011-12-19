@@ -852,6 +852,15 @@ def _Con_Module_has_defn(vm):
     vm.return_(r_o)
 
 
+def _Con_Module_set_defn(vm):
+    (self, n, o),_ = vm.decode_args("MSO")
+    assert isinstance(self, Con_Module)
+    assert isinstance(n, Con_String)
+
+    self.set_defn(vm, n.v, o)
+    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+
+
 def _Con_Module_iter_defns(vm):
     (self,),_ = vm.decode_args("M")
     assert isinstance(self, Con_Module)
@@ -909,6 +918,7 @@ def bootstrap_con_module(vm):
     new_c_con_func_for_class(vm, "iter_defns", _Con_Module_iter_defns, module_class)
     new_c_con_func_for_class(vm, "iter_newlines", _Con_Module_iter_newlines, module_class)
     new_c_con_func_for_class(vm, "path", _Con_Module_path, module_class)
+    new_c_con_func_for_class(vm, "set_defn", _Con_Module_set_defn, module_class)
 
 
 def new_c_con_module(vm, name, id_, src_path, import_func, names):
@@ -1755,11 +1765,20 @@ def _Con_List_init(vm):
 
 
 def _Con_List_add(vm):
-    (self, o_o),_ = vm.decode_args("LL")
+    (self, o_o),_ = vm.decode_args("LO")
     assert isinstance(self, Con_List)
-    assert isinstance(o_o, Con_List)
     
-    vm.return_(Con_List(vm, self.l + o_o.l))
+    if isinstance(o_o, Con_List):
+        new_l = self.l + o_o.l
+    else:
+        new_l = self.l[:]
+        vm.pre_get_slot_apply_pump(o_o, "iter")
+        while 1:
+            e_o = vm.apply_pump()
+            if not e_o:
+                break
+            new_l.append(e_o)
+    vm.return_(Con_List(vm, new_l))
 
 
 def _Con_List_append(vm):

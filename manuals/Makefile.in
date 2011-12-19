@@ -3,7 +3,6 @@ include @abs_top_srcdir@/Makefile.inc
 prefix = @prefix@
 exec_prefix = @exec_prefix@
 bindir = @bindir@
-datarootdir = @datarootdir@
 datadir = @datadir@
 condocsdir = ${datadir}/doc/converge-@CONVERGE_VERSION@
 INSTALL = @INSTALL@
@@ -23,7 +22,7 @@ MANUALS = modules_cvd/Array.cvd modules_cvd/Builtins.cvd modules_cvd/CEI.cvd \
 
 
 all: cvd_to_html
-	${CONVERGE_VM} cvd_to_html -o modules_html ${subst /,@CON_DIR_SEP@,${MANUALS}}
+	${CONVERGE_VM} cvd_to_html -o modules_html ${subst /,@DIR_SEP@,${MANUALS}}
 
 install:
 	${INSTALL} -d ${DESTDIR}${bindir}

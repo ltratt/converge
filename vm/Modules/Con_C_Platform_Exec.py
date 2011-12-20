@@ -60,4 +60,4 @@ def sh_cmd(vm):
     if r == -1:
         vm.raise_helper("Exception", [Con_String(vm, os.strerror(rposix.get_errno()))])
 
-    vm.return_(Con_Int(vm, r))
+    vm.return_(Con_Int(vm, os.WEXITSTATUS(r)))

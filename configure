@@ -19,15 +19,15 @@ while [ $# -ge 1 ]; do
     esac
 done
 
-if [[ X$prefix == "X" ]]; then
+if [ "X$prefix" = "X" ]; then
     prefix="/usr/local/"
 fi
 
 echo -n "Checking for Python interpreter... "
 
-which pypy-c 2> /dev/null > /dev/null
+which pypy 2> /dev/null > /dev/null
 if [ $? -eq 0 ]; then
-    PYTHON=`which pypy-c`
+    PYTHON=`which pypy`
 elif [ $? -ne 0 ]; then
     which python 2> /dev/null > /dev/null
     if [ $? -eq 0 ]; then
@@ -40,14 +40,14 @@ fi
 echo $PYTHON
 
 echo -n "Checking for RPython translate.py... "
-if [[ X$PYPY_SRC != "X" ]]; then
+if [ "X$PYPY_SRC" != "X" ]; then
     TRANSLATE_PY=$PYPY_SRC/pypy/translator/goal/translate.py
-    if [[ ! -f $TRANSLATE_PY ]]; then
+    if [ ! -f $TRANSLATE_PY ]; then
         TRANSLATE_PY=""
     fi
 fi
 
-if [[ X$TRANSLATE_PY == "X" ]]; then
+if [ "X$TRANSLATE_PY" = "X" ]; then
     echo "not found (try setting \$PYPY_SRC)."
     exit 1
 fi
@@ -55,7 +55,7 @@ echo $TRANSLATE_PY
 
 operating_system=`uname -s`
 machine_type=`uname -m`
-if [[ $operating_system == "Darwin" && $machine_type == "i386" ]]; then
+if [ "$operating_system" = "Darwin" -a "$machine_type" = "i386" ]; then
 	# On modern Darwin machine it now seems that it's easier to build 64 bit
     # binaries than 32 bit. Why? I don't know.
 	machine_type=x86_64
@@ -92,12 +92,12 @@ echo -n "Checking for libpcre.a... "
 libpcre_a=""
 for dir in `pcre-config --libs | tr " " "\n" | grep "^-L" | sort -u | sed "s/^-L//"`; do
 	cnd=$dir/libpcre.a
-	if [[ -f $cnd ]]; then
+	if [ -f $cnd ]; then
 		libpcre_a=$cnd
 		break
 	fi
 done
-if [[ "X$libpcre_a" == "X" ]]; then
+if [ "X$libpcre_a" = "X" ]; then
 	echo "not found."
     exit 1
 fi
@@ -122,12 +122,12 @@ echo -n "Checking for libxml2.a... "
 libxml2_a=""
 for dir in `xml2-config --libs | tr " " "\n" | grep "^-L" | sort -u | sed "s/^-L//"` ; do
 	cnd=$dir/libxml2.a
-	if [[ -f $cnd ]]; then
+	if [ -f $cnd ]; then
 		libxml2_a=$cnd
 		break
 	fi
 done
-if [[ "X$libpcre_a" == "X" ]]; then
+if [ "X$libpcre_a" = "X" ]; then
 	echo "not found."
     exit 1
 fi

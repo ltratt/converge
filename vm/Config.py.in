@@ -28,12 +28,19 @@ PLATFORM = "@PLATFORM@"
 
 # Stuff needed for building the system.
 
-LIBPCRE_INCLUDE_DIRS= "@LIBPCRE_INCLUDE_DIRS@".split(" ")
-LIBPCRE_LIBRARY_DIRS= "@LIBPCRE_LINK_DIRS@".split(" ")
+def _sanitise(dirs):
+    dirs = dirs.strip()
+    if not dirs:
+        return []
+    else:
+        return dirs.split(" ")
+
+LIBPCRE_INCLUDE_DIRS = _sanitise("@LIBPCRE_INCLUDE_DIRS@")
+LIBPCRE_LIBRARY_DIRS = _sanitise("@LIBPCRE_LINK_DIRS@")
 LIBPCRE_LINK_FLAGS = "@LIBPCRE_LINK_FLAGS@"
 LIBPCRE_A = "@LIBPCRE_A@"
 
-LIBXML2_INCLUDE_DIRS= "@LIBXML2_INCLUDE_DIRS@".split(" ")
-LIBXML2_LIBRARY_DIRS= "@LIBXML2_LINK_DIRS@".split(" ")
+LIBXML2_INCLUDE_DIRS = _sanitise("@LIBXML2_INCLUDE_DIRS@")
+LIBXML2_LIBRARY_DIRS = _sanitise("@LIBXML2_LINK_DIRS@")
 LIBXML2_LINK_FLAGS = "@LIBXML2_LINK_FLAGS@"
 LIBXML2_A = "@LIBXML2_A@"

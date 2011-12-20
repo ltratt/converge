@@ -789,19 +789,19 @@ class Con_Module(Con_Boxed_Object):
         src_info_pos = src_info_num = 0
         src_infos_off = Target.read_word(bc, Target.BC_MOD_SRC_POSITIONS)
         while 1:
-            src_info1 = Target.read_32bit_word(bc, src_infos_off + src_info_pos * 4)
+            src_info1 = Target.read_uint32_word(bc, src_infos_off + src_info_pos * 4)
             if src_info_num + (src_info1 & ((1 << 4) - 1)) > instr_i:
                 break
             src_info_num += src_info1 & ((1 << 4) - 1)
             while src_info1 & (1 << 4):
                 src_info_pos += 2
-                src_info1 = Target.read_32bit_word(bc, src_infos_off + src_info_pos * 4)
+                src_info1 = Target.read_uint32_word(bc, src_infos_off + src_info_pos * 4)
             src_info_pos += 2
 
         src_infos = []
         while 1:
-            src_info1 = Target.read_32bit_word(bc, src_infos_off + src_info_pos * 4)
-            src_info2 = Target.read_32bit_word(bc, src_infos_off + (src_info_pos + 1) * 4)
+            src_info1 = Target.read_uint32_word(bc, src_infos_off + src_info_pos * 4)
+            src_info2 = Target.read_uint32_word(bc, src_infos_off + (src_info_pos + 1) * 4)
 
             if src_info2 & ((1 << 12) - 1) == ((1 << 12) - 1):
                 mod_id = self.id_

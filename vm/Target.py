@@ -137,11 +137,11 @@ if INTSIZE == 8:
 
     @elidable_promote("1")
     def read_word(bc, i):
-        return rffi.cast(rffi.LONGP, bc)[i / INTSIZE]
+        return rffi.cast(lltype.Signed, rffi.cast(rffi.LONGP, bc)[i / INTSIZE])
 
     @elidable_promote("1")
-    def read_32bit_word(bc, i):
-        return rffi.cast(rffi.LONG, rffi.cast(rffi.INTP, bc)[i / 4])
+    def read_uint32_word(bc, i):
+        return rffi.cast(lltype.Signed, rffi.cast(rffi.UINTP, bc)[i / 4])
 
     @elidable_promote()
     def align(i):

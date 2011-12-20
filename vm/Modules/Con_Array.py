@@ -176,6 +176,7 @@ def Array_append(vm):
     assert isinstance(self, Array)
 
     _append(vm, self, o_o)
+    objectmodel.keepalive_until_here(self)
     vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
 
 
@@ -195,6 +196,7 @@ def Array_extend(vm):
             if not e_o:
                 break
             _append(vm, self, e_o)
+    objectmodel.keepalive_until_here(self)
 
     vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
 
@@ -214,6 +216,7 @@ def Array_extend_from_string(vm):
         self.data[p + i] = s[i]
         i -= 1
     self.num_entries += len(s) // self.type_size
+    objectmodel.keepalive_until_here(self)
 
     vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
 
@@ -224,7 +227,9 @@ def Array_get(vm):
     assert isinstance(i_o, Con_Int)
 
     i = translate_idx(vm, i_o.v, self.num_entries)
-    vm.return_(_get_obj(vm, self, i))
+    o = _get_obj(vm, self, i)
+    objectmodel.keepalive_until_here(self)
+    vm.return_(o)
 
 
 def Array_get_slice(vm):
@@ -235,6 +240,7 @@ def Array_get_slice(vm):
     i, j = translate_slice_idx_objs(vm, i_o, j_o, self.num_entries)
     # This does a double allocation, so isn't very efficient. It is pleasingly simple though.
     data = rffi.charpsize2str(rffi.ptradd(self.data, i * self.type_size), int((j - i) * self.type_size))
+    objectmodel.keepalive_until_here(self)
     vm.return_(Array(vm, mod.get_defn(vm, "Array"), self.type_name, Con_String(vm, data)))
 
 
@@ -245,6 +251,7 @@ def Array_iter(vm):
     i, j = translate_slice_idx_objs(vm, i_o, j_o, self.num_entries)
     for k in range(i, j):
         vm.yield_(_get_obj(vm, self, k))
+    objectmodel.keepalive_until_here(self)
 
     vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
 
@@ -279,6 +286,7 @@ def Array_set(vm):
 
     i = translate_idx(vm, i_o.v, self.num_entries)
     _set_obj(vm, self, i, o_o)
+    objectmodel.keepalive_until_here(self)
     vm.return_(_get_obj(vm, self, i))
 
 
@@ -287,6 +295,7 @@ def Array_to_str(vm):
     assert isinstance(self, Array)
 
     data = rffi.charpsize2str(self.data, self.num_entries * self.type_size)
+    objectmodel.keepalive_until_here(self)
     vm.return_(Con_String(vm, data))
 
 

@@ -320,7 +320,7 @@ def _do_make_mode(vm_path, path, cp, verbosity, mk_fresh):
 
 
 def _find_con_exec(vm_path, leaf):
-    cnds = ["", os.path.join(_dirname(_dirname(vm_path)), "compiler")]
+    cnds = [_dirname(vm_path), os.path.join(_dirname(_dirname(vm_path)), "compiler")]
     for cl in cnds:
         cp = os.path.join(cl, leaf)
         if os.path.exists(cp):

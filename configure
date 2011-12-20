@@ -9,6 +9,8 @@
 converge_version=current
 converge_date=`date '+%Y/%m/%d %H:%M:%S'`
 
+abs_top_srcdir=`pwd`
+
 prefix=""
 rpython_opt="jit"
 while [ $# -ge 1 ]; do
@@ -22,6 +24,8 @@ done
 if [ "X$prefix" = "X" ]; then
     prefix="/usr/local/"
 fi
+
+echo "Checking for prefix... $prefix"
 
 echo -n "Checking for Python interpreter... "
 
@@ -48,7 +52,7 @@ if [ "X$PYPY_SRC" != "X" ]; then
 fi
 
 if [ "X$TRANSLATE_PY" = "X" ]; then
-    echo "not found (try setting \$PYPY_SRC)."
+    echo "not found (try setting \$PYPY_SRC to the root of the PyPy source distribution)."
     exit 1
 fi
 echo $TRANSLATE_PY
@@ -75,6 +79,19 @@ case $machine_type in
         bootstrap_dir="bootstrap/64bit_little_endian";;
 	*) echo Unknown machine type "$machine_type"; exit 1;;
 esac
+
+#
+# install
+#
+
+echo -n "Checking for install... "
+which install 2> /dev/null > /dev/null
+if [ $? -eq 0 ]; then
+    INSTALL="`which install`"
+else
+    INSTALL=$abs_top_srcdir/install-sh
+fi
+echo $INSTALL
 
 #
 # Find libpcre.a
@@ -164,10 +181,9 @@ fout=file(sys.argv[2], "w")
 fout.write(d)
 fout.close()
 EOF
-abs_top_srcdir=`pwd`
 for p_in in `find . -name "*.in"`; do
     p=`echo $p_in | sed "s/.in$//g"`
-    $PYTHON $rewriter $p_in $p "@abs_top_srcdir@" "$abs_top_srcdir" "@PYTHON@" "$PYTHON" "@TRANSLATE_PY@" "$TRANSLATE_PY" "@RPYTHON_OPT@" "$rpython_opt" "@prefix@" "$prefix" "@bindir@" "$prefix/bin" "@libdir@" "$prefix/share" "@libdir@" "$prefix/lib" "@INSTALL@" "$abs_top_srcdir/install.sh" "@CONVERGE_VERSION@" "$converge_version" "@CONVERGE_DATE@"  "$converge_date" "@PLATFORM@" "$operating_system" "@EXEC_EXT" "$exec_ext" "@DIR_SEP@" "$DIR_SEP" "@LIBPCRE_INCLUDE_DIRS@" "$libpcre_include_dirs" "@LIBPCRE_LINK_DIRS@" "$libpcre_library_dirs" "@LIBPCRE_A@" "$libpcre_a" "@LIBPCRE_LINK_FLAGS@" "$libpcre_link_flags" "@LIBXML2_A@" "$libxml2_a" "@LIBXML2_INCLUDE_DIRS@" "$libxml2_include_dirs" "@LIBXML2_LINK_DIRS@" "$libxml2_library_dirs" "@LIBXML2_LINK_FLAGS@" "$libxml2_link_flags"
+    $PYTHON $rewriter $p_in $p "@abs_top_srcdir@" "$abs_top_srcdir" "@PYTHON@" "$PYTHON" "@TRANSLATE_PY@" "$TRANSLATE_PY" "@RPYTHON_OPT@" "$rpython_opt" "@INSTALL@" "$INSTALL" "@prefix@" "$prefix" "@bindir@" "$prefix/bin" "@datadir@" "$prefix/share" "@libdir@" "$prefix/lib" "@INSTALL@" "$abs_top_srcdir/install.sh" "@CONVERGE_VERSION@" "$converge_version" "@CONVERGE_DATE@"  "$converge_date" "@PLATFORM@" "$operating_system" "@EXEC_EXT@" "$exec_ext" "@DIR_SEP@" "$DIR_SEP" "@LIBPCRE_INCLUDE_DIRS@" "$libpcre_include_dirs" "@LIBPCRE_LINK_DIRS@" "$libpcre_library_dirs" "@LIBPCRE_A@" "$libpcre_a" "@LIBPCRE_LINK_FLAGS@" "$libpcre_link_flags" "@LIBXML2_A@" "$libxml2_a" "@LIBXML2_INCLUDE_DIRS@" "$libxml2_include_dirs" "@LIBXML2_LINK_DIRS@" "$libxml2_library_dirs" "@LIBXML2_LINK_FLAGS@" "$libxml2_link_flags"
 done
 rm -f $rewriter
 

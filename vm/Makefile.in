@@ -1,6 +1,7 @@
 PYTHON=@PYTHON@
 TRANSLATE_PY=@TRANSLATE_PY@
 INSTALL=@INSTALL@
+bindir=@bindir@
 
 all: converge
 

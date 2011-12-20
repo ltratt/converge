@@ -404,7 +404,7 @@ class Compiler:
         // to compile y.cv in order that x.cv can execute CTMP. This means that we have to start
         // up sub-compiler(s).
 
-        if File::exists(self.output_path):
+        if not self.output_path.prefixed_by("/dev/fd/") & File::exists(self.output_path):
             if File::mtime(self.output_path) < File::mtime(src_path):
                 do_link := 1
             else:

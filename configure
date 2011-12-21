@@ -165,26 +165,35 @@ cp -p $bootstrap_dir/convergel.bootstrap compiler/convergel
 
 echo "done."
 
-echo -n "Writing .in files... "
+echo -n "Rewriting .in files... "
 
 rewriter=`mktemp XXXXXXXXXX`
 cat << EOF > $rewriter
-import sys
+import os, sys
+sys.stdout.write(sys.argv[2] + " ")
+sys.stdout.flush()
 fin=file(sys.argv[1], "r")
 d=fin.read(-1)
 fin.close()
 i = 3
 while i < len(sys.argv):
     d=d.replace(sys.argv[i], sys.argv[i + 1])
-    i += 2
-fout=file(sys.argv[2], "w")
-fout.write(d)
-fout.close()
+    i+=2
+rewrite=True
+if os.path.exists(sys.argv[2]):
+    fout=file(sys.argv[2], "r")
+    dout=fout.read(-1)
+    fout.close()
+    if d==dout:
+        rewrite=False
+if rewrite:
+    fout=file(sys.argv[2], "w")
+    fout.write(d)
+    fout.close()
 EOF
 for p_in in `find . -name "*.in"`; do
     p=`echo $p_in | sed "s/.in$//g"`
     $PYTHON $rewriter $p_in $p "@abs_top_srcdir@" "$abs_top_srcdir" "@PYTHON@" "$PYTHON" "@TRANSLATE_PY@" "$TRANSLATE_PY" "@RPYTHON_OPT@" "$rpython_opt" "@INSTALL@" "$INSTALL" "@prefix@" "$prefix" "@bindir@" "$prefix/bin" "@datadir@" "$prefix/share" "@libdir@" "$prefix/lib" "@INSTALL@" "$abs_top_srcdir/install.sh" "@CONVERGE_VERSION@" "$converge_version" "@CONVERGE_DATE@"  "$converge_date" "@PLATFORM@" "$operating_system" "@EXEC_EXT@" "$exec_ext" "@DIR_SEP@" "$DIR_SEP" "@LIBPCRE_INCLUDE_DIRS@" "$libpcre_include_dirs" "@LIBPCRE_LINK_DIRS@" "$libpcre_library_dirs" "@LIBPCRE_A@" "$libpcre_a" "@LIBPCRE_LINK_FLAGS@" "$libpcre_link_flags" "@LIBXML2_A@" "$libxml2_a" "@LIBXML2_INCLUDE_DIRS@" "$libxml2_include_dirs" "@LIBXML2_LINK_DIRS@" "$libxml2_library_dirs" "@LIBXML2_LINK_FLAGS@" "$libxml2_link_flags"
 done
+echo
 rm -f $rewriter
-
-echo "done."

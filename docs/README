@@ -1,0 +1,47 @@
+================================================================================
+  Converge documentation
+================================================================================
+
+
+  First time users
+ ==================
+
+If you are new to Converge and want to work out how to install it, check
+install/INSTALL and then (if necessary) install/README.X where "X" is your
+platform. You may then wish to read quick_intro/index.html for a whistle-top
+tour of the language's major features.
+
+
+
+  Detailed information
+ ======================
+
+If you wish to find out about all the documenation that comes with Converge,
+herewith a brief description of the various documentation:
+
+  CHANGES       A description of the major changes between versions
+
+  CREDITS       A list of people
+
+  ctmp/
+    index.html  A detailed explanation of compile-time meta-progamming in
+                Converge. This is, in a sense, a detailed addendum to the
+                "quick intro".
+
+  install/
+    INSTALL     General installation instructions
+    README.X    Specific instructions for platform X
+
+  modules_html/
+    index.html  Links to documentation on all parts of Converge's standard
+                libraries. Note this documentation is built from the XML
+                in the "modules_cvd" directory; modules_html is thus not
+                populated until the whole Converge system is built.
+
+  quick_intro/
+    index.html  An overview of Converge's major language features.
+
+  tools/
+    index.html  Detailed explanations of the various tools (convergec,
+                convergei, convergep, cvd_to_html) that come with
+                Converge.

@@ -11,14 +11,14 @@ else
 	cd lib && ${MAKE} ${MFLAGS}
 	cd compiler && ${MAKE} ${MFLAGS}
 endif
-	cd manuals && ${MAKE} ${MFLAGS}
+	cd docs && ${MAKE} ${MFLAGS}
 
 install: all
 	cd vm && ${MAKE} ${MFLAGS} install
 	cd lib && ${MAKE} ${MFLAGS} install
 	cd compiler && ${MAKE} ${MFLAGS} install
 	cd examples && ${MAKE} ${MFLAGS} install
-	cd manuals && ${MAKE} ${MFLAGS} install
+	cd docs && ${MAKE} ${MFLAGS} install
 
 clean:
 	cd bootstrap && ${MAKE} ${MFLAGS} clean
@@ -26,7 +26,7 @@ clean:
 	cd lib && ${MAKE} ${MFLAGS} clean
 	cd compiler && ${MAKE} ${MFLAGS} clean
 	cd examples && ${MAKE} ${MFLAGS} clean
-	cd manuals && ${MAKE} ${MFLAGS} clean
+	cd docs && ${MAKE} ${MFLAGS} clean
 	cd tests && ${MAKE} ${MFLAGS} clean
 
 ifdef CON_TARGET
@@ -45,7 +45,7 @@ distclean:
 	cd lib && ${MAKE} ${MFLAGS} distclean
 	cd compiler && ${MAKE} ${MFLAGS} distclean
 	cd examples && ${MAKE} ${MFLAGS} distclean
-	cd manuals && ${MAKE} ${MFLAGS} distclean
+	cd docs && ${MAKE} ${MFLAGS} distclean
 	cd tests && ${MAKE} ${MFLAGS} distclean
 	rm -rf Makefile Makefile.inc
 

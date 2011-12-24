@@ -77,7 +77,8 @@ class BC_Mod:
         self._num_top_level_vars := module[self._target.MODULE_BYTECODE_NUM_TOP_LEVEL_VARS]
         
         self._constants_offsets := []
-        for constant_offset := module[module[self._target.MODULE_BYTECODE_CONSTANTS_OFFSETS] / self._target.WORDSIZE : module[self._target.MODULE_BYTECODE_CONSTANTS_OFFSETS] / self._target.WORDSIZE + module[self._target.MODULE_BYTECODE_NUM_CONSTANTS]].iter():
+        offs_start := module[self._target.MODULE_BYTECODE_CONSTANTS_OFFSETS] / self._target.WORDSIZE
+        for constant_offset := module[offs_start : offs_start + module[self._target.MODULE_BYTECODE_NUM_CONSTANTS]].iter():
             self._constants_offsets.append(constant_offset - module[self._target.MODULE_BYTECODE_INSTRUCTIONS])
 
         self._mod_lookups := module[module[self._target.MODULE_BYTECODE_MOD_LOOKUPS] / self._target.WORDSIZE : (module[self._target.MODULE_BYTECODE_MOD_LOOKUPS] + module[self._target.MODULE_BYTECODE_MOD_LOOKUPS_SIZE]) / self._target.WORDSIZE]

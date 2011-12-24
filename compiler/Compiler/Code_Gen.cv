@@ -1082,7 +1082,7 @@ class Code_Gen:
         self._instructions.append(self._target.Instr_Apply.new(node.src_infos, node.args.len()))
         max_stack_size := self._max(max_stack_size, 1)
         
-        return max_stack_size + 1 // Allow for a generator frame
+        return max_stack_size + 1 + node.args.len() // Allow for generator frames
 
 
 
@@ -1093,7 +1093,7 @@ class Code_Gen:
         max_stack_size := self._max(max_stack_size, 1 + self._preorder(node.index))
         self._instructions.append(self._target.Instr_Apply.new(node.src_infos, 1))
         
-        return max_stack_size
+        return max_stack_size + 1 + 1
 
 
 
@@ -1110,13 +1110,13 @@ class Code_Gen:
             
         if node.upper_bound is null:
             self._instructions.append(self._target.Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_NULL_OBJ))
-            max_stack_size := self._max(max_stack_size, 3)
+            max_stack_size := self._max(max_stack_size, 3 + 1)
         else:
             max_stack_size := self._max(max_stack_size, 2 + self._preorder(node.upper_bound))
             
         self._instructions.append(self._target.Instr_Apply.new(node.src_infos, 2))
         
-        return max_stack_size
+        return max_stack_size + 1 + 2
 
 
 
@@ -1200,7 +1200,7 @@ class Code_Gen:
         self._instructions.append(self._target.Instr_Branch.new(node.src_infos, assert_end_label))
         
         self._set_label(assert_failed_label)
-        max_stack_size := self._max(max_stack_size, self._add_mod_defn_lookup(["Exceptions", "Assert_Exception"], node.src_infos) + 1)
+        max_stack_size := self._max(max_stack_size, self._add_mod_defn_lookup(["Exceptions", "Assert_Exception"], node.src_infos) + 1 + 1)
         self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(node.src_infos, "new"))
         self._instructions.append(self._target.Instr_Apply.new(node.src_infos, 0))
         self._instructions.append(self._target.Instr_Raise.new(node.src_infos))
@@ -1383,6 +1383,8 @@ class Code_Gen:
 
                 self._instructions.append(self._target.Instr_Pull.new(target.src_infos, 3))
                 self._instructions.append(self._target.Instr_Apply.new(target.src_infos, 3))
+                
+                max_stack_size += 3
 
             if node.targets.len() > 1:
                 self._instructions.append(self._target.Instr_Pop.new(node.src_infos))
@@ -1431,7 +1433,7 @@ class Code_Gen:
                 slot_name := "%"
 
             self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(node.src_infos, slot_name))
-            max_stack_size := self._max(max_stack_size, 1 + self._preorder(node.rhs))
+            max_stack_size := self._max(max_stack_size, 1 + self._preorder(node.rhs) + 3)
             self._instructions.append(self._target.Instr_Apply.new(node.src_infos, 1))
         
         return max_stack_size

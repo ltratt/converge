@@ -262,13 +262,15 @@ class Con_Boxed_Object(Con_Object):
             return False
 
 
+@con_object_proc
 def _new_func_Con_Object(vm):
     (c,), vargs = vm.decode_args("O", vargs=True)
     o = Con_Boxed_Object(vm, c)
     vm.apply(o.get_slot(vm, "init"), vargs)
-    vm.return_(o)
+    return o
 
 
+@con_object_proc
 def _Con_Object_find_slot(vm):
     (self, sn_o),_ = vm.decode_args("OS")
     assert isinstance(sn_o, Con_String)
@@ -276,32 +278,36 @@ def _Con_Object_find_slot(vm):
     v = self.get_slot(vm, sn_o.v, find_mode=True)
     if not v:
         v = vm.get_builtin(BUILTIN_FAIL_OBJ)
-    vm.return_(v)
+    return v
 
 
+@con_object_proc
 def _Con_Object_get_slot(vm):
     (self, sn_o),_ = vm.decode_args("OS")
     assert isinstance(sn_o, Con_String)
 
-    vm.return_(self.get_slot(vm, sn_o.v))
+    return self.get_slot(vm, sn_o.v)
 
 
+@con_object_proc
 def _Con_Object_init(vm):
     (self,), vargs = vm.decode_args("O", vargs=True)
-    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    return vm.get_builtin(BUILTIN_NULL_OBJ)
 
 
+@con_object_proc
 def _Con_Object_is(vm):
     (self, o),_ = vm.decode_args("OO")
     if self is o:
-        vm.return_(o)
+        return o
     else:
-        vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+        return vm.get_builtin(BUILTIN_FAIL_OBJ)
 
 
+@con_object_proc
 def _Con_Object_to_str(vm):
     (self,),_ = vm.decode_args("O")
-    vm.return_(Con_String(vm, "<Object@%x>" % objectmodel.current_object_addr_as_int(self)))
+    return Con_String(vm, "<Object@%x>" % objectmodel.current_object_addr_as_int(self))
 
 
 def bootstrap_con_object(vm):
@@ -468,7 +474,7 @@ class Con_Class(Con_Boxed_Object):
             self.fields[i] = o
 
 
-
+@con_object_proc
 def _new_func_Con_Class(vm):
     (c, name, supers, container), vargs = vm.decode_args("CSLO", vargs=True)
     assert isinstance(c, Con_Class)
@@ -476,9 +482,10 @@ def _new_func_Con_Class(vm):
     assert isinstance(supers, Con_List)
     o = Con_Class(vm, name, supers.l[:], container, c)
     vm.apply(o.get_slot(vm, "init"), vargs)
-    vm.return_(o)
+    return o
 
 
+@con_object_proc
 def _Con_Class_new(vm):
     _, v = vm.decode_args(vargs=True)
     c = type_check_class(vm, v[0])
@@ -486,9 +493,10 @@ def _Con_Class_new(vm):
         p = type_check_string(vm, vm.get_slot_apply(c, "path")).v
         msg = "Instance of %s has no new_func." % p
         vm.raise_helper("VM_Exception", [Con_String(vm, msg)])
-    vm.return_(vm.apply(c.new_func, v))
+    return vm.apply(c.new_func, v)
 
 
+@con_object_proc
 def _Con_Class_get_field(vm):
     (self, n),_ = vm.decode_args("CS")
     assert isinstance(self, Con_Class)
@@ -498,18 +506,20 @@ def _Con_Class_get_field(vm):
     if o is None:
         vm.raise_helper("Field_Exception", [n, self])
 
-    vm.return_(o)
+    return o
 
 
+@con_object_proc
 def _Con_Class_set_field(vm):
     (self, n, o),_ = vm.decode_args("CSO")
     assert isinstance(self, Con_Class)
     assert isinstance(n, Con_String)
     self.set_field(vm, n.v, o)
 
-    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    return vm.get_builtin(BUILTIN_NULL_OBJ)
 
 
+@con_object_proc
 def _Con_Class_path(vm):
     (self, stop_at),_ = vm.decode_args("C", opt="o")
     assert isinstance(self, Con_Class)
@@ -520,7 +530,7 @@ def _Con_Class_path(vm):
 
     container = self.get_slot(vm, "container")
     if container is vm.get_builtin(BUILTIN_NULL_OBJ) or container is stop_at:
-        vm.return_(name)
+        return name
     else:
         if stop_at is None:
             stop_at = vm.get_builtin(BUILTIN_NULL_OBJ)
@@ -529,17 +539,19 @@ def _Con_Class_path(vm):
             sep = "::"
         else:
             sep = "."
-        vm.return_(Con_String(vm, "%s%s%s" % (rtn.v, sep, name.v)))
+        return Con_String(vm, "%s%s%s" % (rtn.v, sep, name.v))
 
 
+@con_object_proc
 def _Con_Class_to_str(vm):
     (self,),_ = vm.decode_args("C")
     assert isinstance(self, Con_Class)
 
     nm = type_check_string(vm, self.get_slot(vm, "name"))
-    vm.return_(Con_String(vm, "<Class %s>" % nm.v))
+    return Con_String(vm, "<Class %s>" % nm.v)
 
 
+@con_object_proc
 def _Con_Class_conformed_by(vm):
     (self, o),_ = vm.decode_args("CO")
     assert isinstance(self, Con_Class)
@@ -547,7 +559,7 @@ def _Con_Class_conformed_by(vm):
 
     if o.instance_of is self:
         # We optimise the easy case.
-        vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+        return vm.get_builtin(BUILTIN_NULL_OBJ)
     else:
         stack = [self]
         while len(stack) > 0:
@@ -555,12 +567,13 @@ def _Con_Class_conformed_by(vm):
             assert isinstance(cnd, Con_Class)
             for f in cnd.fields_map.index_map.keys():
                 if not o.has_slot(vm, f):
-                    vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+                    return vm.get_builtin(BUILTIN_FAIL_OBJ)
             stack.extend(cnd.supers)  
 
-    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    return vm.get_builtin(BUILTIN_NULL_OBJ)
 
 
+@con_object_proc
 def _Con_Class_instantiated(vm):
     (self, o),_ = vm.decode_args("CO")
     assert isinstance(self, Con_Class)
@@ -568,7 +581,7 @@ def _Con_Class_instantiated(vm):
 
     if o.instance_of is self:
         # We optimise the easy case.
-        vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+        return vm.get_builtin(BUILTIN_NULL_OBJ)
     else:
 		# What we do now is to put 'instance_of' onto a stack; if the current class on the stack
 		# does not match 'self', we push all the class's superclasses onto the stack.
@@ -579,10 +592,10 @@ def _Con_Class_instantiated(vm):
             cnd = stack.pop()
             assert isinstance(cnd, Con_Class)
             if cnd is self:
-                vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+                return vm.get_builtin(BUILTIN_NULL_OBJ)
             stack.extend(cnd.supers)
 
-    vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+    return vm.get_builtin(BUILTIN_FAIL_OBJ)
 
 
 def bootstrap_con_class(vm):
@@ -822,23 +835,26 @@ class Con_Module(Con_Boxed_Object):
         return Con_List(vm, src_infos)
 
 
+@con_object_proc
 def _new_func_Con_Module(vm):
     (class_, bc_o), vargs = vm.decode_args("CS", vargs=True)
     assert isinstance(bc_o, Con_String)
     
     bc = rffi.str2charp(bc_o.v)
     mod = Bytecode.mk_mod(vm, bc, 0)
-    vm.return_(mod)
+    return mod
 
 
+@con_object_proc
 def _Con_Module_get_defn(vm):
     (self, n),_ = vm.decode_args("MS")
     assert isinstance(self, Con_Module)
     assert isinstance(n, Con_String)
 
-    vm.return_(self.get_defn(vm, n.v))
+    return self.get_defn(vm, n.v)
 
 
+@con_object_proc
 def _Con_Module_has_defn(vm):
     (self, n),_ = vm.decode_args("MS")
     assert isinstance(self, Con_Module)
@@ -849,28 +865,29 @@ def _Con_Module_has_defn(vm):
     else:
         r_o = vm.get_builtin(BUILTIN_FAIL_OBJ)
 
-    vm.return_(r_o)
+    return r_o
 
 
+@con_object_proc
 def _Con_Module_set_defn(vm):
     (self, n, o),_ = vm.decode_args("MSO")
     assert isinstance(self, Con_Module)
     assert isinstance(n, Con_String)
 
     self.set_defn(vm, n.v, o)
-    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    return vm.get_builtin(BUILTIN_NULL_OBJ)
 
 
+@con_object_gen
 def _Con_Module_iter_defns(vm):
     (self,),_ = vm.decode_args("M")
     assert isinstance(self, Con_Module)
 
     for d in self.tlvars_map.keys():
-        vm.yield_(Con_List(vm, [Con_String(vm, d), self.get_defn(vm, d)]))
-
-    vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+        yield Con_List(vm, [Con_String(vm, d), self.get_defn(vm, d)])
 
 
+@con_object_gen
 def _Con_Module_iter_newlines(vm):
     (self,),_ = vm.decode_args("M")
     assert isinstance(self, Con_Module)
@@ -878,22 +895,21 @@ def _Con_Module_iter_newlines(vm):
     bc = self.bc
     newlines_off = Target.read_word(bc, Target.BC_MOD_NEWLINES)
     for i in range(Target.read_word(bc, Target.BC_MOD_NUM_NEWLINES)):
-        vm.yield_(Con_Int(vm, Target.read_word(bc, newlines_off + i * Target.INTSIZE)))
-    
-    vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+        yield Con_Int(vm, Target.read_word(bc, newlines_off + i * Target.INTSIZE))
 
 
+@con_object_proc
 def _Con_Module_path(vm):
     (self, stop_at),_ = vm.decode_args("M", opt="o")
     assert isinstance(self, Con_Module)
     
     if self is stop_at:
-        vm.return_(Con_String(vm, ""))
+        return Con_String(vm, "")
     
     name = type_check_string(vm, self.get_slot(vm, "name"))
     container = self.get_slot(vm, "container")
     if container is vm.get_builtin(BUILTIN_NULL_OBJ) or container is stop_at:
-        vm.return_(name)
+        return name
     else:
         if stop_at is None:
             stop_at = vm.get_builtin(BUILTIN_NULL_OBJ)
@@ -902,7 +918,7 @@ def _Con_Module_path(vm):
             sep = "::"
         else:
             sep = "."
-        vm.return_(Con_String(vm, "%s%s%s" % (rtn.v, sep, name.v)))
+        return Con_String(vm, "%s%s%s" % (rtn.v, sep, name.v))
 
 
 def bootstrap_con_module(vm):
@@ -938,8 +954,6 @@ def new_c_con_module(vm, name, id_, src_path, import_func, names):
 def new_bc_con_module(vm, bc, name, id_, src_path, imps, tlvars_map, num_consts):
     return Con_Module(vm, True, bc, Con_String(vm, name), id_, src_path, imps, tlvars_map, \
       num_consts, None)
-
-
 
 
 
@@ -985,16 +999,17 @@ class Con_Func(Con_Boxed_Object):
         return "<Func %s>" % self.name.v
 
 
+@con_object_proc
 def _Con_Func_path(vm):
     (self, stop_at),_ = vm.decode_args("Fo")
     assert isinstance(self, Con_Func)
     
     if self is stop_at:
-        vm.return_(Con_String(vm, ""))
+        return Con_String(vm, "")
     
     container = self.get_slot(vm, "container")
     if container is vm.get_builtin(BUILTIN_NULL_OBJ) or container is stop_at:
-        vm.return_(self.name)
+        return self.name
     else:
         rtn = type_check_string(vm, vm.get_slot_apply(container, "path", [stop_at]))
         if isinstance(container, Con_Module):
@@ -1003,7 +1018,7 @@ def _Con_Func_path(vm):
             sep = "."
         name = self.name
         assert isinstance(name, Con_String)
-        vm.return_(Con_String(vm, "%s%s%s" % (rtn.v, sep, name.v)))
+        return Con_String(vm, "%s%s%s" % (rtn.v, sep, name.v))
 
 
 def bootstrap_con_func(vm):
@@ -1057,10 +1072,15 @@ class Con_Partial_Application(Con_Boxed_Object):
 
 
 
+@con_object_proc
 def _new_func_Con_Partial_Application(vm):
-    raise Exception("XXX")
+    # Trick the annotator by having a condition we know will always be true...
+    if len(vm.cf_stack) > 0:
+        raise Exception("XXX")
+    return None
 
 
+@con_object_gen
 def _Con_Partial_Application_apply(vm):
     (self, args_o),_ = vm.decode_args("!O", self_of=Con_Partial_Application)
     assert isinstance(self, Con_Partial_Application)
@@ -1080,8 +1100,7 @@ def _Con_Partial_Application_apply(vm):
         e_o = vm.apply_pump()
         if not e_o:
             break
-        vm.yield_(e_o)
-    vm.return_(vm.get_builtin(Builtins.BUILTIN_FAIL_OBJ))
+        yield e_o
 
 
 def bootstrap_con_partial_application(vm):
@@ -1164,10 +1183,11 @@ class Con_Int(Con_Boxed_Object):
         return self.v > o.v
 
 
+@con_object_proc
 def _new_func_Con_Int(vm):
     (class_, o_o), vargs = vm.decode_args("CO", vargs=True)
     if isinstance(o_o, Con_Int):
-        vm.return_(o_o)
+        return o_o
     elif isinstance(o_o, Con_String):
         v = None
         try:
@@ -1177,80 +1197,89 @@ def _new_func_Con_Int(vm):
                 v = int(o_o.v)
         except ValueError:
             vm.raise_helper("Number_Exception", [o_o])
-        vm.return_(Con_Int(vm, v))
+        return Con_Int(vm, v)
 
 
+@con_object_proc
 def _Con_Int_add(vm):
     (self, o),_ = vm.decode_args("II")
     assert isinstance(self, Con_Int)
     assert isinstance(o, Con_Int)
 
-    vm.return_(Con_Int(vm, self.v + o.v))
+    return Con_Int(vm, self.v + o.v)
 
 
+@con_object_proc
 def _Con_Int_and(vm):
     (self, o),_ = vm.decode_args("II")
     assert isinstance(self, Con_Int)
     assert isinstance(o, Con_Int)
 
-    vm.return_(Con_Int(vm, self.v & o.v))
+    return Con_Int(vm, self.v & o.v)
 
 
+@con_object_proc
 def _Con_Int_div(vm):
     (self, o),_ = vm.decode_args("II")
     assert isinstance(self, Con_Int)
     assert isinstance(o, Con_Int)
 
-    vm.return_(Con_Int(vm, self.v / o.v))
+    return Con_Int(vm, self.v / o.v)
 
 
+@con_object_proc
 def _Con_Int_eq(vm):
     (self, o_o),_ = vm.decode_args("IO")
     assert isinstance(self, Con_Int)
     
     if isinstance(o_o, Con_Int):
         if self.v == o_o.v:
-            vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
-    vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+            return vm.get_builtin(BUILTIN_NULL_OBJ)
+    return vm.get_builtin(BUILTIN_FAIL_OBJ)
 
 
+@con_object_proc
 def _Con_Int_gt(vm):
     (self, o_o),_ = vm.decode_args("II")
     assert isinstance(self, Con_Int)
     assert isinstance(o_o, Con_Int)
 
     if self.v >= o_o.v:
-        vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+        return vm.get_builtin(BUILTIN_NULL_OBJ)
     else:
-        vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+        return vm.get_builtin(BUILTIN_FAIL_OBJ)
 
 
+@con_object_proc
 def _Con_Int_gtq(vm):
     (self, o_o),_ = vm.decode_args("II")
     assert isinstance(self, Con_Int)
     assert isinstance(o_o, Con_Int)
 
     if self.v >= o_o.v:
-        vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+        return vm.get_builtin(BUILTIN_NULL_OBJ)
     else:
-        vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+        return vm.get_builtin(BUILTIN_FAIL_OBJ)
 
 
+@con_object_proc
 def _Con_Int_hash(vm):
     (self,),_ = vm.decode_args("I")
     assert isinstance(self, Con_Int)
 
-    vm.return_(Con_Int(vm, objectmodel.compute_hash(self.v)))
+    return Con_Int(vm, objectmodel.compute_hash(self.v))
 
 
+@con_object_proc
 def _Con_Int_idiv(vm):
     (self, o),_ = vm.decode_args("II")
     assert isinstance(self, Con_Int)
     assert isinstance(o, Con_Int)
 
-    vm.return_(Con_Int(vm, self.v // o.v))
+    return Con_Int(vm, self.v // o.v)
 
 
+@con_object_gen
 def _Con_Int_iter_to(vm):
     (self, to_o, step_o),_ = vm.decode_args("II", opt="I")
     assert isinstance(self, Con_Int)
@@ -1263,81 +1292,88 @@ def _Con_Int_iter_to(vm):
         step = step_o.v
 
     for i in range(self.v, to_o.v, step):
-        vm.yield_(Con_Int(vm, i))
-
-    vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+        yield Con_Int(vm, i)
 
 
+@con_object_proc
 def _Con_Int_le(vm):
     (self, o_o),_ = vm.decode_args("II")
     assert isinstance(self, Con_Int)
     assert isinstance(o_o, Con_Int)
 
     if self.v < o_o.v:
-        vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+        return vm.get_builtin(BUILTIN_NULL_OBJ)
     else:
-        vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+        return vm.get_builtin(BUILTIN_FAIL_OBJ)
 
 
+@con_object_proc
 def _Con_Int_leq(vm):
     (self, o_o),_ = vm.decode_args("II")
     assert isinstance(self, Con_Int)
     assert isinstance(o_o, Con_Int)
 
     if self.v <= o_o.v:
-        vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+        return vm.get_builtin(BUILTIN_NULL_OBJ)
     else:
-        vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+        return vm.get_builtin(BUILTIN_FAIL_OBJ)
 
 
+@con_object_proc
 def _Con_Int_lsl(vm):
     (self, o),_ = vm.decode_args("II")
     assert isinstance(self, Con_Int)
     assert isinstance(o, Con_Int)
 
-    vm.return_(Con_Int(vm, self.v << o.v))
+    return Con_Int(vm, self.v << o.v)
 
 
+@con_object_proc
 def _Con_Int_lsr(vm):
     (self, o),_ = vm.decode_args("II")
     assert isinstance(self, Con_Int)
     assert isinstance(o, Con_Int)
 
-    vm.return_(Con_Int(vm, self.v >> o.v))
+    return Con_Int(vm, self.v >> o.v)
 
 
+@con_object_proc
 def _Con_Int_mod(vm):
     (self, o),_ = vm.decode_args("II")
     assert isinstance(self, Con_Int)
     assert isinstance(o, Con_Int)
 
-    vm.return_(Con_Int(vm, self.v % o.v))
+    return Con_Int(vm, self.v % o.v)
 
 
+@con_object_proc
 def _Con_Int_mul(vm):
     (self, o),_ = vm.decode_args("II")
     assert isinstance(self, Con_Int)
     assert isinstance(o, Con_Int)
 
-    vm.return_(Con_Int(vm, self.v * o.v))
+    return Con_Int(vm, self.v * o.v)
 
 
+@con_object_proc
 def _Con_Int_or(vm):
     (self, o),_ = vm.decode_args("II")
     assert isinstance(self, Con_Int)
     assert isinstance(o, Con_Int)
 
-    vm.return_(Con_Int(vm, self.v | o.v))
+    return Con_Int(vm, self.v | o.v)
 
 
+@con_object_proc
 def _Con_Int_sub(vm):
     (self, o),_ = vm.decode_args("II")
     assert isinstance(self, Con_Int)
     assert isinstance(o, Con_Int)
 
-    vm.return_(Con_Int(vm, self.v - o.v))
+    return Con_Int(vm, self.v - o.v)
 
 
+@con_object_proc
 def _Con_Int_str_val(vm):
     (self,),_ = vm.decode_args("I")
     assert isinstance(self, Con_Int)
@@ -1346,14 +1382,15 @@ def _Con_Int_str_val(vm):
     if v < 0 or v > 255:
         vm.raise_helper("Number_Exception", [Con_String(vm, "'%d' out of ASCII range." % v)])
 
-    vm.return_(Con_String(vm, chr(v)))
+    return Con_String(vm, chr(v))
 
 
+@con_object_proc
 def _Con_Int_to_str(vm):
     (self,),_ = vm.decode_args("I")
     assert isinstance(self, Con_Int)
 
-    vm.return_(Con_String(vm, str(self.v)))
+    return Con_String(vm, str(self.v))
 
 
 def bootstrap_con_int(vm):
@@ -1443,24 +1480,27 @@ class Con_String(Con_Boxed_Object):
         return Con_String(vm, self.v[i:j])
 
 
+@con_object_proc
 def _Con_String_add(vm):
     (self, o_o),_ = vm.decode_args("SS")
     assert isinstance(self, Con_String)
     assert isinstance(o_o, Con_String)
     
-    vm.return_(Con_String(vm, self.v + o_o.v))
+    return Con_String(vm, self.v + o_o.v)
 
 
+@con_object_proc
 def _Con_String_eq(vm):
     (self, o_o),_ = vm.decode_args("SO")
     assert isinstance(self, Con_String)
     
     if isinstance(o_o, Con_String):
         if self.v == o_o.v:
-            vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
-    vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+            return vm.get_builtin(BUILTIN_NULL_OBJ)
+    return vm.get_builtin(BUILTIN_FAIL_OBJ)
 
 
+@con_object_gen
 def _Con_String_find(vm):
     (self, o_o),_ = vm.decode_args("SS")
     assert isinstance(self, Con_String)
@@ -1471,11 +1511,10 @@ def _Con_String_find(vm):
     o_len = len(o)
     for i in range(0, len(v) - o_len + 1):
         if v[i:i+o_len] == o:
-            vm.yield_(o_o)
-
-    vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+            yield o_o
 
 
+@con_object_gen
 def _Con_String_find_index(vm):
     (self, o_o),_ = vm.decode_args("SS")
     assert isinstance(self, Con_String)
@@ -1486,35 +1525,37 @@ def _Con_String_find_index(vm):
     o_len = len(o)
     for i in range(0, len(v) - o_len + 1):
         if v[i:i+o_len] == o:
-            vm.yield_(Con_Int(vm, i))
-
-    vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+            yield Con_Int(vm, i)
 
 
+@con_object_proc
 def _Con_String_get(vm):
     (self, i_o),_ = vm.decode_args("SI")
     assert isinstance(self, Con_String)
     assert isinstance(i_o, Con_Int)
 
-    vm.return_(Con_String(vm, self.v[i_o.v]))
+    return Con_String(vm, self.v[i_o.v])
 
 
+@con_object_proc
 def _Con_String_get_slice(vm):
     (self, i_o, j_o),_ = vm.decode_args("S", opt="ii")
     assert isinstance(self, Con_String)
 
     i, j = translate_slice_idx_objs(vm, i_o, j_o, len(self.v))
 
-    vm.return_(Con_String(vm, self.v[i:j]))
+    return Con_String(vm, self.v[i:j])
 
 
+@con_object_proc
 def _Con_String_hash(vm):
     (self,),_ = vm.decode_args("S")
     assert isinstance(self, Con_String)
 
-    vm.return_(Con_Int(vm, objectmodel.compute_hash(self.v)))
+    return Con_Int(vm, objectmodel.compute_hash(self.v))
 
 
+@con_object_proc
 def _Con_String_int_val(vm):
     (self, i_o),_ = vm.decode_args("S", opt="I")
     assert isinstance(self, Con_String)
@@ -1525,35 +1566,37 @@ def _Con_String_int_val(vm):
     else:
         i = translate_idx(vm, 0, len(self.v))
 
-    vm.return_(Con_Int(vm, ord(self.v[i])))
+    return Con_Int(vm, ord(self.v[i]))
 
 
+@con_object_gen
 def _Con_String_iter(vm):
     (self, i_o, j_o),_ = vm.decode_args("S", opt="ii")
     assert isinstance(self, Con_String)
     
     i, j = translate_slice_idx_objs(vm, i_o, j_o, len(self.v))
     while i < j:
-        vm.yield_(Con_String(vm, self.v[i]))
+        yield Con_String(vm, self.v[i])
         i += 1
 
-    vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
 
-
+@con_object_proc
 def _Con_String_len(vm):
     (self,),_ = vm.decode_args("S")
     assert isinstance(self, Con_String)
 
-    vm.return_(Con_Int(vm, len(self.v)))
+    return Con_Int(vm, len(self.v))
 
 
+@con_object_proc
 def _Con_String_lower_cased(vm):
     (self,),_ = vm.decode_args("S")
     assert isinstance(self, Con_String)
     
-    vm.return_(Con_String(vm, self.v.lower()))
+    return Con_String(vm, self.v.lower())
 
 
+@con_object_proc
 def _Con_String_lstripped(vm):
     (self,),_ = vm.decode_args("S")
     assert isinstance(self, Con_String)
@@ -1566,29 +1609,32 @@ def _Con_String_lstripped(vm):
             break
         i += 1
 
-    vm.return_(Con_String(vm, self.v[i:]))
+    return Con_String(vm, self.v[i:])
 
 
+@con_object_proc
 def _Con_String_mul(vm):
     (self, i_o),_ = vm.decode_args("SI")
     assert isinstance(self, Con_String)
     assert isinstance(i_o, Con_Int)
     
-    vm.return_(Con_String(vm, self.v * i_o.v))
+    return Con_String(vm, self.v * i_o.v)
 
 
+@con_object_proc
 def _Con_String_neq(vm):
     (self, o_o),_ = vm.decode_args("SO")
     assert isinstance(self, Con_String)
 
     if isinstance(o_o, Con_String):
         if self.v != o_o.v:
-            vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+            return vm.get_builtin(BUILTIN_NULL_OBJ)
         else:
-            vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
-    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+            return vm.get_builtin(BUILTIN_FAIL_OBJ)
+    return vm.get_builtin(BUILTIN_NULL_OBJ)
 
 
+@con_object_proc
 def _Con_String_prefixed_by(vm):
     (self, o_o, i_o),_ = vm.decode_args("SS", opt="I")
     assert isinstance(self, Con_String)
@@ -1597,11 +1643,12 @@ def _Con_String_prefixed_by(vm):
     i = translate_slice_idx_obj(vm, i_o, len(self.v))
 
     if self.v[i:].startswith(o_o.v):
-        vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+        return vm.get_builtin(BUILTIN_NULL_OBJ)
     else:
-        vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+        return vm.get_builtin(BUILTIN_FAIL_OBJ)
 
 
+@con_object_gen
 def _Con_String_rfind_index(vm):
     (self, o_o),_ = vm.decode_args("SS")
     assert isinstance(self, Con_String)
@@ -1612,11 +1659,10 @@ def _Con_String_rfind_index(vm):
     o_len = len(o)
     for i in range(len(v) - o_len, -1, -1):
         if v[i:i+o_len] == o:
-            vm.yield_(Con_Int(vm, i))
-
-    vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+            yield Con_Int(vm, i)
 
 
+@con_object_proc
 def _Con_String_replaced(vm):
     (self, old_o, new_o),_ = vm.decode_args("SSS")
     assert isinstance(self, Con_String)
@@ -1641,9 +1687,10 @@ def _Con_String_replaced(vm):
     if i < v_len:
         out.append(v[i:])
 
-    vm.return_(Con_String(vm, "".join(out)))
+    return Con_String(vm, "".join(out))
 
 
+@con_object_proc
 def _Con_String_stripped(vm):
     (self,),_ = vm.decode_args("S")
     assert isinstance(self, Con_String)
@@ -1663,9 +1710,10 @@ def _Con_String_stripped(vm):
     j += 1
 
     assert j >= i
-    vm.return_(Con_String(vm, self.v[i:j]))
+    return Con_String(vm, self.v[i:j])
 
 
+@con_object_proc
 def _Con_String_suffixed_by(vm):
     (self, o_o, i_o),_ = vm.decode_args("SS", opt="I")
     assert isinstance(self, Con_String)
@@ -1677,23 +1725,25 @@ def _Con_String_suffixed_by(vm):
         i = translate_slice_idx_obj(vm, i_o, len(self.v))
 
     if self.v[:i].endswith(o_o.v):
-        vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+        return vm.get_builtin(BUILTIN_NULL_OBJ)
     else:
-        vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+        return vm.get_builtin(BUILTIN_FAIL_OBJ)
 
 
+@con_object_proc
 def _Con_String_to_str(vm):
     (self,),_ = vm.decode_args("S")
     assert isinstance(self, Con_String)
 
-    vm.return_(Con_String(vm, '"%s"' % self.v))
+    return Con_String(vm, '"%s"' % self.v)
 
 
+@con_object_proc
 def _Con_String_upper_cased(vm):
     (self,),_ = vm.decode_args("S")
     assert isinstance(self, Con_String)
     
-    vm.return_(Con_String(vm, self.v.upper()))
+    return Con_String(vm, self.v.upper())
 
 
 def bootstrap_con_string(vm):
@@ -1739,14 +1789,16 @@ class Con_List(Con_Boxed_Object):
         self.l = l
 
 
+@con_object_proc
 def _new_func_Con_List(vm):
     (class_,), vargs = vm.decode_args("C", vargs=True)
     
     o = Con_List(vm, [], class_)
     vm.apply(o.get_slot(vm, "init"), vargs)
-    vm.return_(o)
+    return o
 
 
+@con_object_proc
 def _Con_List_init(vm):
     (self, o_o,), _ = vm.decode_args("L", opt="O")
     assert isinstance(self, Con_List)
@@ -1761,9 +1813,10 @@ def _Con_List_init(vm):
                 break
             self.l.append(e_o)
 
-    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    return vm.get_builtin(BUILTIN_NULL_OBJ)
 
 
+@con_object_proc
 def _Con_List_add(vm):
     (self, o_o),_ = vm.decode_args("LO")
     assert isinstance(self, Con_List)
@@ -1778,17 +1831,19 @@ def _Con_List_add(vm):
             if not e_o:
                 break
             new_l.append(e_o)
-    vm.return_(Con_List(vm, new_l))
+    return Con_List(vm, new_l)
 
 
+@con_object_proc
 def _Con_List_append(vm):
     (self, o),_ = vm.decode_args("LO")
     assert isinstance(self, Con_List)
     
     self.l.append(o)
-    vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))
+    return vm.get_builtin(Builtins.BUILTIN_NULL_OBJ)
 
 
+@con_object_proc
 def _Con_List_del(vm):
     (self, i_o),_ = vm.decode_args("LI")
     assert isinstance(self, Con_List)
@@ -1796,9 +1851,10 @@ def _Con_List_del(vm):
 
     del self.l[translate_idx(vm, i_o.v, len(self.l))]
 
-    vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))
+    return vm.get_builtin(Builtins.BUILTIN_NULL_OBJ)
 
 
+@con_object_proc
 def _Con_List_extend(vm):
     (self, o_o),_ = vm.decode_args("LO")
     assert isinstance(self, Con_List)
@@ -1812,9 +1868,10 @@ def _Con_List_extend(vm):
             if not e_o:
                 break
             self.l.append(e_o)
-    vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))
+    return vm.get_builtin(Builtins.BUILTIN_NULL_OBJ)
 
 
+@con_object_proc
 def _Con_List_eq(vm):
     (self, o_o),_ = vm.decode_args("LO")
     assert isinstance(self, Con_List)
@@ -1822,29 +1879,29 @@ def _Con_List_eq(vm):
     if isinstance(o_o, Con_List):
         self_len = len(self.l)
         if self_len != len(o_o.l):
-            vm.return_(vm.get_builtin(Builtins.BUILTIN_FAIL_OBJ))
+            return vm.get_builtin(Builtins.BUILTIN_FAIL_OBJ)
 
         self_l = self.l
         o_l = o_o.l
         for i in range(0, self_len):
             if not self_l[i].eq(vm, o_l[i]):
-                vm.return_(vm.get_builtin(Builtins.BUILTIN_FAIL_OBJ))
-        vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))
+                return vm.get_builtin(Builtins.BUILTIN_FAIL_OBJ)
+        return vm.get_builtin(Builtins.BUILTIN_NULL_OBJ)
 
-    vm.return_(vm.get_builtin(Builtins.BUILTIN_FAIL_OBJ))
+    return vm.get_builtin(Builtins.BUILTIN_FAIL_OBJ)
 
 
+@con_object_gen
 def _Con_List_find(vm):
     (self, o),_ = vm.decode_args("LO")
     assert isinstance(self, Con_List)
     
     for e in self.l:
         if o.eq(vm, e):
-            vm.yield_(vm.get_builtin(BUILTIN_NULL_OBJ))
-    
-    vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+            yield vm.get_builtin(BUILTIN_NULL_OBJ)
 
 
+@con_object_gen
 def _Con_List_find_index(vm):
     (self, o),_ = vm.decode_args("LO")
     assert isinstance(self, Con_List)
@@ -1852,12 +1909,11 @@ def _Con_List_find_index(vm):
     i = 0
     for e in self.l:
         if e.eq(vm, o):
-            vm.yield_(Con_Int(vm, i))
+            yield Con_Int(vm, i)
         i += 1
-    
-    vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
 
 
+@con_object_proc
 def _Con_List_flattened(vm):
     (self,),_ = vm.decode_args("L")
     assert isinstance(self, Con_List)
@@ -1869,9 +1925,10 @@ def _Con_List_flattened(vm):
         else:
             f.append(e)
     
-    vm.return_(Con_List(vm, f))
+    return Con_List(vm, f)
 
 
+@con_object_proc
 def _Con_List_get(vm):
     (self, i_o),_ = vm.decode_args("LI")
     assert isinstance(self, Con_List)
@@ -1879,18 +1936,20 @@ def _Con_List_get(vm):
 
     i = translate_idx(vm, i_o.v, len(self.l))
     
-    vm.return_(self.l[i])
+    return self.l[i]
 
 
+@con_object_proc
 def _Con_List_get_slice(vm):
     (self, i_o, j_o),_ = vm.decode_args("L", opt="ii")
     assert isinstance(self, Con_List)
 
     i, j = translate_slice_idx_objs(vm, i_o, j_o, len(self.l))
 
-    vm.return_(Con_List(vm, self.l[i:j]))
+    return Con_List(vm, self.l[i:j])
 
 
+@con_object_proc
 def _Con_List_insert(vm):
     (self, i_o, o_o),_ = vm.decode_args("LIO")
     assert isinstance(self, Con_List)
@@ -1898,36 +1957,38 @@ def _Con_List_insert(vm):
     
     self.l.insert(translate_slice_idx(vm, i_o.v, len(self.l)), o_o)
 
-    vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+    return vm.get_builtin(BUILTIN_FAIL_OBJ)
 
 
+@con_object_gen
 def _Con_List_iter(vm):
     (self, i_o, j_o),_ = vm.decode_args("L", opt="ii")
     assert isinstance(self, Con_List)
     
     i, j = translate_slice_idx_objs(vm, i_o, j_o, len(self.l))
     while i < j:
-        vm.yield_(self.l[i])
+        yield self.l[i]
         i += 1
 
-    vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
 
-
+@con_object_proc
 def _Con_List_len(vm):
     (self,),_ = vm.decode_args("L")
     assert isinstance(self, Con_List)
     
-    vm.return_(Con_Int(vm, len(self.l)))
+    return Con_Int(vm, len(self.l))
 
 
+@con_object_proc
 def _Con_List_mult(vm):
     (self, i_o),_ = vm.decode_args("LI")
     assert isinstance(self, Con_List)
     assert isinstance(i_o, Con_Int)
 
-    vm.return_(Con_List(vm, self.l * i_o.v))
+    return Con_List(vm, self.l * i_o.v)
 
 
+@con_object_proc
 def _Con_List_neq(vm):
     (self, o_o),_ = vm.decode_args("LL")
     assert isinstance(self, Con_List)
@@ -1935,27 +1996,29 @@ def _Con_List_neq(vm):
     if isinstance(o_o, Con_List):
         self_len = len(self.l)
         if self_len != len(o_o.l):
-            vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))
+            return vm.get_builtin(Builtins.BUILTIN_NULL_OBJ)
 
         self_l = self.l
         o_l = o_o.l
         for i in range(0, self_len):
             if not self_l[i].neq(vm, o_l[i]):
-                vm.return_(vm.get_builtin(Builtins.BUILTIN_FAIL_OBJ))
-        vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))
+                return vm.get_builtin(Builtins.BUILTIN_FAIL_OBJ)
+        return vm.get_builtin(Builtins.BUILTIN_NULL_OBJ)
     else:
-        vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))
+        return vm.get_builtin(Builtins.BUILTIN_NULL_OBJ)
 
 
+@con_object_proc
 def _Con_List_pop(vm):
     (self,),_ = vm.decode_args("L")
     assert isinstance(self, Con_List)
     
     translate_slice_idx(vm, -1, len(self.l))
 
-    vm.return_(self.l.pop())
+    return self.l.pop()
 
 
+@con_object_gen
 def _Con_List_remove(vm):
     (self, o_o),_ = vm.decode_args("LO")
     assert isinstance(self, Con_List)
@@ -1966,13 +2029,12 @@ def _Con_List_remove(vm):
         e = l[i]
         if o_o.eq(vm, e):
             del l[i]
-            vm.yield_(e)
+            yield e
         else:
             i += 1
 
-    vm.return_(vm.get_builtin(Builtins.BUILTIN_FAIL_OBJ))
 
-
+@con_object_gen
 def _Con_List_riter(vm):
     (self, i_o, j_o),_ = vm.decode_args("L", opt="ii")
     assert isinstance(self, Con_List)
@@ -1980,20 +2042,20 @@ def _Con_List_riter(vm):
     i, j = translate_slice_idx_objs(vm, i_o, j_o, len(self.l))
     j -= 1
     while j >= i:
-        vm.yield_(self.l[j])
+        yield self.l[j]
         j -= 1
 
-    vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
 
-
+@con_object_proc
 def _Con_List_set(vm):
     (self, i, o),_ = vm.decode_args("LIO")
     assert isinstance(self, Con_List)
     assert isinstance(i, Con_Int)
     self.l[i.v] = o
-    vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))
+    return vm.get_builtin(Builtins.BUILTIN_NULL_OBJ)
 
 
+@con_object_proc
 def _Con_List_set_slice(vm):
     (self, i_o, j_o, o_o),_ = vm.decode_args("LiiL")
     assert isinstance(self, Con_List)
@@ -2008,9 +2070,10 @@ def _Con_List_set_slice(vm):
         self.l.insert(i, e)
         i += 1
 
-    vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))
+    return vm.get_builtin(Builtins.BUILTIN_NULL_OBJ)
 
 
+@con_object_proc
 def _Con_List_to_str(vm):
     (self,),_ = vm.decode_args("L")
     assert isinstance(self, Con_List)
@@ -2020,7 +2083,7 @@ def _Con_List_to_str(vm):
         s = type_check_string(vm, vm.get_slot_apply(e, "to_str"))
         es.append(s.v)
 
-    vm.return_(Con_String(vm, "[%s]" % ", ".join(es)))
+    return Con_String(vm, "[%s]" % ", ".join(es))
 
 
 def bootstrap_con_list(vm):
@@ -2074,15 +2137,17 @@ class Con_Set(Con_Boxed_Object):
             self.s[e] = None
 
 
+@con_object_proc
 def _Con_Set_add(vm):
     (self, o),_ = vm.decode_args("WO")
     assert isinstance(self, Con_Set)
     
     self.s[o] = None
 
-    vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))
+    return vm.get_builtin(Builtins.BUILTIN_NULL_OBJ)
 
 
+@con_object_proc
 def _Con_Set_add_plus(vm):
     (self, o_o),_ = vm.decode_args("WO")
     assert isinstance(self, Con_Set)
@@ -2090,9 +2155,10 @@ def _Con_Set_add_plus(vm):
     n_o = Con_Set(vm, self.s.keys())
     vm.get_slot_apply(n_o, "extend", [o_o])
 
-    vm.return_(n_o)
+    return n_o
 
 
+@con_object_proc
 def _Con_Set_complement(vm):
     (self, o_o),_ = vm.decode_args("WO")
     assert isinstance(self, Con_Set)
@@ -2105,9 +2171,10 @@ def _Con_Set_complement(vm):
         else:
             raise Exception("XXX")
     
-    vm.return_(Con_Set(vm, n_s))
+    return Con_Set(vm, n_s)
 
 
+@con_object_proc
 def _Con_Set_extend(vm):
     (self, o_o),_ = vm.decode_args("WO")
     assert isinstance(self, Con_Set)
@@ -2123,43 +2190,44 @@ def _Con_Set_extend(vm):
                 break
             self.s[e_o] = None
 
-    vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))
+    return vm.get_builtin(Builtins.BUILTIN_NULL_OBJ)
 
 
+@con_object_gen
 def _Con_Set_find(vm):
     (self, o),_ = vm.decode_args("WO")
     assert isinstance(self, Con_Set)
     
     if o in self.s:
-        vm.yield_(o)
-    
-    vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+        yield o
 
 
+@con_object_gen
 def _Con_Set_iter(vm):
     (self,),_ = vm.decode_args("W")
     assert isinstance(self, Con_Set)
     
     for k in self.s.keys():
-        vm.yield_(k)
-    
-    vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+        yield k
 
 
+@con_object_proc
 def _Con_Set_len(vm):
     (self,),_ = vm.decode_args("W")
     assert isinstance(self, Con_Set)
     
-    vm.return_(Con_Int(vm, len(self.s)))
+    return Con_Int(vm, len(self.s))
 
 
+@con_object_proc
 def _Con_Set_scopy(vm):
     (self,),_ = vm.decode_args("W")
     assert isinstance(self, Con_Set)
     
-    vm.return_(Con_Set(vm, self.s.keys()))
+    return Con_Set(vm, self.s.keys())
 
 
+@con_object_proc
 def _Con_Set_to_str(vm):
     (self,),_ = vm.decode_args("W")
     assert isinstance(self, Con_Set)
@@ -2169,7 +2237,7 @@ def _Con_Set_to_str(vm):
         s = type_check_string(vm, vm.get_slot_apply(e, "to_str"))
         es.append(s.v)
 
-    vm.return_(Con_String(vm, "Set{%s}" % ", ".join(es)))
+    return Con_String(vm, "Set{%s}" % ", ".join(es))
 
 
 def bootstrap_con_set(vm):
@@ -2221,17 +2289,19 @@ def _dict_key_eq(k1, k2):
         return False
 
 
+@con_object_proc
 def _Con_Dict_find(vm):
     (self, k),_ = vm.decode_args("DO")
     assert isinstance(self, Con_Dict)
     
     r = self.d.get(k, None)
     if r is None:
-        vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+        return vm.get_builtin(BUILTIN_FAIL_OBJ)
     
-    vm.return_(r)
+    return r
 
 
+@con_object_proc
 def _Con_Dict_get(vm):
     (self, k),_ = vm.decode_args("DO")
     assert isinstance(self, Con_Dict)
@@ -2240,55 +2310,55 @@ def _Con_Dict_get(vm):
     if r is None:
         vm.raise_helper("Key_Exception", [k])
     
-    vm.return_(r)
+    return r
 
 
+@con_object_gen
 def _Con_Dict_iter(vm):
     (self,),_ = vm.decode_args("D")
     assert isinstance(self, Con_Dict)
 
     for k, v in self.d.items():
-        vm.yield_(Con_List(vm, [k, v]))
-
-    vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+        yield Con_List(vm, [k, v])
 
 
+@con_object_gen
 def _Con_Dict_iter_keys(vm):
     (self,),_ = vm.decode_args("D")
     assert isinstance(self, Con_Dict)
 
     for v in self.d.keys():
-        vm.yield_(v)
-
-    vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+        yield v
 
 
+@con_object_gen
 def _Con_Dict_iter_vals(vm):
     (self,),_ = vm.decode_args("D")
     assert isinstance(self, Con_Dict)
 
     for v in self.d.values():
-        vm.yield_(v)
-
-    vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+        yield v
 
 
+@con_object_proc
 def _Con_Dict_len(vm):
     (self,),_ = vm.decode_args("D")
     assert isinstance(self, Con_Dict)
     
-    vm.return_(Con_Int(vm, len(self.d)))
+    return Con_Int(vm, len(self.d))
 
 
+@con_object_proc
 def _Con_Dict_set(vm):
     (self, k, v),_ = vm.decode_args("DOO")
     assert isinstance(self, Con_Dict)
     
     self.d[k] = v
     
-    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    return vm.get_builtin(BUILTIN_NULL_OBJ)
 
 
+@con_object_proc
 def _Con_Dict_scopy(vm):
     (self,),_ = vm.decode_args("D")
     assert isinstance(self, Con_Dict)
@@ -2297,9 +2367,10 @@ def _Con_Dict_scopy(vm):
     for k, v in self.d.items():
         n_o.d[k] = v
 
-    vm.return_(n_o)
+    return n_o
 
 
+@con_object_proc
 def _Con_Dict_to_str(vm):
     (self,),_ = vm.decode_args("D")
     assert isinstance(self, Con_Dict)
@@ -2310,7 +2381,7 @@ def _Con_Dict_to_str(vm):
         vs = type_check_string(vm, vm.get_slot_apply(v, "to_str"))
         es.append("%s : %s" % (ks.v, vs.v))
 
-    vm.return_(Con_String(vm, "Dict{%s}" % ", ".join(es)))
+    return Con_String(vm, "Dict{%s}" % ", ".join(es))
 
 
 def bootstrap_con_dict(vm):
@@ -2345,22 +2416,25 @@ class Con_Exception(Con_Boxed_Object):
         self.call_chain = None
 
 
+@con_object_proc
 def _new_func_Con_Exception(vm):
     (class_, ), vargs = vm.decode_args("C", vargs=True)
     o = Con_Exception(vm, class_)
     vm.apply(o.get_slot(vm, "init"), vargs)
-    vm.return_(o)
+    return o
 
 
+@con_object_proc
 def _Con_Exception_init(vm):
     (self, msg),_ = vm.decode_args("O", opt="O")
     if msg is None:
         self.set_slot(vm, "msg", Con_String(vm, ""))
     else:
         self.set_slot(vm, "msg", msg)
-    vm.return_(vm.get_builtin(Builtins.BUILTIN_NULL_OBJ))
+    return vm.get_builtin(Builtins.BUILTIN_NULL_OBJ)
 
 
+@con_object_gen
 def _Con_Exception_iter_call_chain(vm):
     (self,),_ = vm.decode_args("E")
     assert isinstance(self, Con_Exception)
@@ -2371,15 +2445,15 @@ def _Con_Exception_iter_call_chain(vm):
         else:
             assert isinstance(pc, Py_PC)
             src_infos = vm.get_builtin(BUILTIN_NULL_OBJ)
-        vm.yield_(Con_List(vm, [func, src_infos]))
-    vm.return_(vm.get_builtin(Builtins.BUILTIN_FAIL_OBJ))
+        yield Con_List(vm, [func, src_infos])
 
 
+@con_object_proc
 def _Con_Exception_to_str(vm):
     (self,),_ = vm.decode_args("E")
     ex_name = type_check_string(vm, self.get_slot(vm, "instance_of").get_slot(vm, "name"))
     msg = type_check_string(vm, self.get_slot(vm, "msg"))
-    vm.return_(Con_String(vm, "%s: %s" % (ex_name.v, msg.v)))
+    return Con_String(vm, "%s: %s" % (ex_name.v, msg.v))
 
 
 def bootstrap_con_exception(vm):

@@ -19,7 +19,7 @@
 # IN THE SOFTWARE.
 
 
-import sys
+import inspect, sys
 import Builtins
 
 
@@ -80,6 +80,50 @@ class Py_PC(PC):
         self.mod = mod
         self.f = f
 
+
+
+################################################################################
+# Generator support
+#
+
+class Con_Gen_Proc:
+    _immutable_ = True
+    def __init__(self):
+        pass
+    def next(self):
+        raise NotImplementedError
+
+
+class Class_Con_Gen(Con_Gen_Proc):
+    _immutable_ = True
+
+
+class Class_Con_Proc(Con_Gen_Proc):
+    _immutable_ = True
+
+
+def con_object_gen(pyfunc):
+    assert inspect.isgeneratorfunction(pyfunc)
+    class _Tmp_Gen(Class_Con_Gen):
+        _immutable_ = True
+        def __init__(self, *args):
+            self._gen = pyfunc(*args)
+        def next(self):
+            return self._gen.next()
+    _Tmp_Gen.__name__ = "gen__%s__%s" % (pyfunc.__module__.replace(".", "_"), pyfunc.__name__)
+    return _Tmp_Gen
+
+
+def con_object_proc(pyfunc):
+    assert inspect.isfunction(pyfunc) and not inspect.isgeneratorfunction(pyfunc)
+    class _Tmp_Proc(Class_Con_Proc):
+        _immutable_ = True
+        def __init__(self, *args):
+            self._args = args
+        def next(self):
+            return pyfunc(*self._args)
+    _Tmp_Proc.__name__ = "proc__%s__%s" % (pyfunc.__module__.replace(".", "_"), pyfunc.__name__)
+    return _Tmp_Proc
 
 
 

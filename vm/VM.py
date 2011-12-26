@@ -23,7 +23,6 @@ import os, sys
 
 from pypy.config.pypyoption import get_pypy_config
 from pypy.rlib import debug, jit, objectmodel
-from pypy.rlib.rstacklet import StackletThread
 from pypy.rpython.lltypesystem import lltype, llmemory, rffi
 
 from Core import *
@@ -37,6 +36,7 @@ DEBUG = False
 
 
 def get_printable_location(bc_off, mod_bc, pc):
+    assert isinstance(pc, BC_PC)
     instr = Target.read_word(mod_bc, bc_off)
     it = Target.get_instr(instr)
     return "%s:%s at offset %s. bytecode: %s" % (pc.mod, pc.off, bc_off, Target.INSTR_NAMES[it])
@@ -46,7 +46,7 @@ jitdriver = jit.JitDriver(greens=["bc_off", "mod_bc", "pc"], reds=["prev_bc_off"
 
 
 class VM(object):
-    __slots__ = ("argv", "builtins", "cf_stack", "mods", "spare_ff", "pypy_config", "st", "st_exception", "vm_path")
+    __slots__ = ("argv", "builtins", "cf_stack", "mods", "spare_ff", "pypy_config", "st_exception", "vm_path")
     _immutable_fields = ("argv", "builtins", "cf_stack", "mods", "vm_path")
 
     def __init__(self): 
@@ -65,7 +65,6 @@ class VM(object):
     def init(self, vm_path,argv):
         self.vm_path = vm_path
         self.argv = argv
-        self.st = StackletThread(self.pypy_config)
         
         Builtins.bootstrap_con_object(self)
         Builtins.bootstrap_con_class(self)
@@ -183,14 +182,9 @@ class VM(object):
         if args:
             self._cf_stack_extend(cf, list(args))
 
-        try:
-            self.execute(self.st.get_null_handle())
-        except Con_Return_Exception:
-            pass
-        
+        o = self.execute_proc()
         self._remove_continuation_frame()
         
-        o = self._cf_stack_pop(cf)
         if o is self.get_builtin(Builtins.BUILTIN_FAIL_OBJ):
             o = None
         if not allow_fail and o is None:
@@ -240,14 +234,7 @@ class VM(object):
         cf = self.cf_stack[-1]
         if cf.gfp == -1:
             # We're in case 1) from above.
-            ct = self.st.new(switch_hack)
-            st_exception = self.st_exception
-            if st_exception:
-                self.st_exception = None
-                if objectmodel.we_are_translated():
-                    raise st_exception
-                else:
-                    raise st_exception[0], st_exception[1], st_exception[2]
+            gen = self.execute_gen()
             cf = self.cf_stack[-1]
         else:
             # We're in case 2) from above.
@@ -258,22 +245,20 @@ class VM(object):
                 return None
             cf = gf.saved_cf
             self.cf_stack.append(cf)
-            ct = self.st.switch(gf.ct)
-            st_exception = self.st_exception
-            if st_exception:
-                self.st_exception = None
-                if objectmodel.we_are_translated():
-                    raise st_exception
-                else:
-                    raise st_exception[0], st_exception[1], st_exception[2]
+            gen = gf.gen
 
-        o = self._cf_stack_pop(cf)
-        if cf.returned:
+        try:
+            o = gen.next()
+            assert o is not None
+        except StopIteration:
+            cf.returned = True
+            o = None
+
+        if cf.returned or o is None:
             self._remove_continuation_frame()
             cf = self.cf_stack[-1]
             gf = cf.stack[cf.gfp]
             assert isinstance(gf, Stack_Generator_Frame)
-            gf.ct = ct
             self._remove_generator_frame(self.cf_stack[-1])
         else:
             saved_cf = self.cf_stack.pop()
@@ -284,7 +269,7 @@ class VM(object):
 
             gf = cf.stack[cf.gfp]
             assert isinstance(gf, Stack_Generator_Frame)
-            gf.ct = ct
+            gf.gen = gen
             gf.saved_cf = saved_cf
             if gf.prev_gfp > cf.ffp:
                 i = gf.prev_gfp + 1
@@ -301,7 +286,7 @@ class VM(object):
         if o is self.get_builtin(Builtins.BUILTIN_FAIL_OBJ):
             # Currently the failure of a function is signalled in the bytecode by returning the
             # FAIL object.
-            return None
+            o = None
 
         return o
 
@@ -402,27 +387,6 @@ class VM(object):
         return cf.pc.mod
 
 
-    def return_(self, obj):
-        assert isinstance(obj, Builtins.Con_Object)
-        cf = self.cf_stack[-1]
-        self._cf_stack_push(cf, obj)
-        cf.returned = True
-        if cf.ct:
-            self.st.switch(cf.ct)
-        else:
-            raise Con_Return_Exception()
-
-
-    def yield_(self, obj):
-        cf = self.cf_stack[-1]
-        if not cf.ct:
-            # If there's no continuation to return back to, this yield becomes in effect a return.
-            self.return_(obj)
-
-        self._cf_stack_push(cf, obj)
-        cf.ct = self.st.switch(cf.ct)
-
-
     def raise_(self, ex):
         ex = Builtins.type_check_exception(self, ex)
         if ex.call_chain is None:
@@ -450,16 +414,17 @@ class VM(object):
     # The interepreter
     #
 
-    def execute(self, ct):
+    def execute_proc(self):
         cf = self.cf_stack[-1]
-        cf.ct = ct
         pc = cf.pc
-        self.st_exception = None
-        try:
-            #print " " * len(self.cf_stack), Builtins.type_check_string(self, cf.func.name).v, pc.mod.id_
-            if isinstance(pc, Py_PC):
+        if isinstance(pc, Py_PC):
+            f = pc.f(self)
+            if isinstance(f, Class_Con_Proc):
                 try:
-                    pc.f(self)
+                    o = f.next()
+                    assert o is not None
+                    cf.returned = True
+                    return o
                 except Con_Raise_Exception, e:
                     if cf.xfp == -1:
                         # There is no exception handler, so kill this continuation frame and propagate
@@ -467,36 +432,87 @@ class VM(object):
                         self._remove_continuation_frame()
                         raise
                     raise Exception("XXX")
-            else:
-                self.bc_loop(cf)
-        except Con_Return_Exception:
-            pass
-        except Exception, e:
-            if not ct:
-                raise
-            if objectmodel.we_are_translated():
-                self.st_exception = e
-            else:
-                self.st_exception = sys.exc_info()
+            assert isinstance(f, Class_Con_Gen)
+            try:
+                o = f.next()
+                assert o is not None
+            except StopIteration:
+                cf.returned = True
+                return
+            except Con_Raise_Exception, e:
+                if cf.xfp == -1:
+                    # There is no exception handler, so kill this continuation frame and propagate
+                    # the exception
+                    self._remove_continuation_frame()
+                    raise
+                raise Exception("XXX")
+            assert not cf.returned or o is not None
+            return o
+        else:
+            assert isinstance(pc, BC_PC)
+            cf.bc_off = pc.off
+            return self.bc_loop(cf)
 
-        return ct
+
+    def execute_gen(self):
+        cf = self.cf_stack[-1]
+        pc = cf.pc
+        if isinstance(pc, Py_PC):
+            f = pc.f(self)
+            if isinstance(f, Class_Con_Proc):
+                try:
+                    o = f.next()
+                    assert o is not None
+                    cf.returned = True
+                    yield o
+                except Con_Raise_Exception, e:
+                    if cf.xfp == -1:
+                        # There is no exception handler, so kill this continuation frame and propagate
+                        # the exception
+                        self._remove_continuation_frame()
+                        raise
+                    raise Exception("XXX")
+            assert isinstance(f, Class_Con_Gen)
+            while 1:
+                assert not cf.returned
+                try:
+                    o = f.next()
+                    assert o is not None
+                except StopIteration:
+                    cf.returned = True
+                    return
+                except Con_Raise_Exception, e:
+                    if cf.xfp == -1:
+                        # There is no exception handler, so kill this continuation frame and propagate
+                        # the exception
+                        self._remove_continuation_frame()
+                        raise
+                    raise Exception("XXX")
+                assert not cf.returned or o is not None
+                yield o
+        else:
+            assert isinstance(pc, BC_PC)
+            cf.bc_off = pc.off
+            while 1:
+                assert not cf.returned
+                yield self.bc_loop(cf)
 
 
     def bc_loop(self, cf):
         pc = cf.pc
-        assert isinstance(pc, BC_PC)
         mod_bc = pc.mod.bc
         prev_bc_off = -1
         while 1:
+            bc_off = cf.bc_off
+            if prev_bc_off != -1 and prev_bc_off > bc_off:
+                jitdriver.can_enter_jit(bc_off=bc_off, mod_bc=mod_bc, cf=cf, prev_bc_off=prev_bc_off, pc=pc, self=self)
+            jitdriver.jit_merge_point(bc_off=bc_off, mod_bc=mod_bc, cf=cf, prev_bc_off=prev_bc_off, pc=pc, self=self)
+            assert cf is self.cf_stack[-1]
+            prev_bc_off = bc_off
+            instr = Target.read_word(mod_bc, bc_off)
+            it = Target.get_instr(instr)
+
             try:
-                bc_off = cf.bc_off
-                if prev_bc_off != -1 and prev_bc_off > bc_off:
-                    jitdriver.can_enter_jit(bc_off=bc_off, mod_bc=mod_bc, cf=cf, prev_bc_off=prev_bc_off, pc=pc, self=self)
-                jitdriver.jit_merge_point(bc_off=bc_off, mod_bc=mod_bc, cf=cf, prev_bc_off=prev_bc_off, pc=pc, self=self)
-                assert cf is self.cf_stack[-1]
-                prev_bc_off = bc_off
-                instr = Target.read_word(mod_bc, bc_off)
-                it = Target.get_instr(instr)
                 #x = cf.stackpe; assert x >= 0; print "%s %s %d [stackpe:%d ffp:%d gfp:%d xfp:%d]" % (Target.INSTR_NAMES[instr & 0xFF], str(cf.stack[:x]), bc_off, cf.stackpe, cf.ffp, cf.gfp, cf.xfp)
                 if it == Target.CON_INSTR_VAR_LOOKUP:
                     self._instr_var_lookup(instr, cf)
@@ -527,11 +543,13 @@ class VM(object):
                 elif it == Target.CON_INSTR_FUNC_DEFN:
                     self._instr_func_defn(instr, cf)
                 elif it == Target.CON_INSTR_RETURN:
-                    self._instr_return(instr, cf)
+                    cf.returned = True
+                    return self._cf_stack_pop(cf)
                 elif it == Target.CON_INSTR_BRANCH:
                     self._instr_branch(instr, cf)
                 elif it == Target.CON_INSTR_YIELD:
-                    self._instr_yield(instr, cf)
+                    cf.bc_off += Target.INTSIZE
+                    return cf.stack[cf.stackpe - 1]
                 elif it == Target.CON_INSTR_IMPORT:
                     self._instr_import(instr, cf)
                 elif it == Target.CON_INSTR_DICT:
@@ -743,18 +761,8 @@ class VM(object):
         cf.bc_off += Target.INTSIZE
 
 
-    def _instr_return(self, instr, cf):
-        self.return_(self._cf_stack_pop(cf))
-        # Won't get here
-
-
     def _instr_branch(self, instr, cf):
         cf.bc_off += Target.unpack_branch(instr)
-
-
-    def _instr_yield(self, instr, cf):
-        self.yield_(cf.stack[cf.stackpe - 1])
-        cf.bc_off += Target.INTSIZE
 
 
     def _instr_import(self, instr, cf):
@@ -1108,8 +1116,6 @@ class VM(object):
         self._cf_stack_del_from(cf, cf.gfp)
         if isinstance(gf, Stack_Generator_Frame):
             cf.gfp = gf.prev_gfp
-            if gf.ct:
-                self.st.destroy(gf.ct)
         else:
             assert isinstance(gf, Stack_Generator_EYield_Frame)
             cf.gfp = gf.prev_gfp
@@ -1241,7 +1247,7 @@ class Stack_Failure_Frame(Con_Thingy):
 
 
 class Stack_Generator_Frame(Con_Thingy):
-    __slots__ = ("prev_gfp", "resume_bc_off", "returned", "ct", "saved_cf")
+    __slots__ = ("prev_gfp", "resume_bc_off", "returned", "gen", "saved_cf")
     _immutable_fields_ = ("prev_gfp", "resume_bc_off")
     
     def __init__(self, prev_gfp, resume_bc_off):
@@ -1276,20 +1282,10 @@ class Stack_Exception_Frame(Con_Thingy):
 #
 
 class Con_Raise_Exception(Exception):
-    _immutable_fields_ = ("ex_obj",)
+    _immutable_ = True
 
     def __init__(self, ex_obj):
         self.ex_obj = ex_obj
-
-
-class Con_Return_Exception(Exception):
-    pass
-
-
-
-def switch_hack(ct, arg):
-    global_vm.execute(ct)
-    return ct
 
 
 global_vm = VM()

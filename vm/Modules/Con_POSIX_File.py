@@ -82,6 +82,7 @@ def init(vm):
        "is_file", "chmod", "iter_dir_entries", "mtime", "rm", "temp_file"])
 
 
+@con_object_proc
 def import_(vm):
     (mod,),_ = vm.decode_args("O")
 
@@ -103,7 +104,7 @@ def import_(vm):
     
     vm.set_builtin(BUILTIN_C_FILE_MODULE, mod)
     
-    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    return vm.get_builtin(BUILTIN_NULL_OBJ)
 
 
 def _errno_raise(vm, path):
@@ -155,6 +156,7 @@ class File(Con_Boxed_Object):
         return Con_Boxed_Object.get_slot_override(self, vm, n)
 
 
+@con_object_proc
 def _new_func_File(vm):
     (class_, path_o, mode_o), vargs = vm.decode_args("COS")
     assert isinstance(mode_o, Con_String)
@@ -175,9 +177,10 @@ def _new_func_File(vm):
     f_o = File(vm, class_, path_s, f)
     vm.get_slot_apply(f_o, "init", [path_o, mode_o])
 
-    vm.return_(f_o)
+    return f_o
 
 
+@con_object_proc
 def File_close(vm):
     (self,),_ = vm.decode_args("!", self_of=File)
     assert isinstance(self, File)
@@ -187,17 +190,19 @@ def File_close(vm):
         _errno_raise(vm, self.path)
     self.closed = True
 
-    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    return vm.get_builtin(BUILTIN_NULL_OBJ)
 
 
+@con_object_proc
 def File_fileno(vm):
     (self,),_ = vm.decode_args("!", self_of=File)
     assert isinstance(self, File)
     _check_open(vm, self)
 
-    vm.return_(Con_Int(vm, int(fileno(self.filep))))
+    return Con_Int(vm, int(fileno(self.filep)))
 
 
+@con_object_proc
 def File_flush(vm):
     (self,),_ = vm.decode_args("!", self_of=File)
     assert isinstance(self, File)
@@ -206,9 +211,10 @@ def File_flush(vm):
     if fflush(self.filep) != 0:
         _errno_raise(vm, self.path)
 
-    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    return vm.get_builtin(BUILTIN_NULL_OBJ)
 
 
+@con_object_proc
 def File_read(vm):
     (self, rsize_o),_ = vm.decode_args(mand="!", opt="I", self_of=File)
     assert isinstance(self, File)
@@ -227,16 +233,18 @@ def File_read(vm):
         elif rsize > fsize:
             rsize = fsize
 
-    with lltype.scoped_alloc(rffi.CCHARP.TO, rsize) as buf:
-        r = fread(buf, 1, rsize, self.filep)
-        if r < rffi.r_size_t(rsize) and ferror(self.filep) != 0:
-            vm.raise_helper("File_Exception", [Con_String(vm, "Read error.")])
-        s = rffi.charpsize2str(buf, rarithmetic.intmask(r))
+    #with lltype.scoped_alloc(rffi.CCHARP.TO, rsize) as buf:
+    #    r = fread(buf, 1, rsize, self.filep)
+    #    if r < rffi.r_size_t(rsize) and ferror(self.filep) != 0:
+    #        vm.raise_helper("File_Exception", [Con_String(vm, "Read error.")])
+    #    s = rffi.charpsize2str(buf, rarithmetic.intmask(r))
+    s = os.read(fileno(self.filep), rsize)
     funlockfile(self.filep)
 
-    vm.return_(Con_String(vm, s))
+    return Con_String(vm, s)
 
 
+@con_object_gen
 def File_readln(vm):
     (self,),_ = vm.decode_args(mand="!", self_of=File)
     assert isinstance(self, File)
@@ -250,11 +258,10 @@ def File_readln(vm):
                     break
                 _errno_raise(vm, self.path)
             l_o = Con_String(vm, rffi.charpsize2str(l, rarithmetic.intmask(lenp[0])))
-            vm.yield_(l_o)
-
-    vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+            yield l_o
 
 
+@con_object_proc
 def File_seek(vm):
     (self, off_o),_ = vm.decode_args(mand="!I", self_of=File)
     assert isinstance(self, File)
@@ -264,9 +271,10 @@ def File_seek(vm):
     if fseek(self.filep, off_o.v, SEEK_SET) != 0:
         _errno_raise(vm, self.path)
 
-    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    return vm.get_builtin(BUILTIN_NULL_OBJ)
 
 
+@con_object_proc
 def File_write(vm):
     (self, s_o),_ = vm.decode_args(mand="!S", self_of=File)
     assert isinstance(self, File)
@@ -277,9 +285,10 @@ def File_write(vm):
     if len(s) > 0 and fwrite(s, len(s), 1, self.filep) < 1:
         vm.raise_helper("File_Exception", [Con_String(vm, "Write error.")])
 
-    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    return vm.get_builtin(BUILTIN_NULL_OBJ)
 
 
+@con_object_proc
 def File_writeln(vm):
     (self, s_o),_ = vm.decode_args(mand="!S", self_of=File)
     assert isinstance(self, File)
@@ -290,7 +299,7 @@ def File_writeln(vm):
     if fwrite(s, len(s), 1, self.filep) < 1:
         vm.raise_helper("File_Exception", [Con_String(vm, "Write error.")])
 
-    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    return vm.get_builtin(BUILTIN_NULL_OBJ)
 
 
 def _check_open(vm, file):
@@ -318,6 +327,7 @@ def bootstrap_file_class(vm, mod):
 # Other module-level functions
 #
 
+@con_object_proc
 def canon_path(vm):
     (p_o,),_ = vm.decode_args("S")
     assert isinstance(p_o, Con_String)
@@ -328,9 +338,10 @@ def canon_path(vm):
             _errno_raise(vm, p_o.v)
         rp = rffi.charpsize2str(resolved, rarithmetic.intmask(strlen(resolved)))
 
-    vm.return_(Con_String(vm, rp))
+    return Con_String(vm, rp)
 
 
+@con_object_proc
 def chmod(vm):
     (p_o, mode_o),_ = vm.decode_args("SI")
     assert isinstance(p_o, Con_String)
@@ -341,61 +352,64 @@ def chmod(vm):
     except OSError, e:
         _errno_raise(vm, p_o.v)
 
-    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    return vm.get_builtin(BUILTIN_NULL_OBJ)
 
 
+@con_object_proc
 def exists(vm):
     (p_o,),_ = vm.decode_args("S")
     assert isinstance(p_o, Con_String)
     
     try:
         if os.path.exists(p_o.v):
-            vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+            return vm.get_builtin(BUILTIN_NULL_OBJ)
         else:
-            vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+            return vm.get_builtin(BUILTIN_FAIL_OBJ)
     except OSError, e:
         _errno_raise(vm, p_o.v)
 
 
+@con_object_proc
 def is_dir(vm):
     (p_o,),_ = vm.decode_args("S")
     assert isinstance(p_o, Con_String)
     
     try:
         if os.path.isdir(p_o.v):
-            vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+            return vm.get_builtin(BUILTIN_NULL_OBJ)
         else:
-            vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+            return vm.get_builtin(BUILTIN_FAIL_OBJ)
     except OSError, e:
         _errno_raise(vm, p_o.v)
 
 
+@con_object_proc
 def is_file(vm):
     (p_o,),_ = vm.decode_args("S")
     assert isinstance(p_o, Con_String)
     
     try:
         if os.path.isfile(p_o.v):
-            vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+            return vm.get_builtin(BUILTIN_NULL_OBJ)
         else:
-            vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+            return vm.get_builtin(BUILTIN_FAIL_OBJ)
     except OSError, e:
         _errno_raise(vm, p_o.v)
 
 
+@con_object_gen
 def iter_dir_entries(vm):
     (dp_o,),_ = vm.decode_args("S")
     assert isinstance(dp_o, Con_String)
     
     try:
         for p in os.listdir(dp_o.v):
-            vm.yield_(Con_String(vm, p))
+            yield Con_String(vm, p)
     except OSError, e:
         _errno_raise(vm, dp_o.v)
 
-    vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
 
-
+@con_object_proc
 def mtime(vm):
     (p_o,),_ = vm.decode_args("S")
     assert isinstance(p_o, Con_String)
@@ -417,9 +431,10 @@ def mtime(vm):
     sec = int(mtime)
     nsec = int((mtime - int(mtime)) * 1E9)
     
-    vm.return_(vm.apply(mk_timespec, [Con_Int(vm, sec), Con_Int(vm, nsec)]))
+    return vm.apply(mk_timespec, [Con_Int(vm, sec), Con_Int(vm, nsec)])
 
 
+@con_object_proc
 def rm(vm):
     (p_o,),_ = vm.decode_args("S")
     assert isinstance(p_o, Con_String)
@@ -446,9 +461,10 @@ def rm(vm):
         if i == len(st):
             i -= 1
 
-    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    return vm.get_builtin(BUILTIN_NULL_OBJ)
 
 
+@con_object_proc
 def temp_file(vm):
     mod = vm.get_funcs_mod()
     file_class = type_check_class(vm, mod.get_defn(vm, "File"))
@@ -472,6 +488,6 @@ def temp_file(vm):
         if not f:
             _errno_raise(vm, tmpp)
         
-        vm.return_(File(vm, file_class, tmpp, f))
+        return File(vm, file_class, tmpp, f)
     else:
         raise Exception("XXX")

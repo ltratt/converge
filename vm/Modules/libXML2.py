@@ -68,6 +68,7 @@ def init(vm):
       ["XML_Exception", "parse"])
 
 
+@con_object_proc
 def import_(vm):
     (mod,),_ = vm.decode_args("O")
 
@@ -80,10 +81,10 @@ def import_(vm):
 
     new_c_con_func_for_mod(vm, "parse", parse, mod)
 
-    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    return vm.get_builtin(BUILTIN_NULL_OBJ)
 
 
-
+@con_object_proc
 def parse(vm):
     (xml_o, nodes_mod),_ = vm.decode_args("SM")
     assert isinstance(xml_o, Con_String)
@@ -101,7 +102,7 @@ def parse(vm):
     _storage_hack.pop()
     doc_o = vm.get_slot_apply(nodes_mod.get_defn(vm, "Doc"), "new", [docs_eo])
     
-    vm.return_(doc_o)
+    return doc_o
 
 
 class _Store:

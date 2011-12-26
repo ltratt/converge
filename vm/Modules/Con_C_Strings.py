@@ -29,14 +29,16 @@ def init(vm):
       ["join"])
 
 
+@con_object_proc
 def import_(vm):
     (mod,),_ = vm.decode_args("O")
     
     new_c_con_func_for_mod(vm, "join", join, mod)
     
-    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    return vm.get_builtin(BUILTIN_NULL_OBJ)
 
 
+@con_object_proc
 def join(vm):
     (list_o, sep_o),_ = vm.decode_args("OS")
     assert isinstance(sep_o, Con_String)
@@ -49,4 +51,4 @@ def join(vm):
             break
         out.append(type_check_string(vm, e_o).v)
 
-    vm.return_(Con_String(vm, sep_o.v.join(out)))
+    return Con_String(vm, sep_o.v.join(out))

@@ -29,7 +29,8 @@ def init(vm):
       ["find_var", "get_var", "set_var"])
 
 
+@con_object_proc
 def import_(vm):
     (mod,),_ = vm.decode_args("O")
     
-    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    return vm.get_builtin(BUILTIN_NULL_OBJ)

@@ -49,14 +49,16 @@ def init(vm):
       ["current"])
 
 
+@con_object_proc
 def import_(vm):
     (mod,),_ = vm.decode_args("O")
     
     new_c_con_func_for_mod(vm, "current", current, mod)
 
-    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    return vm.get_builtin(BUILTIN_NULL_OBJ)
 
 
+@con_object_proc
 def current(vm):
     _,_ = vm.decode_args()
 
@@ -66,4 +68,4 @@ def current(vm):
         sec = tp.c_tv_sec
         usec = tp.c_tv_usec
 
-    vm.return_(Con_List(vm, [Con_Int(vm, sec), Con_Int(vm, usec)]))
+    return Con_List(vm, [Con_Int(vm, sec), Con_Int(vm, usec)])

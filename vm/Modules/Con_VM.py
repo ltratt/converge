@@ -30,6 +30,7 @@ def init(vm):
       ["add_modules", "del_mod", "find_module", "import_module", "iter_mods"])
 
 
+@con_object_proc
 def import_(vm):
     (mod,),_ = vm.decode_args("O")
 
@@ -39,9 +40,10 @@ def import_(vm):
     new_c_con_func_for_mod(vm, "import_module", import_module, mod)
     new_c_con_func_for_mod(vm, "iter_mods", iter_mods, mod)
     
-    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    return vm.get_builtin(BUILTIN_NULL_OBJ)
 
 
+@con_object_proc
 def add_modules(vm):
     (mods_o,),_ = vm.decode_args("O")
 
@@ -53,9 +55,10 @@ def add_modules(vm):
         e_o = type_check_module(vm, e_o)
         vm.mods[e_o.id_] = e_o
     
-    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    return vm.get_builtin(BUILTIN_NULL_OBJ)
 
 
+@con_object_proc
 def del_mod(vm):
     (mod_id_o,),_ = vm.decode_args("S")
     assert isinstance(mod_id_o, Con_String)
@@ -65,9 +68,10 @@ def del_mod(vm):
 
     del vm.mods[mod_id_o.v]
 
-    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    return vm.get_builtin(BUILTIN_NULL_OBJ)
 
 
+@con_object_proc
 def find_module(vm):
     (mod_id_o,),_ = vm.decode_args("S")
     assert isinstance(mod_id_o, Con_String)
@@ -76,21 +80,21 @@ def find_module(vm):
     if m_o is None:
         m_o = vm.get_builtin(BUILTIN_FAIL_OBJ)
     
-    vm.return_(m_o)
+    return m_o
 
 
+@con_object_proc
 def import_module(vm):
     (mod_o,),_ = vm.decode_args("M")
     assert isinstance(mod_o, Con_Module)
 
     mod_o.import_(vm)
-    vm.return_(mod_o)
+    return mod_o
 
 
+@con_object_gen
 def iter_mods(vm):
     _,_ = vm.decode_args("")
     
     for mod in vm.mods.values():
-        vm.yield_(mod)
-
-    vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+        yield mod

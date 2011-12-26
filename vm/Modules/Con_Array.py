@@ -44,6 +44,7 @@ def init(vm):
       ["Array_Exception", "Array"])
 
 
+@con_object_proc
 def import_(vm):
     (mod,),_ = vm.decode_args("O")
 
@@ -56,7 +57,7 @@ def import_(vm):
 
     bootstrap_array_class(vm, mod)
 
-    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    return vm.get_builtin(BUILTIN_NULL_OBJ)
 
 
 
@@ -159,6 +160,7 @@ class Array(Con_Boxed_Object):
           [Con_String(vm, "Data of len %d not aligned to a multiple of %d." % (i, self.type_size))]))
 
 
+@con_object_proc
 def _new_func_Array(vm):
     (class_, type_o, data_o),_ = vm.decode_args("CS", opt="O")
     assert isinstance(type_o, Con_String)
@@ -168,18 +170,20 @@ def _new_func_Array(vm):
         data_o = vm.get_builtin(BUILTIN_NULL_OBJ)
     vm.get_slot_apply(a_o, "init", [type_o, data_o])
 
-    vm.return_(a_o)
+    return a_o
 
 
+@con_object_proc
 def Array_append(vm):
     (self, o_o),_ = vm.decode_args("!O", self_of=Array)
     assert isinstance(self, Array)
 
     _append(vm, self, o_o)
     objectmodel.keepalive_until_here(self)
-    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    return vm.get_builtin(BUILTIN_NULL_OBJ)
 
 
+@con_object_proc
 def Array_extend(vm):
     (self, o_o),_ = vm.decode_args("!O", self_of=Array)
     assert isinstance(self, Array)
@@ -198,9 +202,10 @@ def Array_extend(vm):
             _append(vm, self, e_o)
     objectmodel.keepalive_until_here(self)
 
-    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    return vm.get_builtin(BUILTIN_NULL_OBJ)
 
 
+@con_object_proc
 def Array_extend_from_string(vm):
     (self, s_o),_ = vm.decode_args("!S", self_of=Array)
     assert isinstance(self, Array)
@@ -218,9 +223,10 @@ def Array_extend_from_string(vm):
     self.num_entries += len(s) // self.type_size
     objectmodel.keepalive_until_here(self)
 
-    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    return vm.get_builtin(BUILTIN_NULL_OBJ)
 
 
+@con_object_proc
 def Array_get(vm):
     (self, i_o),_ = vm.decode_args("!I", self_of=Array)
     assert isinstance(self, Array)
@@ -229,9 +235,10 @@ def Array_get(vm):
     i = translate_idx(vm, i_o.v, self.num_entries)
     o = _get_obj(vm, self, i)
     objectmodel.keepalive_until_here(self)
-    vm.return_(o)
+    return o
 
 
+@con_object_proc
 def Array_get_slice(vm):
     mod = vm.get_funcs_mod()
     (self, i_o, j_o),_ = vm.decode_args("!", opt="ii", self_of=Array)
@@ -241,44 +248,47 @@ def Array_get_slice(vm):
     # This does a double allocation, so isn't very efficient. It is pleasingly simple though.
     data = rffi.charpsize2str(rffi.ptradd(self.data, i * self.type_size), int((j - i) * self.type_size))
     objectmodel.keepalive_until_here(self)
-    vm.return_(Array(vm, mod.get_defn(vm, "Array"), self.type_name, Con_String(vm, data)))
+    return Array(vm, mod.get_defn(vm, "Array"), self.type_name, Con_String(vm, data))
 
 
+@con_object_gen
 def Array_iter(vm):
     (self, i_o, j_o),_ = vm.decode_args("!", opt="ii", self_of=Array)
     assert isinstance(self, Array)
 
     i, j = translate_slice_idx_objs(vm, i_o, j_o, self.num_entries)
     for k in range(i, j):
-        vm.yield_(_get_obj(vm, self, k))
+        yield _get_obj(vm, self, k)
     objectmodel.keepalive_until_here(self)
 
-    vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
 
-
+@con_object_proc
 def Array_len(vm):
     (self,),_ = vm.decode_args("!", self_of=Array)
     assert isinstance(self, Array)
 
-    vm.return_(Con_Int(vm, self.num_entries))
+    return Con_Int(vm, self.num_entries)
 
 
+@con_object_proc
 def Array_len_bytes(vm):
     (self,),_ = vm.decode_args("!", self_of=Array)
     assert isinstance(self, Array)
 
-    vm.return_(Con_Int(vm, self.num_entries * self.type_size))
+    return Con_Int(vm, self.num_entries * self.type_size)
 
 
+@con_object_proc
 def Array_serialize(vm):
     (self,),_ = vm.decode_args("!", self_of=Array)
     assert isinstance(self, Array)
 
     data = rffi.charpsize2str(self.data, self.num_entries * self.type_size)
     objectmodel.keepalive_until_here(self) # XXX I don't really understand why this is needed
-    vm.return_(Con_String(vm, data))
+    return Con_String(vm, data)
 
 
+@con_object_proc
 def Array_set(vm):
     (self, i_o, o_o),_ = vm.decode_args("!IO", self_of=Array)
     assert isinstance(self, Array)
@@ -287,16 +297,17 @@ def Array_set(vm):
     i = translate_idx(vm, i_o.v, self.num_entries)
     _set_obj(vm, self, i, o_o)
     objectmodel.keepalive_until_here(self)
-    vm.return_(_get_obj(vm, self, i))
+    return vm.get_builtin(BUILTIN_NULL_OBJ)
 
 
+@con_object_proc
 def Array_to_str(vm):
     (self,),_ = vm.decode_args("!", self_of=Array)
     assert isinstance(self, Array)
 
     data = rffi.charpsize2str(self.data, self.num_entries * self.type_size)
     objectmodel.keepalive_until_here(self)
-    vm.return_(Con_String(vm, data))
+    return Con_String(vm, data)
 
 
 def _append(vm, self, o):

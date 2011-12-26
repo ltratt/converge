@@ -44,14 +44,16 @@ def init(vm):
       ["sh_cmd"])
 
 
+@con_object_proc
 def import_(vm):
     (mod,),_ = vm.decode_args("O")
     
     new_c_con_func_for_mod(vm, "sh_cmd", sh_cmd, mod)
     
-    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    return vm.get_builtin(BUILTIN_NULL_OBJ)
 
 
+@con_object_proc
 def sh_cmd(vm):
     (cmd_o,),_ = vm.decode_args("S")
     assert isinstance(cmd_o, Con_String)
@@ -60,4 +62,4 @@ def sh_cmd(vm):
     if r == -1:
         vm.raise_helper("Exception", [Con_String(vm, os.strerror(rposix.get_errno()))])
 
-    vm.return_(Con_Int(vm, os.WEXITSTATUS(r)))
+    return Con_Int(vm, os.WEXITSTATUS(r))

@@ -35,6 +35,7 @@ def init(vm):
     return mod
 
 
+@con_object_proc
 def import_(vm):
     (mod,),_ = vm.decode_args("O")
 
@@ -61,17 +62,23 @@ def import_(vm):
     mod.set_defn(vm, "version", Con_String(vm, Config.CON_VERSION))
     mod.set_defn(vm, "version_date", Con_String(vm, Config.CON_DATE))
     
-    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    return vm.get_builtin(BUILTIN_NULL_OBJ)
 
 
+@con_object_proc
 def exit(vm):
     (c_o,),_ = vm.decode_args(opt="I")
 
     if c_o is None:
         c_o = Con_Int(vm, 0)
-    raise vm.raise_helper("System_Exit_Exception", [c_o])
+    # Trick the annotator by having a condition we know will always be true...
+    if len(vm.cf_stack) > 0:
+        raise vm.raise_helper("System_Exit_Exception", [c_o])
+    
+    return None # Dummy
 
 
+@con_object_proc
 def print_(vm):
     mod = vm.get_funcs_mod()
     _,vargs = vm.decode_args(vargs=True)
@@ -83,9 +90,10 @@ def print_(vm):
         else:
             vm.get_slot_apply(stdout, "write", [vm.get_slot_apply(o, "to_str")])
 
-    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    return vm.get_builtin(BUILTIN_NULL_OBJ)
 
 
+@con_object_proc
 def println(vm):
     mod = vm.get_funcs_mod()
     _,vargs = vm.decode_args(vargs=True)
@@ -98,4 +106,4 @@ def println(vm):
             vm.get_slot_apply(stdout, "write", [vm.get_slot_apply(o, "to_str")])
     vm.get_slot_apply(stdout, "write", [Con_String(vm, "\n")])
 
-    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    return vm.get_builtin(BUILTIN_NULL_OBJ)

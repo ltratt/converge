@@ -30,12 +30,13 @@ def init(vm):
       ["Parser"])
 
 
+@con_object_proc
 def import_(vm):
     (mod,),_ = vm.decode_args("O")
 
     bootstrap_parser_class(vm, mod)
 
-    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    return vm.get_builtin(BUILTIN_NULL_OBJ)
 
 
 ################################################################################
@@ -173,6 +174,7 @@ class Tree_Term(Tree):
         return "%sT: %d %d %d\n" % (" " * indent, self.t, self.j, self.i)
 
 
+@con_object_proc
 def Parser_parse(vm):
     (self, grm_o, rns_o, toksmap_o, toks_o),_ = vm.decode_args("OSOOO")
     assert isinstance(grm_o, Con_String)
@@ -246,7 +248,7 @@ def Parser_parse(vm):
         #rn_ss = [type_check_string(vm, x).v for x in rn_os]
         #print int_tree.pp(0, names=rn_ss, alts=alts)
         n, _, _ = _int_tree_to_ptree(vm, alts, tok_os, rn_os, int_tree, src_file, src_off)
-        vm.return_(n)
+        return n
     else:
         raise Exception("XXX")
 

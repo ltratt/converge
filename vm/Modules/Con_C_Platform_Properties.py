@@ -35,6 +35,7 @@ def init(vm):
         "case_sensitive_filenames"])
 
 
+@con_object_proc
 def import_(vm):
     (mod,),_ = vm.decode_args("O")
 
@@ -45,4 +46,4 @@ def import_(vm):
     mod.set_defn(vm, "osname", Con_String(vm, Config.PLATFORM))
     mod.set_defn(vm, "case_sensitive_filenames", Con_Int(vm, CASE_SENSITIVE_FILENAMES))
     
-    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    return vm.get_builtin(BUILTIN_NULL_OBJ)

@@ -56,6 +56,7 @@ def init(vm):
       ["Curses_Exception", "setupterm", "tigetstr"])
 
 
+@con_object_proc
 def import_(vm):
     (mod,),_ = vm.decode_args("O")
     
@@ -68,9 +69,10 @@ def import_(vm):
     new_c_con_func_for_mod(vm, "setupterm", setupterm_func, mod)
     new_c_con_func_for_mod(vm, "tigetstr", tigetstr_func, mod)
 
-    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    return vm.get_builtin(BUILTIN_NULL_OBJ)
 
 
+@con_object_proc
 def setupterm_func(vm):
     mod = vm.get_funcs_mod()
     (term_o, file_o), _ = vm.decode_args(opt="sO")
@@ -104,9 +106,10 @@ def setupterm_func(vm):
     else:
         raise Exception("XXX")
     
-    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    return vm.get_builtin(BUILTIN_NULL_OBJ)
 
 
+@con_object_proc
 def tigetstr_func(vm):
     mod = vm.get_funcs_mod()
     (capname_o,), _ = vm.decode_args("S")
@@ -118,6 +121,6 @@ def tigetstr_func(vm):
             msg = "'%s' not found or absent." % capname_o.v
             cex_class = mod.get_defn(vm, "Curses_Exception")
             vm.raise_(vm.get_slot_apply(cex_class, "new", [Con_String(vm, msg)]))
-        vm.return_(Con_String(vm, rffi.charp2str(r)))
+        return Con_String(vm, rffi.charp2str(r))
     else:
         raise Exception("XXX")

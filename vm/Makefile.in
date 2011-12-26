@@ -6,7 +6,7 @@ bindir=@bindir@
 all: converge
 
 converge: *.py Modules/*.py
-	${PYTHON} ${TRANSLATE_PY} --opt=@RPYTHON_OPT@ --continuation --output=converge main.py
+	${PYTHON} ${TRANSLATE_PY} --opt=@RPYTHON_OPT@ --output=converge main.py
 
 install:
 	${INSTALL} -d ${DESTDIR}${bindir}

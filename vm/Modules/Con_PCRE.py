@@ -29,7 +29,7 @@ from Core import *
 
 
 
-eci                        = ExternalCompilationInfo(includes=["pcre.h"], 
+eci                        = ExternalCompilationInfo(includes=["pcre.h"], \
                                include_dirs=Config.LIBPCRE_INCLUDE_DIRS, \
                                library_dirs=Config.LIBPCRE_LIBRARY_DIRS, \
                                link_extra=[Config.LIBPCRE_LINK_FLAGS], \
@@ -67,6 +67,7 @@ def init(vm):
       ["PCRE_Exception", "Pattern", "Match", "compile"])
 
 
+@con_object_proc
 def import_(vm):
     (mod,),_ = vm.decode_args("O")
 
@@ -74,7 +75,7 @@ def import_(vm):
     bootstrap_match_class(vm, mod)
     new_c_con_func_for_mod(vm, "compile", compile, mod)
     
-    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    return vm.get_builtin(BUILTIN_NULL_OBJ)
 
 
 
@@ -93,12 +94,14 @@ class Pattern(Con_Boxed_Object):
         self.num_caps = num_caps
 
 
+@con_object_proc
 def Pattern_match(vm):
-    _Pattern_match_search(vm, True)
+    return _Pattern_match_search(vm, True)
 
 
+@con_object_proc
 def Pattern_search(vm):
-    _Pattern_match_search(vm, False)
+    return _Pattern_match_search(vm, False)
 
 
 def _Pattern_match_search(vm, anchored):
@@ -120,11 +123,11 @@ def _Pattern_match_search(vm, anchored):
     if r < 0:
         if r == PCRE_ERROR_NOMATCH:
             lltype.free(ovect, flavor="raw")
-            vm.return_(vm.get_builtin(BUILTIN_FAIL_OBJ))
+            return vm.get_builtin(BUILTIN_FAIL_OBJ)
         else:
             raise Exception("XXX")
             
-    vm.return_(Match(vm, mod.get_defn(vm, "Match"), ovect, self.num_caps, s_o))
+    return Match(vm, mod.get_defn(vm, "Match"), ovect, self.num_caps, s_o)
 
 
 def bootstrap_pattern_class(vm, mod):
@@ -142,6 +145,7 @@ def bootstrap_pattern_class(vm, mod):
 # This is defined here because it's tightly coupled to the Pattern class.
 #
 
+@con_object_proc
 def compile(vm):
     mod = vm.get_funcs_mod()
     (pat,),_ = vm.decode_args("S")
@@ -163,7 +167,7 @@ def compile(vm):
             raise Exception("XXX")
         num_caps = int(num_capsp[0])
 
-    vm.return_(Pattern(vm, mod.get_defn(vm, "Pattern"), cp, num_caps))
+    return Pattern(vm, mod.get_defn(vm, "Pattern"), cp, num_caps)
 
 
 
@@ -187,6 +191,7 @@ class Match(Con_Boxed_Object):
         lltype.free(self.ovect, flavor="raw")
 
 
+@con_object_proc
 def Match_get(vm):
     (self, i_o),_ = vm.decode_args(mand="!I", self_of=Match)
     assert isinstance(self, Match)
@@ -196,9 +201,12 @@ def Match_get(vm):
 	# num_captures.
     i = translate_idx(vm, i_o.v, 1 + self.num_caps)
     
-    vm.return_(self.s.get_slice(vm, int(self.ovect[i * 2]), int(self.ovect[i * 2 + 1])))
+    o = self.s.get_slice(vm, int(self.ovect[i * 2]), int(self.ovect[i * 2 + 1]))
+    objectmodel.keepalive_until_here(self)
+    return o
 
 
+@con_object_proc
 def Match_get_indexes(vm):
     (self, i_o),_ = vm.decode_args(mand="!I", self_of=Match)
     assert isinstance(self, Match)
@@ -206,7 +214,9 @@ def Match_get_indexes(vm):
     
     i = translate_idx(vm, i_o.v, 1 + self.num_caps)
     
-    vm.return_(Con_List(vm, [Con_Int(vm, int(self.ovect[i * 2])), Con_Int(vm, int(self.ovect[i * 2 + 1]))]))
+    o = Con_List(vm, [Con_Int(vm, int(self.ovect[i * 2])), Con_Int(vm, int(self.ovect[i * 2 + 1]))])
+    objectmodel.keepalive_until_here(self)
+    return o
 
 
 def bootstrap_match_class(vm, mod):

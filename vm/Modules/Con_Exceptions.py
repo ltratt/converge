@@ -42,6 +42,7 @@ def init(vm):
     return mod
 
 
+@con_object_proc
 def import_(vm):
     (mod,),_ = vm.decode_args("O")
 
@@ -73,7 +74,7 @@ def import_(vm):
     io_exception = _mk_simple_exception(vm, mod, "IO_Exception")
     _mk_simple_exception(vm, mod, "File_Exception", superclass=io_exception)
 
-    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    return vm.get_builtin(BUILTIN_NULL_OBJ)
 
 
 def _mk_simple_exception(vm, mod, n, init_func=None, superclass=None):
@@ -89,13 +90,15 @@ def _mk_simple_exception(vm, mod, n, init_func=None, superclass=None):
     return ex
 
 
+@con_object_proc
 def _Apply_Exception_init_func(vm):
     (self, o_o),_ = vm.decode_args("OO")
     p = type_check_string(vm, vm.get_slot_apply(o_o.get_slot(vm, "instance_of"), "path")).v
     self.set_slot(vm, "msg", Con_String(vm, "Do not know how to apply instance of '%s'." % p))
-    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    return vm.get_builtin(BUILTIN_NULL_OBJ)
 
 
+@con_object_proc
 def _Bounds_Exception_init_func(vm):
     (self, idx_o, upper_o),_ = vm.decode_args("OII")
     assert isinstance(idx_o, Con_Int)
@@ -105,63 +108,71 @@ def _Bounds_Exception_init_func(vm):
     else:
         msg = "%d exceeds upper bound %d." % (idx_o.v, upper_o.v)
     self.set_slot(vm, "msg", Con_String(vm, msg))
-    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    return vm.get_builtin(BUILTIN_NULL_OBJ)
 
 
+@con_object_proc
 def _Field_Exception_init_func(vm):
     (self, n_o, class_o),_ = vm.decode_args("OSO")
     assert isinstance(n_o, Con_String)
     classp = type_check_string(vm, vm.get_slot_apply(class_o, "path")).v
     msg = "No such field '%s' in class '%s'." % (n_o.v, classp)
     self.set_slot(vm, "msg", Con_String(vm, msg))
-    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    return vm.get_builtin(BUILTIN_NULL_OBJ)
 
 
+@con_object_proc
 def _Import_Exception_init_func(vm):
     (self, mod_id),_ = vm.decode_args("OS")
     assert isinstance(mod_id, Con_String)
     self.set_slot(vm, "msg", Con_String(vm, "Unable to import '%s'." % mod_id.v))
-    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    return vm.get_builtin(BUILTIN_NULL_OBJ)
 
 
+@con_object_proc
 def _Indices_Exception_init_func(vm):
     (self, lower_o, upper_o),_ = vm.decode_args("OII")
     assert isinstance(lower_o, Con_Int)
     assert isinstance(upper_o, Con_Int)
     msg = "Lower bound %d exceeds upper bound %d" % (lower_o.v, upper_o.v)
     self.set_slot(vm, "msg", Con_String(vm, msg))
-    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    return vm.get_builtin(BUILTIN_NULL_OBJ)
 
 
+@con_object_proc
 def _Key_Exception_init_func(vm):
     (self, k),_ = vm.decode_args("OO")
     k_s = type_check_string(vm, vm.get_slot_apply(k, "to_str"))
     self.set_slot(vm, "msg", Con_String(vm, "Key '%s' not found." % k_s.v))
-    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    return vm.get_builtin(BUILTIN_NULL_OBJ)
 
 
+@con_object_proc
 def _Number_Exception_init_func(vm):
     (self, o),_ = vm.decode_args("OO")
     o_s = type_check_string(vm, vm.get_slot_apply(o, "to_str"))
     self.set_slot(vm, "msg", Con_String(vm, "Number '%s' not valid." % o_s.v))
-    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    return vm.get_builtin(BUILTIN_NULL_OBJ)
 
 
+@con_object_proc
 def _Slot_Exception_init_func(vm):
     (self, n, o),_ = vm.decode_args("OSO")
     assert isinstance(n, Con_String)
     name = type_check_string(vm, o.get_slot(vm, "instance_of").get_slot(vm, "name"))
     msg = "No such slot '%s' in instance of '%s'." % (n.v, name.v)
     self.set_slot(vm, "msg", Con_String(vm, msg))
-    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    return vm.get_builtin(BUILTIN_NULL_OBJ)
 
 
+@con_object_proc
 def _System_Exit_Exception_init_func(vm):
     (self, code),_ = vm.decode_args("OO")
     self.set_slot(vm, "code", code)
-    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    return vm.get_builtin(BUILTIN_NULL_OBJ)
 
 
+@con_object_proc
 def _Type_Exception_init_func(vm):
     (self, should_be, o, extra),_ = vm.decode_args(mand="OSO", opt="O")
     assert isinstance(should_be, Con_String)
@@ -174,13 +185,13 @@ def _Type_Exception_init_func(vm):
     o_path = type_check_string(vm, vm.get_slot_apply(o.get_slot(vm, "instance_of"), "path"))
     msg += ", but got instance of %s." % o_path.v
     self.set_slot(vm, "msg", Con_String(vm, msg))
-    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    return vm.get_builtin(BUILTIN_NULL_OBJ)
 
-
+@con_object_proc
 def _Unpack_Exception_init_func(vm):
     (self, expected_o, got_o),_ = vm.decode_args("OII")
     assert isinstance(expected_o, Con_Int)
     assert isinstance(got_o, Con_Int)
     msg = "Unpack of %d elements failed, as %d elements present" % (expected_o.v, got_o.v)
     self.set_slot(vm, "msg", Con_String(vm, msg))
-    vm.return_(vm.get_builtin(BUILTIN_NULL_OBJ))
+    return vm.get_builtin(BUILTIN_NULL_OBJ)

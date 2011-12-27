@@ -137,14 +137,18 @@ which xml2-config
 
 echo -n "Checking for libxml2.a... "
 libxml2_a=""
-for dir in `xml2-config --libs | tr " " "\n" | grep "^-L" | sort -u | sed "s/^-L//"` ; do
+cnds=`xml2-config --libs | tr " " "\n" | grep "^-L" | sort -u | sed "s/^-L//"`
+xml2_configp=`which xml2-config 2> /dev/null`
+xml2_configd=`dirname $xml2_configp`
+cnds="$cnds `dirname $xml2_configd`/lib/"
+for dir in $cnds ; do
 	cnd=$dir/libxml2.a
 	if [ -f $cnd ]; then
 		libxml2_a=$cnd
 		break
 	fi
 done
-if [ "X$libpcre_a" = "X" ]; then
+if [ "X$libxml2_a" = "X" ]; then
 	echo "not found."
     exit 1
 fi

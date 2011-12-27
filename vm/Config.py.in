@@ -33,7 +33,7 @@ def _sanitise(dirs):
     if not dirs:
         return []
     else:
-        return dirs.split(" ")
+        return [x for x in dirs.split(" ") if x != ""]
 
 LIBPCRE_INCLUDE_DIRS = _sanitise("@LIBPCRE_INCLUDE_DIRS@")
 LIBPCRE_LIBRARY_DIRS = _sanitise("@LIBPCRE_LINK_DIRS@")

@@ -233,12 +233,12 @@ def File_read(vm):
         elif rsize > fsize:
             rsize = fsize
 
-    #with lltype.scoped_alloc(rffi.CCHARP.TO, rsize) as buf:
-    #    r = fread(buf, 1, rsize, self.filep)
-    #    if r < rffi.r_size_t(rsize) and ferror(self.filep) != 0:
-    #        vm.raise_helper("File_Exception", [Con_String(vm, "Read error.")])
-    #    s = rffi.charpsize2str(buf, rarithmetic.intmask(r))
-    s = os.read(fileno(self.filep), rsize)
+    with lltype.scoped_alloc(rffi.CCHARP.TO, rsize) as buf:
+        r = fread(buf, 1, rsize, self.filep)
+        if r < rffi.r_size_t(rsize) and ferror(self.filep) != 0:
+            vm.raise_helper("File_Exception", [Con_String(vm, "Read error.")])
+        s = rffi.charpsize2str(buf, rarithmetic.intmask(r))
+    #s = os.read(fileno(self.filep), rsize)
     funlockfile(self.filep)
 
     return Con_String(vm, s)

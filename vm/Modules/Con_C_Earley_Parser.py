@@ -237,20 +237,28 @@ def Parser_parse(vm):
         b_map = grm[b_map_off + _BRACKET_MAP_ENTRIES : b_map_off + _BRACKET_MAP_ENTRIES + b_map_len]
         b_maps[i] = b_map
     
-    non_term = _parse(vm, toks, alts, b_maps)
-    if non_term:
-        _resolve_ambiguities(vm, alts, tok_os, rn_os, non_term)
-        int_tree = non_term.families[0][0]
-        src_infos = tok_os[1].get_slot(vm, "src_infos")
-        first_src_info = vm.get_slot_apply(src_infos, "get", [Con_Int(vm, 0)])
-        src_file = vm.get_slot_apply(first_src_info, "get", [Con_Int(vm, 0)])
-        src_off = type_check_int(vm, vm.get_slot_apply(first_src_info, "get", [Con_Int(vm, 1)])).v
-        #rn_ss = [type_check_string(vm, x).v for x in rn_os]
-        #print int_tree.pp(0, names=rn_ss, alts=alts)
-        n, _, _ = _int_tree_to_ptree(vm, alts, tok_os, rn_os, int_tree, src_file, src_off)
-        return n
-    else:
-        raise Exception("XXX")
+    E = _parse(vm, self, toks, alts, b_maps)
+
+    for k, v in E[len(toks) - 1].items():
+        for T in v:
+            T_alt = alts[T.s]
+            if T.s == 0 and T.d == len(T_alt.syms) and T.j == 0:
+                c = T.w
+                assert isinstance(c, Tree_Non_Term)
+                _resolve_ambiguities(vm, alts, tok_os, rn_os, c)
+                int_tree = c.families[0][0]
+                src_infos = tok_os[1].get_slot(vm, "src_infos")
+                first_src_info = vm.get_slot_apply(src_infos, "get", [Con_Int(vm, 0)])
+                src_file = vm.get_slot_apply(first_src_info, "get", [Con_Int(vm, 0)])
+                src_off = type_check_int(vm, vm.get_slot_apply(first_src_info, "get", [Con_Int(vm, 1)])).v
+                #rn_ss = [type_check_string(vm, x).v for x in rn_os]
+                #print int_tree.pp(0, names=rn_ss, alts=alts)
+                n, _, _ = _int_tree_to_ptree(vm, alts, tok_os, rn_os, int_tree, src_file, src_off)
+                return n
+
+    for i in range(len(tok_os) - 1, -1, -1):
+        if len(E[i]) > 0:
+            vm.get_slot_apply(self, "error", [tok_os[i]])
 
 
 #
@@ -267,7 +275,7 @@ def Parser_parse(vm):
 # algorithm.
 #
 
-def _parse(vm, toks, alts, b_maps):
+def _parse(vm, self, toks, alts, b_maps):
     E = [{} for x in range(len(toks))]
     _add_to_e_set(E[0], Item(0, 0, 0, None))
     Qd = {}
@@ -351,16 +359,8 @@ def _parse(vm, toks, alts, b_maps):
                     elif _tok_match(alts, toks, Lam.s, p, i + 2):
                         # line 37
                         _add_to_e_set(Qd, e)
-       
-    for k, v in E[len(toks) - 1].items():
-        for T in v:
-            T_alt = alts[T.s]
-            if T.s == 0 and T.d == len(T_alt.syms) and T.j == 0:
-                c = T.w
-                assert isinstance(c, Tree_Non_Term)
-                return c
 
-    return None
+    return E
 
 
 def _sigma_d_at(alts, toks, s, d):

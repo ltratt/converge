@@ -707,6 +707,7 @@ class Con_Module(Con_Boxed_Object):
         return o
 
 
+    @jit.elidable_promote("0")
     def has_defn(self, vm, n):
         if self.tlvars_map.get(n, -1) == -1:
             return False

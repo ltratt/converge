@@ -291,7 +291,6 @@ class VM(object):
         return o
 
 
-    @jit.unroll_safe
     def decode_args(self, mand="", opt="", vargs=False, self_of=None):
         cf = self.cf_stack[-1]
         nargs = cf.nargs # Number of arguments passed
@@ -414,6 +413,7 @@ class VM(object):
     # The interepreter
     #
 
+    @jit.dont_look_inside
     def execute_proc(self):
         cf = self.cf_stack[-1]
         pc = cf.pc
@@ -454,6 +454,7 @@ class VM(object):
             return self.bc_loop(cf)
 
 
+    @jit.dont_look_inside
     def execute_gen(self):
         cf = self.cf_stack[-1]
         pc = cf.pc
@@ -705,7 +706,6 @@ class VM(object):
         cf.bc_off += Target.align(nm_start + nm_size)
 
 
-    @jit.unroll_safe
     def _instr_apply(self, instr, cf):
         is_fail_up, _ = self._read_failure_frame()
         num_args = Target.unpack_apply(instr)
@@ -855,7 +855,6 @@ class VM(object):
         self.raise_(self._cf_stack_pop(cf))
 
 
-    @jit.unroll_safe
     def _instr_unpack_args(self, instr, cf):
         num_fargs, has_vargs = Target.unpack_unpack_args(instr)
         nargs = cf.nargs
@@ -899,7 +898,6 @@ class VM(object):
             cf.bc_off += Target.INTSIZE + num_fargs * Target.INTSIZE
 
 
-    @jit.unroll_safe
     def _instr_set(self, instr, cf):
         ne = Target.unpack_set(instr)
         i = cf.stackpe - ne
@@ -1022,7 +1020,6 @@ class VM(object):
         cf.stackpe += 1
 
 
-    @jit.unroll_safe
     def _cf_stack_extend(self, cf, l):
         for x in l:
             cf.stack[cf.stackpe] = x
@@ -1059,7 +1056,6 @@ class VM(object):
         return o
 
 
-    @jit.unroll_safe
     def _cf_stack_del_from(self, cf, i):
         cf__stack = cf.stack
         for j in range(i, cf.stackpe):
@@ -1067,7 +1063,6 @@ class VM(object):
         cf.stackpe = i
 
 
-    @jit.unroll_safe
     def _cf_stack_insert(self, cf, i, x):
         for j in range(cf.stackpe, i, -1):
             cf.stack[j] = cf.stack[j - 1]
@@ -1160,7 +1155,6 @@ class VM(object):
         return (ff.is_fail_up, ff.fail_to_off)
 
 
-    @jit.unroll_safe
     def _fail_now(self, cf):
         while 1:
             is_fail_up, fail_to_off = self._read_failure_frame()

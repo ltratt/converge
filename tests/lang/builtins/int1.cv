@@ -19,20 +19,28 @@
 // IN THE SOFTWARE.
 
 
-import Sys
-import Lang_Test
+import Builtins, Sys
 
 
 
+func test_add():
+    assert 0 + 0 == 0
 
-tests := $<<Lang_Test::tests>>:
-    "int1.cv"
-    "list1.cv"
-    "str1.cv"
 
+func test_equality():
+    assert 0 == 0
+    assert 0 == -0
+    assert 0 != 1
+
+
+func test_identity():
+    assert 0 is 0
+    assert 1 is 3 - 2
+    assert not 0 is 1
 
 
 func main():
 
-    if tests.new().run_all() != 0:
-        Sys::exit(1)
+    test_add()
+    test_equality()
+    test_identity()

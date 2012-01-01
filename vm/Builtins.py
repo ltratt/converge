@@ -1279,6 +1279,20 @@ def _Con_Int_idiv(vm):
     return Con_Int(vm, self.v // o.v)
 
 
+@con_object_proc
+def _Con_Int_is(vm):
+    (self, o),_ = vm.decode_args("IO")
+    assert isinstance(self, Con_Int)
+    if self is o:
+        return o
+    else:
+        # We want to maintain the illusion that integers of the same value are also the same object.
+        if isinstance(o, Con_Int) and self.v == o.v:
+            return o
+        else:
+            return vm.get_builtin(BUILTIN_FAIL_OBJ)
+
+
 @con_object_gen
 def _Con_Int_iter_to(vm):
     (self, to_o, step_o),_ = vm.decode_args("II", opt="I")
@@ -1408,6 +1422,7 @@ def bootstrap_con_int(vm):
     new_c_con_func_for_class(vm, ">=", _Con_Int_gtq, int_class)
     new_c_con_func_for_class(vm, "hash", _Con_Int_hash, int_class)
     new_c_con_func_for_class(vm, "idiv", _Con_Int_idiv, int_class)
+    new_c_con_func_for_class(vm, "is", _Con_Int_is, int_class)
     new_c_con_func_for_class(vm, "iter_to", _Con_Int_iter_to, int_class)
     new_c_con_func_for_class(vm, "<", _Con_Int_le, int_class)
     new_c_con_func_for_class(vm, "<=", _Con_Int_leq, int_class)

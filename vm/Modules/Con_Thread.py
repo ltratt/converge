@@ -43,9 +43,9 @@ def get_continuation_src_infos(vm):
     (levs_o,),_ = vm.decode_args("I")
     assert isinstance(levs_o, Con_Int)
 
-    cf = vm.cf_stack[-(levs_o.v + 1)]
-    if isinstance(cf.pc, BC_PC):
-        src_infos = cf.pc.mod.bc_off_to_src_infos(vm, cf.bc_off)
+    mod, bc_off = vm.get_mod_and_bc_off(levs_o.v)
+    if bc_off > -1:
+        src_infos = mod.bc_off_to_src_infos(vm, bc_off)
     else:
         src_infos = vm.get_builtin(BUILTIN_NULL_OBJ)
 

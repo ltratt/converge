@@ -71,11 +71,8 @@ def exit(vm):
 
     if c_o is None:
         c_o = Con_Int(vm, 0)
-    # Trick the annotator by having a condition we know will always be true...
-    if len(vm.cf_stack) > 0:
-        raise vm.raise_helper("System_Exit_Exception", [c_o])
     
-    return None # Dummy
+    raise vm.raise_helper("System_Exit_Exception", [c_o])
 
 
 @con_object_proc

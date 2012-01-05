@@ -388,6 +388,14 @@ class VM(object):
         return cf.pc.mod
 
 
+    def get_mod_and_bc_off(self, i):
+        cf = self.cf_stack[len(self.cf_stack) - (i + 1)]
+        mod = cf.pc.mod
+        if mod.is_bc:
+            return mod, cf.bc_off
+        return mod, -1
+
+
     def raise_(self, ex):
         ex = Builtins.type_check_exception(self, ex)
         if ex.call_chain is None:

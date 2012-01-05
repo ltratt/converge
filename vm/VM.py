@@ -46,13 +46,14 @@ jitdriver = jit.JitDriver(greens=["bc_off", "mod_bc", "pc", "self"], reds=["prev
 
 
 class VM(object):
-    __slots__ = ("argv", "builtins", "cf_stack", "mods", "spare_ff", "pypy_config", "st_exception", "vm_path")
-    _immutable_fields = ("argv", "builtins", "cf_stack", "mods", "vm_path")
+    __slots__ = ("argv", "builtins", "cur_cf", "mods", "spare_ff", "pypy_config", "st_exception",
+      "vm_path")
+    _immutable_fields = ("argv", "builtins", "cur_cf", "mods", "vm_path")
 
     def __init__(self): 
         self.builtins = [None] * Builtins.NUM_BUILTINS
         self.mods = {}
-        self.cf_stack = []
+        self.cur_cf = None # Current continuation frame
         # Continually allocating and deallocating failure frames is expensive, which is particularly
         # annoying as most never have any impact. spare_ff is used as a simple one-off cache of a
         # failure frame object, so that instead of being continually allocated and deallocated, in
@@ -182,7 +183,7 @@ class VM(object):
         if args:
             self._cf_stack_extend(cf, list(args))
 
-        o = self.execute_proc()
+        o = self.execute_proc(cf)
         self._remove_continuation_frame()
         
         if o is self.get_builtin(Builtins.BUILTIN_FAIL_OBJ):
@@ -206,7 +207,7 @@ class VM(object):
         else:
             nargs = len(args)
 
-        cf = self.cf_stack[-1]
+        cf = self.cur_cf
         gf = Stack_Generator_Frame(cf.gfp, -1)
         cf.gfp = cf.stackpe
         self._cf_stack_push(cf, gf)
@@ -233,11 +234,11 @@ class VM(object):
         # Fortunately there's an easy way to distinguish the two: if the current continuation on the
         # stack has a generator frame we're in situation #2, otherwise we're in situation #1.
 
-        cf = self.cf_stack[-1]
+        cf = self.cur_cf
         if cf.gfp == -1:
             # We're in case 1) from above.
-            gen = self.execute_gen()
-            cf = self.cf_stack[-1]
+            gen = self.execute_gen(cf)
+            cf = self.cur_cf
         else:
             # We're in case 2) from above.
             self._cf_stack_del_from(cf, cf.gfp + 1)
@@ -246,7 +247,8 @@ class VM(object):
             if gf.returned:
                 return None
             cf = gf.saved_cf
-            self.cf_stack.append(cf)
+            assert cf.parent is self.cur_cf
+            self.cur_cf = cf
             gen = gf.gen
 
         try:
@@ -258,13 +260,13 @@ class VM(object):
 
         if cf.returned or o is None:
             self._remove_continuation_frame()
-            cf = self.cf_stack[-1]
+            cf = self.cur_cf
             gf = cf.stack_get(cf.gfp)
             assert isinstance(gf, Stack_Generator_Frame)
-            self._remove_generator_frame(self.cf_stack[-1])
+            self._remove_generator_frame(cf)
         else:
-            saved_cf = self.cf_stack.pop()
-            cf = self.cf_stack[-1]
+            saved_cf = self.cur_cf
+            self.cur_cf = cf = saved_cf.parent
 
             # At this point cf.stack looks like:
             #   [..., <gen obj 1>, ..., <gen obj n>, <generator frame>]
@@ -294,7 +296,7 @@ class VM(object):
 
 
     def decode_args(self, mand="", opt="", vargs=False, self_of=None):
-        cf = self.cf_stack[-1]
+        cf = self.cur_cf
         nargs = cf.nargs # Number of arguments passed
 
         if nargs < len(mand):
@@ -384,12 +386,15 @@ class VM(object):
 
 
     def get_funcs_mod(self):
-        cf = self.cf_stack[-1]
+        cf = self.cur_cf
         return cf.pc.mod
 
 
     def get_mod_and_bc_off(self, i):
-        cf = self.cf_stack[len(self.cf_stack) - (i + 1)]
+        cf = self.cur_cf
+        while i >= 0:
+            cf = cf.parent
+            i -= 1
         mod = cf.pc.mod
         if mod.is_bc:
             return mod, cf.bc_off
@@ -400,11 +405,10 @@ class VM(object):
         ex = Builtins.type_check_exception(self, ex)
         if ex.call_chain is None:
             cc = [] # Call chain
-            i = len(self.cf_stack) - 1
-            while i >= 0:
-                cf = self.cf_stack[i]
+            cf = self.cur_cf
+            while cf is not None:
                 cc.append((cf.pc, cf.func, cf.bc_off))
-                i -= 1
+                cf = cf.parent
             ex.call_chain = cc
         raise Con_Raise_Exception(ex)
 
@@ -424,8 +428,7 @@ class VM(object):
     #
 
     @jit.dont_look_inside
-    def execute_proc(self):
-        cf = self.cf_stack[-1]
+    def execute_proc(self, cf):
         pc = cf.pc
         if isinstance(pc, Py_PC):
             f = pc.f(self)
@@ -465,8 +468,7 @@ class VM(object):
 
 
     @jit.dont_look_inside
-    def execute_gen(self):
-        cf = self.cf_stack[-1]
+    def execute_gen(self, cf):
         pc = cf.pc
         if isinstance(pc, Py_PC):
             f = pc.f(self)
@@ -518,7 +520,7 @@ class VM(object):
             if prev_bc_off != -1 and prev_bc_off > bc_off:
                 jitdriver.can_enter_jit(bc_off=bc_off, mod_bc=mod_bc, cf=cf, prev_bc_off=prev_bc_off, pc=pc, self=self)
             jitdriver.jit_merge_point(bc_off=bc_off, mod_bc=mod_bc, cf=cf, prev_bc_off=prev_bc_off, pc=pc, self=self)
-            assert cf is self.cf_stack[-1]
+            assert cf is self.cur_cf
             prev_bc_off = bc_off
             instr = Target.read_word(mod_bc, bc_off)
             it = Target.get_instr(instr)
@@ -745,7 +747,7 @@ class VM(object):
             o = self.apply_pump()
         else:
             self._cf_stack_pop(cf) # Function pointer
-            o = self.execute_proc()
+            o = self.execute_proc(new_cf)
             self._remove_continuation_frame()
             
             if o is self.get_builtin(Builtins.BUILTIN_FAIL_OBJ):
@@ -837,7 +839,7 @@ class VM(object):
 
     def _instr_eyield(self, instr, cf):
         o = self._cf_stack_pop(cf)
-        is_fail_up, resume_bc_off = self._read_failure_frame()
+        is_fail_up, resume_bc_off = self._read_failure_frame(cf)
         self._remove_failure_frame(cf)
         prev_gfp = cf.gfp
         egf = Stack_Generator_EYield_Frame(prev_gfp, resume_bc_off)
@@ -1117,14 +1119,15 @@ class VM(object):
         else:
             max_stack_size = nargs
 
-        cf = Stack_Continuation_Frame(func, pc, max_stack_size, nargs, bc_off, closure, resumable)
-        self.cf_stack.append(cf)
+        cf = Stack_Continuation_Frame(self.cur_cf, func, pc, max_stack_size, nargs, bc_off,
+          closure, resumable)
+        self.cur_cf = cf
         
         return cf
 
 
     def _remove_continuation_frame(self):
-        del self.cf_stack[-1]
+        self.cur_cf = self.cur_cf.parent
 
 
     def _remove_generator_frame(self, cf):
@@ -1168,8 +1171,7 @@ class VM(object):
         self.spare_ff = ff
 
 
-    def _read_failure_frame(self):
-        cf = self.cf_stack[-1]
+    def _read_failure_frame(self, cf):
         assert cf.ffp >= 0
         ff = cf.stack_get(cf.ffp)
         assert isinstance(ff, Stack_Failure_Frame)
@@ -1180,7 +1182,7 @@ class VM(object):
     @jit.unroll_safe
     def _fail_now(self, cf):
         while 1:
-            is_fail_up, fail_to_off = self._read_failure_frame()
+            is_fail_up, fail_to_off = self._read_failure_frame(cf)
             if is_fail_up:
                 if cf.gfp == -1:
                     self._remove_failure_frame(cf)
@@ -1195,7 +1197,7 @@ class VM(object):
                     assert isinstance(gf, Stack_Generator_Frame)
                     o = self.apply_pump(True)
                     if o is not None:
-                        cf = self.cf_stack[-1]
+                        cf = self.cur_cf
                         self._cf_stack_push(cf, o)
                         cf.bc_off = gf.resume_bc_off
                         return
@@ -1230,14 +1232,16 @@ class VM(object):
 #
 
 class Stack_Continuation_Frame(Con_Thingy):
-    __slots__ = ("stack", "stackpe", "ff_cache", "ff_cachesz", "func", "pc", "nargs", "bc_off",
-      "closure", "ct", "ffp", "gfp", "xfp", "resumable", "returned")
-    _immutable_fields_ = ("stack", "ff_cache", "func", "closure", "pc", "nargs", "resumable")
-    _virtualizable2_ = ("bc_off", "stack[*]", "stackpe", "ffp", "gfp", "xfp", "resumable",
+    __slots__ = ("parent", "stack", "stackpe", "ff_cache", "ff_cachesz", "func", "pc", "nargs",
+      "bc_off", "closure", "ct", "ffp", "gfp", "xfp", "resumable", "returned")
+    _immutable_fields_ = ("parent", "stack", "ff_cache", "func", "closure", "pc", "nargs",
+      "resumable")
+    _virtualizable2_ = ("parent", "bc_off", "stack[*]", "stackpe", "ffp", "gfp", "xfp", "resumable",
       "returned", "nargs", "bc_off")
 
-    def __init__(self, func, pc, max_stack_size, nargs, bc_off, closure, resumable):
+    def __init__(self, parent, func, pc, max_stack_size, nargs, bc_off, closure, resumable):
         self = jit.hint(self, access_directly=True, fresh_virtualizable=True)
+        self.parent = parent
         self.stack = [None] * max_stack_size
         debug.make_sure_not_resized(self.stack)
         self.func = func

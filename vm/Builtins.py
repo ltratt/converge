@@ -1076,7 +1076,7 @@ class Con_Partial_Application(Con_Boxed_Object):
 @con_object_proc
 def _new_func_Con_Partial_Application(vm):
     # Trick the annotator by having a condition we know will always be true...
-    if len(vm.cf_stack) > 0:
+    if vm is not None:
         raise Exception("XXX")
     return None
 
@@ -1799,6 +1799,7 @@ class Con_List(Con_Boxed_Object):
     _immutable_fields_ = ("l",)
 
     def __init__(self, vm, l, instance_of=None):
+        assert None not in l
         if instance_of is None:
             instance_of = vm.get_builtin(BUILTIN_LIST_CLASS)
         Con_Boxed_Object.__init__(self, vm, instance_of)

@@ -877,7 +877,12 @@ class VM(object):
     @jit.unroll_safe
     def _instr_unpack_args(self, instr, cf):
         num_fargs, has_vargs = Target.unpack_unpack_args(instr)
-        nargs = cf.nargs
+        num_fargs = jit.promote(num_fargs)
+        has_vargs = jit.promote(has_vargs)
+        if not has_vargs:
+            nargs = jit.promote(cf.nargs)
+        else:
+            nargs = cf.nargs
         if nargs > num_fargs and not has_vargs:
             msg = "Too many parameters (%d passed, but a maximum of %d allowed)." % \
               (nargs, num_fargs)
@@ -903,7 +908,6 @@ class VM(object):
         if has_vargs:
             arg_offset = cf.bc_off + Target.INTSIZE + num_fargs * Target.INTSIZE
             arg_info = Target.read_word(cf.pc.mod.bc, arg_offset)
-            l = []
             if nargs <= num_fargs:
                 l = []
             else:

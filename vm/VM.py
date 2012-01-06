@@ -41,13 +41,14 @@ def get_printable_location(bc_off, mod_bc, pc, self):
     it = Target.get_instr(instr)
     return "%s:%s at offset %s. bytecode: %s" % (pc.mod, pc.off, bc_off, Target.INSTR_NAMES[it])
 
-jitdriver = jit.JitDriver(greens=["bc_off", "mod_bc", "pc", "self"], reds=["prev_bc_off", "cf"],
-                          virtualizables=["cf"], get_printable_location=get_printable_location)
+jitdriver = jit.JitDriver(greens=["bc_off", "mod_bc", "pc", "self"],
+                          reds=["prev_bc_off", "cf"],
+                          virtualizables=["cf"],
+                          get_printable_location=get_printable_location)
 
 
 class VM(object):
-    __slots__ = ("argv", "builtins", "cur_cf", "mods", "spare_ff", "pypy_config", "st_exception",
-      "vm_path")
+    __slots__ = ("argv", "builtins", "cur_cf", "mods", "spare_ff", "pypy_config", "vm_path")
     _immutable_fields = ("argv", "builtins", "cur_cf", "mods", "vm_path")
 
     def __init__(self): 
@@ -212,10 +213,10 @@ class VM(object):
         cf.gfp = cf.stackpe
         self._cf_stack_push(cf, gf)
         if isinstance(func, Builtins.Con_Partial_Application):
-            new_cf = self._add_continuation_frame(func.f, nargs + 1, True)
+            new_cf = self._add_continuation_frame(func.f, nargs + 1)
             self._cf_stack_push(new_cf, func.o)
         else: 
-            new_cf = self._add_continuation_frame(func, nargs, True)
+            new_cf = self._add_continuation_frame(func, nargs)
 
         if args:
             self._cf_stack_extend(new_cf, list(args))
@@ -727,11 +728,11 @@ class VM(object):
         func = cf.stack_get(fp)
 
         if isinstance(func, Builtins.Con_Partial_Application):
-            new_cf = self._add_continuation_frame(func.f, num_args + 1, False)
+            new_cf = self._add_continuation_frame(func.f, num_args + 1)
             self._cf_stack_push(new_cf, func.o)
             i = 1
         else:
-            new_cf = self._add_continuation_frame(func, num_args, False)
+            new_cf = self._add_continuation_frame(func, num_args)
             i = 0
 
         for j in range(0, num_args):
@@ -1092,7 +1093,7 @@ class VM(object):
         cf.stack_set(i, x)
     
 
-    def _add_continuation_frame(self, func, nargs, resumable=False):
+    def _add_continuation_frame(self, func, nargs):
         if not isinstance(func, Builtins.Con_Func):
             self.raise_helper("Apply_Exception", [func])
         func = jit.promote(func) # XXX this will promote lambdas, which will be inefficient
@@ -1120,7 +1121,7 @@ class VM(object):
             max_stack_size = nargs
 
         cf = Stack_Continuation_Frame(self.cur_cf, func, pc, max_stack_size, nargs, bc_off,
-          closure, resumable)
+          closure)
         self.cur_cf = cf
         
         return cf
@@ -1232,14 +1233,13 @@ class VM(object):
 #
 
 class Stack_Continuation_Frame(Con_Thingy):
-    __slots__ = ("parent", "stack", "stackpe", "ff_cache", "ff_cachesz", "func", "pc", "nargs",
-      "bc_off", "closure", "ct", "ffp", "gfp", "xfp", "resumable", "returned")
-    _immutable_fields_ = ("parent", "stack", "ff_cache", "func", "closure", "pc", "nargs",
-      "resumable")
-    _virtualizable2_ = ("parent", "bc_off", "stack[*]", "stackpe", "ffp", "gfp", "xfp", "resumable",
-      "returned", "nargs", "bc_off")
+    __slots__ = ("parent", "stack", "stackpe", "func", "pc", "nargs", "bc_off", "closure", "ffp",
+      "gfp", "xfp", "resumable", "returned")
+    _immutable_fields_ = ("parent", "stack", "ff_cache", "func", "closure", "pc", "nargs")
+    _virtualizable2_ = ("parent", "bc_off", "stack[*]", "stackpe", "ffp", "gfp", "xfp",
+      "returned", "bc_off")
 
-    def __init__(self, parent, func, pc, max_stack_size, nargs, bc_off, closure, resumable):
+    def __init__(self, parent, func, pc, max_stack_size, nargs, bc_off, closure):
         self = jit.hint(self, access_directly=True, fresh_virtualizable=True)
         self.parent = parent
         self.stack = [None] * max_stack_size
@@ -1250,7 +1250,6 @@ class Stack_Continuation_Frame(Con_Thingy):
         self.bc_off = bc_off # -1 for Py modules
         debug.make_sure_not_resized(closure)
         self.closure = closure
-        self.resumable = resumable
         self.returned = False
 
         # stackpe always points to the element *after* the end of the stack (this makes a lot of

@@ -177,12 +177,12 @@ class VM(object):
         
         if isinstance(func, Builtins.Con_Partial_Application):
             cf = self._add_continuation_frame(func.f, nargs + 1)
-            self._cf_stack_push(cf, func.o)
+            cf.stack_push(func.o)
         else: 
             cf = self._add_continuation_frame(func, nargs)
 
         if args:
-            self._cf_stack_extend(cf, list(args))
+            cf.stack_extend(list(args))
 
         o = self.execute_proc(cf)
         self._remove_continuation_frame()
@@ -211,15 +211,15 @@ class VM(object):
         cf = self.cur_cf
         gf = Stack_Generator_Frame(cf.gfp, -1)
         cf.gfp = cf.stackpe
-        self._cf_stack_push(cf, gf)
+        cf.stack_push(gf)
         if isinstance(func, Builtins.Con_Partial_Application):
             new_cf = self._add_continuation_frame(func.f, nargs + 1)
-            self._cf_stack_push(new_cf, func.o)
+            new_cf.stack_push(func.o)
         else: 
             new_cf = self._add_continuation_frame(func, nargs)
 
         if args:
-            self._cf_stack_extend(new_cf, list(args))
+            new_cf.stack_extend(list(args))
 
 
     def apply_pump(self, remove_generator_frames=False):
@@ -242,7 +242,7 @@ class VM(object):
             cf = self.cur_cf
         else:
             # We're in case 2) from above.
-            self._cf_stack_del_from(cf, cf.gfp + 1)
+            cf.stack_del_from(cf.gfp + 1)
             gf = cf.stack_get(cf.gfp)
             assert isinstance(gf, Stack_Generator_Frame)
             if gf.returned:
@@ -282,7 +282,7 @@ class VM(object):
                 i = cf.ffp + 1
             j = cf.gfp
             assert i >= 0 and j >= i
-            self._cf_stack_extend(cf, cf.stack_get_slice(i, j))
+            cf.stack_extend(cf.stack_get_slice(i, j))
 
             # At this point cf.stack looks like:
             #   [..., <gen obj 1>, ..., <gen obj n>, <generator frame>, <gen obj 1>, ...,
@@ -381,7 +381,7 @@ class VM(object):
         else:
             vap = None
 
-        self._cf_stack_del_from(cf, cf.stackpe - nargs)
+        cf.stack_del_from(cf.stackpe - nargs)
         
         return (nrmp, vap)
 
@@ -558,7 +558,7 @@ class VM(object):
                     self._instr_func_defn(instr, cf)
                 elif it == Target.CON_INSTR_RETURN:
                     cf.returned = True
-                    return self._cf_stack_pop(cf)
+                    return cf.stack_pop()
                 elif it == Target.CON_INSTR_BRANCH:
                     self._instr_branch(instr, cf)
                 elif it == Target.CON_INSTR_YIELD:
@@ -631,7 +631,7 @@ class VM(object):
                 ef = cf.stack_get(cf.xfp)
                 assert isinstance(ef, Stack_Exception_Frame)
                 self._remove_exception_frame(cf)
-                self._cf_stack_push(cf, e.ex_obj)
+                cf.stack_push(e.ex_obj)
                 cf.bc_off = ef.bc_off
 
 
@@ -640,7 +640,7 @@ class VM(object):
         v = cf.closure[-(closure_off + 1)][var_num]
         if not v:
             self.raise_helper("Unassigned_Var_Exception")
-        self._cf_stack_push(cf, v)
+        cf.stack_push(v)
         cf.bc_off += Target.INTSIZE
 
 
@@ -651,7 +651,7 @@ class VM(object):
 
 
     def _instr_int(self, instr, cf):
-        self._cf_stack_push(cf, Builtins.Con_Int(self, Target.unpack_int(instr)))
+        cf.stack_push(Builtins.Con_Int(self, Target.unpack_int(instr)))
         cf.bc_off += Target.INTSIZE
 
 
@@ -684,18 +684,18 @@ class VM(object):
 
 
     def _instr_is(self, instr, cf):
-        o1 = self._cf_stack_pop(cf)
-        o2 = self._cf_stack_pop(cf)
+        o1 = cf.stack_pop()
+        o2 = cf.stack_pop()
         r = self.get_slot_apply(o1, "is", [o2], allow_fail=True)
         if not r:
             self._fail_now(cf)
             return
-        self._cf_stack_push(cf, r)
+        cf.stack_push(r)
         cf.bc_off += Target.INTSIZE
 
 
     def _instr_pop(self, instr, cf):
-        self._cf_stack_pop(cf)
+        cf.stack_pop()
         cf.bc_off += Target.INTSIZE
 
 
@@ -706,16 +706,16 @@ class VM(object):
         j = cf.stackpe
         assert j >= 0
         l = cf.stack_get_slice(i, j)
-        self._cf_stack_del_from(cf, i)
-        self._cf_stack_push(cf, Builtins.Con_List(self, l))
+        cf.stack_del_from(i)
+        cf.stack_push(Builtins.Con_List(self, l))
         cf.bc_off += Target.INTSIZE
 
 
     def _instr_slot_lookup(self, instr, cf):
-        o = self._cf_stack_pop(cf)
+        o = cf.stack_pop()
         nm_start, nm_size = Target.unpack_slot_lookup(instr)
         nm = Target.extract_str(cf.pc.mod.bc, nm_start + cf.bc_off, nm_size)
-        self._cf_stack_push(cf, o.get_slot(self, nm))
+        cf.stack_push(o.get_slot(self, nm))
         cf.bc_off += Target.align(nm_start + nm_size)
 
 
@@ -729,7 +729,7 @@ class VM(object):
 
         if isinstance(func, Builtins.Con_Partial_Application):
             new_cf = self._add_continuation_frame(func.f, num_args + 1)
-            self._cf_stack_push(new_cf, func.o)
+            new_cf.stack_push(func.o)
             i = 1
         else:
             new_cf = self._add_continuation_frame(func, num_args)
@@ -738,7 +738,7 @@ class VM(object):
         for j in range(0, num_args):
             k = i + num_args - j - 1
             assert k >= 0
-            new_cf.stack[k] = self._cf_stack_pop(cf)
+            new_cf.stack[k] = cf.stack_pop()
         new_cf.stackpe = i + num_args
 
         if ff.is_fail_up:
@@ -747,7 +747,7 @@ class VM(object):
             cf.gfp = fp
             o = self.apply_pump()
         else:
-            self._cf_stack_pop(cf) # Function pointer
+            cf.stack_pop() # Function pointer
             o = self.execute_proc(new_cf)
             self._remove_continuation_frame()
             
@@ -757,7 +757,7 @@ class VM(object):
         if o is None:
             self._fail_now(cf)
             return
-        self._cf_stack_push(cf, o)
+        cf.stack_push(o)
         cf.bc_off += Target.INTSIZE
 
 
@@ -767,16 +767,16 @@ class VM(object):
 
     def _instr_func_defn(self, instr, cf):
         is_bound, max_stack_size = Target.unpack_func_defn(instr)
-        np_o = self._cf_stack_pop(cf)
+        np_o = cf.stack_pop()
         assert isinstance(np_o, Builtins.Con_Int)
-        nv_o = self._cf_stack_pop(cf)
+        nv_o = cf.stack_pop()
         assert isinstance(nv_o, Builtins.Con_Int)
-        name = self._cf_stack_pop(cf)
+        name = cf.stack_pop()
         new_pc = BC_PC(cf.pc.mod, cf.bc_off + 2 * Target.INTSIZE)
         container = cf.func.get_slot(self, "container")
         f = Builtins.Con_Func(self, name, is_bound, new_pc, max_stack_size, np_o.v, nv_o.v, \
           container, cf.closure)
-        self._cf_stack_push(cf, f)
+        cf.stack_push(f)
         cf.bc_off += Target.INTSIZE
 
 
@@ -787,7 +787,7 @@ class VM(object):
     def _instr_import(self, instr, cf):
         mod = self.get_mod(cf.pc.mod.imps[Target.unpack_import(instr)])
         mod.import_(self)
-        self._cf_stack_push(cf, mod)
+        cf.stack_push(mod)
         cf.bc_off += Target.INTSIZE
 
 
@@ -798,19 +798,19 @@ class VM(object):
         j = cf.stackpe
         assert j >= 0
         l = cf.stack_get_slice(i, j)
-        self._cf_stack_del_from(cf, i)
-        self._cf_stack_push(cf, Builtins.Con_Dict(self, l))
+        cf.stack_del_from(i)
+        cf.stack_push(Builtins.Con_Dict(self, l))
         cf.bc_off += Target.INTSIZE
 
 
     def _instr_dup(self, instr, cf):
-        self._cf_stack_push(cf, cf.stack_get(cf.stackpe - 1))
+        cf.stack_push(cf.stack_get(cf.stackpe - 1))
         cf.bc_off += Target.INTSIZE
 
 
     def _instr_pull(self, instr, cf):
         i = Target.unpack_pull(instr)
-        self._cf_stack_push(cf, self._cf_stack_pop_n(cf, i))
+        cf.stack_push(cf.stack_pop_n(i))
         cf.bc_off += Target.INTSIZE
 
 
@@ -819,18 +819,18 @@ class VM(object):
         str_off = cf.bc_off + str_start
         assert str_off > 0 and str_size >= 0
         str_ = rffi.charpsize2str(rffi.ptradd(cf.pc.mod.bc, str_off), str_size)
-        self._cf_stack_push(cf, Builtins.Con_String(self, str_))
+        cf.stack_push(Builtins.Con_String(self, str_))
         cf.bc_off += Target.align(str_start + str_size)
 
 
     def _instr_builtin_lookup(self, instr, cf):
         bl = Target.unpack_builtin_lookup(instr)
-        self._cf_stack_push(cf, self.get_builtin(bl))
+        cf.stack_push(self.get_builtin(bl))
         cf.bc_off += Target.INTSIZE
 
 
     def _instr_assign_slot(self, instr, cf):
-        o = self._cf_stack_pop(cf)
+        o = cf.stack_pop()
         v = cf.stack_get(cf.stackpe - 1)
         nm_start, nm_size = Target.unpack_assign_slot(instr)
         nm = Target.extract_str(cf.pc.mod.bc, nm_start + cf.bc_off, nm_size)
@@ -839,13 +839,13 @@ class VM(object):
 
 
     def _instr_eyield(self, instr, cf):
-        o = self._cf_stack_pop(cf)
+        o = cf.stack_pop()
         is_fail_up, resume_bc_off = self._read_failure_frame(cf)
         self._remove_failure_frame(cf)
         prev_gfp = cf.gfp
         egf = Stack_Generator_EYield_Frame(prev_gfp, resume_bc_off)
         cf.gfp = cf.stackpe
-        self._cf_stack_push(cf, egf)
+        cf.stack_push(egf)
         # At this point the Con_Stack looks like:
         #   [..., <gen obj 1>, ..., <gen obj n>, <eyield frame>]
         gen_objs_s = prev_gfp + 1 # start of generator objects
@@ -854,8 +854,8 @@ class VM(object):
         gen_objs_e = cf.stackpe - 1
         assert gen_objs_s >= 0
         assert gen_objs_e >= gen_objs_s
-        self._cf_stack_extend(cf, cf.stack_get_slice(gen_objs_s, gen_objs_e))
-        self._cf_stack_push(cf, o)
+        cf.stack_extend(cf.stack_get_slice(gen_objs_s, gen_objs_e))
+        cf.stack_push(o)
         cf.bc_off += Target.INTSIZE
 
 
@@ -871,7 +871,7 @@ class VM(object):
 
 
     def _instr_raise(self, instr, cf):
-        self.raise_(self._cf_stack_pop(cf))
+        self.raise_(cf.stack_pop())
 
 
     @jit.unroll_safe
@@ -899,9 +899,9 @@ class VM(object):
                         self.raise_helper("Parameters_Exception", [Builtins.Con_String(self, msg)])
                 else:
                     if nargs > num_fargs:
-                        o = self._cf_stack_pop_n(cf, nargs - num_fargs)
+                        o = cf.stack_pop_n(nargs - num_fargs)
                     else:
-                        o = self._cf_stack_pop(cf)
+                        o = cf.stack_pop()
                     assert isinstance(o, Builtins.Con_Object)
                     cf.closure[-1][Target.unpack_unpack_args_arg_num(arg_info)] = o
 
@@ -929,8 +929,8 @@ class VM(object):
         j = cf.stackpe
         assert j >= 0
         l = cf.stack_get_slice(i, j)
-        self._cf_stack_del_from(cf, cf.stackpe - ne)
-        self._cf_stack_push(cf, Builtins.Con_Set(self, l))
+        cf.stack_del_from(cf.stackpe - ne)
+        cf.stack_push(Builtins.Con_Set(self, l))
         cf.bc_off += Target.INTSIZE
 
 
@@ -938,7 +938,7 @@ class VM(object):
         const_num = Target.unpack_constant_get(instr)
         v = cf.pc.mod.consts[const_num]
         if v is not None:
-            self._cf_stack_push(cf, v)
+            cf.stack_push(v)
             cf.bc_off += Target.INTSIZE
         else:
             self._add_failure_frame(cf, False, cf.bc_off)
@@ -947,7 +947,7 @@ class VM(object):
 
     def _instr_const_set(self, instr, cf):
         const_num = Target.unpack_constant_set(instr)
-        cf.pc.mod.consts[const_num] = self._cf_stack_pop(cf)
+        cf.pc.mod.consts[const_num] = cf.stack_pop()
         cf.bc_off += Target.INTSIZE
 
 
@@ -961,12 +961,12 @@ class VM(object):
               [Builtins.Con_Int(self, Target.unpack_unpack_assign(instr)), \
                Builtins.Con_Int(self, ne)])
         for i in range(ne - 1, -1, -1):
-            self._cf_stack_push(cf, o.l[i])
+            cf.stack_push(o.l[i])
         cf.bc_off += Target.INTSIZE
 
 
     def _instr_branch_if_not_fail(self, instr, cf):
-        if self._cf_stack_pop(cf) is self.get_builtin(Builtins.BUILTIN_FAIL_OBJ):
+        if cf.stack_pop() is self.get_builtin(Builtins.BUILTIN_FAIL_OBJ):
             cf.bc_off += Target.INTSIZE
         else:
             j = Target.unpack_branch_if_not_fail(instr)
@@ -974,7 +974,7 @@ class VM(object):
 
 
     def _instr_branch_if_fail(self, instr, cf):
-        if self._cf_stack_pop(cf) is not self.get_builtin(Builtins.BUILTIN_FAIL_OBJ):
+        if cf.stack_pop() is not self.get_builtin(Builtins.BUILTIN_FAIL_OBJ):
             cf.bc_off += Target.INTSIZE
         else:
             j = Target.unpack_branch_if_not_fail(instr)
@@ -982,8 +982,8 @@ class VM(object):
 
 
     def _instr_cmp(self, instr, cf):
-        rhs = self._cf_stack_pop(cf)
-        lhs = self._cf_stack_pop(cf)
+        rhs = cf.stack_pop()
+        lhs = cf.stack_pop()
         
         it = Target.get_instr(instr)
         if it == Target.CON_INSTR_EQ:
@@ -1002,15 +1002,15 @@ class VM(object):
             raise Exception("XXX")
         
         if r:
-            self._cf_stack_push(cf, rhs)
+            cf.stack_push(rhs)
             cf.bc_off += Target.INTSIZE
         else:
             self._fail_now(cf)
 
 
     def _instr_calc(self, instr, cf):
-        rhs = self._cf_stack_pop(cf)
-        lhs = self._cf_stack_pop(cf)
+        rhs = cf.stack_pop()
+        lhs = cf.stack_pop()
         
         it = Target.get_instr(instr)
         if it == Target.CON_INSTR_ADD:
@@ -1019,84 +1019,26 @@ class VM(object):
             assert it == Target.CON_INSTR_SUBTRACT
             r = lhs.subtract(self, rhs)
 
-        self._cf_stack_push(cf, r)
+        cf.stack_push(r)
         cf.bc_off += Target.INTSIZE
 
 
     def _instr_module_lookup(self, instr, cf):
-        o = self._cf_stack_pop(cf)
+        o = cf.stack_pop()
         nm_start, nm_size = Target.unpack_mod_lookup(instr)
         nm = Target.extract_str(cf.pc.mod.bc, cf.bc_off + nm_start, nm_size)
         if isinstance(o, Builtins.Con_Module):
             v = o.get_defn(self, nm)
         else:
             v = self.get_slot_apply(o, "get_defn", [Builtins.Con_String(self, nm)])
-        self._cf_stack_push(cf, v)
+        cf.stack_push(v)
         cf.bc_off += Target.align(nm_start + nm_size)
 
 
     ################################################################################################
-    # cf.stack operations
+    # Frame operations
     #
     
-    def _cf_stack_push(self, cf, x):
-        assert cf.stackpe < len(cf.stack)
-        cf.stack_set(cf.stackpe, x)
-        cf.stackpe += 1
-
-
-    @jit.unroll_safe
-    def _cf_stack_extend(self, cf, l):
-        for x in l:
-            cf.stack_set(cf.stackpe, x)
-            cf.stackpe += 1
-
-
-    def _cf_stack_pop(self, cf):
-        assert cf.stackpe > 0
-        cf.stackpe -= 1
-        o = cf.stack_get(cf.stackpe)
-        cf.stack_set(cf.stackpe, None)
-        return o
-
-
-    # Pop an item n items from the end of cf.stack.
-
-    @jit.unroll_safe
-    def _cf_stack_pop_n(self, cf, n):
-        assert n < cf.stackpe
-        i = cf.stackpe - 1 - n
-        o = cf.stack_get(i)
-        # Shuffle the stack down
-        cf.stackpe -= 1
-        for j in range(i, cf.stackpe):
-            cf.stack_set(j, cf.stack_get(j + 1))
-        cf.stack_set(cf.stackpe, None)
-        # If the frame pointers come after the popped item, they need to be rewritten
-        if cf.ffp > i:
-            cf.ffp -= 1
-        if cf.gfp > i:
-            cf.gfp -= 1
-        if cf.xfp > i:
-            cf.xfp -= 1
-
-        return o
-
-
-    @jit.unroll_safe
-    def _cf_stack_del_from(self, cf, i):
-        for j in range(i, cf.stackpe):
-            cf.stack_set(j, None)
-        cf.stackpe = i
-
-
-    @jit.unroll_safe
-    def _cf_stack_insert(self, cf, i, x):
-        for j in range(cf.stackpe, i, -1):
-            cf.stack_set(j, cf.stack_get(j - 1))
-        cf.stack_set(i, x)
-    
-
     def _add_continuation_frame(self, func, nargs):
         if not isinstance(func, Builtins.Con_Func):
             self.raise_helper("Apply_Exception", [func])
@@ -1137,7 +1079,7 @@ class VM(object):
 
     def _remove_generator_frame(self, cf):
         gf = cf.stack_get(cf.gfp)
-        self._cf_stack_del_from(cf, cf.gfp)
+        cf.stack_del_from(cf.gfp)
         if isinstance(gf, Stack_Generator_Frame):
             cf.gfp = gf.prev_gfp
         else:
@@ -1159,7 +1101,7 @@ class VM(object):
 
         cf.gfp = -1
         cf.ffp = cf.stackpe
-        self._cf_stack_push(cf, ff)
+        cf.stack_push(ff)
         
 
     @jit.unroll_safe
@@ -1169,7 +1111,7 @@ class VM(object):
             self._remove_generator_frame(cf)
         ff = cf.stack_get(ffp)
         assert isinstance(ff, Stack_Failure_Frame)
-        self._cf_stack_del_from(cf, ffp)
+        cf.stack_del_from(ffp)
         cf.ffp = ff.prev_ffp
         cf.gfp = ff.prev_gfp
 
@@ -1203,7 +1145,7 @@ class VM(object):
                     o = self.apply_pump(True)
                     if o is not None:
                         cf = self.cur_cf
-                        self._cf_stack_push(cf, o)
+                        cf.stack_push(o)
                         cf.bc_off = gf.resume_bc_off
                         return
             else:
@@ -1215,7 +1157,7 @@ class VM(object):
     def _add_exception_frame(self, cf, bc_off):
         ef = Stack_Exception_Frame(bc_off, cf.ffp, cf.gfp, cf.xfp)
         cf.xfp = cf.stackpe
-        self._cf_stack_push(cf, ef)
+        cf.stack_push(ef)
 
 
     def _remove_exception_frame(self, cf):
@@ -1282,6 +1224,58 @@ class Stack_Continuation_Frame(Con_Thingy):
     def stack_set(self, i, o):
         assert i >= 0
         self.stack[i] = o
+
+
+    @jit.unroll_safe
+    def stack_extend(self, l):
+        for x in l:
+            self.stack_set(self.stackpe, x)
+            self.stackpe += 1
+
+
+    def stack_push(self, x):
+        assert self.stackpe < len(self.stack)
+        self.stack_set(self.stackpe, x)
+        self.stackpe += 1
+
+
+    def stack_pop(self):
+        assert self.stackpe > 0
+        self.stackpe -= 1
+        o = self.stack_get(self.stackpe)
+        self.stack_set(self.stackpe, None)
+        return o
+
+
+    # Pop an item n items from the end of self.stack.
+
+    @jit.unroll_safe
+    def stack_pop_n(self, n):
+        assert n < self.stackpe
+        i = self.stackpe - 1 - n
+        o = self.stack_get(i)
+        # Shuffle the stack down
+        self.stackpe -= 1
+        for j in range(i, self.stackpe):
+            self.stack_set(j, self.stack_get(j + 1))
+        self.stack_set(self.stackpe, None)
+        # If the frame pointers come after the popped item, they need to be rewritten
+        if self.ffp > i:
+            self.ffp -= 1
+        if self.gfp > i:
+            self.gfp -= 1
+        if self.xfp > i:
+            self.xfp -= 1
+
+        return o
+
+
+    @jit.unroll_safe
+    def stack_del_from(self, i):
+        for j in range(i, self.stackpe):
+            self.stack_set(j, None)
+        self.stackpe = i
+
 
 
 class Stack_Failure_Frame(Con_Thingy):

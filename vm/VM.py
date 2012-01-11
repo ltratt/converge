@@ -1069,8 +1069,6 @@ class VM(object):
     @jit.unroll_safe
     def _remove_failure_frame(self, cf):
         ffp = cf.ffp
-        while cf.gfp > ffp:
-            self._remove_generator_frame(cf)
         ff = cf.stack_get(ffp)
         assert isinstance(ff, Stack_Failure_Frame)
         cf.stack_del_from(ffp)

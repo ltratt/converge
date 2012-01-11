@@ -699,12 +699,7 @@ class VM(object):
 
     def _instr_list(self, instr, cf):
         ne = Target.unpack_list(instr)
-        i = cf.stackpe - ne
-        assert i >= 0
-        j = cf.stackpe
-        assert j >= 0
-        l = cf.stack_get_slice(i, j)
-        cf.stack_del_from(i)
+        l = cf.stack_get_slice_del(cf.stackpe - ne)
         cf.stack_push(Builtins.Con_List(self, l))
         cf.bc_off += Target.INTSIZE
 
@@ -791,12 +786,7 @@ class VM(object):
 
     def _instr_dict(self, instr, cf):
         ne = Target.unpack_dict(instr)
-        i = cf.stackpe - ne * 2
-        assert i >= 0
-        j = cf.stackpe
-        assert j >= 0
-        l = cf.stack_get_slice(i, j)
-        cf.stack_del_from(i)
+        l = cf.stack_get_slice_del(cf.stackpe - ne * 2)
         cf.stack_push(Builtins.Con_Dict(self, l))
         cf.bc_off += Target.INTSIZE
 
@@ -922,12 +912,7 @@ class VM(object):
 
     def _instr_set(self, instr, cf):
         ne = Target.unpack_set(instr)
-        i = cf.stackpe - ne
-        assert i >= 0
-        j = cf.stackpe
-        assert j >= 0
-        l = cf.stack_get_slice(i, j)
-        cf.stack_del_from(cf.stackpe - ne)
+        l = cf.stack_get_slice_del(cf.stackpe - ne)
         cf.stack_push(Builtins.Con_Set(self, l))
         cf.bc_off += Target.INTSIZE
 
@@ -1205,6 +1190,19 @@ class Stack_Continuation_Frame(Con_Thingy):
         for k in range(i, j):
             l[a] = self.stack[k]
             a += 1
+        return l
+
+
+    @jit.unroll_safe
+    def stack_get_slice_del(self, i):
+        assert i >= 0
+        l = [None] * (self.stackpe - i)
+        a = 0
+        for k in range(i, self.stackpe):
+            l[a] = self.stack[k]
+            self.stack[k] = None
+            a += 1
+        self.stackpe = i
         return l
 
 

@@ -1138,10 +1138,9 @@ class VM(object):
 
 class Stack_Continuation_Frame(Con_Thingy):
     __slots__ = ("parent", "stack", "stackpe", "func", "pc", "nargs", "bc_off", "closure", "ffp",
-      "gfp", "xfp", "resumable", "returned")
+      "gfp", "xfp", "returned")
     _immutable_fields_ = ("parent", "stack", "ff_cache", "func", "closure", "pc", "nargs")
-    _virtualizable2_ = ("parent", "bc_off", "stack[*]", "stackpe", "ffp", "gfp", "xfp",
-      "returned", "bc_off")
+    _virtualizable2_ = ("parent", "bc_off", "stack[*]", "stackpe", "ffp", "gfp")
 
     def __init__(self, parent, func, pc, max_stack_size, nargs, bc_off, closure):
         self = jit.hint(self, access_directly=True, fresh_virtualizable=True)

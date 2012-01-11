@@ -592,8 +592,6 @@ class VM(object):
                     self._instr_set(instr, cf)
                 elif it == Target.CON_INSTR_CONST_GET:
                     self._instr_const_get(instr, cf)
-                elif it == Target.CON_INSTR_CONST_SET:
-                    self._instr_const_set(instr, cf)
                 elif it == Target.CON_INSTR_PRE_SLOT_LOOKUP_APPLY:
                     # In the C Converge VM, this instruction is used to avoid a very expensive path
                     # through the VM; it's currently unclear whether this VM will suffer from the
@@ -936,18 +934,7 @@ class VM(object):
 
     def _instr_const_get(self, instr, cf):
         const_num = Target.unpack_constant_get(instr)
-        v = cf.pc.mod.consts[const_num]
-        if v is not None:
-            cf.stack_push(v)
-            cf.bc_off += Target.INTSIZE
-        else:
-            self._add_failure_frame(cf, False, cf.bc_off)
-            cf.bc_off = cf.pc.mod.get_const_create_off(self, const_num)
-
-
-    def _instr_const_set(self, instr, cf):
-        const_num = Target.unpack_constant_set(instr)
-        cf.pc.mod.consts[const_num] = cf.stack_pop()
+        cf.stack_push(cf.pc.mod.get_const(self, const_num))
         cf.bc_off += Target.INTSIZE
 
 

@@ -626,7 +626,6 @@ class Con_Module(Con_Boxed_Object):
       "init_func", "consts")
 
 
-
     def __init__(self, vm, is_bc, bc, name, id_, src_path, imps, tlvars_map, num_consts, init_func, \
       instance_of=None):
         if instance_of is None:
@@ -718,10 +717,25 @@ class Con_Module(Con_Boxed_Object):
         self.closure[self.get_closure_i(vm, n)] = o
 
 
-    def get_const_create_off(self, vm, i):
-        create_off = Target.read_word(self.bc, Target.BC_MOD_CONSTANTS_CREATE_OFFSETS)
-        off = Target.read_word(self.bc, create_off + i * Target.INTSIZE)
-        return off
+    @jit.elidable_promote("0")
+    def get_const(self, vm, i):
+        v = self.consts[i]
+        if v is not None:
+            return v
+        consts_offs = Target.read_word(self.bc, Target.BC_MOD_CONSTANTS_OFFSETS)
+        const_off = Target.read_word(self.bc, Target.BC_MOD_CONSTANTS) \
+          + Target.read_word(self.bc, consts_offs + i * Target.INTSIZE)
+        type = Target.read_word(self.bc, const_off)
+        if type == Target.CONST_INT:
+            v = Con_Int(vm, Target.read_word(self.bc, const_off + Target.INTSIZE))
+        else:
+            assert type == Target.CONST_STRING
+            s = Target.extract_str(self.bc,
+              const_off + Target.INTSIZE + Target.INTSIZE,
+              Target.read_word(self.bc, const_off + Target.INTSIZE))
+            v = Con_String(vm, s)
+        self.consts[i] = v
+        return v
 
 
     def bc_off_to_src_infos(self, vm, bc_off):
@@ -781,7 +795,6 @@ class Con_Module(Con_Boxed_Object):
               or it == Target.CON_INSTR_BRANCH_IF_NOT_FAIL \
               or it == Target.CON_INSTR_BRANCH_IF_FAIL \
               or it == Target.CON_INSTR_CONST_GET \
-              or it == Target.CON_INSTR_CONST_SET \
               or it == Target.CON_INSTR_UNPACK_ASSIGN \
               or it == Target.CON_INSTR_EQ \
               or it == Target.CON_INSTR_NEQ \

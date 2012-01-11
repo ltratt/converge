@@ -32,7 +32,11 @@ if sys.maxsize > 2**32:
 else:
     INTSIZE = 4
 
-INSTR_NAMES = [None, "EXBI", "VAR_LOOKUP", "VAR_ASSIGN", "INT", "ADD_FAILURE_FRAME", "ADD_FAIL_UP_FRAME", "REMOVE_FAILURE_FRAME", "IS_ASSIGNED", "IS", "FAIL_NOW", "POP", "LIST", "SLOT_LOOKUP", "APPLY", "FUNC_DEFN", "RETURN", "BRANCH", "YIELD", "FLOAT", "IMPORT", "DICT", "DUP", "PULL", "CHANGE_FAIL_POINT", "STRING", "BUILTIN_LOOKUP", "ASSIGN_SLOT", "EYIELD", "ADD_EXCEPTION_FRAME", None, "INSTANCE_OF", "REMOVE_EXCEPTION_FRAME", "RAISE", "SET_ITEM", "UNPACK_ARGS", "SET", "BRANCH_IF_NOT_FAIL", "BRANCH_IF_FAIL", "CONST_GET", "CONST_SET", "PRE_SLOT_LOOKUP_APPLY", "UNPACK_ASSIGN", "EQ", "LE", "ADD", "SUBTRACT", "NEQ", "LE_EQ", "GR_EQ", "GT", "MODULE_LOOKUP"]
+INSTR_NAMES = [None, "EXBI", "VAR_LOOKUP", "VAR_ASSIGN", "INT", "ADD_FAILURE_FRAME", "ADD_FAIL_UP_FRAME", "REMOVE_FAILURE_FRAME", "IS_ASSIGNED", "IS", "FAIL_NOW", "POP", "LIST", "SLOT_LOOKUP", "APPLY", "FUNC_DEFN", "RETURN", "BRANCH", "YIELD", "FLOAT", "IMPORT", "DICT", "DUP", "PULL", "CHANGE_FAIL_POINT", "STRING", "BUILTIN_LOOKUP", "ASSIGN_SLOT", "EYIELD", "ADD_EXCEPTION_FRAME", None, "INSTANCE_OF", "REMOVE_EXCEPTION_FRAME", "RAISE", "SET_ITEM", "UNPACK_ARGS", "SET", "BRANCH_IF_NOT_FAIL", "BRANCH_IF_FAIL", "CONST_GET", None, "PRE_SLOT_LOOKUP_APPLY", "UNPACK_ASSIGN", "EQ", "LE", "ADD", "SUBTRACT", "NEQ", "LE_EQ", "GR_EQ", "GT", "MODULE_LOOKUP"]
+
+CONST_STRING = 0
+CONST_INT = 1
+CONST_FLOAT = 2
 
 if INTSIZE == 8:
     BC_HD_HEADER = 0 * 8
@@ -61,13 +65,15 @@ if INTSIZE == 8:
     BC_MOD_TL_VARS_MAP_SIZE = 18 * 8
     BC_MOD_NUM_TL_VARS_MAP = 19 * 8
     BC_MOD_NUM_CONSTANTS = 20 * 8
-    BC_MOD_CONSTANTS_CREATE_OFFSETS = 21 * 8
-    BC_MOD_MOD_LOOKUPS = 22 * 8
-    BC_MOD_MOD_LOOKUPS_SIZE = 23 * 8
-    BC_MOD_NUM_MOD_LOOKUPS = 24 * 8
-    BC_MOD_IMPORT_DEFNS = 25 * 8
-    BC_MOD_NUM_IMPORT_DEFNS = 26 * 8
-    BC_MOD_SIZE = 27 * 8
+    BC_MOD_CONSTANTS_OFFSETS = 21 * 8
+    BC_MOD_CONSTANTS = 22 * 8
+    BC_MOD_CONSTANTS_SIZE = 23 * 8
+    BC_MOD_MOD_LOOKUPS = 24 * 8
+    BC_MOD_MOD_LOOKUPS_SIZE = 25 * 8
+    BC_MOD_NUM_MOD_LOOKUPS = 26 * 8
+    BC_MOD_IMPORT_DEFNS = 27 * 8
+    BC_MOD_NUM_IMPORT_DEFNS = 28 * 8
+    BC_MOD_SIZE = 29 * 8
     
     # Libraries
 
@@ -117,7 +123,6 @@ if INTSIZE == 8:
     CON_INSTR_BRANCH_IF_NOT_FAIL = 37     # bits 0-7 37, bits 8-30 pc offset, bit 31 offset sign
     CON_INSTR_BRANCH_IF_FAIL = 38         # bits 0-7 38, bits 8-30 pc offset, bit 31 offset sign
     CON_INSTR_CONST_GET = 39              # bits 0-7 39, bits 8-30 constant num
-    CON_INSTR_CONST_SET = 40              # bits 0-7 40, bits 8-30 constant num
     CON_INSTR_PRE_SLOT_LOOKUP_APPLY = 41  # bits 0-7 41, bits 8-31 size of slot name, bits 32-.. slot name
     CON_INSTR_UNPACK_ASSIGN = 42          # bits 0-7 42, bits 8-31 number of elements to unpack
     CON_INSTR_EQ = 43                     # bits 0-7 43
@@ -132,7 +137,7 @@ if INTSIZE == 8:
 
     @elidable_promote()
     def extract_str(bc, off, size):
-        assert off > 0 and size > 0
+        assert off > 0 and size >= 0
         return rffi.charpsize2str(rffi.ptradd(bc, off), size)
 
     @elidable_promote("1")
@@ -260,10 +265,6 @@ if INTSIZE == 8:
         return (instr & 0xFFFFFF00) >> 8
 
     @elidable_promote()
-    def unpack_constant_set(instr):
-        return (instr & 0xFFFFFF00) >> 8
-
-    @elidable_promote()
     def unpack_unpack_assign(instr):
         return (instr & 0xFFFFFF00) >> 8
 
@@ -305,13 +306,15 @@ else:
     BC_MOD_TL_VARS_MAP_SIZE = 19 * 8
     BC_MOD_NUM_TL_VARS_MAP = 20 * 8
     BC_MOD_NUM_CONSTANTS = 21 * 8
-    BC_MOD_CONSTANTS_CREATE_OFFSETS = 22 * 8
-    BC_MOD_MOD_LOOKUPS = 23 * 8
-    BC_MOD_MOD_LOOKUPS_SIZE = 24 * 8
-    BC_MOD_NUM_MOD_LOOKUPS = 25 * 8
-    BC_MOD_IMPORT_DEFNS = 26 * 8
-    BC_MOD_NUM_IMPORT_DEFNS = 27 * 8
-    BC_MOD_SIZE = 28 * 8
+    BC_MOD_CONSTANTS_OFFSETS = 22 * 8
+    BC_MOD_CONSTANTS = 23 * 8
+    BC_MOD_CONSTANTS_SIZE = 24 * 8
+    BC_MOD_MOD_LOOKUPS = 25 * 8
+    BC_MOD_MOD_LOOKUPS_SIZE = 26 * 8
+    BC_MOD_NUM_MOD_LOOKUPS = 27 * 8
+    BC_MOD_IMPORT_DEFNS = 28 * 8
+    BC_MOD_NUM_IMPORT_DEFNS = 29 * 8
+    BC_MOD_SIZE = 30 * 8
     
     # Libraries
 
@@ -361,7 +364,6 @@ else:
     CON_INSTR_BRANCH_IF_NOT_FAIL = 37     # bits 0-7 37, bits 8-30 pc offset, bit 31 offset sign
     CON_INSTR_BRANCH_IF_FAIL = 38         # bits 0-7 38, bits 8-30 pc offset, bit 31 offset sign
     CON_INSTR_CONST_GET = 39              # bits 0-7 39, bits 8-30 constant num
-    CON_INSTR_CONST_SET = 40              # bits 0-7 40, bits 8-30 constant num
     CON_INSTR_PRE_SLOT_LOOKUP_APPLY = 41  # bits 0-7 41, bits 8-31 size of slot name, bits 32-.. slot name
     CON_INSTR_UNPACK_ASSIGN = 42          # bits 0-7 42, bits 8-31 number of elements to unpack
     CON_INSTR_EQ = 43                     # bits 0-7 43
@@ -523,11 +525,6 @@ else:
 
     @elidable_promote()
     def unpack_constant_get(instr):
-        x = 0xFFFFFF
-        return (instr & (x << 8)) >> 8
-
-    @elidable_promote()
-    def unpack_constant_set(instr):
         x = 0xFFFFFF
         return (instr & (x << 8)) >> 8
 

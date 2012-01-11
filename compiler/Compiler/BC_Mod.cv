@@ -76,11 +76,15 @@ class BC_Mod:
         self._top_level_vars_map := module[module[self._target.MODULE_BYTECODE_TOP_LEVEL_VARS_MAP] / self._target.WORDSIZE : (module[self._target.MODULE_BYTECODE_TOP_LEVEL_VARS_MAP] + module[self._target.MODULE_BYTECODE_TOP_LEVEL_VARS_MAP_SIZE]) / self._target.WORDSIZE]
         self._num_top_level_vars := module[self._target.MODULE_BYTECODE_NUM_TOP_LEVEL_VARS]
         
-        self._constants_offsets := []
-        offs_start := module[self._target.MODULE_BYTECODE_CONSTANTS_OFFSETS] / self._target.WORDSIZE
-        for constant_offset := module[offs_start : offs_start + module[self._target.MODULE_BYTECODE_NUM_CONSTANTS]].iter():
-            self._constants_offsets.append(constant_offset - module[self._target.MODULE_BYTECODE_INSTRUCTIONS])
-
+        self._constants_offsets := module[ \
+          module[self._target.MODULE_BYTECODE_CONSTANTS_OFFSETS] / self._target.WORDSIZE : \
+          (module[self._target.MODULE_BYTECODE_CONSTANTS_OFFSETS] / self._target.WORDSIZE) + \
+          module[self._target.MODULE_BYTECODE_NUM_CONSTANTS]]
+        self._constants := module[ \
+          module[self._target.MODULE_BYTECODE_CONSTANTS] / self._target.WORDSIZE : \
+          (module[self._target.MODULE_BYTECODE_CONSTANTS] + \
+          module[self._target.MODULE_BYTECODE_CONSTANTS_SIZE]) / self._target.WORDSIZE]
+                
         self._mod_lookups := module[module[self._target.MODULE_BYTECODE_MOD_LOOKUPS] / self._target.WORDSIZE : (module[self._target.MODULE_BYTECODE_MOD_LOOKUPS] + module[self._target.MODULE_BYTECODE_MOD_LOOKUPS_SIZE]) / self._target.WORDSIZE]
         self._num_mod_lookups := module[self._target.MODULE_BYTECODE_NUM_MOD_LOOKUPS]
 
@@ -232,16 +236,37 @@ class BC_Mod:
 
 
 
-    func get_constants_offsets(self):
+    func get_constants(self):
     
-        return self._constants_offsets
+        consts := []
+        for i := 0.iter_to(self._constants_offsets.len()):
+            const_off := self._constants_offsets[i]
+            type := self._constants[const_off + 0]
+            ndif type == self._target.CONST_INT:
+                val := self._constants[const_off + 1]
+            elif type == self._target.CONST_STRING:
+                val := self._decode_string(self._constants, \
+                  const_off + self._target.WORDSIZE + self._target.WORDSIZE, \
+                  self._constants[const_off + 2])
+            consts.append([type, val])
+
+        return consts
 
 
 
-    func set_constants_offsets(self, constants_offsets):
+    func set_constants(self, constants):
     
-        self._constants_offsets := constants_offsets
-
+        self._constants_offsets := Array::Array.new(self._target.ARRAY_TYPE)
+        self._constants := Array::Array.new(self._target.ARRAY_TYPE)
+        
+        for type, val := constants.iter():
+            self._constants_offsets.append(self._constants.len_bytes())
+            self._constants.append(type)
+            ndif type == self._target.CONST_INT:
+                self._constants.append(val)
+            elif type == self._target.CONST_STRING:
+                self._constants.append(val.len())
+                self._constants.extend_from_string(self._target.b_aligned_string(val))
 
 
     func get_mod_lookups(self):
@@ -340,6 +365,8 @@ class BC_Mod:
         module.append(-1) // Number of top level vars
         module.append(-1) // Absolute position of constants offsets (in bytes)
         module.append(-1) // Num constants
+        module.append(-1) // Absolute position of constants (in bytes)
+        module.append(-1) // Size of constants
         module.append(-1) // Absolute position of module lookups (in bytes)
         module.append(-1) // Size of module lookups (in bytes)
         module.append(-1) // Number of module lookups
@@ -397,12 +424,15 @@ class BC_Mod:
         module[self._target.MODULE_BYTECODE_TOP_LEVEL_VARS_MAP_SIZE] := module.len_bytes() - module[self._target.MODULE_BYTECODE_TOP_LEVEL_VARS_MAP]
         module[self._target.MODULE_BYTECODE_NUM_TOP_LEVEL_VARS] := self._num_top_level_vars
         
-        // Constants offsets
+        // Constants offsets and constants
         
         module[self._target.MODULE_BYTECODE_CONSTANTS_OFFSETS] := module.len_bytes()
-        for constant_offset := self._constants_offsets.iter():
-            module.append(constant_offset + module[self._target.MODULE_BYTECODE_INSTRUCTIONS])
+        module.extend(self._constants_offsets)
         module[self._target.MODULE_BYTECODE_NUM_CONSTANTS] := self._constants_offsets.len()
+
+        module[self._target.MODULE_BYTECODE_CONSTANTS] := module.len_bytes()
+        module.extend(self._constants)
+        module[self._target.MODULE_BYTECODE_CONSTANTS_SIZE] := self._constants.len_bytes()
         
         // Module lookups
         

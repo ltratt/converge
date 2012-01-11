@@ -71,9 +71,6 @@ _BUILTIN_SYS_MODULE := 37
 _BUILTIN_FLOAT_ATOM_DEF_OBJECT := 38
 _BUILTIN_FLOAT_CLASS := 38
 
-_CONSTANT_STRING_TEMPLATE := "str_%s"
-_CONSTANT_INT_TEMPLATE := "int_%s"
-_CONSTANT_FLOAT_TEMPLATE := "float_%s"
 
 //
 // Definition and expression nesting
@@ -115,10 +112,7 @@ class Code_Gen:
         self._imports := Dict{}
         self._instructions := []
         self._labels := Dict{}
-        
-        self._constants := Dict{}
-        self._constants_instructions := []
-        self._constants_labels := []
+        self._constants := []
         
         // _mod_lookups is a list of [<mod id>, <list of module lookups>, <src infos>] recording a
         // module lookup. _mod_lookups_seen is a dictionary mapping mod ids to sets; the sets record
@@ -135,13 +129,6 @@ class Code_Gen:
         
         self._preorder(imodule)
         
-        // Fudge for constants.
-        
-        for label := self._constants_labels.iter():
-            self._labels[label] += self._instructions.len()
-
-        self._instructions += self._constants_instructions
-
         // Now we need to go through all the Instruction instances, and replace any labels with real
         // integer offsets.
         //
@@ -198,10 +185,6 @@ class Code_Gen:
             import_num, imp_src_path := t
             module_imports[import_num] := [imp_mod_id, imp_src_path]
         
-        constants_offsets := []
-        for label := self._constants_labels.iter():
-            constants_offsets.append(bytecode_offsets[self._labels[label]])
-
         // For each definition that is an import, create a map from the variable number to the import
         // number.
 
@@ -224,7 +207,7 @@ class Code_Gen:
         module.set_imports(module_imports)
         module.set_src_infos(all_src_infos)
         module.set_newlines(self._compiler.newlines)
-        module.set_constants_offsets(constants_offsets)
+        module.set_constants(self._constants)
         module.set_mod_lookups(mod_lookups)
         module.set_import_defns(import_defns)
         
@@ -399,7 +382,7 @@ class Code_Gen:
     //
     // 'defn_path' should be the encoding of a module and definition lookups. e.g.
     // Module::Def1::Def2::... is ["Module", "Def1", "Def2", ...].
-    //	
+    //
 
     func _add_mod_defn_lookup(self, defn_path, src_infos):
     
@@ -783,38 +766,36 @@ class Code_Gen:
 
 
     func _t_iint(self, node):
-    
-        constant_name := Strings::format(_CONSTANT_INT_TEMPLATE, node.val.to_str())
-        if not self._constants.find(constant_name):
-            self._constants[constant_name] := self._constants.len()
-            label := self._create_label()
-            self._set_label(label, self._constants_instructions.len())
-            self._constants_labels.append(label)
-            self._constants_instructions.append(self._target.Instr_Int.new(node.src_infos, node.val))
-            self._constants_instructions.append(self._target.Instr_Constant_Set.new(node.src_infos, self._constants[constant_name]))
-            self._constants_instructions.append(self._target.Instr_Fail_Now.new(node.src_infos))
+
+        off := 0
+        for type, val := self._constants.iter():
+            if type == self._target.CONST_INT & val == node.val:
+                break
+            off += 1
+        exhausted:
+            off := self._constants.len()
+            self._constants.append([self._target.CONST_INT, node.val])
         
-        self._instructions.append(self._target.Instr_Constant_Get.new(node.src_infos, self._constants[constant_name]))
+        self._instructions.append(self._target.Instr_Constant_Get.new(node.src_infos, off))
         
-        return 2
+        return 1
 
 
 
     func _t_ifloat(self, node):
     
-        constant_name := Strings::format(_CONSTANT_FLOAT_TEMPLATE, node.val.to_str())
-        if not self._constants.find(constant_name):
-            self._constants[constant_name] := self._constants.len()
-            label := self._create_label()
-            self._set_label(label, self._constants_instructions.len())
-            self._constants_labels.append(label)
-            self._constants_instructions.append(self._target.Instr_Float.new(node.src_infos, node.val))
-            self._constants_instructions.append(self._target.Instr_Constant_Set.new(node.src_infos, self._constants[constant_name]))
-            self._constants_instructions.append(self._target.Instr_Fail_Now.new(node.src_infos))
+        off := 0
+        for type, val := self._constants.iter():
+            if type == self._target.CONST_FLOAT & val == node.val:
+                break
+            off += 1
+        exhausted:
+            off := self._constants.len()
+            self._constants.append([self._target.CONST_FLOAT, node.val])
         
-        self._instructions.append(self._target.Instr_Constant_Get.new(node.src_infos, self._constants[constant_name]))
+        self._instructions.append(self._target.Instr_Constant_Get.new(node.src_infos, off))
         
-        return 2
+        return 1
 
 
 
@@ -957,19 +938,18 @@ class Code_Gen:
 
     func _t_istring(self, node):
     
-        constant_name := Strings::format(_CONSTANT_STRING_TEMPLATE, node.val)
-        if not self._constants.find(constant_name):
-            self._constants[constant_name] := self._constants.len()
-            label := self._create_label()
-            self._set_label(label, self._constants_instructions.len())
-            self._constants_labels.append(label)
-            self._constants_instructions.append(self._target.Instr_String.new(node.src_infos, node.val))
-            self._constants_instructions.append(self._target.Instr_Constant_Set.new(node.src_infos, self._constants[constant_name]))
-            self._constants_instructions.append(self._target.Instr_Fail_Now.new(node.src_infos))
+        off := 0
+        for type, val := self._constants.iter():
+            if type == self._target.CONST_STRING & val == node.val:
+                break
+            off += 1
+        exhausted:
+            off := self._constants.len()
+            self._constants.append([self._target.CONST_STRING, node.val])
         
-        self._instructions.append(self._target.Instr_Constant_Get.new(node.src_infos, self._constants[constant_name]))
+        self._instructions.append(self._target.Instr_Constant_Get.new(node.src_infos, off))
         
-        return 2
+        return 1
 
 
 

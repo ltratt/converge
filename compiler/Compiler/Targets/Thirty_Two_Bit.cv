@@ -58,12 +58,14 @@ MODULE_BYTECODE_TOP_LEVEL_VARS_MAP_SIZE := 19
 MODULE_BYTECODE_NUM_TOP_LEVEL_VARS := 20
 MODULE_BYTECODE_NUM_CONSTANTS := 21
 MODULE_BYTECODE_CONSTANTS_OFFSETS := 22
-MODULE_BYTECODE_MOD_LOOKUPS := 23
-MODULE_BYTECODE_MOD_LOOKUPS_SIZE := 24
-MODULE_BYTECODE_NUM_MOD_LOOKUPS := 25
-MODULE_BYTECODE_IMPORT_DEFNS := 26
-MODULE_BYTECODE_NUM_IMPORT_DEFNS := 27
-MODULE_BYTECODE_SIZE := 28
+MODULE_BYTECODE_CONSTANTS := 23
+MODULE_BYTECODE_CONSTANTS_SIZE := 24
+MODULE_BYTECODE_MOD_LOOKUPS := 25
+MODULE_BYTECODE_MOD_LOOKUPS_SIZE := 26
+MODULE_BYTECODE_NUM_MOD_LOOKUPS := 27
+MODULE_BYTECODE_IMPORT_DEFNS := 28
+MODULE_BYTECODE_NUM_IMPORT_DEFNS := 29
+MODULE_BYTECODE_SIZE := 30
 
 BYTECODE_TOP_LEVEL_VAR_NUM := 0
 BYTECODE_TOP_LEVEL_VAR_NAME_SIZE := 1
@@ -102,6 +104,16 @@ LIBRARY_BYTECODE_HEADER := 0
 LIBRARY_BYTECODE_FORMAT_VERSION := 2
 LIBRARY_BYTECODE_NUM_MODULES := 3
 LIBRARY_BYTECODE_MODULE_OFFSETS := 4
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Constant types
+//
+
+CONST_STRING := 0
+CONST_INT := 1
+CONST_FLOAT := 2
 
 
 
@@ -150,7 +162,6 @@ INSTR_SET := 36                    // bits 0-7 := 36, bits 8-31 := number of lis
 INSTR_BRANCH_IF_NOT_FAIL := 37     // bits 0-7 := 37, bits 8-30 := pc offset, bit 31 := offset sign
 INSTR_BRANCH_IF_FAIL := 38         // bits 0-7 := 38, bits 8-30 := pc offset, bit 31 := offset sign
 INSTR_CONSTANT_GET := 39           // bits 0-7 := 39, bits 8-30 := constant number
-INSTR_CONSTANT_SET := 40           // bits 0-7 := 40, bits 8-30 := constant number
 INSTR_PRE_APPLY_SLOT_LOOKUP := 41  // bits 0-7 := 41, bits 8-31 := size of slot name, bits 32-.. := slot name
 INSTR_UNPACK_ASSIGN := 42          // bits 0-7 := 42, bits 8-31 := number of elements to be unpacked
 INSTR_EQ := 43				       // bits 0-7 := 43
@@ -729,22 +740,6 @@ class Instr_Constant_Get(Instruction):
 
 
 
-class Instr_Constant_Set(Instruction):
-
-    func init(self, src_infos, constant_num):
-    
-        self.src_infos := src_infos
-        self.constant_num := constant_num
-
-
-
-    func to_bytecode(self):
-    
-        return b_8_24(INSTR_CONSTANT_SET, self.constant_num)
-
-
-
-
 class Instr_Pre_Apply_Slot_Lookup(Instruction):
 
     func init(self, src_infos, slot_name):
@@ -1075,6 +1070,8 @@ class Target:
     MODULE_BYTECODE_NUM_TOP_LEVEL_VARS := MODULE_BYTECODE_NUM_TOP_LEVEL_VARS
     MODULE_BYTECODE_NUM_CONSTANTS := MODULE_BYTECODE_NUM_CONSTANTS
     MODULE_BYTECODE_CONSTANTS_OFFSETS := MODULE_BYTECODE_CONSTANTS_OFFSETS
+    MODULE_BYTECODE_CONSTANTS := MODULE_BYTECODE_CONSTANTS
+    MODULE_BYTECODE_CONSTANTS_SIZE := MODULE_BYTECODE_CONSTANTS_SIZE
     MODULE_BYTECODE_MOD_LOOKUPS := MODULE_BYTECODE_MOD_LOOKUPS
     MODULE_BYTECODE_MOD_LOOKUPS_SIZE := MODULE_BYTECODE_MOD_LOOKUPS_SIZE
     MODULE_BYTECODE_NUM_MOD_LOOKUPS := MODULE_BYTECODE_NUM_MOD_LOOKUPS
@@ -1100,6 +1097,9 @@ class Target:
     LIBRARY_BYTECODE_FORMAT_VERSION := LIBRARY_BYTECODE_FORMAT_VERSION
     LIBRARY_BYTECODE_NUM_MODULES := LIBRARY_BYTECODE_NUM_MODULES
     LIBRARY_BYTECODE_MODULE_OFFSETS := LIBRARY_BYTECODE_MODULE_OFFSETS
+    CONST_STRING := CONST_STRING
+    CONST_INT := CONST_INT
+    CONST_FLOAT := CONST_FLOAT
     Instr_EXBI := Instr_EXBI
     Instr_Lookup_Var := Instr_Lookup_Var
     Instr_Assign_Var := Instr_Assign_Var
@@ -1134,7 +1134,6 @@ class Target:
     Instr_Branch_If_Not_Fail := Instr_Branch_If_Not_Fail
     Instr_Branch_If_Fail := Instr_Branch_If_Fail
     Instr_Constant_Get := Instr_Constant_Get
-    Instr_Constant_Set := Instr_Constant_Set
     Instr_Pre_Apply_Slot_Lookup := Instr_Pre_Apply_Slot_Lookup
     Instr_Is := Instr_Is
     Instr_Unpack_Assign := Instr_Unpack_Assign

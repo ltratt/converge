@@ -48,19 +48,13 @@ jitdriver = jit.JitDriver(greens=["bc_off", "mod_bc", "pc", "self"],
 
 
 class VM(object):
-    __slots__ = ("argv", "builtins", "cur_cf", "mods", "spare_ff", "pypy_config", "vm_path")
+    __slots__ = ("argv", "builtins", "cur_cf", "mods", "pypy_config", "vm_path")
     _immutable_fields = ("argv", "builtins", "cur_cf", "mods", "vm_path")
 
     def __init__(self): 
         self.builtins = [None] * Builtins.NUM_BUILTINS
         self.mods = {}
         self.cur_cf = None # Current continuation frame
-        # Continually allocating and deallocating failure frames is expensive, which is particularly
-        # annoying as most never have any impact. spare_ff is used as a simple one-off cache of a
-        # failure frame object, so that instead of being continually allocated and deallocated, in
-        # many cases we can move a pointer from spare_ff to a continuation frame's stack, which is
-        # cheap.
-        self.spare_ff = None
         self.pypy_config = None
 
 
@@ -1060,11 +1054,7 @@ class VM(object):
 
 
     def _add_failure_frame(self, cf, is_fail_up, new_off=-1):
-        ff = self.spare_ff
-        if ff:
-            self.spare_ff = None
-        else:
-            ff = Stack_Failure_Frame()
+        ff = Stack_Failure_Frame()
 
         ff.is_fail_up = is_fail_up
         ff.prev_ffp = cf.ffp
@@ -1086,8 +1076,6 @@ class VM(object):
         cf.stack_del_from(ffp)
         cf.ffp = ff.prev_ffp
         cf.gfp = ff.prev_gfp
-
-        self.spare_ff = ff
 
 
     def _read_failure_frame(self, cf):

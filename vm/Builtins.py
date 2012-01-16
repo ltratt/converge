@@ -646,7 +646,7 @@ class Con_Module(Con_Boxed_Object):
         if is_bc:
             self.closure = None
         else:
-            self.closure = [None] * len(tlvars_map)
+            self.closure = VM.Closure(None, len(tlvars_map))
 
         self.set_slot(vm, "name", name)
         self.set_slot(vm, "container", vm.get_builtin(BUILTIN_NULL_OBJ))
@@ -697,7 +697,7 @@ class Con_Module(Con_Boxed_Object):
 
 
     def get_defn(self, vm, n):
-        o = self.closure[self.get_closure_i(vm, n)]
+        o = self.closure.vars[self.get_closure_i(vm, n)]
         if o is None:
             name = type_check_string(vm, self.get_slot(vm, "name")).v
             vm.raise_helper("Mod_Defn_Exception", \
@@ -714,7 +714,7 @@ class Con_Module(Con_Boxed_Object):
 
 
     def set_defn(self, vm, n, o):
-        self.closure[self.get_closure_i(vm, n)] = o
+        self.closure.vars[self.get_closure_i(vm, n)] = o
 
 
     @jit.elidable_promote("0")

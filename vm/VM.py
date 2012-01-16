@@ -187,9 +187,7 @@ class VM(object):
             self.raise_helper("VM_Exception", [Builtins.Con_String(self, \
               "Function attempting to return fail, but caller can not handle failure.")])
 
-        last_closure = cf.closure[-1]
-        debug.make_sure_not_resized(last_closure)
-        return o, last_closure
+        return o, cf.closure
 
 
     def pre_get_slot_apply_pump(self, o, n, args=None):
@@ -627,18 +625,28 @@ class VM(object):
                 cf.bc_off = ef.bc_off
 
 
+    @jit.unroll_safe
     def _instr_var_lookup(self, instr, cf):
         closure_off, var_num = Target.unpack_var_lookup(instr)
-        v = cf.closure[-(closure_off + 1)][var_num]
+        closure = cf.closure
+        while closure_off > 0:
+            closure = closure.parent
+            closure_off -= 1
+        v = closure.vars[var_num]
         if not v:
             self.raise_helper("Unassigned_Var_Exception")
         cf.stack_push(v)
         cf.bc_off += Target.INTSIZE
 
 
+    @jit.unroll_safe
     def _instr_var_assign(self, instr, cf):
         closure_off, var_num = Target.unpack_var_assign(instr)
-        cf.closure[len(cf.closure) - 1 - closure_off][var_num] = cf.stack_get(cf.stackpe - 1)
+        closure = cf.closure
+        while closure_off > 0:
+            closure = closure.parent
+            closure_off -= 1
+        closure.vars[var_num] = cf.stack_get(cf.stackpe - 1)
         cf.bc_off += Target.INTSIZE
 
 
@@ -663,9 +671,15 @@ class VM(object):
         cf.bc_off += Target.INTSIZE
 
 
+    @jit.unroll_safe
     def _instr_is_assigned(self, instr, cf):
         closure_off, var_num = Target.unpack_var_lookup(instr)
-        if cf.closure[len(cf.closure) - 1 - closure_off][var_num] is not None:
+        closure = cf.closure
+        while closure_off > 0:
+            closure = closure.parent
+            closure_off -= 1
+        v = closure.vars[var_num]
+        if closure.vars[var_num] is not None:
             pc = cf.pc
             assert isinstance(pc, BC_PC)
             mod_bc = pc.mod.bc
@@ -885,7 +899,7 @@ class VM(object):
                     else:
                         o = cf.stack_pop()
                     assert isinstance(o, Builtins.Con_Object)
-                    cf.closure[-1][Target.unpack_unpack_args_arg_num(arg_info)] = o
+                    cf.closure.vars[Target.unpack_unpack_args_arg_num(arg_info)] = o
 
         if has_vargs:
             arg_offset = cf.bc_off + Target.INTSIZE + num_fargs * Target.INTSIZE
@@ -898,7 +912,7 @@ class VM(object):
                 assert i >= 0 and j >= 0
                 l = cf.stack_get_slice(i, j)
                 cf.stackpe = i + 1
-            cf.closure[-1][Target.unpack_unpack_args_arg_num(arg_info)] = Builtins.Con_List(self, l)
+            cf.closure.vars[Target.unpack_unpack_args_arg_num(arg_info)] = Builtins.Con_List(self, l)
             cf.bc_off += Target.INTSIZE + (num_fargs + 1) * Target.INTSIZE
         else:
             cf.bc_off += Target.INTSIZE + num_fargs * Target.INTSIZE
@@ -1016,12 +1030,7 @@ class VM(object):
         else:
             bc_off = -1 
 
-        func_closure = [None] * func.num_vars
-        debug.make_sure_not_resized(func_closure)
-        if func.container_closure is not None:
-            closure = func.container_closure + [func_closure]
-        else:
-            closure = [func_closure]
+        closure = Closure(func.container_closure, func.num_vars)
 
         if func.max_stack_size > nargs:
             max_stack_size = func.max_stack_size
@@ -1140,7 +1149,7 @@ class Stack_Continuation_Frame(Con_Thingy):
     __slots__ = ("parent", "stack", "stackpe", "func", "pc", "nargs", "bc_off", "closure", "ffp",
       "gfp", "xfp", "returned")
     _immutable_fields_ = ("parent", "stack", "ff_cache", "func", "closure", "pc", "nargs")
-    _virtualizable2_ = ("parent", "bc_off", "stack[*]", "stackpe", "ffp", "gfp")
+    _virtualizable2_ = ("parent", "bc_off", "stack[*]", "closure", "stackpe", "ffp", "gfp")
 
     def __init__(self, parent, func, pc, max_stack_size, nargs, bc_off, closure):
         self = jit.hint(self, access_directly=True, fresh_virtualizable=True)
@@ -1151,7 +1160,6 @@ class Stack_Continuation_Frame(Con_Thingy):
         self.pc = pc
         self.nargs = nargs # Number of arguments passed to this continuation
         self.bc_off = bc_off # -1 for Py modules
-        debug.make_sure_not_resized(closure)
         self.closure = closure
         self.returned = False
 
@@ -1293,6 +1301,16 @@ class Stack_Exception_Frame(Con_Thingy):
 ####################################################################################################
 # Misc
 #
+
+class Closure:
+    __slots__ = ("parent", "vars")
+    _immutable_fields = ("parent", "vars")
+
+    def __init__(self, parent, num_vars):
+        self.parent = parent
+        self.vars = [None] * num_vars
+        debug.make_sure_not_resized(self.vars)
+
 
 class Con_Raise_Exception(Exception):
     _immutable_ = True

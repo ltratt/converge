@@ -338,8 +338,8 @@ def bootstrap_con_object(vm):
     
     # In order that later objects can refer to the Builtins module, we have to create it now.
     builtins_module = new_c_con_module(vm, "Builtins", "Builtins", __file__, None, \
-      ["Object", "Class", "Func", "Partial_Application", "String", "Module", "Int", "List", "Set", \
-       "Dict", "Exception"])
+      ["Object", "Class", "Func", "Partial_Application", "String", "Module", "Number", "Int",
+       "List", "Set", "Dict", "Exception"])
     # We effectively initialize the Builtins module through the bootstrapping process, so it doesn't
     # need a separate initialization function.
     builtins_module.initialized = True
@@ -362,6 +362,9 @@ def bootstrap_con_object(vm):
       [object_class], builtins_module)
     vm.set_builtin(BUILTIN_PARTIAL_APPLICATION_CLASS, partial_application_class)
     builtins_module.set_defn(vm, "Partial_Application", partial_application_class)
+    number_class = Con_Class(vm, Con_String(vm, "Number"), [object_class], builtins_module)
+    vm.set_builtin(BUILTIN_NUMBER_CLASS, number_class)
+    builtins_module.set_defn(vm, "Number", number_class)
     int_class = Con_Class(vm, Con_String(vm, "Int"), [object_class], builtins_module)
     vm.set_builtin(BUILTIN_INT_CLASS, int_class)
     builtins_module.set_defn(vm, "Int", int_class)
@@ -1132,8 +1135,8 @@ def bootstrap_con_partial_application(vm):
 # Con_Number
 #
 
-class Con_Number(Con_Object):
-    pass
+class Con_Number(Con_Boxed_Object):
+    __slots__ = ()
 
 
 
@@ -1142,7 +1145,7 @@ class Con_Number(Con_Object):
 # Con_Int
 #
 
-class Con_Int(Con_Boxed_Object):
+class Con_Int(Con_Number):
     __slots__ = ("v",)
     _immutable_fields_ = ("v",)
 
@@ -1150,19 +1153,21 @@ class Con_Int(Con_Boxed_Object):
     def __init__(self, vm, v, instance_of=None):
         if instance_of is None:
             instance_of = vm.get_builtin(BUILTIN_INT_CLASS)
-        Con_Boxed_Object.__init__(self, vm, instance_of)
+        Con_Number.__init__(self, vm, instance_of)
         assert v is not None
         self.v = rffi.cast(lltype.Signed, v)
 
 
     def add(self, vm, o):
-        o = type_check_int(vm, o)
-        return Con_Int(vm, self.v + o.v)
+        o = type_check_number(vm, o)
+        if isinstance(o, Con_Int):
+            return Con_Int(vm, self.v + o.v)
 
 
     def subtract(self, vm, o):
-        o = type_check_int(vm, o)
-        return Con_Int(vm, self.v - o.v)
+        o = type_check_number(vm, o)
+        if isinstance(o, Con_Int):
+            return Con_Int(vm, self.v - o.v)
 
 
     def eq(self, vm, o):
@@ -1178,23 +1183,27 @@ class Con_Int(Con_Boxed_Object):
 
 
     def le(self, vm, o):
-        o = type_check_int(vm, o)
-        return self.v < o.v
+        o = type_check_number(vm, o)
+        if isinstance(o, Con_Int):
+            return self.v < o.v
 
 
     def le_eq(self, vm, o):
-        o = type_check_int(vm, o)
-        return self.v <= o.v
+        o = type_check_number(vm, o)
+        if isinstance(o, Con_Int):
+            return self.v <= o.v
 
 
     def gr_eq(self, vm, o):
-        o = type_check_int(vm, o)
-        return self.v >= o.v
+        o = type_check_number(vm, o)
+        if isinstance(o, Con_Int):
+            return self.v >= o.v
 
 
     def gt(self, vm, o):
-        o = type_check_int(vm, o)
-        return self.v > o.v
+        o = type_check_number(vm, o)
+        if isinstance(o, Con_Int):
+            return self.v > o.v
 
 
 @con_object_proc
@@ -2526,6 +2535,12 @@ def type_check_dict(vm, o):
 def type_check_exception(vm, o):
     if not isinstance(o, Con_Exception):
         vm.raise_helper("Type_Exception", [Con_String(vm, "Exception"), o])
+    return o
+
+
+def type_check_number(vm, o):
+    if not isinstance(o, Con_Int):
+        vm.raise_helper("Type_Exception", [Con_String(vm, "Number"), o])
     return o
 
 

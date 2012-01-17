@@ -29,8 +29,10 @@ import sys
 
 if sys.maxsize > 2**32:
     INTSIZE = 8
+    FLOATSIZE = 8
 else:
     INTSIZE = 4
+    FLOATSIZE = 8
 
 INSTR_NAMES = [None, "EXBI", "VAR_LOOKUP", "VAR_ASSIGN", "INT", "ADD_FAILURE_FRAME", "ADD_FAIL_UP_FRAME", "REMOVE_FAILURE_FRAME", "IS_ASSIGNED", "IS", "FAIL_NOW", "POP", "LIST", "SLOT_LOOKUP", "APPLY", "FUNC_DEFN", "RETURN", "BRANCH", "YIELD", "FLOAT", "IMPORT", "DICT", "DUP", "PULL", "CHANGE_FAIL_POINT", "STRING", "BUILTIN_LOOKUP", "ASSIGN_SLOT", "EYIELD", "ADD_EXCEPTION_FRAME", None, "INSTANCE_OF", "REMOVE_EXCEPTION_FRAME", "RAISE", "SET_ITEM", "UNPACK_ARGS", "SET", "BRANCH_IF_NOT_FAIL", "BRANCH_IF_FAIL", "CONST_GET", None, "PRE_SLOT_LOOKUP_APPLY", "UNPACK_ASSIGN", "EQ", "LE", "ADD", "SUBTRACT", "NEQ", "LE_EQ", "GR_EQ", "GT", "MODULE_LOOKUP"]
 
@@ -147,6 +149,10 @@ if INTSIZE == 8:
     @elidable_promote("1")
     def read_uint32_word(bc, i):
         return rffi.cast(lltype.Signed, rffi.cast(rffi.UINTP, bc)[i / 4])
+
+    @elidable_promote("1")
+    def read_float(bc, i):
+        return rffi.cast(lltype.Float, rffi.cast(rffi.DOUBLEP, bc)[i / 8])
 
     @elidable_promote()
     def align(i):

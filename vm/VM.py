@@ -67,6 +67,7 @@ class VM(object):
         Builtins.bootstrap_con_dict(self)
         Builtins.bootstrap_con_func(self)
         Builtins.bootstrap_con_int(self)
+        Builtins.bootstrap_con_float(self)
         Builtins.bootstrap_con_list(self)
         Builtins.bootstrap_con_module(self)
         Builtins.bootstrap_con_partial_application(self)
@@ -355,6 +356,8 @@ class VM(object):
                     Builtins.type_check_list(self, o)
                 elif t == "M":
                     Builtins.type_check_module(self, o)
+                elif t == "N":
+                    Builtins.type_check_number(self, o)
                 elif t == "S":
                     Builtins.type_check_string(self, o)
                 elif t == "W":

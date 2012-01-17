@@ -339,7 +339,7 @@ def bootstrap_con_object(vm):
     # In order that later objects can refer to the Builtins module, we have to create it now.
     builtins_module = new_c_con_module(vm, "Builtins", "Builtins", __file__, None, \
       ["Object", "Class", "Func", "Partial_Application", "String", "Module", "Number", "Int",
-       "List", "Set", "Dict", "Exception"])
+       "Float", "List", "Set", "Dict", "Exception"])
     # We effectively initialize the Builtins module through the bootstrapping process, so it doesn't
     # need a separate initialization function.
     builtins_module.initialized = True
@@ -368,6 +368,9 @@ def bootstrap_con_object(vm):
     int_class = Con_Class(vm, Con_String(vm, "Int"), [object_class], builtins_module)
     vm.set_builtin(BUILTIN_INT_CLASS, int_class)
     builtins_module.set_defn(vm, "Int", int_class)
+    float_class = Con_Class(vm, Con_String(vm, "Float"), [object_class], builtins_module)
+    vm.set_builtin(BUILTIN_FLOAT_CLASS, float_class)
+    builtins_module.set_defn(vm, "Float", float_class)
     list_class = Con_Class(vm, Con_String(vm, "List"), [object_class], builtins_module)
     vm.set_builtin(BUILTIN_LIST_CLASS, list_class)
     builtins_module.set_defn(vm, "List", list_class)
@@ -731,6 +734,8 @@ class Con_Module(Con_Boxed_Object):
         type = Target.read_word(self.bc, const_off)
         if type == Target.CONST_INT:
             v = Con_Int(vm, Target.read_word(self.bc, const_off + Target.INTSIZE))
+        elif type == Target.CONST_FLOAT:
+            v = Con_Float(vm, Target.read_float(self.bc, const_off + Target.INTSIZE))
         else:
             assert type == Target.CONST_STRING
             s = Target.extract_str(self.bc,
@@ -1138,6 +1143,12 @@ def bootstrap_con_partial_application(vm):
 class Con_Number(Con_Boxed_Object):
     __slots__ = ()
 
+    def as_int(self):
+        raise Exception("XXX")
+
+
+    def as_float(self):
+        raise Exception("XXX")
 
 
 
@@ -1158,27 +1169,75 @@ class Con_Int(Con_Number):
         self.v = rffi.cast(lltype.Signed, v)
 
 
+    def as_int(self):
+        return self.v
+
+
+    def as_float(self):
+        return float(self.v)
+
+
     def add(self, vm, o):
         o = type_check_number(vm, o)
         if isinstance(o, Con_Int):
             return Con_Int(vm, self.v + o.v)
+        else:
+            assert isinstance(o, Con_Float)
+            return Con_Float(vm, self.as_float() + o.v)
 
 
     def subtract(self, vm, o):
         o = type_check_number(vm, o)
         if isinstance(o, Con_Int):
             return Con_Int(vm, self.v - o.v)
+        else:
+            assert isinstance(o, Con_Float)
+            return Con_Float(vm, self.as_float() - o.v)
+
+
+    def div(self, vm, o):
+        o = type_check_number(vm, o)
+        if isinstance(o, Con_Int):
+            if self.v % o.v == 0:
+                return Con_Int(vm, self.v / o.v)
+            return Con_Float(vm, self.as_float() / o.v)
+        else:
+            assert isinstance(o, Con_Float)
+            return Con_Float(vm, self.as_float() / o.v)
+
+
+    def idiv(self, vm, o):
+        o = type_check_number(vm, o)
+        return Con_Int(vm, self.v // o.as_int())
+
+
+    def mod(self, vm, o):
+        o = type_check_number(vm, o)
+        return Con_Int(vm, self.v % o.as_int())
+
+
+    def mul(self, vm, o):
+        o = type_check_number(vm, o)
+        if isinstance(o, Con_Int):
+            return Con_Int(vm, self.v * o.v)
+        else:
+            assert isinstance(o, Con_Float)
+            return Con_Float(vm, self.as_float() * o.v)
 
 
     def eq(self, vm, o):
         if isinstance(o, Con_Int):
             return self.v == o.v
+        elif isinstance(o, Con_Float):
+            return self.as_float() == o.v
         return False
 
 
     def neq(self, vm, o):
         if isinstance(o, Con_Int):
             return self.v != o.v
+        elif isinstance(o, Con_Float):
+            return self.as_float() != o.v
         return True
 
 
@@ -1186,24 +1245,36 @@ class Con_Int(Con_Number):
         o = type_check_number(vm, o)
         if isinstance(o, Con_Int):
             return self.v < o.v
+        else:
+            assert isinstance(o, Con_Float)
+            return self.as_float() < o.v
 
 
     def le_eq(self, vm, o):
         o = type_check_number(vm, o)
         if isinstance(o, Con_Int):
             return self.v <= o.v
+        else:
+            assert isinstance(o, Con_Float)
+            return self.as_float() <= o.v
 
 
     def gr_eq(self, vm, o):
         o = type_check_number(vm, o)
         if isinstance(o, Con_Int):
             return self.v >= o.v
+        else:
+            assert isinstance(o, Con_Float)
+            return self.as_float() >= o.v
 
 
     def gt(self, vm, o):
         o = type_check_number(vm, o)
         if isinstance(o, Con_Int):
             return self.v > o.v
+        else:
+            assert isinstance(o, Con_Float)
+            return self.as_float() > o.v
 
 
 @con_object_proc
@@ -1225,49 +1296,50 @@ def _new_func_Con_Int(vm):
 
 @con_object_proc
 def _Con_Int_add(vm):
-    (self, o),_ = vm.decode_args("II")
+    (self, o_o),_ = vm.decode_args("IN")
     assert isinstance(self, Con_Int)
-    assert isinstance(o, Con_Int)
+    assert isinstance(o_o, Con_Int)
 
-    return Con_Int(vm, self.v + o.v)
+    return self.add(vm, o_o)
 
 
 @con_object_proc
 def _Con_Int_and(vm):
-    (self, o),_ = vm.decode_args("II")
+    (self, o_o),_ = vm.decode_args("II")
     assert isinstance(self, Con_Int)
-    assert isinstance(o, Con_Int)
+    assert isinstance(o_o, Con_Int)
 
-    return Con_Int(vm, self.v & o.v)
+    return Con_Int(vm, self.v & o_o.v)
 
 
 @con_object_proc
 def _Con_Int_div(vm):
-    (self, o),_ = vm.decode_args("II")
+    (self, o_o),_ = vm.decode_args("IN")
     assert isinstance(self, Con_Int)
-    assert isinstance(o, Con_Int)
+    assert isinstance(o_o, Con_Number)
 
-    return Con_Int(vm, self.v / o.v)
+    return self.div(vm, o_o)
 
 
 @con_object_proc
 def _Con_Int_eq(vm):
     (self, o_o),_ = vm.decode_args("IO")
     assert isinstance(self, Con_Int)
+    assert isinstance(o_o, Con_Object)
     
-    if isinstance(o_o, Con_Int):
-        if self.v == o_o.v:
-            return vm.get_builtin(BUILTIN_NULL_OBJ)
-    return vm.get_builtin(BUILTIN_FAIL_OBJ)
+    if self.eq(vm, o_o):
+        return vm.get_builtin(BUILTIN_NULL_OBJ)
+    else:
+        return vm.get_builtin(BUILTIN_FAIL_OBJ)
 
 
 @con_object_proc
 def _Con_Int_gt(vm):
-    (self, o_o),_ = vm.decode_args("II")
+    (self, o_o),_ = vm.decode_args("IN")
     assert isinstance(self, Con_Int)
-    assert isinstance(o_o, Con_Int)
+    assert isinstance(o_o, Con_Number)
 
-    if self.v >= o_o.v:
+    if self.gt(vm, o_o):
         return vm.get_builtin(BUILTIN_NULL_OBJ)
     else:
         return vm.get_builtin(BUILTIN_FAIL_OBJ)
@@ -1275,11 +1347,11 @@ def _Con_Int_gt(vm):
 
 @con_object_proc
 def _Con_Int_gtq(vm):
-    (self, o_o),_ = vm.decode_args("II")
+    (self, o_o),_ = vm.decode_args("IN")
     assert isinstance(self, Con_Int)
-    assert isinstance(o_o, Con_Int)
+    assert isinstance(o_o, Con_Number)
 
-    if self.v >= o_o.v:
+    if self.gr_eq(vm, o_o):
         return vm.get_builtin(BUILTIN_NULL_OBJ)
     else:
         return vm.get_builtin(BUILTIN_FAIL_OBJ)
@@ -1295,23 +1367,23 @@ def _Con_Int_hash(vm):
 
 @con_object_proc
 def _Con_Int_idiv(vm):
-    (self, o),_ = vm.decode_args("II")
+    (self, o_o),_ = vm.decode_args("IN")
     assert isinstance(self, Con_Int)
-    assert isinstance(o, Con_Int)
+    assert isinstance(o_o, Con_Number)
 
-    return Con_Int(vm, self.v // o.v)
+    return self.idiv(vm, o_o)
 
 
 @con_object_proc
 def _Con_Int_is(vm):
-    (self, o),_ = vm.decode_args("IO")
+    (self, o_o),_ = vm.decode_args("IO")
     assert isinstance(self, Con_Int)
-    if self is o:
-        return o
+    if self is o_o:
+        return o_o
     else:
         # We want to maintain the illusion that integers of the same value are also the same object.
-        if isinstance(o, Con_Int) and self.v == o.v:
-            return o
+        if isinstance(o_o, Con_Int) and self.v == o_o.v:
+            return o_o
         else:
             return vm.get_builtin(BUILTIN_FAIL_OBJ)
 
@@ -1334,11 +1406,11 @@ def _Con_Int_iter_to(vm):
 
 @con_object_proc
 def _Con_Int_le(vm):
-    (self, o_o),_ = vm.decode_args("II")
+    (self, o_o),_ = vm.decode_args("IN")
     assert isinstance(self, Con_Int)
-    assert isinstance(o_o, Con_Int)
+    assert isinstance(o_o, Con_Number)
 
-    if self.v < o_o.v:
+    if self.le(vm, o_o):
         return vm.get_builtin(BUILTIN_NULL_OBJ)
     else:
         return vm.get_builtin(BUILTIN_FAIL_OBJ)
@@ -1346,11 +1418,11 @@ def _Con_Int_le(vm):
 
 @con_object_proc
 def _Con_Int_leq(vm):
-    (self, o_o),_ = vm.decode_args("II")
+    (self, o_o),_ = vm.decode_args("IN")
     assert isinstance(self, Con_Int)
-    assert isinstance(o_o, Con_Int)
+    assert isinstance(o_o, Con_Number)
 
-    if self.v <= o_o.v:
+    if self.le_eq(vm, o_o):
         return vm.get_builtin(BUILTIN_NULL_OBJ)
     else:
         return vm.get_builtin(BUILTIN_FAIL_OBJ)
@@ -1376,38 +1448,36 @@ def _Con_Int_lsr(vm):
 
 @con_object_proc
 def _Con_Int_mod(vm):
-    (self, o),_ = vm.decode_args("II")
+    (self, o_o),_ = vm.decode_args("IN")
     assert isinstance(self, Con_Int)
-    assert isinstance(o, Con_Int)
 
-    return Con_Int(vm, self.v % o.v)
+    return self.mod(vm, o_o)
 
 
 @con_object_proc
 def _Con_Int_mul(vm):
-    (self, o),_ = vm.decode_args("II")
+    (self, o_o),_ = vm.decode_args("IN")
     assert isinstance(self, Con_Int)
-    assert isinstance(o, Con_Int)
 
-    return Con_Int(vm, self.v * o.v)
+    return self.mul(vm, o_o)
 
 
 @con_object_proc
 def _Con_Int_or(vm):
-    (self, o),_ = vm.decode_args("II")
+    (self, o_o),_ = vm.decode_args("II")
     assert isinstance(self, Con_Int)
-    assert isinstance(o, Con_Int)
+    assert isinstance(o_o, Con_Int)
 
-    return Con_Int(vm, self.v | o.v)
+    return Con_Int(vm, self.v | o_o.v)
 
 
 @con_object_proc
 def _Con_Int_sub(vm):
-    (self, o),_ = vm.decode_args("II")
+    (self, o_o),_ = vm.decode_args("IN")
     assert isinstance(self, Con_Int)
-    assert isinstance(o, Con_Int)
+    assert isinstance(o_o, Con_Number)
 
-    return Con_Int(vm, self.v - o.v)
+    return self.subtract(vm, o_o)
 
 
 @con_object_proc
@@ -1457,6 +1527,185 @@ def bootstrap_con_int(vm):
     new_c_con_func_for_class(vm, "str_val", _Con_Int_str_val, int_class)
     new_c_con_func_for_class(vm, "-", _Con_Int_sub, int_class)
     new_c_con_func_for_class(vm, "to_str", _Con_Int_to_str, int_class)
+
+
+
+################################################################################
+# Con_Float
+#
+
+class Con_Float(Con_Number):
+    __slots__ = ("v",)
+    _immutable_fields_ = ("v",)
+
+
+    def __init__(self, vm, v, instance_of=None):
+        if instance_of is None:
+            instance_of = vm.get_builtin(BUILTIN_FLOAT_CLASS)
+        Con_Number.__init__(self, vm, instance_of)
+        assert v is not None
+        self.v = v
+
+
+    def as_int(self):
+        return int(self.v)
+
+
+    def as_float(self):
+        return self.v
+
+
+    def add(self, vm, o):
+        o = type_check_number(vm, o)
+        if isinstance(o, Con_Int):
+            return Con_Float(vm, self.v + o.v)
+        else:
+            assert isinstance(o, Con_Float)
+            return Con_Float(vm, self.v + o.v)
+
+
+    def subtract(self, vm, o):
+        o = type_check_number(vm, o)
+        if isinstance(o, Con_Int):
+            return Con_Float(vm, self.v - o.v)
+        else:
+            assert isinstance(o, Con_Float)
+            return Con_Float(vm, self.v - o.v)
+
+
+    def div(self, vm, o):
+        o = type_check_number(vm, o)
+        if isinstance(o, Con_Int):
+            return Con_Float(vm, self.v / o.v)
+        else:
+            assert isinstance(o, Con_Float)
+            return Con_Float(vm, self.v / o.v)
+
+
+    def idiv(self, vm, o):
+        o = type_check_number(vm, o)
+        return Con_Int(vm, self.v // o.as_int())
+
+
+    def mod(self, vm, o):
+        o = type_check_number(vm, o)
+        return Con_Int(vm, self.v % o.as_int())
+
+
+    def mul(self, vm, o):
+        o = type_check_number(vm, o)
+        if isinstance(o, Con_Int):
+            return Con_Int(vm, self.v * o.v)
+        else:
+            assert isinstance(o, Con_Float)
+            return Con_Float(vm, self.v * o.v)
+
+
+    def eq(self, vm, o):
+        if isinstance(o, Con_Int):
+            return self.v == o.v
+        elif isinstance(o, Con_Float):
+            return self.v == o.v
+        return False
+
+
+    def neq(self, vm, o):
+        if isinstance(o, Con_Int):
+            return self.v != o.v
+        elif isinstance(o, Con_Float):
+            return self.v != o.v
+        return True
+
+
+    def le(self, vm, o):
+        o = type_check_number(vm, o)
+        if isinstance(o, Con_Int):
+            return self.as_int() < o.v
+        else:
+            assert isinstance(o, Con_Float)
+            return self.v < o.v
+
+
+    def le_eq(self, vm, o):
+        o = type_check_number(vm, o)
+        if isinstance(o, Con_Int):
+            return self.as_int() <= o.v
+        else:
+            assert isinstance(o, Con_Float)
+            return self.v <= o.v
+
+
+    def gr_eq(self, vm, o):
+        o = type_check_number(vm, o)
+        if isinstance(o, Con_Int):
+            return self.as_int() >= o.v
+        else:
+            assert isinstance(o, Con_Float)
+            return self.v >= o.v
+
+
+    def gt(self, vm, o):
+        o = type_check_number(vm, o)
+        if isinstance(o, Con_Int):
+            return self.as_int() > o.v
+        else:
+            assert isinstance(o, Con_Float)
+            return self.v > o.v
+
+
+@con_object_proc
+def _new_func_Con_Float(vm):
+    (class_, o_o), vargs = vm.decode_args("CO", vargs=True)
+    if isinstance(o_o, Con_Int):
+        return Con_Float(vm, float(o_o.v))
+    elif isinstance(o_o, Con_Float):
+        return o_o
+    elif isinstance(o_o, Con_String):
+        v = None
+        try:
+            v = float(o_o.v)
+        except ValueError:
+            vm.raise_helper("Number_Exception", [o_o])
+        return Con_Float(vm, v)
+
+
+@con_object_proc
+def _Con_Float_div(vm):
+    (self, o_o),_ = vm.decode_args("!N", self_of=Con_Float)
+    assert isinstance(self, Con_Float)
+    assert isinstance(o_o, Con_Number)
+    
+    return Con_Float(vm, self.v / o_o.as_float())
+
+
+@con_object_proc
+def _Con_Float_mul(vm):
+    (self, o_o),_ = vm.decode_args("!N", self_of=Con_Float)
+    assert isinstance(self, Con_Float)
+    assert isinstance(o_o, Con_Number)
+    
+    return Con_Float(vm, self.v * o_o.as_float())
+
+
+@con_object_proc
+def _Con_Float_to_str(vm):
+    (self,),_ = vm.decode_args("!", self_of=Con_Float)
+    assert isinstance(self, Con_Float)
+
+    return Con_String(vm, str(self.v))
+
+
+def bootstrap_con_float(vm):
+    float_class = vm.get_builtin(BUILTIN_FLOAT_CLASS)
+    assert isinstance(float_class, Con_Class)
+    float_class.new_func = \
+      new_c_con_func(vm, Con_String(vm, "new_Float"), False, _new_func_Con_Float, \
+        vm.get_builtin(BUILTIN_BUILTINS_MODULE))
+
+    new_c_con_func_for_class(vm, "/", _Con_Float_div, float_class)
+    new_c_con_func_for_class(vm, "*", _Con_Float_mul, float_class)
+    new_c_con_func_for_class(vm, "to_str", _Con_Float_to_str, float_class)
+
 
 
 
@@ -2539,7 +2788,7 @@ def type_check_exception(vm, o):
 
 
 def type_check_number(vm, o):
-    if not isinstance(o, Con_Int):
+    if not (isinstance(o, Con_Int) or isinstance(o, Con_Float)):
         vm.raise_helper("Type_Exception", [Con_String(vm, "Number"), o])
     return o
 

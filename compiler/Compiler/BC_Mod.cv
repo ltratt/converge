@@ -264,6 +264,10 @@ class BC_Mod:
             self._constants.append(type)
             ndif type == self._target.CONST_INT:
                 self._constants.append(val)
+            elif type == self._target.CONST_FLOAT:
+                ta := Array::Array.new("f")
+                ta.append(val)
+                self._constants.extend_from_string(ta.serialize())
             elif type == self._target.CONST_STRING:
                 self._constants.append(val.len())
                 self._constants.extend_from_string(self._target.b_aligned_string(val))

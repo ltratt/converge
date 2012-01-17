@@ -67,6 +67,7 @@ def import_(vm):
 
 TYPE_I32 = 0
 TYPE_I64 = 1
+TYPE_F   = 2
 
 class Array(Con_Boxed_Object):
     __slots__ = ("type_name", "type", "type_size", "big_endian", "data", "num_entries",
@@ -110,6 +111,10 @@ class Array(Con_Boxed_Object):
             self.type = TYPE_I64
             self.type_size = 8
             self.big_endian = False
+        elif type_name == "f":
+            self.type = TYPE_F
+            self.type_size = 8
+            self.big_endian = False # irrelevant for floats
         else:
             mod = vm.get_funcs_mod()
             aex_class = mod.get_defn(vm, "Array_Exception")
@@ -188,7 +193,7 @@ def Array_extend(vm):
     (self, o_o),_ = vm.decode_args("!O", self_of=Array)
     assert isinstance(self, Array)
 
-    if isinstance(o_o, Array) and self.type == o_o.type:
+    if isinstance(o_o, Array) and self.type_size == o_o.type_size:
         _check_room(vm, self, o_o.num_entries)
         memmove(rffi.ptradd(self.data, self.num_entries * self.type_size), \
           o_o.data, o_o.num_entries * o_o.type_size)
@@ -332,15 +337,19 @@ def _get_obj(vm, self, i):
         return Con_Int(vm, rffi.cast(rffi.LONGP, self.data)[i])
     elif self.type == TYPE_I32:
         return Con_Int(vm, rffi.cast(rffi.LONG, rffi.cast(rffi.INTP, self.data)[i]))
+    elif self.type == TYPE_F:
+        return Con_Float(vm, rffi.cast(rffi.DOUBLE, rffi.cast(rffi.DOUBLEP, self.data)[i]))
     else:
         raise Exception("XXX")
 
 
 def _set_obj(vm, self, i, o):
     if self.type == TYPE_I64:
-        rffi.cast(rffi.LONGP, self.data)[i] = rffi.cast(rffi.LONG, type_check_int(vm, o).v)
+        rffi.cast(rffi.LONGP, self.data)[i] = rffi.cast(rffi.LONG, type_check_number(vm, o).as_int())
     elif self.type == TYPE_I32:
-        rffi.cast(rffi.INTP, self.data)[i] = rffi.cast(rffi.INT, type_check_int(vm, o).v)
+        rffi.cast(rffi.INTP, self.data)[i] = rffi.cast(rffi.INT, type_check_number(vm, o).as_int())
+    elif self.type == TYPE_F:
+        rffi.cast(rffi.DOUBLEP, self.data)[i] = rffi.cast(rffi.DOUBLE, type_check_number(vm, o).as_float())
     else:
         raise Exception("XXX")
 

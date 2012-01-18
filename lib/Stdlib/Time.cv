@@ -42,6 +42,12 @@ class Instant:
 
 
 
+    func to_str(self):
+    
+        return Strings::format("<Instance %ds %dns>", self.sec, self.nsec)
+
+
+
     func ==(self, o):
     
         if self.sec == o.sec & self.nsec == o.nsec:
@@ -80,6 +86,20 @@ class Instant:
         
         fail
 
+
+
+    func -(self, o):
+    
+        if self.nsec - o.nsec < 0:
+            return mk_timespec(self.sec - o.sec - 1, 1000000000 + (self.nsec - o.nsec))
+        else:
+            return mk_timespec(self.sec - o.sec, self.nsec - o.nsec)
+
+
+
+    func as_float(self):
+    
+        return self.sec + self.nsec / 1000000000
 
 
 

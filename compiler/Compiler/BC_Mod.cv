@@ -235,25 +235,6 @@ class BC_Mod:
         self._num_top_level_vars := top_level_vars_map.len()
 
 
-
-    func get_constants(self):
-    
-        consts := []
-        for i := 0.iter_to(self._constants_offsets.len()):
-            const_off := self._constants_offsets[i]
-            type := self._constants[const_off + 0]
-            ndif type == self._target.CONST_INT:
-                val := self._constants[const_off + 1]
-            elif type == self._target.CONST_STRING:
-                val := self._decode_string(self._constants, \
-                  const_off + self._target.WORDSIZE + self._target.WORDSIZE, \
-                  self._constants[const_off + 2])
-            consts.append([type, val])
-
-        return consts
-
-
-
     func set_constants(self, constants):
     
         self._constants_offsets := Array::Array.new(self._target.ARRAY_TYPE)

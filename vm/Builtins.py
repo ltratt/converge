@@ -1292,6 +1292,10 @@ def _new_func_Con_Int(vm):
         except ValueError:
             vm.raise_helper("Number_Exception", [o_o])
         return Con_Int(vm, v)
+    elif isinstance(o_o, Con_Float):
+        return Con_Int(vm, o_o.v)
+    else:
+        vm.raise_helper("Type_Exception", [Con_String(vm, "Number | String"), o_o])
 
 
 @con_object_proc

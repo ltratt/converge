@@ -11,4 +11,12 @@ Creates a new time instant <code>sec</code> seconds + <code>nsec</code> nanoseco
 </function>
 </class>
 
+<function name="current">
+Returns the current system time as an <ref name="Instant" />. This function returns conventional <q>wall clock</q> time.
+</function>
+
+<function name="current_mono">
+Returns the current system time as an <ref name="Instant" />. This function guarantees to always return a monotonically increasing value; it is useful for timing purposes, as it is not skewed to reflect the realities of the outside world.
+</function>
+
 </module>

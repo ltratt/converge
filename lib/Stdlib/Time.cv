@@ -19,7 +19,7 @@
 // IN THE SOFTWARE.
 
 
-import C_Time, Exceptions
+import C_Time, Exceptions, Strings
 
 
 
@@ -107,6 +107,12 @@ class Instant:
 func current():
 
     return Instant.new.apply(C_Time::current())
+
+
+
+func current_mono():
+
+    return Instant.new.apply(C_Time::current_mono())
 
 
 

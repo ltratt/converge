@@ -233,12 +233,16 @@ def File_read(vm):
         elif rsize > fsize:
             rsize = fsize
 
-    with lltype.scoped_alloc(rffi.CCHARP.TO, rsize) as buf:
-        r = fread(buf, 1, rsize, self.filep)
-        if r < rffi.r_size_t(rsize) and ferror(self.filep) != 0:
-            vm.raise_helper("File_Exception", [Con_String(vm, "Read error.")])
-        s = rffi.charpsize2str(buf, rarithmetic.intmask(r))
-    #s = os.read(fileno(self.filep), rsize)
+    if objectmodel.we_are_translated():
+        with lltype.scoped_alloc(rffi.CCHARP.TO, rsize) as buf:
+            r = fread(buf, 1, rsize, self.filep)
+            if r < rffi.r_size_t(rsize) and ferror(self.filep) != 0:
+                vm.raise_helper("File_Exception", [Con_String(vm, "Read error.")])
+            s = rffi.charpsize2str(buf, rarithmetic.intmask(r))
+    else:
+        # rffi.charpsize2str is so slow (taking minutes for big strings) that it's worth bypassing
+        # it when things are run untranslated.
+        s = os.read(fileno(self.filep), rsize)
     funlockfile(self.filep)
 
     return Con_String(vm, s)

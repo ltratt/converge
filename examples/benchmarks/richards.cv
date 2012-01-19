@@ -1,0 +1,443 @@
+#! /usr/bin/env converge
+
+// based on a Java version:
+//  Based on original version written in BCPL by Dr Martin Richards
+//  in 1981 at Cambridge University Computer Laboratory, England
+//  and a C++ version derived from a Smalltalk version written by
+//  L Peter Deutsch.
+//  Java version:  Copyright (C) 1995 Sun Microsystems, Inc.
+//  Translation from C++, Mario Wolczko
+//  Outer loop added by Alex Jacoby
+//  Translation from Python by Laurence Tratt
+
+False := 0
+True := 1
+
+// Task IDs
+I_IDLE := 1
+I_WORK := 2
+I_HANDLERA := 3
+I_HANDLERB := 4
+I_DEVA := 5
+I_DEVB := 6
+
+// Packet types
+K_DEV := 1000
+K_WORK := 1001
+
+// Packet
+
+BUFSIZE := 4
+
+func range(i):
+    l := []
+    j := 0
+    while j < i:
+        l.append(j)
+        j += 1
+    return l
+
+class Packet:
+    func init(self,l,i,k):
+        self.link := l
+        self.ident := i
+        self.kind := k
+        self.datum := 0
+        self.data := [0] * BUFSIZE
+
+    func append_to(self,lst):
+        self.link := null
+        if lst is null:
+            return self
+        else:
+            p := lst
+            next := p.link
+            while not next is null:
+                p := next
+                next := p.link
+            p.link := self
+            return lst
+
+// Task Records
+
+class TaskRec:
+    pass
+
+class DeviceTaskRec(TaskRec):
+    func init(self):
+        self.pending := null
+
+class IdleTaskRec(TaskRec):
+    func init(self):
+        self.control := 1
+        self.count := 10000
+
+class HandlerTaskRec(TaskRec):
+    func init(self):
+        self.work_in := null
+        self.device_in := null
+
+    func workInAdd(self,p):
+        self.work_in := p.append_to(self.work_in)
+        return self.work_in
+
+    func deviceInAdd(self,p):
+        self.device_in := p.append_to(self.device_in)
+        return self.device_in
+
+class WorkerTaskRec(TaskRec):
+    func init(self):
+        self.destination := I_HANDLERA
+        self.count := 0
+// Task
+
+class TaskState:
+    func init(self):
+        self.packet_pending := True
+        self.task_waiting := False
+        self.task_holding := False
+
+    func packetPending(self):
+        self.packet_pending := True
+        self.task_waiting := False
+        self.task_holding := False
+        return self
+
+    func waiting(self):
+        self.packet_pending := False
+        self.task_waiting := True
+        self.task_holding := False
+        return self
+
+    func running(self):
+        self.packet_pending := False
+        self.task_waiting := False
+        self.task_holding := False
+        return self
+        
+    func waitingWithPacket(self):
+        self.packet_pending := True
+        self.task_waiting := True
+        self.task_holding := False
+        return self
+        
+    func isPacketPending(self):
+        return self.packet_pending
+
+    func isTaskWaiting(self):
+        return self.task_waiting
+
+    func isTaskHolding(self):
+        return self.task_holding
+
+    func isTaskHoldingOrWaiting(self):
+        if (self.task_holding is True) | (self.packet_pending is False & self.task_waiting is True):
+            return True
+        else:
+            return False
+
+    func isWaitingWithPacket(self):
+        if self.packet_pending is True & self.task_waiting is True & self.task_holding is False:
+            return True
+        else:
+            return False
+
+import Builtins, Exceptions, Strings, Sys
+
+
+
+tracing := False
+layout := 0
+
+func trace(a):
+    nonlocal layout
+    layout -= 1
+    if layout <= 0:
+        Sys::println()
+        layout := 50
+    Sys::print(a, " ")
+
+
+TASKTABSIZE := 10
+
+class TaskWorkArea:
+    func init(self):
+        self.taskTab := [null] * TASKTABSIZE
+
+        self.taskList := null
+
+        self.holdCount := 0
+        self.qpktCount := 0
+
+taskWorkArea := TaskWorkArea.new()
+
+class Task(TaskState):
+
+
+    func init(self,i,p,w,initialState,r):
+        self.link := taskWorkArea.taskList
+        self.ident := i
+        self.priority := p
+        self.input := w
+
+        self.packet_pending := initialState.isPacketPending()
+        self.task_waiting := initialState.isTaskWaiting()
+        self.task_holding := initialState.isTaskHolding()
+
+        self.handle := r
+
+        taskWorkArea.taskList := self
+        taskWorkArea.taskTab[i] := self
+
+    func fn(self,pkt,r):
+        raise "XXX"
+
+
+    func addPacket(self,p,old):
+        if self.input is null:
+            self.input := p
+            self.packet_pending := True
+            if self.priority > old.priority:
+                return self
+        else:
+            p.append_to(self.input)
+        return old
+
+
+    func runTask(self):
+        if self.isWaitingWithPacket() is True:
+            msg := self.input
+            self.input := msg.link
+            if self.input is null:
+                self.running()
+            else:
+                self.packetPending()
+        else:
+            msg := null
+
+        return self.fn(msg,self.handle)
+
+
+    func waitTask(self):
+        self.task_waiting := True
+        return self
+
+
+    func hold(self):
+        taskWorkArea.holdCount += 1
+        self.task_holding := True
+        return self.link
+
+
+    func release(self,i):
+        t := self.findtcb(i)
+        t.task_holding := False
+        if t.priority > self.priority:
+            return t
+        else:
+            return self
+
+
+    func qpkt(self,pkt):
+        t := self.findtcb(pkt.ident)
+        taskWorkArea.qpktCount += 1
+        pkt.link := null
+        pkt.ident := self.ident
+        return t.addPacket(pkt,self)
+
+
+    func findtcb(self,id):
+        t := taskWorkArea.taskTab[id]
+        if t is null:
+            raise Exceptions::Exception("Bad task id %d" % id)
+        return t
+            
+
+// DeviceTask
+
+
+class DeviceTask(Task):
+    func init(self,i,p,w,s,r):
+        exbi Task.init(i,p,w,s,r)
+
+    func fn(self,pkt,r):
+        d := r
+        assert DeviceTaskRec.instantiated(d)
+        if pkt is null:
+            pkt := d.pending
+            if pkt is null:
+                return self.waitTask()
+            else:
+                d.pending := null
+                return self.qpkt(pkt)
+        else:
+            d.pending := pkt
+            if tracing is True:
+                trace(pkt.datum)
+            return self.hold()
+
+
+
+class HandlerTask(Task):
+    func init(self,i,p,w,s,r):
+        exbi Task.init(i,p,w,s,r)
+
+    func fn(self,pkt,r):
+        h := r
+        assert HandlerTaskRec.instantiated(h)
+        if not pkt is null:
+            if pkt.kind == K_WORK:
+                h.workInAdd(pkt)
+            else:
+                h.deviceInAdd(pkt)
+        work := h.work_in
+        if work is null:
+            return self.waitTask()
+        count := work.datum
+        if count >= BUFSIZE:
+            h.work_in := work.link
+            return self.qpkt(work)
+
+        dev := h.device_in
+        if dev is null:
+            return self.waitTask()
+
+        h.device_in := dev.link
+        dev.datum := work.data[count]
+        work.datum := count + 1
+        return self.qpkt(dev)
+
+// IdleTask
+
+
+class IdleTask(Task):
+    func init(self,i,p,w,s,r):
+        exbi Task.init(i,0,null,s,r)
+
+    func fn(self,pkt,r):
+        i := r
+        assert IdleTaskRec.instantiated(i)
+        i.count -= 1
+        if i.count == 0:
+            return self.hold()
+        elif i.control.and(1) == 0:
+            i.control /= Builtins::Int.new(2)
+            return self.release(I_DEVA)
+        else:
+            i.control := Builtins::Int.new(i.control/2).xor(0xd008)
+            return self.release(I_DEVB)
+            
+
+// WorkTask
+
+
+A := "A".int_val()
+
+class WorkTask(Task):
+    func init(self,i,p,w,s,r):
+        exbi Task.init(i,p,w,s,r)
+
+    func fn(self,pkt,r):
+        w := r
+        assert WorkerTaskRec.instantiated(w)
+        if pkt is null:
+            return self.waitTask()
+
+        if w.destination == I_HANDLERA:
+            dest := I_HANDLERB
+        else:
+            dest := I_HANDLERA
+
+        w.destination := dest
+        pkt.ident := dest
+        pkt.datum := 0
+
+        i := 0
+        while i < BUFSIZE:
+            w.count += 1
+            if w.count > 26:
+                w.count := 1
+            pkt.data[i] := A + w.count - 1
+            i += 1
+
+        return self.qpkt(pkt)
+
+import Time
+
+
+
+func schedule():
+    t := taskWorkArea.taskList
+    while not t is null:
+        pkt := null
+
+        if tracing is True:
+            Sys::println("tcb = ", t.ident)
+
+        if t.isTaskHoldingOrWaiting() is True:
+            t := t.link
+        else:
+            if tracing is True:
+                trace(("0".int_val() + t.ident).str_val())
+            t := t.runTask()
+
+class Richards:
+
+    func run(self, iterations):
+        i := 0
+        while i < iterations:
+            taskWorkArea.holdCount := 0
+            taskWorkArea.qpktCount := 0
+
+            IdleTask.new(I_IDLE, 1, 10000, TaskState.new().running(), IdleTaskRec.new())
+
+            wkq := Packet.new(null, 0, K_WORK)
+            wkq := Packet.new(wkq , 0, K_WORK)
+            WorkTask.new(I_WORK, 1000, wkq, TaskState.new().waitingWithPacket(), WorkerTaskRec.new())
+
+            wkq := Packet.new(null, I_DEVA, K_DEV)
+            wkq := Packet.new(wkq , I_DEVA, K_DEV)
+            wkq := Packet.new(wkq , I_DEVA, K_DEV)
+            HandlerTask.new(I_HANDLERA, 2000, wkq, TaskState.new().waitingWithPacket(), HandlerTaskRec.new())
+
+            wkq := Packet.new(null, I_DEVB, K_DEV)
+            wkq := Packet.new(wkq , I_DEVB, K_DEV)
+            wkq := Packet.new(wkq , I_DEVB, K_DEV)
+            HandlerTask.new(I_HANDLERB, 3000, wkq, TaskState.new().waitingWithPacket(), HandlerTaskRec.new())
+
+            wkq := null
+            DeviceTask.new(I_DEVA, 4000, wkq, TaskState.new().waiting(), DeviceTaskRec.new())
+            DeviceTask.new(I_DEVB, 5000, wkq, TaskState.new().waiting(), DeviceTaskRec.new())
+            
+            schedule()
+
+            if taskWorkArea.holdCount == 9297 & taskWorkArea.qpktCount == 23246:
+                pass
+            else:
+                return False
+            
+            i += 1
+
+        return True
+
+func entry_point(iterations):
+    r := Richards.new()
+    startTime := Time::current_mono()
+    result := r.run(iterations)
+    endTime := Time::current_mono()
+    return [result, startTime, endTime]
+
+func main():
+    if Sys::argv.len() == 1:
+        iterations := Builtins::Int.new(Sys::argv[0])
+    else:
+        iterations := 10
+    Sys::println("Richards benchmark (Converge) starting... [entry_point]")
+    result, startTime, endTime := entry_point(iterations)
+    if result is False:
+        Sys::println("Incorrect results!")
+        Sys::exit(1)
+    Sys::println("finished.")
+    total_s := (endTime - startTime).as_float()
+    Sys::println(Strings::format("Total time for %d iterations: %f secs", iterations,total_s))
+    Sys::println(Strings::format("Average time per iteration: %f ms", total_s*1000/iterations))

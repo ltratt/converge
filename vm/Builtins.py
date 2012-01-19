@@ -128,7 +128,6 @@ _EMPTY_MAP = _Con_Map()
 
 class Con_Boxed_Object(Con_Object):
     __slots__ = ("instance_of", "slots_map", "slots")
-    _immutable_fields = ("slots",)
 
 
     def __init__(self, vm, instance_of=None):

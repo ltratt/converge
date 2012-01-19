@@ -707,11 +707,10 @@ class VM(object):
     def _instr_is(self, instr, cf):
         o1 = cf.stack_pop()
         o2 = cf.stack_pop()
-        r = self.get_slot_apply(o1, "is", [o2], allow_fail=True)
-        if not r:
+        if not o1.is_(o2):
             self._fail_now(cf)
             return
-        cf.stack_push(r)
+        cf.stack_push(o2)
         cf.bc_off += Target.INTSIZE
 
 

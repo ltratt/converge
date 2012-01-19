@@ -212,6 +212,10 @@ class Con_Boxed_Object(Con_Object):
             self.slots = [o]
 
 
+    def is_(self, o):
+        return self is o
+
+
     def add(self, vm, o):
         return vm.get_slot_apply(self, "+", [o])
 
@@ -298,8 +302,8 @@ def _Con_Object_init(vm):
 @con_object_proc
 def _Con_Object_is(vm):
     (self, o),_ = vm.decode_args("OO")
-    if self is o:
-        return o
+    if self.is_(o):
+        return vm.get_builtin(BUILTIN_NULL_OBJ)
     else:
         return vm.get_builtin(BUILTIN_FAIL_OBJ)
 
@@ -1184,6 +1188,13 @@ class Con_Int(Con_Number):
         return float(self.v)
 
 
+    def is_(self, o):
+        if isinstance(o, Con_Int):
+            return self.v == o.v
+        else:
+            return self is o
+
+
     def add(self, vm, o):
         o = type_check_number(vm, o)
         if isinstance(o, Con_Int):
@@ -1385,20 +1396,6 @@ def _Con_Int_idiv(vm):
     return self.idiv(vm, o_o)
 
 
-@con_object_proc
-def _Con_Int_is(vm):
-    (self, o_o),_ = vm.decode_args("IO")
-    assert isinstance(self, Con_Int)
-    if self is o_o:
-        return o_o
-    else:
-        # We want to maintain the illusion that integers of the same value are also the same object.
-        if isinstance(o_o, Con_Int) and self.v == o_o.v:
-            return o_o
-        else:
-            return vm.get_builtin(BUILTIN_FAIL_OBJ)
-
-
 @con_object_gen
 def _Con_Int_iter_to(vm):
     (self, to_o, step_o),_ = vm.decode_args("II", opt="I")
@@ -1535,7 +1532,6 @@ def bootstrap_con_int(vm):
     new_c_con_func_for_class(vm, ">=", _Con_Int_gtq, int_class)
     new_c_con_func_for_class(vm, "hash", _Con_Int_hash, int_class)
     new_c_con_func_for_class(vm, "idiv", _Con_Int_idiv, int_class)
-    new_c_con_func_for_class(vm, "is", _Con_Int_is, int_class)
     new_c_con_func_for_class(vm, "iter_to", _Con_Int_iter_to, int_class)
     new_c_con_func_for_class(vm, "<", _Con_Int_le, int_class)
     new_c_con_func_for_class(vm, "<=", _Con_Int_leq, int_class)

@@ -455,6 +455,13 @@ class Con_Class(Con_Boxed_Object):
         return None
 
 
+    def get_field(self, vm, n):
+        o = self.find_field(vm, n)
+        if o is None:
+            vm.raise_helper("Field_Exception", [Con_String(vm, n), self])
+        return o
+
+
     def has_field(self, vm, n):
         m = jit.promote(self.fields_map)
         i = m.find(n)

@@ -523,7 +523,9 @@ class VM(object):
 
             try:
                 #x = cf.stackpe; assert x >= 0; print "%s %s %d [stackpe:%d ffp:%d gfp:%d xfp:%d]" % (Target.INSTR_NAMES[instr & 0xFF], str(cf.stack[:x]), bc_off, cf.stackpe, cf.ffp, cf.gfp, cf.xfp)
-                if it == Target.CON_INSTR_VAR_LOOKUP:
+                if it == Target.CON_INSTR_EXBI:
+                    self._instr_exbi(instr, cf)
+                elif it == Target.CON_INSTR_VAR_LOOKUP:
                     self._instr_var_lookup(instr, cf)
                 elif it == Target.CON_INSTR_VAR_ASSIGN:
                     self._instr_var_assign(instr, cf)
@@ -626,6 +628,16 @@ class VM(object):
                 self._remove_exception_frame(cf)
                 cf.stack_push(e.ex_obj)
                 cf.bc_off = ef.bc_off
+
+
+    def _instr_exbi(self, instr, cf):
+        class_ = Builtins.type_check_class(self, cf.stack_pop())
+        bind_o = cf.stack_pop()
+        nm_start, nm_size = Target.unpack_exbi(instr)
+        nm = Target.extract_str(cf.pc.mod.bc, nm_start + cf.bc_off, nm_size)
+        pa = Builtins.Con_Partial_Application(self, bind_o, class_.get_field(self, nm))
+        cf.stack_push(pa)
+        cf.bc_off += Target.align(nm_start + nm_size)
 
 
     @jit.unroll_safe

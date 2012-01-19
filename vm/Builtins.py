@@ -1504,6 +1504,15 @@ def _Con_Int_to_str(vm):
     return Con_String(vm, str(self.v))
 
 
+@con_object_proc
+def _Con_Int_xor(vm):
+    (self, o_o),_ = vm.decode_args("II")
+    assert isinstance(self, Con_Int)
+    assert isinstance(o_o, Con_Int)
+
+    return Con_Int(vm, self.v ^ o_o.v)
+
+
 def bootstrap_con_int(vm):
     int_class = vm.get_builtin(BUILTIN_INT_CLASS)
     assert isinstance(int_class, Con_Class)
@@ -1531,6 +1540,7 @@ def bootstrap_con_int(vm):
     new_c_con_func_for_class(vm, "str_val", _Con_Int_str_val, int_class)
     new_c_con_func_for_class(vm, "-", _Con_Int_sub, int_class)
     new_c_con_func_for_class(vm, "to_str", _Con_Int_to_str, int_class)
+    new_c_con_func_for_class(vm, "xor", _Con_Int_xor, int_class)
 
 
 

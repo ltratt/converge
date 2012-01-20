@@ -341,7 +341,7 @@ class Code_Gen:
 
             self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(renamed_var_name.src_infos, "set_defn"))
             var := renamed_var_name.names[-1]
-            self._instructions.append(self._target.Instr_String.new(var.src_infos, var.name))
+            max_stack_size += self._constant_get(self._target.CONST_STRING, var.name, var.src_infos)
             self._instructions.append(self._target.Instr_Pull.new(renamed_var_name.src_infos, 2))
             self._instructions.append(self._target.Instr_Apply.new(renamed_var_name.src_infos, 2))
         else:
@@ -427,6 +427,22 @@ class Code_Gen:
             self._compiler.warning("Unable to determine module referenced in lookup (use a plain variable lookup instead)", mod_lookup.names[0].src_infos)
 
 
+
+    func _constant_get(self, type, val, src_infos):
+        off := 0
+        for cnd_type, cnd_val := self._constants.iter():
+            if type == cnd_type & val == cnd_val:
+                break
+            off += 1
+        exhausted:
+            off := self._constants.len()
+            self._constants.append([type, val])
+        
+        self._instructions.append(self._target.Instr_Constant_Get.new(src_infos, off))
+        
+        return 1
+
+
     ////////////////////////////////////////////////////////////////////////////////////////////////
     // Traversal
     //
@@ -508,10 +524,9 @@ class Code_Gen:
         max_stack_size += 1
         
         if node.name is null:
-            self._instructions.append(self._target.Instr_String.new(node.src_infos, ""))
+            max_stack_size += self._constant_get(self._target.CONST_STRING, "", node.src_infos)
         else:
-            self._instructions.append(self._target.Instr_String.new(node.name.src_infos, node.name.name))
-        max_stack_size += 1
+            max_stack_size += self._constant_get(self._target.CONST_STRING, node.name.name, node.name.src_infos)
         
         if node.supers.len() > 0:
             max_loop_stack_size := 0
@@ -544,17 +559,17 @@ class Code_Gen:
             if ITree::IFunc_Defn.instantiated(field):
                 if field.name is null:
                     self._compiler.error("Functions as class fields can not be anonymous.", node.src_infos)
-                self._instructions.append(self._target.Instr_String.new(field.src_infos, field.name.name))
-                loop_stack_size += 1 + self._preorder(field)
+                loop_stack_size += self._constant_get(self._target.CONST_STRING, field.name.name, field.src_infos)
+                loop_stack_size += self._preorder(field)
             elif ITree::IClass_Defn.instantiated(field):
                 if field.name is null:
                     self._compiler.error("Classes as class fields can not be anonymous.", node.src_infos)
-                self._instructions.append(self._target.Instr_String.new(field.src_infos, field.name))
-                loop_stack_size += 1 + self._preorder(field)
+                loop_stack_size += self._constant_get(self._target.CONST_STRING, field.name, field.src_infos)
+                loop_stack_size += self._preorder(field)
             elif ITree::IAssignment.instantiated(field):
                 assert field.targets.len() == 1
-                self._instructions.append(self._target.Instr_String.new(field.src_infos, field.targets[0].name))
-                loop_stack_size += 1 + self._preorder(field.expr)
+                loop_stack_size += self._constant_get(self._target.CONST_STRING, field.targets[0].name, field.src_infos)
+                loop_stack_size += self._preorder(field.expr)
             else:
                 Sys::println(field.pp(0))
                 raise "XXX"
@@ -597,12 +612,12 @@ class Code_Gen:
         self._nesting.append([NEST_FUNC, node.is_bound])
         
         if node.name is null:
-            self._instructions.append(self._target.Instr_String.new(node.src_infos, ""))
+            max_stack_size := self._constant_get(self._target.CONST_STRING, "", node.src_infos)
         else:
-            self._instructions.append(self._target.Instr_String.new(node.src_infos, node.name.name))
+            max_stack_size := self._constant_get(self._target.CONST_STRING, node.name.name, node.name.src_infos)
         self._instructions.append(self._target.Instr_Int.new(node.src_infos, bound_vars.len() + node.is_bound))
         self._instructions.append(self._target.Instr_Int.new(node.src_infos, node.params.len()))
-        max_stack_size := 3
+        max_stack_size += 2
         func_defn_instr := self._target.Instr_Func_Defn.new(node.src_infos, node.is_bound)
         self._instructions.append(func_defn_instr)
         end_of_func_body_label := self._create_label()
@@ -767,35 +782,13 @@ class Code_Gen:
 
     func _t_iint(self, node):
 
-        off := 0
-        for type, val := self._constants.iter():
-            if type == self._target.CONST_INT & val == node.val:
-                break
-            off += 1
-        exhausted:
-            off := self._constants.len()
-            self._constants.append([self._target.CONST_INT, node.val])
-        
-        self._instructions.append(self._target.Instr_Constant_Get.new(node.src_infos, off))
-        
-        return 1
+        return self._constant_get(self._target.CONST_INT, node.val, node.src_infos)
 
 
 
     func _t_ifloat(self, node):
     
-        off := 0
-        for type, val := self._constants.iter():
-            if type == self._target.CONST_FLOAT & val == node.val:
-                break
-            off += 1
-        exhausted:
-            off := self._constants.len()
-            self._constants.append([self._target.CONST_FLOAT, node.val])
-        
-        self._instructions.append(self._target.Instr_Constant_Get.new(node.src_infos, off))
-        
-        return 1
+        return self._constant_get(self._target.CONST_FLOAT, node.val, node.src_infos)
 
 
 
@@ -938,18 +931,7 @@ class Code_Gen:
 
     func _t_istring(self, node):
     
-        off := 0
-        for type, val := self._constants.iter():
-            if type == self._target.CONST_STRING & val == node.val:
-                break
-            off += 1
-        exhausted:
-            off := self._constants.len()
-            self._constants.append([self._target.CONST_STRING, node.val])
-        
-        self._instructions.append(self._target.Instr_Constant_Get.new(node.src_infos, off))
-        
-        return 1
+        return self._constant_get(self._target.CONST_STRING, node.val, node.src_infos)
 
 
 
@@ -1341,8 +1323,8 @@ class Code_Gen:
                 
                 self._instructions.append(self._target.Instr_Pre_Apply_Slot_Lookup.new(target.src_infos, "set_defn"))
                 var := target.names[-1]
-                self._instructions.append(self._target.Instr_String.new(var.src_infos, var.name))
-                max_stack_size := self._max(max_stack_size, 1 + i + 1)
+                max_stack_size := self._max(max_stack_size, 1 + i \
+                  + self._constant_get(self._target.CONST_STRING, var.name, var.src_infos))
                 self._instructions.append(self._target.Instr_Pull.new(target.src_infos, 2))
                 self._instructions.append(self._target.Instr_Apply.new(target.src_infos, 2))
             elif ITree::ISlice.instantiated(target):

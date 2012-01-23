@@ -27,7 +27,7 @@ from Builtins import *
 
 
 
-eci             = ExternalCompilationInfo(includes=["sys/time.h"])
+eci             = ExternalCompilationInfo(includes=["time.h", "sys/time.h"])
 
 class CConfig:
     _compilation_info_ = eci

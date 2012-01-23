@@ -704,16 +704,16 @@ class Con_Module(Con_Boxed_Object):
 
     @jit.elidable_promote("0")
     def get_closure_i(self, vm, n):
-        i = self.tlvars_map.get(n, -1)
+        return self.tlvars_map.get(n, -1)
+
+
+    def get_defn(self, vm, n):
+        i = self.get_closure_i(vm, n)
         if i == -1:
             name = type_check_string(vm, self.get_slot(vm, "name")).v
             vm.raise_helper("Mod_Defn_Exception", \
               [Builtins.Con_String(vm, "No such definition '%s' in '%s'." % (n, name))])
-        return i
-
-
-    def get_defn(self, vm, n):
-        o = self.closure.vars[self.get_closure_i(vm, n)]
+        o = self.closure.vars[i]
         if o is None:
             name = type_check_string(vm, self.get_slot(vm, "name")).v
             vm.raise_helper("Mod_Defn_Exception", \
@@ -724,13 +724,18 @@ class Con_Module(Con_Boxed_Object):
 
     @jit.elidable_promote("0")
     def has_defn(self, vm, n):
-        if self.tlvars_map.get(n, -1) == -1:
+        if self.get_closure_i(vm, n) == -1:
             return False
         return True
 
 
     def set_defn(self, vm, n, o):
-        self.closure.vars[self.get_closure_i(vm, n)] = o
+        i = self.get_closure_i(vm, n)
+        if i == -1:
+            name = type_check_string(vm, self.get_slot(vm, "name")).v
+            vm.raise_helper("Mod_Defn_Exception", \
+              [Builtins.Con_String(vm, "No such definition '%s' in '%s'." % (n, name))])
+        self.closure.vars[i] = o
 
 
     @jit.elidable_promote("0")

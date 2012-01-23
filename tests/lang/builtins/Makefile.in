@@ -1,7 +1,7 @@
 include @abs_top_srcdir@/Makefile.inc
 
 
-TESTS = int1 list1 str1
+TESTS = class1 int1 list1 str1
 
 
 all:

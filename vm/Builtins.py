@@ -18,7 +18,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-from pypy.rlib import debug, jit, objectmodel, rarithmetic
+from pypy.rlib import debug, jit, objectmodel, rarithmetic, rweakref
 from pypy.rpython.lltypesystem import lltype, rffi
 
 NUM_BUILTINS = 41
@@ -146,22 +146,10 @@ class Con_Boxed_Object(Con_Object):
             if i != -1:
                 return True
 
-        if self.has_slot_override(vm, n) or self.instance_of.has_field(vm, n):
-            return True
-
         return False
 
 
-    # This is the method to override in subclasses.
-
-    def has_slot_override(self, vm, n):
-        if n == "instance_of":
-            return True
-        
-        return False
-
-
-    def get_slot(self, vm, n, find_mode=False):
+    def find_slot(self, vm, n):
         o = None
         if self.slots is not None:
             m = jit.promote(self.slots_map)
@@ -170,16 +158,12 @@ class Con_Boxed_Object(Con_Object):
                 o = self.slots[i]
     
         if o is None:
-            o = self.get_slot_override(vm, n)
-    
-        if o is None:
             o = self.instance_of.find_field(vm, n)
-
-        if o is None:
-            if find_mode:
-                return None
-            else:
-                vm.raise_helper("Slot_Exception", [Con_String(vm, n), self])
+            if o is None:
+                if n == "instance_of":
+                    o = self.instance_of
+                if o is None:
+                    return o
 
         if isinstance(o, Con_Func) and o.is_bound:
             return Con_Partial_Application(vm, self, o)
@@ -187,13 +171,27 @@ class Con_Boxed_Object(Con_Object):
         return o
 
 
-    # This is the method to override in subclasses.
+    def get_slot(self, vm, n):
+        o = None
+        if self.slots is not None:
+            m = jit.promote(self.slots_map)
+            i = m.find(n)
+            if i != -1:
+                o = self.slots[i]
+    
+        if o is None:
+            o = self.instance_of.find_field(vm, n)
+            if o is None:
+                if n == "instance_of":
+                    o = self.instance_of
+                if o is None:
+                    vm.raise_helper("Slot_Exception", [Con_String(vm, n), self])
 
-    def get_slot_override(self, vm, n):
-        if n == "instance_of":
-            return self.instance_of
+        if isinstance(o, Con_Func) and o.is_bound:
+            return Con_Partial_Application(vm, self, o)
         
-        return None
+        return o
+
 
 
     def set_slot(self, vm, n, o):
@@ -278,7 +276,7 @@ def _Con_Object_find_slot(vm):
     (self, sn_o),_ = vm.decode_args("OS")
     assert isinstance(sn_o, Con_String)
 
-    v = self.get_slot(vm, sn_o.v, find_mode=True)
+    v = self.find_slot(vm, sn_o.v)
     if not v:
         v = vm.get_builtin(BUILTIN_FAIL_OBJ)
     return v
@@ -405,8 +403,8 @@ def bootstrap_con_object(vm):
 #
 
 class Con_Class(Con_Boxed_Object):
-    __slots__ = ("supers", "fields_map", "fields", "new_func")
-    _immutable_fields = ("supers", "fields")
+    __slots__ = ("supers", "fields_map", "fields", "new_func", "version", "dependents")
+    _immutable_fields = ("supers", "fields", "dependents")
 
 
     def __init__(self, vm, name, supers, container, instance_of=None, new_func=None):
@@ -437,18 +435,36 @@ class Con_Class(Con_Boxed_Object):
         self.supers = supers
         self.fields_map = _EMPTY_MAP
         self.fields = []
+        
+        # To optimise slot lookups, we need to be a little more cunning. We make a (reasonable)
+        # assumption that classes rarely change their fields (most classes never change their fields
+        # after their initial creation at all), so that in general we can simply elide field
+        # lookups entirely. When a field is changed, all subsequent field lookups on that class and
+        # its subclasses need to be regenerated. To force this, every class a "version" which is
+        # incremented whenever its fields are changed. As well as changing the class itself, all
+        # subclasses must be changed too. We maintain a list of all subclasses (even indirect ones!)
+        # to do this.
+        
+        self.version = 0
+        self.dependents = []
+        sc_stack = supers[:]
+        while len(sc_stack) > 0:
+            sc = type_check_class(vm, sc_stack.pop())
+            sc.dependents.append(rweakref.ref(sc))
+            sc_stack.extend(sc.supers)
 
         self.set_slot(vm, "name", name)
         if container:
             self.set_slot(vm, "container", container)
 
 
-    def find_field(self, vm, n):
+    @jit.elidable_promote("0")
+    def _get_field_i(self, vm, n, version):
         m = jit.promote(self.fields_map)
         i = m.find(n)
         if i != -1:
             return self.fields[i]
-        
+
         for s in self.supers:
             assert isinstance(s, Con_Class)
             o = s.find_field(vm, n)
@@ -458,25 +474,15 @@ class Con_Class(Con_Boxed_Object):
         return None
 
 
+    def find_field(self, vm, n):
+        return self._get_field_i(vm, n, jit.promote(self.version))
+
+
     def get_field(self, vm, n):
-        o = self.find_field(vm, n)
+        o = self._get_field_i(vm, n, jit.promote(self.version))
         if o is None:
             vm.raise_helper("Field_Exception", [Con_String(vm, n), self])
         return o
-
-
-    def has_field(self, vm, n):
-        m = jit.promote(self.fields_map)
-        i = m.find(n)
-        if i != -1:
-            return True
-        
-        for s in self.supers:
-            assert isinstance(s, Con_Class)
-            if s.has_field(vm, n):
-                return True
-
-        return False
 
 
     def set_field(self, vm, n, o):
@@ -488,6 +494,16 @@ class Con_Class(Con_Boxed_Object):
             self.fields.append(o)
         else:
             self.fields[i] = o
+        self.version += 1
+        
+        j = 0
+        while j < len(self.dependents):
+            dep = self.dependents[j]()
+            if dep is None:
+                del self.dependents[j]
+                continue
+            dep.version += 1
+            j += 1
 
 
 @con_object_proc

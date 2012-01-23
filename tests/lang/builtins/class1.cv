@@ -19,21 +19,42 @@
 // IN THE SOFTWARE.
 
 
-import Sys
-import Lang_Test
+import Builtins, Exceptions, Sys
 
 
 
+func test_simple_add_field():
+    class C:
+        pass
 
-tests := $<<Lang_Test::tests>>:
-    "class1.cv"
-    "int1.cv"
-    "list1.cv"
-    "str1.cv"
+    c := C.new()
+    C.set_field("x", 1)
+    assert c.x == 1
 
+
+func test_nested_add_field():
+    class B:
+        pass
+
+    class C(B):
+        pass
+
+    c := C.new()
+    B.set_field("x", 1)
+    assert c.x == 1
 
 
 func main():
 
-    if tests.new().run_all() != 0:
-        Sys::exit(1)
+    // We want to check that the JIT handles nested adding of fields, so we embed everything in a
+    // sufficiently long loop that we can be sure that the JIT is operating.
+
+    i := 0
+    while i < 100000:
+        test_simple_add_field()
+        i += 1
+
+    i := 0
+    while i < 100000:
+        test_nested_add_field()
+        i += 1

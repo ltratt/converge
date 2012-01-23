@@ -665,23 +665,11 @@ class Con_Module(Con_Boxed_Object):
             self.closure = VM.Closure(None, len(tlvars_map))
 
         self.set_slot(vm, "name", name)
+        self.set_slot(vm, "src_path", Con_String(vm, src_path))
+        self.set_slot(vm, "mod_id", Con_String(vm, id_))
         self.set_slot(vm, "container", vm.get_builtin(BUILTIN_NULL_OBJ))
 
         self.initialized = False
-
-
-    def get_slot_override(self, vm, n):
-        if n == "src_path":
-            return Con_String(vm, self.src_path)
-        elif n == "mod_id":
-            return Con_String(vm, self.id_)
-        return Con_Boxed_Object.get_slot_override(self, vm, n)
-
-
-    def has_slot_override(self, vm, n):
-        if n in ("src_path", "mod_id"):
-            return True
-        return Con_Boxed_Object.has_slot_override(self, vm, n)
 
 
     def import_(self, vm):
@@ -1017,19 +1005,8 @@ class Con_Func(Con_Boxed_Object):
         self.container_closure = container_closure
         
         self.set_slot(vm, "container", container)
+        self.set_slot(vm, "name", name)
         self.set_slot(vm, "num_params", Con_Int(vm, num_params))
-
-
-    def get_slot_override(self, vm, n):
-        if n == "name":
-            return self.name
-        return Con_Boxed_Object.get_slot_override(self, vm, n)
-
-
-    def has_slot_override(self, vm, n):
-        if n == "name":
-            return True
-        return Con_Boxed_Object.has_slot_override(self, vm, n)
 
 
     def __repr__(self):

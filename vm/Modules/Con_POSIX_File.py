@@ -108,8 +108,8 @@ def import_(vm):
 
 
 def _errno_raise(vm, path):
-    if path is not None:
-        msg = "File '%s': %s." % (path, os.strerror(rposix.get_errno()))
+    if isinstance(path, Con_String):
+        msg = "File '%s': %s." % (path.v, os.strerror(rposix.get_errno()))
     else:
         msg = os.strerror(rposix.get_errno())
     vm.raise_helper("File_Exception", [Con_String(vm, msg)])
@@ -120,15 +120,16 @@ def _errno_raise(vm, path):
 #
 
 class File(Con_Boxed_Object):
-    __slots__ = ("path", "filep", "closed")
-    _immutable_fields_ = ("path", "file")
+    __slots__ = ("filep", "closed")
+    _immutable_fields_ = ("file")
 
 
     def __init__(self, vm, instance_of, path, filep):
         Con_Boxed_Object.__init__(self, vm, instance_of)
-        self.path = path
         self.filep = filep
         self.closed = False
+        
+        self.set_slot(vm, "path", path)
 
 
     def __del__(self):
@@ -137,23 +138,6 @@ class File(Con_Boxed_Object):
             # resources to the OS. Errors from fclose are ignored as there's nothing sensible we can
             # do with them at this point.
             fclose(self.filep)
-
-
-    def has_slot_override(self, vm, n):
-        if n == "path":
-            return True
-        
-        return Con_Boxed_Object.has_slot_override(self, vm, n)
-
-
-    def get_slot_override(self, vm, n):
-        if n == "path":
-            if self.path:
-                return Con_String(vm, self.path)
-            else:
-                return vm.get_builtin(BUILTIN_NULL_OBJ)
-        
-        return Con_Boxed_Object.get_slot_override(self, vm, n)
 
 
 @con_object_proc
@@ -172,9 +156,9 @@ def _new_func_File(vm):
         vm.raise_helper("Type_Exception", [Con_String(vm, "[String, Int]"), path_o])
 
     if not f:
-        _errno_raise(vm, path_s)
+        _errno_raise(vm, path_o)
 
-    f_o = File(vm, class_, path_s, f)
+    f_o = File(vm, class_, path_o, f)
     vm.get_slot_apply(f_o, "init", [path_o, mode_o])
 
     return f_o
@@ -187,7 +171,7 @@ def File_close(vm):
     _check_open(vm, self)
 
     if fclose(self.filep) != 0:
-        _errno_raise(vm, self.path)
+        _errno_raise(vm, self.get_slot(vm, "path"))
     self.closed = True
 
     return vm.get_builtin(BUILTIN_NULL_OBJ)
@@ -209,7 +193,7 @@ def File_flush(vm):
     _check_open(vm, self)
     
     if fflush(self.filep) != 0:
-        _errno_raise(vm, self.path)
+        _errno_raise(vm, self.get_slot(vm, "path"))
 
     return vm.get_builtin(BUILTIN_NULL_OBJ)
 
@@ -260,7 +244,7 @@ def File_readln(vm):
             if not l:
                 if feof(self.filep) != 0:
                     break
-                _errno_raise(vm, self.path)
+                _errno_raise(vm, self.get_slot(vm, "path"))
             l_o = Con_String(vm, rffi.charpsize2str(l, rarithmetic.intmask(lenp[0])))
             yield l_o
 
@@ -273,7 +257,7 @@ def File_seek(vm):
     _check_open(vm, self)
 
     if fseek(self.filep, off_o.v, SEEK_SET) != 0:
-        _errno_raise(vm, self.path)
+        _errno_raise(vm, self.get_slot(vm, "path"))
 
     return vm.get_builtin(BUILTIN_NULL_OBJ)
 
@@ -339,7 +323,7 @@ def canon_path(vm):
     with lltype.scoped_alloc(rffi.CCHARP.TO, PATH_MAX) as resolved:
         r = realpath(p_o.v, resolved)
         if not r:
-            _errno_raise(vm, p_o.v)
+            _errno_raise(vm, p_o)
         rp = rffi.charpsize2str(resolved, rarithmetic.intmask(strlen(resolved)))
 
     return Con_String(vm, rp)
@@ -354,7 +338,7 @@ def chmod(vm):
     try:
         os.chmod(p_o.v, int(mode_o.v))
     except OSError, e:
-        _errno_raise(vm, p_o.v)
+        _errno_raise(vm, p_o)
 
     return vm.get_builtin(BUILTIN_NULL_OBJ)
 
@@ -370,7 +354,7 @@ def exists(vm):
         else:
             return vm.get_builtin(BUILTIN_FAIL_OBJ)
     except OSError, e:
-        _errno_raise(vm, p_o.v)
+        _errno_raise(vm, p_o)
 
 
 @con_object_proc
@@ -384,7 +368,7 @@ def is_dir(vm):
         else:
             return vm.get_builtin(BUILTIN_FAIL_OBJ)
     except OSError, e:
-        _errno_raise(vm, p_o.v)
+        _errno_raise(vm, p_o)
 
 
 @con_object_proc
@@ -398,7 +382,7 @@ def is_file(vm):
         else:
             return vm.get_builtin(BUILTIN_FAIL_OBJ)
     except OSError, e:
-        _errno_raise(vm, p_o.v)
+        _errno_raise(vm, p_o)
 
 
 @con_object_gen
@@ -410,7 +394,7 @@ def iter_dir_entries(vm):
         for p in os.listdir(dp_o.v):
             yield Con_String(vm, p)
     except OSError, e:
-        _errno_raise(vm, dp_o.v)
+        _errno_raise(vm, dp_o)
 
 
 @con_object_proc
@@ -430,7 +414,7 @@ def mtime(vm):
     try:
         mtime = os.stat(p_o.v).st_mtime
     except OSError, e:
-        _errno_raise(vm, p_o.v)
+        _errno_raise(vm, p_o)
     
     sec = int(mtime)
     nsec = int((mtime - int(mtime)) * 1E9)
@@ -460,7 +444,7 @@ def rm(vm):
                 os.unlink(p)
                 del st[i]
         except OSError, e:
-            _errno_raise(vm, p)
+            _errno_raise(vm, Con_String(vm, p))
 
         if i == len(st):
             i -= 1
@@ -484,14 +468,14 @@ def temp_file(vm):
         with rffi.scoped_str2charp(tmpp) as buf:
             fd = mkstemp(buf)
             tmpp = rffi.charp2str(buf)
-            
+           
         if fd == -1:
-            _errno_raise(vm, tmpp)
+            _errno_raise(vm, Con_String(vm, tmpp))
         
         f = fdopen(fd, "w+")
         if not f:
-            _errno_raise(vm, tmpp)
+            _errno_raise(vm, Con_String(vm, tmpp))
         
-        return File(vm, file_class, tmpp, f)
+        return File(vm, file_class, Con_String(vm, tmpp), f)
     else:
         raise Exception("XXX")

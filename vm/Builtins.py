@@ -1118,7 +1118,7 @@ def _Con_Partial_Application_apply(vm):
     assert isinstance(self, Con_Partial_Application)
     
     if self.args:
-        args = [self.o] + self.args[:]
+        args = [self.o] + self.args
     else:
         args = [self.o]
     

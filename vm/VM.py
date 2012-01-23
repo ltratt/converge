@@ -1143,15 +1143,11 @@ class VM(object):
 
     def _remove_exception_frame(self, cf):
         ef = cf.stack_get(cf.xfp)
-        cf.stack_set(cf.xfp, None)
-        while cf.gfp > cf.xfp:
-            self._remove_generator_frame(cf)
+        cf.stack_del_from(cf.xfp)
         assert isinstance(ef, Stack_Exception_Frame)
         cf.ffp = ef.prev_ffp
         cf.gfp = ef.prev_gfp
         cf.xfp = ef.prev_xfp
-        cf.stackpe -= 1
-
 
 
 

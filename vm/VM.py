@@ -905,7 +905,7 @@ class VM(object):
                 arg_info = Target.read_word(cf.pc.mod.bc, arg_offset)
                 if i >= nargs:
                     if not Target.unpack_unpack_args_is_mandatory(arg_info):
-                        msg = "No value passed for parameter %d." % i
+                        msg = "No value passed for parameter %d." % (i + 1)
                         self.raise_helper("Parameters_Exception", [Builtins.Con_String(self, msg)])
                 else:
                     if nargs > num_fargs:

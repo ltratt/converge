@@ -1,0 +1,21 @@
+include @abs_top_srcdir@/Makefile.inc
+
+all: cvstone richards
+
+cvstone: cvstone.cv
+	${CONVERGEC} -m cvstone.cv
+
+richards: richards.cv
+	${CONVERGEC} -m richards.cv
+
+install:
+
+clean:
+	rm -f cvstone cvstone.cvb richards richards.cvb
+
+distclean: clean
+	rm -f Makefile
+
+regress: all
+	${CONVERGE_VM} cvstone
+	${CONVERGE_VM} richards

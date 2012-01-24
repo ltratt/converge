@@ -1,25 +1,30 @@
 all:
+	cd benchmarks && ${MAKE} ${MFLAGS}
 	cd compile_time && ${MAKE} ${MFLAGS}
 	cd dsls && ${MAKE} ${MFLAGS}
 	cd metaclasses && ${MAKE} ${MFLAGS}
 
 install:
+	cd benchmarks && ${MAKE} ${MFLAGS} install
 	cd compile_time && ${MAKE} ${MFLAGS} install
 	cd dsls && ${MAKE} ${MFLAGS} install
 	cd metaclasses && ${MAKE} ${MFLAGS} install
 
 clean:
+	cd benchmarks && ${MAKE} ${MFLAGS} clean
 	cd compile_time && ${MAKE} ${MFLAGS} clean
 	cd dsls && ${MAKE} ${MFLAGS} clean
 	cd metaclasses && ${MAKE} ${MFLAGS} clean
 
 distclean: clean
+	cd benchmarks && ${MAKE} ${MFLAGS} distclean
 	cd compile_time && ${MAKE} ${MFLAGS} distclean
 	cd dsls && ${MAKE} ${MFLAGS} distclean
 	cd metaclasses && ${MAKE} ${MFLAGS} distclean
 	rm -f Makefile
 
 regress:
+	cd benchmarks && ${MAKE} ${MFLAGS} regress
 	cd compile_time && ${MAKE} ${MFLAGS} regress
 	cd dsls && ${MAKE} ${MFLAGS} regress
 	cd metaclasses && ${MAKE} ${MFLAGS} regress

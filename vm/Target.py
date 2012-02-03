@@ -384,7 +384,7 @@ else:
 
     @elidable_promote()
     def extract_str(bc, off, size):
-        assert off > 0 and size > 0
+        assert off > 0 and size >= 0
         return rffi.charpsize2str(rffi.ptradd(bc, off), size)
 
     @elidable_promote("1")

@@ -157,6 +157,16 @@ libxml2_include_dirs=`xml2-config --cflags | tr " " "\n"  | grep "^-I" | sed "s/
 libxml2_library_dirs=`xml2-config --libs | tr " " "\n"  | grep "^-L" | sed "s/-L//g" | tr "\n" " " | sed "s/ *$//g"`
 libxml2_link_flags=`xml2-config --libs`
 
+# Some Linux installations of libxml2 don't include -lz in --libs output, even
+# when they should. As a gross hack around this problem, we add -lz to the list
+# of libraries needed; sometimes this might not be necessary (depending on how
+# libxml2 was compiled), but it generally won't do any harm.
+
+echo $libxml2_link_flags | egrep "\-lz" 2> /dev/null > /dev/null
+if [ $? -ne 0 ]; then
+    libxml2_link_flags="$libxml2_link_flags -lz"
+fi
+
 
 #
 # Bootstrap compiler

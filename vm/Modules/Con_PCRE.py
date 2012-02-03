@@ -37,7 +37,7 @@ eci                        = ExternalCompilationInfo(includes=["pcre.h"], \
                                libraries=libraries, \
                                include_dirs=Config.LIBPCRE_INCLUDE_DIRS, \
                                library_dirs=Config.LIBPCRE_LIBRARY_DIRS, \
-                               link_extra=[Config.LIBPCRE_LINK_FLAGS], \
+                               link_extra=Config.LIBPCRE_LINK_FLAGS, \
                                link_files=[Config.LIBPCRE_A])
 
 class CConfig:

@@ -32,7 +32,7 @@ import Config, Target
 eci                        = ExternalCompilationInfo(includes=["libxml/parser.h"], \
                                include_dirs=Config.LIBXML2_INCLUDE_DIRS, \
                                library_dirs=Config.LIBXML2_LIBRARY_DIRS, \
-                               link_extra=[Config.LIBXML2_LINK_FLAGS], \
+                               link_extra=Config.LIBXML2_LINK_FLAGS, \
                                link_files=[Config.LIBXML2_A])
 xmlCharP                   = lltype.Ptr(lltype.Array(rffi.UCHAR, hints={'nolength': True}))
 xmlCharPP                  = lltype.Ptr(lltype.Array(xmlCharP, hints={'nolength': True}))

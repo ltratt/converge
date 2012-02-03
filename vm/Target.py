@@ -286,48 +286,48 @@ if INTSIZE == 8:
         return (4, (instr & 0xFFFFFF00) >> 8)
 else:
     assert INTSIZE == 4
-    BC_HD_HEADER = 0 * 8
-    BC_HD_VERSION = 2 * 8
-    BC_HD_NUM_MODULES = 3 * 8
-    BC_HD_MODULES = 4 * 8
+    BC_HD_HEADER = 0 * 4
+    BC_HD_VERSION = 2 * 4
+    BC_HD_NUM_MODULES = 3 * 4
+    BC_HD_MODULES = 4 * 4
 
-    BC_MOD_HEADER = 0 * 8
-    BC_MOD_VERSION = 2 * 8
-    BC_MOD_NAME = 3 * 8
-    BC_MOD_NAME_SIZE = 4 * 8
-    BC_MOD_ID = 5 * 8
-    BC_MOD_ID_SIZE = 6 * 8
-    BC_MOD_SRC_PATH = 7 * 8
-    BC_MOD_SRC_PATH_SIZE = 8 * 8
-    BC_MOD_INSTRUCTIONS = 9 * 8
-    BC_MOD_INSTRUCTIONS_SIZE = 10 * 8
-    BC_MOD_IMPORTS = 11 * 8
-    BC_MOD_IMPORTS_SIZE = 12 * 8
-    BC_MOD_NUM_IMPORTS = 13 * 8
-    BC_MOD_SRC_POSITIONS = 14 * 8
-    BC_MOD_SRC_POSITIONS_SIZE = 15 * 8
-    BC_MOD_NEWLINES = 16 * 8
-    BC_MOD_NUM_NEWLINES = 17 * 8
-    BC_MOD_TL_VARS_MAP = 18 * 8
-    BC_MOD_TL_VARS_MAP_SIZE = 19 * 8
-    BC_MOD_NUM_TL_VARS_MAP = 20 * 8
-    BC_MOD_NUM_CONSTANTS = 21 * 8
-    BC_MOD_CONSTANTS_OFFSETS = 22 * 8
-    BC_MOD_CONSTANTS = 23 * 8
-    BC_MOD_CONSTANTS_SIZE = 24 * 8
-    BC_MOD_MOD_LOOKUPS = 25 * 8
-    BC_MOD_MOD_LOOKUPS_SIZE = 26 * 8
-    BC_MOD_NUM_MOD_LOOKUPS = 27 * 8
-    BC_MOD_IMPORT_DEFNS = 28 * 8
-    BC_MOD_NUM_IMPORT_DEFNS = 29 * 8
-    BC_MOD_SIZE = 30 * 8
+    BC_MOD_HEADER = 0 * 4
+    BC_MOD_VERSION = 2 * 4
+    BC_MOD_NAME = 3 * 4
+    BC_MOD_NAME_SIZE = 4 * 4
+    BC_MOD_ID = 5 * 4
+    BC_MOD_ID_SIZE = 6 * 4
+    BC_MOD_SRC_PATH = 7 * 4
+    BC_MOD_SRC_PATH_SIZE = 8 * 4
+    BC_MOD_INSTRUCTIONS = 9 * 4
+    BC_MOD_INSTRUCTIONS_SIZE = 10 * 4
+    BC_MOD_IMPORTS = 11 * 4
+    BC_MOD_IMPORTS_SIZE = 12 * 4
+    BC_MOD_NUM_IMPORTS = 13 * 4
+    BC_MOD_SRC_POSITIONS = 14 * 4
+    BC_MOD_SRC_POSITIONS_SIZE = 15 * 4
+    BC_MOD_NEWLINES = 16 * 4
+    BC_MOD_NUM_NEWLINES = 17 * 4
+    BC_MOD_TL_VARS_MAP = 18 * 4
+    BC_MOD_TL_VARS_MAP_SIZE = 19 * 4
+    BC_MOD_NUM_TL_VARS_MAP = 20 * 4
+    BC_MOD_NUM_CONSTANTS = 21 * 4
+    BC_MOD_CONSTANTS_OFFSETS = 22 * 4
+    BC_MOD_CONSTANTS = 23 * 4
+    BC_MOD_CONSTANTS_SIZE = 24 * 4
+    BC_MOD_MOD_LOOKUPS = 25 * 4
+    BC_MOD_MOD_LOOKUPS_SIZE = 26 * 4
+    BC_MOD_NUM_MOD_LOOKUPS = 27 * 4
+    BC_MOD_IMPORT_DEFNS = 28 * 4
+    BC_MOD_NUM_IMPORT_DEFNS = 29 * 4
+    BC_MOD_SIZE = 30 * 4
     
     # Libraries
 
-    BC_LIB_HD_HEADER = 0 * 8
-    BC_LIB_HD_FORMAT_VERSION = 2 * 8
-    BC_LIB_HD_NUM_MODULES = 3 * 8
-    BC_LIB_HD_MODULES = 4 * 8
+    BC_LIB_HD_HEADER = 0 * 4
+    BC_LIB_HD_FORMAT_VERSION = 2 * 4
+    BC_LIB_HD_NUM_MODULES = 3 * 4
+    BC_LIB_HD_MODULES = 4 * 4
 
     CON_INSTR_EXBI = 1                    # bits 0-7 1, bits 8-31 size of field name, bits 32-.. field name
     CON_INSTR_VAR_LOOKUP = 2              # bits 0-7 2, bits 8-19 closures offset, bits 20-31 var number
@@ -394,6 +394,10 @@ else:
     @elidable_promote("1")
     def read_uint32_word(bc, i):
         return rffi.cast(lltype.Signed, rffi.cast(rffi.UINTP, bc)[i / 4])
+
+    @elidable_promote("1")
+    def read_float(bc, i):
+        return rffi.cast(lltype.Float, rffi.cast(rffi.DOUBLEP, bc)[i / 8])
 
     @elidable_promote()
     def align(i):

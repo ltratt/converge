@@ -202,14 +202,15 @@ def Parser_parse(vm):
     grm_s = grm_o.v
     if len(grm_s) % Target.INTSIZE != 0:
         raise Exception("XXX")
-    for i in range(0, len(grm_s), 8):
+    for i in range(0, len(grm_s), Target.INTSIZE):
         if Target.INTSIZE == 8:
             w = ord(grm_s[i]) + (ord(grm_s[i + 1]) << 8) + (ord(grm_s[i + 2]) << 16) \
                   + (ord(grm_s[i + 3]) << 24) + (ord(grm_s[i + 4]) << 32) + \
                   + (ord(grm_s[i + 5]) << 40) + (ord(grm_s[i + 6]) << 48) + \
                   (ord(grm_s[i + 7]) << 56)
         else:
-            raise Exception("XXX")
+            w = ord(grm_s[i]) + (ord(grm_s[i + 1]) << 8) + (ord(grm_s[i + 2]) << 16) \
+                  + (ord(grm_s[i + 3]) << 24)
         grm.append(w)
 
     alts_off = grm[_COMPILED_OFFSET_TO_PRODUCTIONS]

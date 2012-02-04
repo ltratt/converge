@@ -6,7 +6,7 @@ bindir=@bindir@
 all: converge
 
 converge: *.py Modules/*.py
-	${PYTHON} ${TRANSLATE_PY} --opt=@RPYTHON_OPT@ --output=converge main.py
+	${PYTHON} ${TRANSLATE_PY} --opt=@RPYTHON_OPT@ @NO_ASMGCC_HACK@ --output=converge main.py
 
 install:
 	${INSTALL} -d ${DESTDIR}${bindir}

@@ -167,6 +167,23 @@ if [ $? -ne 0 ]; then
     libxml2_link_flags="$libxml2_link_flags -lz"
 fi
 
+# Hack around the fact that --opt=jit on Linux currently uses
+# --gcrootfinder=asmgcc which causes a crash with libXML2. Hopefully this hack
+# can be removed sooner rather than later.
+
+echo -n "Checking gcrootfinder... "
+no_asmgcc_hack=""
+case $operating_system in
+    Linux* )
+        if [ $rpython_opt = "jit" ]; then
+            no_asmgcc_hack="--gcrootfinder=shadowstack"
+        fi
+esac
+if [ "X$no_asmgcc_hack" = "X" ]; then
+    echo "using default"
+else
+    echo $no_asmgcc_hack
+fi
 
 #
 # Bootstrap compiler
@@ -207,7 +224,7 @@ if rewrite:
 EOF
 for p_in in `find . -name "*.in"`; do
     p=`echo $p_in | sed "s/.in$//g"`
-    $PYTHON $rewriter $p_in $p "@abs_top_srcdir@" "$abs_top_srcdir" "@PYTHON@" "$PYTHON" "@TRANSLATE_PY@" "$TRANSLATE_PY" "@RPYTHON_OPT@" "$rpython_opt" "@INSTALL@" "$INSTALL" "@prefix@" "$prefix" "@bindir@" "$prefix/bin" "@datadir@" "$prefix/share" "@libdir@" "$prefix/lib" "@INSTALL@" "$abs_top_srcdir/install.sh" "@CONVERGE_VERSION@" "$converge_version" "@CONVERGE_DATE@"  "$converge_date" "@PLATFORM@" "$operating_system" "@EXEC_EXT@" "$exec_ext" "@DIR_SEP@" "$DIR_SEP" "@LIBPCRE_INCLUDE_DIRS@" "$libpcre_include_dirs" "@LIBPCRE_LINK_DIRS@" "$libpcre_library_dirs" "@LIBPCRE_A@" "$libpcre_a" "@LIBPCRE_LINK_FLAGS@" "$libpcre_link_flags" "@LIBXML2_A@" "$libxml2_a" "@LIBXML2_INCLUDE_DIRS@" "$libxml2_include_dirs" "@LIBXML2_LINK_DIRS@" "$libxml2_library_dirs" "@LIBXML2_LINK_FLAGS@" "$libxml2_link_flags"
+    $PYTHON $rewriter $p_in $p "@abs_top_srcdir@" "$abs_top_srcdir" "@PYTHON@" "$PYTHON" "@TRANSLATE_PY@" "$TRANSLATE_PY" "@RPYTHON_OPT@" "$rpython_opt" "@INSTALL@" "$INSTALL" "@prefix@" "$prefix" "@bindir@" "$prefix/bin" "@datadir@" "$prefix/share" "@libdir@" "$prefix/lib" "@INSTALL@" "$abs_top_srcdir/install.sh" "@CONVERGE_VERSION@" "$converge_version" "@CONVERGE_DATE@"  "$converge_date" "@PLATFORM@" "$operating_system" "@EXEC_EXT@" "$exec_ext" "@DIR_SEP@" "$DIR_SEP" "@LIBPCRE_INCLUDE_DIRS@" "$libpcre_include_dirs" "@LIBPCRE_LINK_DIRS@" "$libpcre_library_dirs" "@LIBPCRE_A@" "$libpcre_a" "@LIBPCRE_LINK_FLAGS@" "$libpcre_link_flags" "@LIBXML2_A@" "$libxml2_a" "@LIBXML2_INCLUDE_DIRS@" "$libxml2_include_dirs" "@LIBXML2_LINK_DIRS@" "$libxml2_library_dirs" "@LIBXML2_LINK_FLAGS@" "$libxml2_link_flags" "@NO_ASMGCC_HACK@" "$no_asmgcc_hack"
 done
 echo
 rm -f $rewriter

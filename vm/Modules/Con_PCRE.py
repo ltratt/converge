@@ -28,15 +28,10 @@ from Builtins import *
 from Core import *
 
 
-if objectmodel.we_are_translated():
-    libraries = []
-else:
-    libraries = ["pcre"]
-
 eci                        = ExternalCompilationInfo(includes=["pcre.h"], \
-                               libraries=libraries, \
                                include_dirs=Config.LIBPCRE_INCLUDE_DIRS, \
                                library_dirs=Config.LIBPCRE_LIBRARY_DIRS, \
+                               libraries=Config.LIBPCRE_LIBRARIES, \
                                link_extra=Config.LIBPCRE_LINK_FLAGS, \
                                link_files=[Config.LIBPCRE_A])
 

@@ -87,7 +87,6 @@ if INTSIZE == 8:
     CON_INSTR_EXBI = 1                    # bits 0-7 1, bits 8-31 size of field name, bits 32-.. field name
     CON_INSTR_VAR_LOOKUP = 2              # bits 0-7 2, bits 8-19 closures offset, bits 20-31 var number
     CON_INSTR_VAR_ASSIGN = 3              # bits 0-7 3, bits 8-19 closures offset, bits 20-31 var number
-    CON_INSTR_INT = 4                     # bits 0-7 4, bits 8-62 integer value, bit 63 sign (0 = positive, 1 = negative)
     CON_INSTR_ADD_FAILURE_FRAME = 5       # bits 0-7 5, bits 8-30 pc offset, bit 31 offset sign
     CON_INSTR_ADD_FAIL_UP_FRAME = 6       # bits 0-7 6
     CON_INSTR_REMOVE_FAILURE_FRAME = 7    # bits 0-7 7
@@ -104,12 +103,10 @@ if INTSIZE == 8:
     CON_INSTR_RETURN = 16                 # bits 0-7 16
     CON_INSTR_BRANCH = 17                 # bits 0-7 17, bits 8-30 pc offset, bit 31 offset sign (0 = positive, 1 = negative)
     CON_INSTR_YIELD = 18                  # bits 0-7 18
-    CON_INSTR_FLOAT = 19                  # bits 0-7 19, bits 64-128 := float number
     CON_INSTR_IMPORT = 20                 # bits 0-7 20, bits 8-31 module number
     CON_INSTR_DICT = 21                   # bits 0-7 21, bits 8-31 number of dictionary elements
     CON_INSTR_DUP = 22                    # bits 0-7 22
     CON_INSTR_PULL = 23                   # bits 0-7 23, bits 8-31 := number of entries back in the stack to pull the value from
-    CON_INSTR_STRING = 25                 # bits 0-7 25, bits 8-31 size of string, bits 32-.. string
     CON_INSTR_BUILTIN_LOOKUP = 26         # bits 0-7 26, bits 8-15 builtin number
     CON_INSTR_ASSIGN_SLOT = 27            # bits 0-7 13, bits 8-31 size of slot name, bits 32-.. slot name
     CON_INSTR_EYIELD = 28                 # bits 0-7 28
@@ -332,7 +329,6 @@ else:
     CON_INSTR_EXBI = 1                    # bits 0-7 1, bits 8-31 size of field name, bits 32-.. field name
     CON_INSTR_VAR_LOOKUP = 2              # bits 0-7 2, bits 8-19 closures offset, bits 20-31 var number
     CON_INSTR_VAR_ASSIGN = 3              # bits 0-7 3, bits 8-19 closures offset, bits 20-31 var number
-    CON_INSTR_INT = 4                     # bits 0-7 4, bits 8-62 integer value, bit 63 sign (0 = positive, 1 = negative)
     CON_INSTR_ADD_FAILURE_FRAME = 5       # bits 0-7 5, bits 8-30 pc offset, bit 31 offset sign
     CON_INSTR_ADD_FAIL_UP_FRAME = 6       # bits 0-7 6
     CON_INSTR_REMOVE_FAILURE_FRAME = 7    # bits 0-7 7
@@ -349,12 +345,10 @@ else:
     CON_INSTR_RETURN = 16                 # bits 0-7 16
     CON_INSTR_BRANCH = 17                 # bits 0-7 17, bits 8-30 pc offset, bit 31 offset sign (0 = positive, 1 = negative)
     CON_INSTR_YIELD = 18                  # bits 0-7 18
-    CON_INSTR_FLOAT = 19                  # bits 0-7 19, bits 64-128 := float number
     CON_INSTR_IMPORT = 20                 # bits 0-7 20, bits 8-31 module number
     CON_INSTR_DICT = 21                   # bits 0-7 21, bits 8-31 number of dictionary elements
     CON_INSTR_DUP = 22                    # bits 0-7 22
     CON_INSTR_PULL = 23                   # bits 0-7 23, bits 8-31 := number of entries back in the stack to pull the value from
-    CON_INSTR_STRING = 25                 # bits 0-7 25, bits 8-31 size of string, bits 32-.. string
     CON_INSTR_BUILTIN_LOOKUP = 26         # bits 0-7 26, bits 8-15 builtin number
     CON_INSTR_ASSIGN_SLOT = 27            # bits 0-7 13, bits 8-31 size of slot name, bits 32-.. slot name
     CON_INSTR_EYIELD = 28                 # bits 0-7 28

@@ -615,9 +615,8 @@ class Code_Gen:
             max_stack_size := self._constant_get(self._target.CONST_STRING, "", node.src_infos)
         else:
             max_stack_size := self._constant_get(self._target.CONST_STRING, node.name.name, node.name.src_infos)
-        self._instructions.append(self._target.Instr_Int.new(node.src_infos, bound_vars.len() + node.is_bound))
-        self._instructions.append(self._target.Instr_Int.new(node.src_infos, node.params.len()))
-        max_stack_size += 2
+        max_stack_size += self._constant_get(self._target.CONST_INT, bound_vars.len() + node.is_bound, node.src_infos)
+        max_stack_size += self._constant_get(self._target.CONST_INT, node.params.len(), node.src_infos)
         func_defn_instr := self._target.Instr_Func_Defn.new(node.src_infos, node.is_bound)
         self._instructions.append(func_defn_instr)
         end_of_func_body_label := self._create_label()

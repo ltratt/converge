@@ -780,9 +780,6 @@ class Con_Module(Con_Boxed_Object):
             elif it == Target.CON_INSTR_SLOT_LOOKUP or it == Target.CON_INSTR_PRE_SLOT_LOOKUP_APPLY:
                 start, size = Target.unpack_slot_lookup(instr)
                 cur_bc_off += Target.align(start + size)
-            elif it == Target.CON_INSTR_STRING:
-                start, size = Target.unpack_string(instr)
-                cur_bc_off += Target.align(start + size)
             elif it == Target.CON_INSTR_ASSIGN_SLOT:
                 start, size = Target.unpack_assign_slot(instr)
                 cur_bc_off += Target.align(start + size)
@@ -796,7 +793,6 @@ class Con_Module(Con_Boxed_Object):
                 cur_bc_off += Target.align(start + size)
             elif it == Target.CON_INSTR_VAR_LOOKUP \
               or it == Target.CON_INSTR_VAR_ASSIGN \
-              or it == Target.CON_INSTR_INT \
               or it == Target.CON_INSTR_ADD_FAILURE_FRAME \
               or it == Target.CON_INSTR_ADD_FAIL_UP_FRAME \
               or it == Target.CON_INSTR_REMOVE_FAILURE_FRAME \

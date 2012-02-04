@@ -529,8 +529,6 @@ class VM(object):
                     self._instr_var_lookup(instr, cf)
                 elif it == Target.CON_INSTR_VAR_ASSIGN:
                     self._instr_var_assign(instr, cf)
-                elif it == Target.CON_INSTR_INT:
-                    self._instr_int(instr, cf)
                 elif it == Target.CON_INSTR_ADD_FAILURE_FRAME:
                     self._instr_add_failure_frame(instr, cf)
                 elif it == Target.CON_INSTR_ADD_FAIL_UP_FRAME:
@@ -569,8 +567,6 @@ class VM(object):
                     self._instr_dup(instr, cf)
                 elif it == Target.CON_INSTR_PULL:
                     self._instr_pull(instr, cf)
-                elif it == Target.CON_INSTR_STRING:
-                    self._instr_string(instr, cf)
                 elif it == Target.CON_INSTR_BUILTIN_LOOKUP:
                     self._instr_builtin_lookup(instr, cf)
                 elif it == Target.CON_INSTR_ASSIGN_SLOT:
@@ -662,11 +658,6 @@ class VM(object):
             closure = closure.parent
             closure_off -= 1
         closure.vars[var_num] = cf.stack_get(cf.stackpe - 1)
-        cf.bc_off += Target.INTSIZE
-
-
-    def _instr_int(self, instr, cf):
-        cf.stack_push(Builtins.Con_Int(self, Target.unpack_int(instr)))
         cf.bc_off += Target.INTSIZE
 
 
@@ -822,15 +813,6 @@ class VM(object):
         i = Target.unpack_pull(instr)
         cf.stack_push(cf.stack_pop_n(i))
         cf.bc_off += Target.INTSIZE
-
-
-    def _instr_string(self, instr, cf):
-        str_start, str_size = Target.unpack_string(instr)
-        str_off = cf.bc_off + str_start
-        assert str_off > 0 and str_size >= 0
-        str_ = rffi.charpsize2str(rffi.ptradd(cf.pc.mod.bc, str_off), str_size)
-        cf.stack_push(Builtins.Con_String(self, str_))
-        cf.bc_off += Target.align(str_start + str_size)
 
 
     def _instr_builtin_lookup(self, instr, cf):

@@ -767,9 +767,7 @@ class Code_Gen:
         for import_extra := import_extras.iter():
             self._instructions.append(self._target.Instr_Module_Lookup.new(node.src_infos, import_extra))
         
-        self._add_assign_to_var(node.var_name, node.src_infos, imp_mod_id)
-        
-        return 1
+        return 1 + self._add_assign_to_var(node.var_name, node.src_infos, imp_mod_id)
 
 
 
@@ -1299,7 +1297,7 @@ class Code_Gen:
                 self._instructions.append(self._target.Instr_Apply.new(target.src_infos, 1))
 
             ndif ITree::IVar.instantiated(target):
-                self._add_assign_to_var(target.name, target.src_infos)
+                max_stack_size := self._max(max_stack_size, i + self._add_assign_to_var(target.name, target.src_infos))
             elif ITree::ISlot_Lookup.instantiated(target):
                 max_stack_size := self._max(max_stack_size, 1 + i + self._preorder(target.target))
                 self._instructions.append(self._target.Instr_Assign_Slot.new(target.src_infos, target.slot_name))

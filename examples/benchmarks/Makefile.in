@@ -3,10 +3,10 @@ include @abs_top_srcdir@/Makefile.inc
 all: cvstone richards
 
 cvstone: cvstone.cv
-	${CONVERGEC} -m cvstone.cv
+	${CONVERGE_VM} ${CONVERGEC} -m cvstone.cv
 
 richards: richards.cv
-	${CONVERGEC} -m richards.cv
+	${CONVERGE_VM} ${CONVERGEC} -m richards.cv
 
 install:
 

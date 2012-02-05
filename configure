@@ -15,9 +15,11 @@ prefix=""
 rpython_opt="jit"
 while [ $# -ge 1 ]; do
     case $1 in
-        --prefix=* ) prefix=`echo $1 | sed "s/--prefix=//g"`; shift;;
-        --opt=*    ) rpython_opt=`echo $1 | sed "s/--opt=//g"`; shift;;
-        *          ) echo "Unknown switch $1"; exit 1;;
+        --prefix=*  ) prefix=`echo $1 | sed "s/--prefix=//g"`; shift;;
+        --opt=*     ) rpython_opt=`echo $1 | sed "s/--opt=//g"`; shift;;
+        -h | --help ) echo "./configure [--opt=<optimisation level>] [--prefix=<install path>]" 1>&2;
+                      exit 0;;
+        *           ) echo "Unknown switch $1"; exit 1;;
     esac
 done
 

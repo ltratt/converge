@@ -47,8 +47,11 @@ TIMESPECP       = lltype.Ptr(TIMESPEC)
 CLOCK_MONOTONIC = cconfig["CLOCK_MONOTONIC"]
 
 gettimeofday    = rffi.llexternal('gettimeofday', [TIMEVALP, TIMEZONEP], rffi.INT, compilation_info=eci)
-clock_gettime   = rffi.llexternal('clock_gettime', [rffi.INT, TIMESPECP], rffi.INT, compilation_info=eci)
-    
+if platform.has("clock_gettime", "#include <sys/time.h>"):
+    HAS_CLOCK_GETTIME = True
+    clock_gettime   = rffi.llexternal('clock_gettime', [rffi.INT, TIMESPECP], rffi.INT, compilation_info=eci)
+else:
+    HAS_CLOCK_GETTIME = False
 
 
 def init(vm):
@@ -61,7 +64,12 @@ def import_(vm):
     (mod,),_ = vm.decode_args("O")
     
     new_c_con_func_for_mod(vm, "current", current, mod)
-    new_c_con_func_for_mod(vm, "current_mono", current_mono, mod)
+    if HAS_CLOCK_GETTIME:
+        new_c_con_func_for_mod(vm, "current_mono", current_mono, mod)
+    else:
+        # OS X, and maybe other OSs, doesn't have clock_gettime, so we fall back on a less accurate
+        # timing method as being better than nothing.
+        new_c_con_func_for_mod(vm, "current_mono", current, mod)
 
     return vm.get_builtin(BUILTIN_NULL_OBJ)
 
@@ -73,8 +81,8 @@ def current(vm):
     with lltype.scoped_alloc(TIMEVAL) as tp:
         if gettimeofday(tp, lltype.nullptr(TIMEZONEP.TO)) != 0:
             raise Exception("XXX")
-        sec = tp.c_tv_sec
-        usec = tp.c_tv_usec
+        sec = rarithmetic.r_int(tp.c_tv_sec)
+        usec = rarithmetic.r_int(tp.c_tv_usec)
 
     return Con_List(vm, [Con_Int(vm, sec), Con_Int(vm, usec * 1000)])
 

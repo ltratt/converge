@@ -16,7 +16,7 @@ Returns the current system time as an <ref name="Instant" />. This function retu
 </function>
 
 <function name="current_mono">
-Returns the current system time as an <ref name="Instant" />. This function guarantees to always return a monotonically increasing value; it is useful for timing purposes, as it is not skewed to reflect the realities of the outside world.
+Returns the current system time as an <ref name="Instant" />. This function guarantees to always return a monotonically increasing value; it is useful for timing purposes, as it is not skewed to reflect the realities of the outside world. Note: not all platforms support this functionality (e.g. OS X), in which case the value returned will be the same as <ref name="current" />.
 </function>
 
 </module>

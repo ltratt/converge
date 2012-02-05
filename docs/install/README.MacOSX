@@ -31,13 +31,9 @@ New folders titled 'bin', 'include' will have been created, and populated, in th
 Note that since we want to ensure that our versions of PCRE and libxml2 are picked up, rather than other versions that may have been previously installed we put the 'bin' folder at the beginning of $PATH. This command will only effect your current terminal, and its effects will be lost when you close the terminal.
 
 
-5 - Converge can now be compiled. Go to ~/Desktop/Converge and type: 
+5 - Converge can now be compiled. Following the instructions in the INSTALL file.
 
-  $ ./configure --prefix=$HOME/Desktop/Converge
-  $ make
-  $ make install
-
-If you now type 'converge' in your Terminal, you should see be taken to the interactive prompt:
+6 - If you now type 'converge' in your Terminal, you should see be taken to the interactive prompt:
 
   $ converge
   Converge current
@@ -46,8 +42,9 @@ If you now type 'converge' in your Terminal, you should see be taken to the inte
 The prompt can be exited from with Ctrl-D. You're done! Converge is installed!
 
 
+Originally written by: Alexandre Bergel, July 3, 2007
+
 Hardware used during the writing of this file:
 Mac book, OSX version 10.4.9. Processor 1.83GHz Intel Core 2 Duo. 
 1GB 667 MHz DDR2 SDRAM
 
-Alexandre Bergel, July 3, 2007

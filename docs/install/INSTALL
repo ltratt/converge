@@ -1,20 +1,39 @@
-Subject to platform specific notes in README.<platform> one can normally compile
-Converge by executing the following commands:
+To build Converge you need at a minimum PyPy's source. It is recommended you
+use the latest version of PyPy available on <http://pypy.org/download.html>.
+You do not need to install PyPy, but Converge needs access to its source in
+order to build itself. The PYPY_SRC variable should point at the root of the
+PyPy source distribution.
 
-  ./configure
-  make
+If you are building from a formal Converge release, the latest stable release
+of PyPy is likely to be sufficient. e.g. if PyPy 1.8 is the latest version:
 
+  $ cd <somewhere>
+  $ wget https://bitbucket.org/pypy/pypy/get/release-1.8.tar.bz2
+  $ bunzip2 -c - release-1.8.tar.bz2 | tar xf -
+  $ export PYPY_SRC=<somewhere>/pypy
+
+If you are building from a git checkout of Converge, it is recommended to
+check PyPy out from its Mercurial repository:
+
+  $ cd <somewhere>
+  $ hg clone https://bitbucket.org/pypy/pypy
+  $ export PYPY_SRC=<somewhere>/pypy
+
+Once you have obtained PyPy and set the PYPY_SRC variable appropriately then,
+subject to platform specific notes in README.<platform>, one can normally
+build Converge by executing the following commands:
+
+  $ ./configure
+  $ make
+
+If you wish to run Converge's regression suite:
+
+  $ make regress
 
 ================================================================================
 
   Building from a git checkout
  
-If you have checked the source out via git (i.e. you have not downloaded a
-tar.gz file), you will first need to create the 'configure' script. This can be
-created with the following command:
-
-  make -f Makefile.bootstrap configure
-
 Converge only keeps a bootstrap compiler for 64-bit machines in version control.
 If you are running another type of machine, you will need to download a recent
 snapshot and extract the appropriate bootstrap compiler and linker. e.g.:
@@ -22,13 +41,9 @@ snapshot and extract the appropriate bootstrap compiler and linker. e.g.:
   cp <snapshot>/bootstrap/<your machine type>/convergec.bootstrap bootstrap/<your machine type>
   cp <snapshot>/bootstrap/<your machine type>/convergel.bootstrap bootstrap/<your machine type>
 
-You then execute the following as with any normal install:
-
-  ./configure
-  make
-
-It is then recommended that you rebuild once more to check that the newly
-compiled compiler functions correctly:
+You then follow the normal build instructions as above. After doing so, it is
+then recommended that you rebuild once more to check that the newly compiled
+compiler functions correctly:
 
   make clean
   make

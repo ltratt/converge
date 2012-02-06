@@ -166,7 +166,7 @@ class Con_Boxed_Object(Con_Object):
                     return o
 
         if isinstance(o, Con_Func) and o.is_bound:
-            return Con_Partial_Application(vm, self, o)
+            return Con_Partial_Application(vm, o, [self])
         
         return o
 
@@ -188,7 +188,7 @@ class Con_Boxed_Object(Con_Object):
                     vm.raise_helper("Slot_Exception", [Con_String(vm, n), self])
 
         if isinstance(o, Con_Func) and o.is_bound:
-            return Con_Partial_Application(vm, self, o)
+            return Con_Partial_Application(vm, o, [self])
         
         return o
 
@@ -1080,15 +1080,14 @@ def new_c_con_func_for_mod(vm, name, func, mod):
 #
 
 class Con_Partial_Application(Con_Boxed_Object):
-    __slots__ = ("o", "f", "args")
-    _immutable_fields_ = ("o", "f")
+    __slots__ = ("f", "args")
+    _immutable_fields_ = ("f", "args")
 
 
-    def __init__(self, vm, o, f, args=None, instance_of=None):
+    def __init__(self, vm, f, args, instance_of=None):
         if instance_of is None:
             instance_of = vm.get_builtin(BUILTIN_PARTIAL_APPLICATION_CLASS)
         Con_Boxed_Object.__init__(self, vm, instance_of)
-        self.o = o
         self.f = f
         self.args = args
 
@@ -1100,28 +1099,21 @@ class Con_Partial_Application(Con_Boxed_Object):
 
 @con_object_proc
 def _new_func_Con_Partial_Application(vm):
-    # Trick the annotator by having a condition we know will always be true...
-    if vm is not None:
-        raise Exception("XXX")
-    return None
+    (class_, func_o, args_o),_ = vm.decode_args("CFL")
+    assert isinstance(args_o, Con_List)
+
+    o = Con_Partial_Application(vm, func_o, args_o.l)
+    vm.apply(o.get_slot(vm, "init"), [func_o] + args_o.l)
+    return o
 
 
 @con_object_gen
 def _Con_Partial_Application_apply(vm):
-    (self, args_o),_ = vm.decode_args("!O", self_of=Con_Partial_Application)
+    (self, args_o),_ = vm.decode_args("!L", self_of=Con_Partial_Application)
     assert isinstance(self, Con_Partial_Application)
+    assert isinstance(args_o, Con_List)
     
-    if self.args:
-        args = [self.o] + self.args
-    else:
-        args = [self.o]
-    
-    if isinstance(args_o, Con_List):
-        args.extend(args_o.l)
-    else:
-        raise Exception("XXX")
-    
-    vm.pre_apply_pump(self.f, args)
+    vm.pre_apply_pump(self.f, self.args + args_o.l)
     while 1:
         e_o = vm.apply_pump()
         if not e_o:

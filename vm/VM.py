@@ -172,7 +172,7 @@ class VM(object):
         
         if isinstance(func, Builtins.Con_Partial_Application):
             cf = self._add_continuation_frame(func.f, nargs + 1)
-            cf.stack_push(func.o)
+            cf.stack_extend(func.args)
         else: 
             cf = self._add_continuation_frame(func, nargs)
 
@@ -207,7 +207,7 @@ class VM(object):
         cf.stack_push(gf)
         if isinstance(func, Builtins.Con_Partial_Application):
             new_cf = self._add_continuation_frame(func.f, nargs + 1)
-            new_cf.stack_push(func.o)
+            new_cf.stack_extend(func.args)
         else: 
             new_cf = self._add_continuation_frame(func, nargs)
 
@@ -631,7 +631,7 @@ class VM(object):
         bind_o = cf.stack_pop()
         nm_start, nm_size = Target.unpack_exbi(instr)
         nm = Target.extract_str(cf.pc.mod.bc, nm_start + cf.bc_off, nm_size)
-        pa = Builtins.Con_Partial_Application(self, bind_o, class_.get_field(self, nm))
+        pa = Builtins.Con_Partial_Application(self, class_.get_field(self, nm), [bind_o])
         cf.stack_push(pa)
         cf.bc_off += Target.align(nm_start + nm_size)
 
@@ -735,7 +735,7 @@ class VM(object):
 
         if isinstance(func, Builtins.Con_Partial_Application):
             new_cf = self._add_continuation_frame(func.f, num_args + 1)
-            new_cf.stack_push(func.o)
+            new_cf.stack_extend(func.args)
             i = 1
         else:
             new_cf = self._add_continuation_frame(func, num_args)

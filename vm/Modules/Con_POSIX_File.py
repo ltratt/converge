@@ -31,7 +31,7 @@ import Stdlib_Modules
 
 separate_module_files = []
 if not platform.has("fgetln", "#include <stdio.h>"):
-    separate_module_files.append("platform/fgetln.c")
+    separate_module_files.append(os.path.join(os.path.split(os.path.abspath(__file__))[0], "../platform/fgetln.c"))
 
 eci         = ExternalCompilationInfo(includes=["limits.h", "stdio.h", "stdlib.h", "string.h",
                 "unistd.h"], separate_module_files=separate_module_files)

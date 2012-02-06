@@ -292,6 +292,10 @@ class VM(object):
     def decode_args(self, mand="", opt="", vargs=False, self_of=None):
         cf = self.cur_cf
         nargs = cf.nargs # Number of arguments passed
+        
+        mand = jit.promote_string(mand)
+        opt = jit.promote_string(opt)
+        self_of = jit.promote(self_of)
 
         if nargs < len(mand):
             if vargs:
@@ -423,7 +427,6 @@ class VM(object):
     # The interepreter
     #
 
-    @jit.dont_look_inside
     def execute_proc(self, cf):
         pc = cf.pc
         if isinstance(pc, Py_PC):
@@ -463,7 +466,6 @@ class VM(object):
             return self.bc_loop(cf)
 
 
-    @jit.dont_look_inside
     def execute_gen(self, cf):
         pc = cf.pc
         if isinstance(pc, Py_PC):

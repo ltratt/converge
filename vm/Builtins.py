@@ -1381,6 +1381,14 @@ def _Con_Int_idiv(vm):
     return self.idiv(vm, o_o)
 
 
+@con_object_proc
+def _Con_Int_inv(vm):
+    (self,),_ = vm.decode_args("I")
+    assert isinstance(self, Con_Int)
+
+    return Con_Int(vm, ~self.v)
+
+
 @con_object_gen
 def _Con_Int_iter_to(vm):
     (self, to_o, step_o),_ = vm.decode_args("II", opt="I")
@@ -1517,6 +1525,7 @@ def bootstrap_con_int(vm):
     new_c_con_func_for_class(vm, ">=", _Con_Int_gtq, int_class)
     new_c_con_func_for_class(vm, "hash", _Con_Int_hash, int_class)
     new_c_con_func_for_class(vm, "idiv", _Con_Int_idiv, int_class)
+    new_c_con_func_for_class(vm, "inv", _Con_Int_inv, int_class)
     new_c_con_func_for_class(vm, "iter_to", _Con_Int_iter_to, int_class)
     new_c_con_func_for_class(vm, "<", _Con_Int_le, int_class)
     new_c_con_func_for_class(vm, "<=", _Con_Int_leq, int_class)

@@ -289,6 +289,7 @@ class VM(object):
         return o
 
 
+    @jit.unroll_safe
     def decode_args(self, mand="", opt="", vargs=False, self_of=None):
         cf = self.cur_cf
         nargs = cf.nargs # Number of arguments passed

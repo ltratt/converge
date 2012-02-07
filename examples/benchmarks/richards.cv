@@ -321,10 +321,10 @@ class IdleTask(Task):
         if i.count == 0:
             return self.hold()
         elif i.control.and(1) == 0:
-            i.control /= Builtins::Int.new(2)
+            i.control /= 2
             return self.release(I_DEVA)
         else:
-            i.control := Builtins::Int.new(i.control/2).xor(0xd008)
+            i.control := i.control.idiv(2).xor(0xd008)
             return self.release(I_DEVB)
             
 

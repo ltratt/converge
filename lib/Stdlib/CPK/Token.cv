@@ -39,7 +39,7 @@ class Token:
     
         if self.value is null:
             return Strings::format("<%s>", self.type)
-        elif Builtins::List.conformed_by(self.value):
+        elif Builtins::List.instantiated(self.value):
             return Strings::format("<%s %s>", self.type, self.value.to_str())
         else:
             return Strings::format("<%s %s>", self.type, self.value)

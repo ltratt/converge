@@ -94,7 +94,7 @@ func printf(format):
         parameter_num := 0
         for i := 0.iter_to(split.len()):
             part := split[i]
-            if Builtins::String.conformed_by(part):
+            if Builtins::String.instantiated(part):
                 // Strings are just inserted "as is".
                 
                 expr_part := [| ${CEI::lift(part)} |]
@@ -114,13 +114,13 @@ func printf(format):
                 
                 if part == PRINTF_INT:
                     body.append([|
-                        if not Builtins::Int.conformed_by($c{param_var}):
+                        if not Builtins::Int.instantiated($c{param_var}):
                             raise Exceptions::Type_Exception.new(Builtins::Int.path(), $c{param_var}, ${CEI::lift("parameter " + parameter_num.to_str())})
                     |])
                     expr_part := [| $c{param_var}.to_str() |]
                 elif part == PRINTF_STRING:
                     body.append([|
-                        if not Builtins::String.conformed_by($c{param_var}):
+                        if not Builtins::String.instantiated($c{param_var}):
                             raise Exceptions::Type_Exception.new(Builtins::String.path(), $c{param_var}, ${CEI::lift("parameter " + parameter_num.to_str())})
                     |])
                     expr_part := [| $c{param_var} |]
@@ -227,7 +227,7 @@ func simple_printf_expr(split, param_i):
         return [| "" |]
 
     param := CEI::ivar("p" + param_i.to_str())
-    if Builtins::String.conformed_by(split[0]):
+    if Builtins::String.instantiated(split[0]):
         return [| ${CEI::lift(split[0])} + $c{simple_printf_expr(split[1 : ], param_i)} |]
     elif split[0] == PRINTF_INT:
         return [| $c{param}.to_str() + $c{simple_printf_expr(split[1 : ], param_i + 1)} |]

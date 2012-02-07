@@ -39,21 +39,21 @@ func lift(obj, src_infos := null):
     else:
         src_infos += Thread::get_continuation_src_infos(2)
 
-    if Builtins::String.conformed_by(obj):
+    if Builtins::String.instantiated(obj):
         return ITree::IString.new(obj, src_infos)
-    elif Builtins::Int.conformed_by(obj):
+    elif Builtins::Int.instantiated(obj):
         return ITree::IInt.new(obj, src_infos)
-    elif Builtins::List.conformed_by(obj):
+    elif Builtins::List.instantiated(obj):
         elems := []
         for e := obj.iter():
             elems.append(lift(e, src_infos))
         return ITree::IList.new(elems, src_infos)
-    elif Builtins::Set.conformed_by(obj):
+    elif Builtins::Set.instantiated(obj):
         elems := []
         for e := obj.iter():
             elems.append(lift(e, src_infos))
         return ITree::ISet.new(elems, src_infos)
-    elif Builtins::Dict.conformed_by(obj):
+    elif Builtins::Dict.instantiated(obj):
         elems := []
         for key, val := obj.iter():
             ikey := lift(key, src_infos)

@@ -145,7 +145,7 @@ class Code_Gen:
         i := 0
         while i < self._instructions.len():
             instruction := self._instructions[i]
-            if instruction.find_slot("pc_offset") & Builtins::String.conformed_by(instruction.pc_offset):
+            if instruction.find_slot("pc_offset") & Builtins::String.instantiated(instruction.pc_offset):
                 instruction.pc_offset := bytecode_offsets[self._labels[instruction.pc_offset]] - bytecode_offsets[i] 
             i += 1
         
@@ -159,7 +159,7 @@ class Code_Gen:
         src_infos_count := 0
         for instruction := self._instructions.iter():
             instruction_bytecode := instruction.to_bytecode()
-            if Builtins::List.conformed_by(instruction_bytecode) | Array::Array.conformed_by(instruction_bytecode):
+            if Builtins::List.instantiated(instruction_bytecode) | Array::Array.instantiated(instruction_bytecode):
                 instructions_bytecode.extend(instruction_bytecode)
             else:
                 instructions_bytecode.append(instruction_bytecode)

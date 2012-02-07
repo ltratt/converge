@@ -376,7 +376,7 @@ class IMod_Gen:
             // defn ::= splice
             splice_node := node[0]
             defn := self._eval_splice(splice_node, extra_src_infos)
-            if Builtins::List.conformed_by(defn):
+            if Builtins::List.instantiated(defn):
                 for d := defn.iter():
                     ITree_WF::wf_expr(d, "splice result", extra_src_infos + splice_node.src_infos)
                 return defn
@@ -489,7 +489,7 @@ class IMod_Gen:
             elif field_node.len() == 1 & field_node[0].name == "splice":
                 // class_field ::= splice
                 sp := self._eval_splice(field_node[0], extra_src_infos)
-                if Builtins::List.conformed_by(sp):
+                if Builtins::List.instantiated(sp):
                     fields.extend(sp)
                 else:
                     fields.append(sp)
@@ -1411,7 +1411,7 @@ class IMod_Gen:
             if expr_node[0].name == "splice":
                 splice_node := expr_node[0]
                 expr := self._eval_splice(splice_node, extra_src_infos)
-                if Builtins::List.conformed_by(expr):
+                if Builtins::List.instantiated(expr):
                     for e := expr.iter():
                         ITree_WF::wf_expr(e, "splice result", extra_src_infos + splice_node.src_infos)
                     exprs.extend(expr)

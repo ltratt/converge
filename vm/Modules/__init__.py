@@ -21,14 +21,15 @@
 
 __all__ = ["Con_Array", "Con_C_Earley_Parser", "Con_C_Platform_Env", "Con_C_Platform_Exec", \
   "Con_C_Platform_Host", "Con_C_Platform_Properties", "Con_C_Strings", "Con_C_Time", "Con_Curses", \
-  "Con_Exceptions", "Con_PCRE", "Con_POSIX_File", "Con_Sys", "Con_Thread", "Con_VM", "libXML2"]
+  "Con_Exceptions", "Con_PCRE", "Con_POSIX_File", "Random", "Con_Sys", "Con_Thread", "Con_VM", \
+  "libXML2"]
 
 import Con_Array, Con_C_Earley_Parser, Con_C_Platform_Env, Con_C_Platform_Exec, \
   Con_C_Platform_Host, Con_C_Platform_Properties, Con_C_Strings, Con_C_Time, Con_Curses, \
-  Con_Exceptions, Con_PCRE, Con_POSIX_File, Con_Sys, Con_Thread, Con_VM, libXML2
+  Con_Exceptions, Con_PCRE, Con_POSIX_File, Con_Random, Con_Sys, Con_Thread, Con_VM, libXML2
 
 BUILTIN_MODULES = \
   [Con_Array.init, Con_C_Earley_Parser.init, Con_C_Platform_Env.init, Con_C_Platform_Exec.init, \
    Con_C_Platform_Host.init, Con_C_Platform_Properties.init, Con_C_Strings.init, Con_C_Time.init, \
-   Con_Curses.init, Con_Exceptions.init, Con_PCRE.init, Con_POSIX_File.init, Con_Sys.init, \
-   Con_Thread.init, Con_VM.init, libXML2.init]
+   Con_Curses.init, Con_Exceptions.init, Con_PCRE.init, Con_POSIX_File.init, Con_Random.init, \
+   Con_Sys.init, Con_Thread.init, Con_VM.init, libXML2.init]

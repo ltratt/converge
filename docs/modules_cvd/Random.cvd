@@ -1,4 +1,9 @@
 <module name="Random">
+<function name="pluck">
+<argument name="c" />
+Successively generates random elements form <code>c</code>.
+</function>
+
 <function name="random">
 Returns a random integer between 0 and the maximum integer size of the machine.
 </function>

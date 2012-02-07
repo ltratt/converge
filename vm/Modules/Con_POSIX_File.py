@@ -32,9 +32,12 @@ import Stdlib_Modules
 separate_module_files = []
 if not platform.has("fgetln", "#include <stdio.h>"):
     separate_module_files.append(os.path.join(os.path.split(os.path.abspath(__file__))[0], "../platform/fgetln.c"))
+    extra_includes = [os.path.join(os.path.split(os.path.abspath(__file__))[0], "../platform/fgetln.h")]
+else:
+    extra_includes = []
 
 eci         = ExternalCompilationInfo(includes=["limits.h", "stdio.h", "stdlib.h", "string.h",
-                "unistd.h"], separate_module_files=separate_module_files)
+                "unistd.h"] + extra_includes, separate_module_files=separate_module_files)
 
 FILEP       = rffi.COpaquePtr("FILE")
 fclose      = rffi.llexternal("fclose", [FILEP], rffi.INT, compilation_info=eci)

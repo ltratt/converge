@@ -292,12 +292,12 @@ The <code>rename</code> declaration is typically only used in quasi-quoted code.
 
 <h2>The <code>CEI</code> interface</h2>
 
-At various points when compile-time meta-programming, one needs to interact with the compiler. The <code>CEI</code> package is the officially sanctioned interface to the Compiler, and can be imported with <code>import CEI</code>. Accessing the compiler internals in any other way may lead to future incompatibilities or undefined behaviour. The <a href="/documentation/current/modules_html/CEI.html">complete CEI module documentation can is available online</a>.
+At various points when compile-time meta-programming, one needs to interact with the compiler. The <code>CEI</code> package is the officially sanctioned interface to the Compiler, and can be imported with <code>import CEI</code>. Accessing the compiler internals in any other way may lead to future incompatibilities or undefined behaviour. The <a href="/documentation/current/modules_html/CEI.html">complete CEI module documentation is available online</a>.
 
 
 <h3>When quasi-quotes are not enough</h3>
 
-Some ITree's can not practically be created using quasi-quotes. For example an <code>if</code> statement with multiple <code>elif</code> clauses has no obvious concrete syntax equivalent. In such cases the <code>CEI</code> interface presents a more traditional meta-programming interface to the user that allows ITree's that are not expressible via quasi-quotes to be built. Each ITree element has a corresponding function with a lower case name and a prepended `i' in the <code>CEI</code> interface e.g. <code>ivar</code>.
+Some desired ITree's can not be created using quasi-quotes. For example an <code>if</code> statement with multiple <code>elif</code> clauses has no obvious concrete syntax equivalent. In such cases the <code>CEI</code> interface presents a more traditional meta-programming interface to the user that allows ITree's that are not expressible via quasi-quotes to be built. Each ITree element has a corresponding function with a lower case name and a prepended `i' in the <code>CEI</code> interface e.g. <code>ivar</code>.
 
 
 <h3>Names</h3>

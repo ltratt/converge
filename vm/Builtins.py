@@ -2154,6 +2154,18 @@ def _Con_List_del(vm):
 
 
 @con_object_proc
+def _Con_List_del_slice(vm):
+    (self, i_o, j_o),_ = vm.decode_args("L", opt="ii")
+    assert isinstance(self, Con_List)
+    assert isinstance(i_o, Con_Int)
+
+    i, j = translate_slice_idx_objs(vm, i_o, j_o, len(self.l))
+    del self.l[i:j]
+
+    return vm.get_builtin(Builtins.BUILTIN_NULL_OBJ)
+
+
+@con_object_proc
 def _Con_List_extend(vm):
     (self, o_o),_ = vm.decode_args("LO")
     assert isinstance(self, Con_List)
@@ -2396,6 +2408,7 @@ def bootstrap_con_list(vm):
     new_c_con_func_for_class(vm, "+", _Con_List_add, list_class)
     new_c_con_func_for_class(vm, "append", _Con_List_append, list_class)
     new_c_con_func_for_class(vm, "del", _Con_List_del, list_class)
+    new_c_con_func_for_class(vm, "del_slice", _Con_List_del_slice, list_class)
     new_c_con_func_for_class(vm, "extend", _Con_List_extend, list_class)
     new_c_con_func_for_class(vm, "==", _Con_List_eq, list_class)
     new_c_con_func_for_class(vm, "find", _Con_List_find, list_class)

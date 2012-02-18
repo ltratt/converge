@@ -39,14 +39,20 @@ func format(format, *args):
                 if j == args.len():
                     raise Exceptions::Parameters_Exception.new("Too few parameters passed for format string.")
                 if format[i + 1] == "s":
-                    if not Builtins::String.conformed_by(args[j]):
+                    if not Builtins::String.instantiated(args[j]):
                         raise Exceptions::Type_Exception.new(Builtins::String.path(), args[j], "parameter " + (j + 2).to_str())
                     str += args[j]
                     i += 2
                     j += 1
                 elif format[i + 1] == "d":
-                    if not Builtins::Int.conformed_by(args[j]):
+                    if not Builtins::Int.instantiated(args[j]):
                         raise Exceptions::Type_Exception.new(Builtins::Int.path(), args[j], "parameter " + (j + 2).to_str())
+                    str += args[j].to_str()
+                    i += 2
+                    j += 1
+                elif format[i + 1] == "f":
+                    if not Builtins::Float.instantiated(args[j]):
+                        raise Exceptions::Type_Exception.new(Builtins::Float.path(), args[j], "parameter " + (j + 2).to_str())
                     str += args[j].to_str()
                     i += 2
                     j += 1

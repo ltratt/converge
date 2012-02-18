@@ -134,6 +134,9 @@ Con_Obj *_Con_Builtins_Int_Class_new_object(Con_Obj *thread)
 			XXX;
 #			endif
 		}
+        else if (atom->atom_type == CON_BUILTIN(CON_BUILTIN_FLOAT_ATOM_DEF_OBJECT))
+            return CON_NEW_INT(((Con_Builtins_Float_Atom *) atom)->val);
+
 		atom = atom->next_atom;
 	}
 

@@ -123,7 +123,7 @@ Con_Obj *_Con_Builtins_Int_Class_new_object(Con_Obj *thread)
 			char *endptr;
 			errno = 0;
 			Con_Int num = strtol(c_string, &endptr, 0);
-			if (c_string == endptr || *endptr != 0)
+			if (*endptr != 0)
 				CON_RAISE_EXCEPTION("Number_Exception", o);
 			if (errno != 0)
 				CON_XXX;

@@ -49,7 +49,7 @@ Con_Obj *_Con_Module_C_Time_current_func(Con_Obj *);
 
 Con_Obj *Con_Module_C_Time_init(Con_Obj *thread, Con_Obj *identifier)
 {
-	const char* defn_names[] = {"current", NULL};
+	const char* defn_names[] = {"current", "current_mono", NULL};
 
 	return Con_Builtins_Module_Atom_new_c(thread, identifier, CON_NEW_STRING("C_Time"), defn_names, CON_BUILTIN(CON_BUILTIN_NULL_OBJ));
 }
@@ -59,6 +59,7 @@ Con_Obj *Con_Module_C_Time_init(Con_Obj *thread, Con_Obj *identifier)
 Con_Obj *Con_Module_C_Time_import(Con_Obj *thread, Con_Obj *c_time_mod)
 {
 	CON_SET_MOD_DEFN(c_time_mod, "current", CON_NEW_UNBOUND_C_FUNC(_Con_Module_C_Time_current_func, "current", c_time_mod));
+	CON_SET_MOD_DEFN(c_time_mod, "current_mono", CON_GET_MOD_DEFN(c_time_mod, "current"));
 	
 	return c_time_mod;
 }

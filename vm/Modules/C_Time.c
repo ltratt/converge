@@ -83,7 +83,7 @@ Con_Obj *_Con_Module_C_Time_current_func(Con_Obj *thread)
 	gettimeofday(&tp, NULL);
 	
 	Con_Obj *sec = CON_NEW_INT(tp.tv_sec);
-	Con_Obj *usec = CON_NEW_INT(tp.tv_usec);
+	Con_Obj *usec = CON_NEW_INT(tp.tv_usec * 1000);
 	
 	return Con_Builtins_List_Atom_new_va(thread, sec, usec, NULL);
 }

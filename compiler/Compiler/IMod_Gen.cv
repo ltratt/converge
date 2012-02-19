@@ -1227,6 +1227,14 @@ class IMod_Gen:
 
 
 
+    func _t_neg(self, node, extra_src_infos):
+    
+        // neg ::= "-" expr
+        
+        return ITree::IBinary.new(ITree::BINARY_SUB, ITree::IInt.new(0, extra_src_infos + node.src_infos), self._preorder(node[1], extra_src_infos), extra_src_infos + node.src_infos)
+
+
+
     func _t_not(self, node, extra_src_infos):
     
         // not ::= "NOT" expr

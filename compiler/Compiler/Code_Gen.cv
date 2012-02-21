@@ -25,7 +25,7 @@
 
 
 import Array, Builtins, File, Functional, Strings, Sys
-import Core, BC_Mod, ITree, QQ_Mode
+import Core, BC_Mod, Instrs_Opt, ITree, QQ_Mode
 
 
 
@@ -128,6 +128,9 @@ class Code_Gen:
         self._target := target
         
         self._preorder(imodule)
+        
+        optimiser := Instrs_Opt::Instrs_Opt.new()
+        optimiser.optimise(self)
         
         // Now we need to go through all the Instruction instances, and replace any labels with real
         // integer offsets.

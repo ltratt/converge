@@ -11,7 +11,7 @@ OBJS = Compiler.cvb Compiler/Parser.cvb Compiler/Tokenizer.cvb Compiler/IMod_Gen
     Compiler/ITree_WF.cvb Compiler/BC_Lib.cvb Compiler/BC_Exec.cvb Compiler/Eval.cvb \
 	Compiler/Lift.cvb Compiler/Link.cvb Compiler/ITree_Rename.cvb Compiler/BC_Pkg.cvb \
 	Compiler/Targets.cvb Compiler/Targets/Sixty_Four_Bit.cvb Compiler/Targets/Available.cvb \
-    convergec.cvb convergei.cvb convergel.cvb convergep.cvb
+    Compiler/Instrs_Opt.cvb convergec.cvb convergei.cvb convergel.cvb convergep.cvb
 
 
 %.cvb: %.cv

@@ -80,6 +80,7 @@ parse := $<<DSL::mk_parser("system", ["state", "transition", "and", "or", "from"
            |
 
     const ::= "INT"
+            | "-" "INT"
             | "STRING"
 
 
@@ -399,10 +400,13 @@ class SM_Translator(Traverser::Strict_Traverser):
     func _t_const(self, node):
 
         // const ::= "INT"
-        //       ::= "STRING"
+        //         | "-" "INT"
+        //         | "STRING"
 
         ndif node[0].type == "INT":
             return CEI::lift(Builtins::Int.new(node[0].value), node.src_infos)
+        elif node[0].type == "-":
+            return CEI::lift(-Builtins::Int.new(node[1].value), node.src_infos)
         elif node[0].type == "STRING":
             return CEI::lift(node[0].value, node.src_infos)
 

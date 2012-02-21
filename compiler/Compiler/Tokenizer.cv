@@ -56,8 +56,8 @@ ESCAPE := "\\"
 
 RE_INNER_LINE_WHITESPACE := PCRE::compile("[ \t]+")
 RE_ID := PCRE::compile("[a-zA-Z_][a-zA-Z_0-9]*")
-RE_INT := PCRE::compile("-?(?:(?:0x[0-9A-Fa-f]+)|(?:\\d+))")
-RE_FLOAT := PCRE::compile("-?\\d+\\.\\d+")
+RE_INT := PCRE::compile("(?:0x[0-9A-Fa-f]+)|(?:\\d+)")
+RE_FLOAT := PCRE::compile("\\d+\\.\\d+")
 RE_COMMENT := PCRE::compile("//.*?$")
 RE_INDENT := PCRE::compile(" *")
 RE_INDENT_PLUS_CONTENTS := PCRE::compile(".*?$")
@@ -313,9 +313,6 @@ class Tokenizer:
                     // executed uniformly above.
                     i += m[0].len()
                     continue
-
-                // Numbers must be matched before other tokens, as otherwise "-2" would be tokenized
-                // as <SYMBOL -> AND <INTEGER 2> rather than <INTEGER -2>.
 
                 if m := RE_FLOAT.match(self._str, i):
                     self.tokens.append(Token.new("FLOAT", m[0], [[self._src_path, self._src_offset + i, m[0].len()]]))

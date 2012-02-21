@@ -326,10 +326,10 @@ func eval(str, vars := Dict{}, includes := []):
 func eval_itree(ast):
 
     compiler := Eval_Compiler.new()
-    //Core::push_compiler(compiler)
+    Core::push_compiler(compiler)
     if not (result := compiler.eval_itree(ast)):
-        //Core::pop_compiler()
+        Core::pop_compiler()
         fail
     else:
-        //Core::pop_compiler()
+        Core::pop_compiler()
         return result

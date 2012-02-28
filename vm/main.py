@@ -197,7 +197,7 @@ def _import_lib(vm, leaf, vm_path, cnd_dirs):
 def _make_mode(vm_path, path, bc, verbosity, mk_fresh):
     # Try to work out a plausible cached path name.
     dp = path.rfind(os.extsep)
-    if dp >= 0 and os.sep not in path[:dp]:
+    if dp >= 0 and os.sep not in path[dp:]:
         cp = path[:dp]
     else:
         cp = None

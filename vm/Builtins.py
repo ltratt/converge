@@ -92,6 +92,10 @@ class Con_Object(Con_Thingy):
     __slots__ = ()
 
 
+class Version(object):
+    pass
+
+
 
 # This map class is inspired by:
 #   http://morepypy.blogspot.com/2011/03/controlling-tracing-of-interpreter-with_21.html
@@ -445,7 +449,7 @@ class Con_Class(Con_Boxed_Object):
         # subclasses must be changed too. We maintain a list of all subclasses (even indirect ones!)
         # to do this.
         
-        self.version = 0
+        self.version = Version()
         self.dependents = []
         sc_stack = supers[:]
         while len(sc_stack) > 0:
@@ -494,7 +498,7 @@ class Con_Class(Con_Boxed_Object):
             self.fields.append(o)
         else:
             self.fields[i] = o
-        self.version += 1
+        self.version = Version()
         
         j = 0
         while j < len(self.dependents):
@@ -502,7 +506,7 @@ class Con_Class(Con_Boxed_Object):
             if dep is None:
                 del self.dependents[j]
                 continue
-            dep.version += 1
+            dep.version = Version()
             j += 1
 
 

@@ -125,13 +125,20 @@ class _Con_Map(object):
         return self.other_maps[n]
 
 
+    @jit.elidable
+    def size(self):
+        return len(self.index_map)
+
+
 
 _EMPTY_MAP = _Con_Map()
 
 
 
+BASIC_SLOTS_SIZE = 4
+
 class Con_Boxed_Object(Con_Object):
-    __slots__ = ("instance_of", "slots_map", "slots")
+    __slots__ = ("instance_of", "slots_map", "s1", "s2", "s3", "s4", "extra_slots")
 
 
     def __init__(self, vm, instance_of=None):
@@ -140,26 +147,34 @@ class Con_Boxed_Object(Con_Object):
         else:
             self.instance_of = instance_of
         self.slots_map = _EMPTY_MAP
-        self.slots = None
+        self.s1 = self.s2 = self.s3 = self.s4 = None
+        self.extra_slots = None
 
 
     def has_slot(self, vm, n):
-        if self.slots is not None:
-            m = jit.promote(self.slots_map)
-            i = m.find(n)
-            if i != -1:
-                return True
+        m = jit.promote(self.slots_map)
+        i = m.find(n)
+        if i != -1:
+            return True
 
         return False
 
 
     def find_slot(self, vm, n):
         o = None
-        if self.slots is not None:
-            m = jit.promote(self.slots_map)
-            i = m.find(n)
-            if i != -1:
-                o = self.slots[i]
+        m = jit.promote(self.slots_map)
+        i = m.find(n)
+        if i != -1:
+            if i == 0:
+                o = self.s1
+            elif i == 1:
+                o = self.s2
+            elif i == 2:
+                o = self.s3
+            elif i == 3:
+                o = self.s4
+            else:
+                o = self.extra_slots[i - BASIC_SLOTS_SIZE]
     
         if o is None:
             o = self.instance_of.find_field(vm, n)
@@ -177,11 +192,19 @@ class Con_Boxed_Object(Con_Object):
 
     def get_slot(self, vm, n):
         o = None
-        if self.slots is not None:
-            m = jit.promote(self.slots_map)
-            i = m.find(n)
-            if i != -1:
-                o = self.slots[i]
+        m = jit.promote(self.slots_map)
+        i = m.find(n)
+        if i != -1:
+            if i == 0:
+                o = self.s1
+            elif i == 1:
+                o = self.s2
+            elif i == 2:
+                o = self.s3
+            elif i == 3:
+                o = self.s4
+            else:
+                o = self.extra_slots[i - BASIC_SLOTS_SIZE]
     
         if o is None:
             o = self.instance_of.find_field(vm, n)
@@ -197,20 +220,30 @@ class Con_Boxed_Object(Con_Object):
         return o
 
 
-
     def set_slot(self, vm, n, o):
         assert o is not None
         m = jit.promote(self.slots_map)
-        if self.slots is not None:
-            i = m.find(n)
-            if i == -1:
-                self.slots_map = m.extend(n)
-                self.slots.append(o)
-            else:
-                self.slots[i] = o
-        else:
+        i = m.find(n)
+        if i == -1:
             self.slots_map = m.extend(n)
-            self.slots = [o]
+            i = self.slots_map.size() - 1
+            if i == BASIC_SLOTS_SIZE:
+                self.extra_slots = [o]
+            elif i > BASIC_SLOTS_SIZE:
+                self.extra_slots.append(o)
+                return
+                
+        assert i != -1
+        if i == 0:
+            self.s1 = o
+        elif i == 1:
+            self.s2 = o
+        elif i == 2:
+            self.s3 = o
+        elif i == 3:
+            self.s4 = o
+        else:
+            self.extra_slots[i - BASIC_SLOTS_SIZE] = o
 
 
     def is_(self, o):

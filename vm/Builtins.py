@@ -143,12 +143,15 @@ class Con_Boxed_Object(Con_Object):
 
     def __init__(self, vm, instance_of=None):
         if instance_of is None:
-            self.instance_of = vm.get_builtin(BUILTIN_OBJECT_CLASS)
-        else:
-            self.instance_of = instance_of
+            instance_of = vm.get_builtin(BUILTIN_OBJECT_CLASS)
         self.slots_map = _EMPTY_MAP
         self.s1 = self.s2 = self.s3 = self.s4 = None
-        self.extra_slots = None
+        if isinstance(instance_of, Con_Class) and instance_of.extra_slots_size > 0:
+            self.extra_slots = [None] * instance_of.extra_slots_size
+            debug.make_sure_not_resized(self.extra_slots)
+        else:
+            self.extra_slots = None
+        self.instance_of = instance_of
 
 
     def has_slot(self, vm, n):
@@ -161,22 +164,19 @@ class Con_Boxed_Object(Con_Object):
 
 
     def find_slot(self, vm, n):
-        o = None
         m = jit.promote(self.slots_map)
         i = m.find(n)
-        if i != -1:
-            if i == 0:
-                o = self.s1
-            elif i == 1:
-                o = self.s2
-            elif i == 2:
-                o = self.s3
-            elif i == 3:
-                o = self.s4
-            else:
-                o = self.extra_slots[i - BASIC_SLOTS_SIZE]
-    
-        if o is None:
+        if i == 0:
+            o = self.s1
+        elif i == 1:
+            o = self.s2
+        elif i == 2:
+            o = self.s3
+        elif i == 3:
+            o = self.s4
+        elif i != -1:
+            o = self.extra_slots[i - BASIC_SLOTS_SIZE]
+        else:
             o = self.instance_of.find_field(vm, n)
             if o is None:
                 if n == "instance_of":
@@ -191,22 +191,19 @@ class Con_Boxed_Object(Con_Object):
 
 
     def get_slot(self, vm, n):
-        o = None
         m = jit.promote(self.slots_map)
         i = m.find(n)
-        if i != -1:
-            if i == 0:
-                o = self.s1
-            elif i == 1:
-                o = self.s2
-            elif i == 2:
-                o = self.s3
-            elif i == 3:
-                o = self.s4
-            else:
-                o = self.extra_slots[i - BASIC_SLOTS_SIZE]
-    
-        if o is None:
+        if i == 0:
+            o = self.s1
+        elif i == 1:
+            o = self.s2
+        elif i == 2:
+            o = self.s3
+        elif i == 3:
+            o = self.s4
+        elif i != -1:
+            o = self.extra_slots[i - BASIC_SLOTS_SIZE]
+        else:
             o = self.instance_of.find_field(vm, n)
             if o is None:
                 if n == "instance_of":
@@ -227,11 +224,6 @@ class Con_Boxed_Object(Con_Object):
         if i == -1:
             self.slots_map = m.extend(n)
             i = self.slots_map.size() - 1
-            if i == BASIC_SLOTS_SIZE:
-                self.extra_slots = [o]
-            elif i > BASIC_SLOTS_SIZE:
-                self.extra_slots.append(o)
-                return
                 
         assert i != -1
         if i == 0:
@@ -243,7 +235,24 @@ class Con_Boxed_Object(Con_Object):
         elif i == 3:
             self.s4 = o
         else:
-            self.extra_slots[i - BASIC_SLOTS_SIZE] = o
+            extra_slots = self.extra_slots
+            off = i - BASIC_SLOTS_SIZE
+            if isinstance(extra_slots, list) and off < len(self.extra_slots):
+                self.extra_slots[off] = o
+                return
+
+            instance_of = self.instance_of
+            assert isinstance(instance_of, Con_Class)
+            if self.extra_slots is None:
+                if instance_of.extra_slots_size == 0:
+                    instance_of.extra_slots_size = 1
+                self.extra_slots = [o]
+                debug.make_sure_not_resized(self.extra_slots)
+            else:
+                if instance_of.extra_slots_size == i - BASIC_SLOTS_SIZE:
+                    instance_of.extra_slots_size += 1
+                self.extra_slots = self.extra_slots + [o]
+                debug.make_sure_not_resized(self.extra_slots)
 
 
     def is_(self, o):
@@ -440,7 +449,8 @@ def bootstrap_con_object(vm):
 #
 
 class Con_Class(Con_Boxed_Object):
-    __slots__ = ("supers", "fields_map", "fields", "new_func", "version", "dependents")
+    __slots__ = ("supers", "fields_map", "fields", "new_func", "version",
+      "dependents", "extra_slots_size")
     _immutable_fields = ("supers", "fields", "dependents")
 
 
@@ -472,8 +482,9 @@ class Con_Class(Con_Boxed_Object):
         self.supers = supers
         self.fields_map = _EMPTY_MAP
         self.fields = []
+        self.extra_slots_size = 0
         
-        # To optimise slot lookups, we need to be a little more cunning. We make a (reasonable)
+        # To optimise field lookups, we need to be a little more cunning. We make a (reasonable)
         # assumption that classes rarely change their fields (most classes never change their fields
         # after their initial creation at all), so that in general we can simply elide field
         # lookups entirely. When a field is changed, all subsequent field lookups on that class and

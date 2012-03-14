@@ -615,20 +615,22 @@ def _Con_Class_instantiated(vm):
     assert isinstance(self, Con_Class)
     assert isinstance(o, Con_Boxed_Object)
 
-    if o.instance_of is self:
+    jit.promote(self)
+    cls = jit.promote(o.instance_of)
+    if cls is self:
         # We optimise the easy case.
         return vm.get_builtin(BUILTIN_NULL_OBJ)
-    elif _Con_Class_instantiated_not_direct(self, o):
+    elif _Con_Class_is_subclass(self, cls):
         return vm.get_builtin(BUILTIN_NULL_OBJ)
     return vm.get_builtin(BUILTIN_FAIL_OBJ)
 
-
-def _Con_Class_instantiated_not_direct(self, o):
-            # What we do now is to put 'instance_of' onto a stack; if the current class on the stack
+@jit.elidable
+def _Con_Class_is_subclass(self, subcls):
+            # What we do is to put 'subcls' onto a stack; if the current class on the stack
             # does not match 'self', we push all the class's superclasses onto the stack.
             #
             # If we run off the end of the stack then there is no match.
-    stack = [o.instance_of]
+    stack = [subcls]
     while len(stack) > 0:
         cnd = stack.pop()
         assert isinstance(cnd, Con_Class)

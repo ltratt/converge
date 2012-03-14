@@ -1782,7 +1782,6 @@ class Con_String(Con_Boxed_Object):
         return self.v > o.v
 
 
-    @jit.elidable
     def get_slice(self, vm, i, j):
         i, j = translate_slice_idxs(vm, i, j, len(self.v))
         return Con_String(vm, self.v[i:j])

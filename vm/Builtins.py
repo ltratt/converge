@@ -659,23 +659,30 @@ def _Con_Class_instantiated(vm):
     assert isinstance(self, Con_Class)
     assert isinstance(o, Con_Boxed_Object)
 
-    if o.instance_of is self:
+    jit.promote(self)
+    cls = jit.promote(o.instance_of)
+    if cls is self:
         # We optimise the easy case.
         return vm.get_builtin(BUILTIN_NULL_OBJ)
-    else:
-		# What we do now is to put 'instance_of' onto a stack; if the current class on the stack
-		# does not match 'self', we push all the class's superclasses onto the stack.
-		#
-		# If we run off the end of the stack then there is no match.
-        stack = [o.instance_of]
-        while len(stack) > 0:
-            cnd = stack.pop()
-            assert isinstance(cnd, Con_Class)
-            if cnd is self:
-                return vm.get_builtin(BUILTIN_NULL_OBJ)
-            stack.extend(cnd.supers)
-
+    elif _Con_Class_is_subclass(self, cls):
+        return vm.get_builtin(BUILTIN_NULL_OBJ)
     return vm.get_builtin(BUILTIN_FAIL_OBJ)
+
+@jit.elidable
+def _Con_Class_is_subclass(self, subcls):
+            # What we do is to put 'subcls' onto a stack; if the current class on the stack
+            # does not match 'self', we push all the class's superclasses onto the stack.
+            #
+            # If we run off the end of the stack then there is no match.
+    stack = [subcls]
+    while len(stack) > 0:
+        cnd = stack.pop()
+        assert isinstance(cnd, Con_Class)
+        if cnd is self:
+            return True
+        stack.extend(cnd.supers)
+
+    return False
 
 
 def bootstrap_con_class(vm):
@@ -1206,11 +1213,12 @@ class Con_Int(Con_Number):
 
 
     def __init__(self, vm, v, instance_of=None):
+        assert isinstance(v, int)
         if instance_of is None:
             instance_of = vm.get_builtin(BUILTIN_INT_CLASS)
         Con_Number.__init__(self, vm, instance_of)
         assert v is not None
-        self.v = rffi.cast(lltype.Signed, v)
+        self.v = v
 
 
     def as_int(self):
@@ -1344,7 +1352,7 @@ def _new_func_Con_Int(vm):
             vm.raise_helper("Number_Exception", [o_o])
         return Con_Int(vm, v)
     elif isinstance(o_o, Con_Float):
-        return Con_Int(vm, o_o.v)
+        return Con_Int(vm, int(o_o.v))
     else:
         vm.raise_helper("Type_Exception", [Con_String(vm, "Number | String"), o_o])
 
@@ -1820,7 +1828,6 @@ class Con_String(Con_Boxed_Object):
         return self.v > o.v
 
 
-    @jit.elidable
     def get_slice(self, vm, i, j):
         i, j = translate_slice_idxs(vm, i, j, len(self.v))
         return Con_String(vm, self.v[i:j])

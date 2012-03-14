@@ -81,8 +81,8 @@ def current(vm):
     with lltype.scoped_alloc(TIMEVAL) as tp:
         if gettimeofday(tp, lltype.nullptr(TIMEZONEP.TO)) != 0:
             raise Exception("XXX")
-        sec = rarithmetic.r_int(tp.c_tv_sec)
-        usec = rarithmetic.r_int(tp.c_tv_usec)
+        sec = int(tp.c_tv_sec)
+        usec = int(tp.c_tv_usec)
 
     return Con_List(vm, [Con_Int(vm, sec), Con_Int(vm, usec * 1000)])
 

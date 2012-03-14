@@ -334,9 +334,10 @@ def _check_room(vm, self, i):
 
 def _get_obj(vm, self, i):
     if self.type == TYPE_I64:
-        return Con_Int(vm, rffi.cast(rffi.LONGP, self.data)[i])
+        value = rffi.cast(rffi.LONGP, self.data)[i]
+        return Con_Int(vm, rffi.cast(lltype.Signed, value))
     elif self.type == TYPE_I32:
-        return Con_Int(vm, rffi.cast(rffi.LONG, rffi.cast(rffi.INTP, self.data)[i]))
+        return Con_Int(vm, rffi.cast(lltype.Signed, rffi.cast(rffi.INTP, self.data)[i]))
     elif self.type == TYPE_F:
         return Con_Float(vm, rffi.cast(rffi.DOUBLE, rffi.cast(rffi.DOUBLEP, self.data)[i]))
     else:

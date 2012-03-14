@@ -622,6 +622,7 @@ def _Con_Class_instantiated(vm):
         return vm.get_builtin(BUILTIN_NULL_OBJ)
     return vm.get_builtin(BUILTIN_FAIL_OBJ)
 
+
 def _Con_Class_instantiated_not_direct(self, o):
             # What we do now is to put 'instance_of' onto a stack; if the current class on the stack
             # does not match 'self', we push all the class's superclasses onto the stack.
@@ -1166,11 +1167,12 @@ class Con_Int(Con_Number):
 
 
     def __init__(self, vm, v, instance_of=None):
+        assert isinstance(v, int)
         if instance_of is None:
             instance_of = vm.get_builtin(BUILTIN_INT_CLASS)
         Con_Number.__init__(self, vm, instance_of)
         assert v is not None
-        self.v = rffi.cast(lltype.Signed, v)
+        self.v = v
 
 
     def as_int(self):
@@ -1304,7 +1306,7 @@ def _new_func_Con_Int(vm):
             vm.raise_helper("Number_Exception", [o_o])
         return Con_Int(vm, v)
     elif isinstance(o_o, Con_Float):
-        return Con_Int(vm, o_o.v)
+        return Con_Int(vm, int(o_o.v))
     else:
         vm.raise_helper("Type_Exception", [Con_String(vm, "Number | String"), o_o])
 

@@ -747,6 +747,7 @@ class VM(object):
         for j in range(0, num_args):
             k = i + num_args - j - 1
             assert k >= 0
+            jit.promote(k)
             new_cf.stack[k] = cf.stack_pop()
         new_cf.stackpe = i + num_args
 
@@ -1167,6 +1168,7 @@ class Stack_Continuation_Frame(Con_Thingy):
 
     def stack_get(self, i):
         assert i >= 0
+        jit.promote(i)
         return self.stack[i]
 
 
@@ -1175,6 +1177,7 @@ class Stack_Continuation_Frame(Con_Thingy):
         assert i >= 0 and j >= i
         l = [None] * (j - i)
         a = 0
+        jit.promote(i)
         for k in range(i, j):
             l[a] = self.stack[k]
             a += 1
@@ -1186,6 +1189,7 @@ class Stack_Continuation_Frame(Con_Thingy):
         assert i >= 0
         l = [None] * (self.stackpe - i)
         a = 0
+        jit.promote(i)
         for k in range(i, self.stackpe):
             l[a] = self.stack[k]
             self.stack[k] = None
@@ -1196,6 +1200,7 @@ class Stack_Continuation_Frame(Con_Thingy):
 
     def stack_set(self, i, o):
         assert i >= 0
+        jit.promote(i)
         self.stack[i] = o
 
 

@@ -1213,7 +1213,6 @@ class Con_Int(Con_Number):
 
 
     def __init__(self, vm, v, instance_of=None):
-        assert isinstance(v, int)
         if instance_of is None:
             instance_of = vm.get_builtin(BUILTIN_INT_CLASS)
         Con_Number.__init__(self, vm, instance_of)

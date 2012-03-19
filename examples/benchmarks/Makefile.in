@@ -1,9 +1,12 @@
 include @abs_top_srcdir@/Makefile.inc
 
-all: cvstone richards
+all: cvstone fannkuch-redux richards
 
 cvstone: cvstone.cv
 	${CONVERGE_VM} ${CONVERGEC} -m cvstone.cv
+
+fannkuch-redux: fannkuch-redux.cv
+	${CONVERGE_VM} ${CONVERGEC} -m fannkuch-redux.cv
 
 richards: richards.cv
 	${CONVERGE_VM} ${CONVERGEC} -m richards.cv
@@ -11,7 +14,7 @@ richards: richards.cv
 install:
 
 clean:
-	rm -f cvstone cvstone.cvb richards richards.cvb
+	rm -f cvstone cvstone.cvb fannkuch-redux fannkuch-redux.cvb richards richards.cvb
 
 distclean: clean
 	rm -f Makefile

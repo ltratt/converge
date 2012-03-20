@@ -91,7 +91,7 @@ class Instant:
     func -(self, o):
     
         if self.nsec - o.nsec < 0:
-            return mk_timespec(self.sec - o.sec - 1, 1000000000 + (self.nsec - o.nsec))
+            return mk_timespec(self.sec - o.sec - 1, (100000*10000) + (self.nsec - o.nsec))
         else:
             return mk_timespec(self.sec - o.sec, self.nsec - o.nsec)
 
@@ -99,7 +99,7 @@ class Instant:
 
     func as_float(self):
     
-        return self.sec + self.nsec / 1000000000
+        return self.sec + self.nsec / (100000*10000)
 
 
 

@@ -50,7 +50,7 @@ class Elem(Builtins::List):
         self.name := name
         self._attr_namespaces := Dict{}
         for attr := attrs.iter():
-            if not (namespace := self._attr_namespaces.find(attr.namespace)):
+            if not (attr_namespace := self._attr_namespaces.find(attr.namespace)):
                 self._attr_namespaces[attr.namespace] := attr_namespace := Dict{}
             attr_namespace[attr.name] := attr
         self.prefix := prefix

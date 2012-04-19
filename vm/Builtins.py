@@ -1993,6 +1993,15 @@ def _Con_String_replaced(vm):
 
 
 @con_object_proc
+def _Con_String_split(vm):
+    (self, o_o),_ = vm.decode_args("SS")
+    assert isinstance(self, Con_String)
+    assert isinstance(o_o, Con_String)
+
+    return Con_List(vm, [Con_String(vm, x) for x in self.v.split(o_o.v)])
+
+
+@con_object_proc
 def _Con_String_stripped(vm):
     (self,),_ = vm.decode_args("S")
     assert isinstance(self, Con_String)
@@ -2069,6 +2078,7 @@ def bootstrap_con_string(vm):
     new_c_con_func_for_class(vm, "prefixed_by", _Con_String_prefixed_by, string_class)
     new_c_con_func_for_class(vm, "replaced", _Con_String_replaced, string_class)
     new_c_con_func_for_class(vm, "rfind_index", _Con_String_rfind_index, string_class)
+    new_c_con_func_for_class(vm, "split", _Con_String_split, string_class)
     new_c_con_func_for_class(vm, "stripped", _Con_String_stripped, string_class)
     new_c_con_func_for_class(vm, "suffixed_by", _Con_String_suffixed_by, string_class)
     new_c_con_func_for_class(vm, "to_str", _Con_String_to_str, string_class)

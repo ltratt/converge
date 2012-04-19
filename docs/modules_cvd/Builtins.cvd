@@ -350,6 +350,11 @@ Succeeds if the string starting at position <code>i</code> matches <code>s</code
 Successively generates, in reverse order, the starting index of each substring which matches <code>s</code>.
 </function>
 
+<function name="split">
+<argument name="s" />
+Splits the string on each instance of <code>s</code>, returning a list of the result.
+</function>
+
 <function name="stripped">
 Returns a copy of this string with all whitespace (tabs, spaces, newlines) removed from both its left and right hand side.
 </function>

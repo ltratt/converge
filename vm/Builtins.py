@@ -962,6 +962,27 @@ def _Con_Module_path(vm):
         return Con_String(vm, "%s%s%s" % (rtn.v, sep, name.v))
 
 
+@con_object_proc
+def _Con_Module_src_offset_to_line_column(vm):
+    (self, off_o),_ = vm.decode_args("MI")
+    assert isinstance(self, Con_Module)
+    assert isinstance(off_o, Con_Int)
+
+    off = off_o.v
+    if off < 0:
+        raise Exception("XXX")
+
+    bc = self.bc
+    newlines_off = Target.read_word(bc, Target.BC_MOD_NEWLINES)
+    for i in range(Target.read_word(bc, Target.BC_MOD_NUM_NEWLINES)):
+        if off < Target.read_word(bc, newlines_off + i * Target.INTSIZE):
+            return Con_List(vm, [Con_Int(vm, i), Con_Int(vm, off - \
+              Target.read_word(bc, newlines_off + (i - 1) * Target.INTSIZE))])
+    
+    raise Exception("XXX")
+    
+
+
 def bootstrap_con_module(vm):
     module_class = vm.get_builtin(BUILTIN_MODULE_CLASS)
     assert isinstance(module_class, Con_Class)
@@ -976,6 +997,7 @@ def bootstrap_con_module(vm):
     new_c_con_func_for_class(vm, "iter_newlines", _Con_Module_iter_newlines, module_class)
     new_c_con_func_for_class(vm, "path", _Con_Module_path, module_class)
     new_c_con_func_for_class(vm, "set_defn", _Con_Module_set_defn, module_class)
+    new_c_con_func_for_class(vm, "src_offset_to_line_column", _Con_Module_src_offset_to_line_column, module_class)
 
 
 def new_c_con_module(vm, name, id_, src_path, import_func, names):

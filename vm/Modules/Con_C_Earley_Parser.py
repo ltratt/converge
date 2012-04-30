@@ -268,9 +268,6 @@ def Parser_parse(vm):
 #   Elizabeth Scott, Adrian Johnstone
 #   Science of Computer Programming 75 (2010) 55-70
 # In particular we extend this with the Kleene star ()* and optional ()? operators.
-# Also, since we are only interested in a parse tree (not the full parse forest), we prune
-# ambiguous alternatives on the fly, rather than keeping round possibilities that will never
-# prove to be useful.
 #
 # "line X" is a reference to the line numbered X (starting from 1) in the Scott / Johnstone
 # algorithm.

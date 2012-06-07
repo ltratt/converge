@@ -914,8 +914,12 @@ class IMod_Gen:
             // name ::= splice
             splice_node := node[0]
             name := self._eval_splice(splice_node, splice_node.src_infos)
-            if not (ITree::IVar.instantiated(name) & ITree_WF::wf(name)):
-                raise "XXX"
+            if (ITree::IVar.instantiated(name) | ITree::IGet.instantiated(name) \
+              | ITree::ISlot_Lookup.instantiated(name)) & ITree_WF::wf(name):
+                return name
+            msg := Strings::format("Splice returned '%s' instead of '[IVar, IGet, ISlot_Lookup]'.", \
+              name.instance_of.name)
+            self._compiler.error(msg, node.src_infos)
             return name
         else:
             // name ::= insert

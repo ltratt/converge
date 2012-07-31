@@ -33,7 +33,7 @@ from pypy.rpython.lltypesystem import lltype, rffi
 from pypy.rpython.tool import rffi_platform as platform
 from pypy.translator.tool.cbuild import ExternalCompilationInfo
 import os, os.path, sys
-import Builtins, Bytecode, Stdlib_Modules, VM
+import Builtins, Bytecode, Config, Stdlib_Modules, VM
 
 
 
@@ -54,10 +54,8 @@ strlen   = rffi.llexternal("strlen", [rffi.CCHARP], rffi.SIZE_T, compilation_inf
 
 
 
-VM_VERSION = "current"
-
-STDLIB_DIRS = ["../lib/converge-%s/" % VM_VERSION, "../lib/"]
-COMPILER_DIRS = ["../lib/converge-%s/" % VM_VERSION, "../compiler/"]
+STDLIB_DIRS = ["../lib/converge-%s/" % Config.CON_VERSION, "../lib/"]
+COMPILER_DIRS = ["../lib/converge-%s/" % Config.CON_VERSION, "../compiler/"]
 
 
 def entry_point(argv):

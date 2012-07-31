@@ -2,6 +2,15 @@
  Converge changes file
 ================================================================================
 
+  2012/07/31 Converge 2.0
+
+This release contains a new VM written in RPython. Depending on your program
+and the length of time it runs, this will lead to a 2x-100x speedup. Programs
+should run as before, but will need to be recompiled (the easiest way of
+doing this is, on the first run of a program on Converge 2.0 to use the "-f"
+switch which forces a recompile).
+
+
   2011/05/29 Converge 1.2
 
 This release contains many portability fixes and optimisations. Converge should

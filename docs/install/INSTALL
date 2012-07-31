@@ -5,11 +5,11 @@ order to build itself. The PYPY_SRC variable should point at the root of the
 PyPy source distribution.
 
 If you are building from a formal Converge release, the latest stable release
-of PyPy is likely to be sufficient. e.g. if PyPy 1.8 is the latest version:
+of PyPy is likely to be sufficient. e.g. if PyPy 1.9 is the latest version:
 
   $ cd <somewhere>
-  $ wget https://bitbucket.org/pypy/pypy/get/release-1.8.tar.bz2
-  $ bunzip2 -c - release-1.8.tar.bz2 | tar xf -
+  $ wget https://bitbucket.org/pypy/pypy/get/release-1.9.tar.bz2
+  $ bunzip2 -c - release-1.9.tar.bz2 | tar xf -
   $ export PYPY_SRC=<somewhere>/pypy
 
 If you are building from a git checkout of Converge, it is recommended to

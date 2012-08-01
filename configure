@@ -109,7 +109,11 @@ which pcre-config
 
 echo -n "Checking for libpcre.a... "
 libpcre_a=""
-for dir in `pcre-config --libs | tr " " "\n" | grep "^-L" | sort -u | sed "s/^-L//"`; do
+cnds=`pcre-config --libs | tr " " "\n" | grep "^-L" | sort -u | sed "s/^-L//"`
+pcre_configp=`which pcre-config 2> /dev/null`
+pcre_configd=`dirname $pcre_configp`
+cnds="$cnds `dirname $pcre_configd`/lib"
+for dir in $cnds; do
 	cnd=$dir/libpcre.a
 	if [ -f $cnd ]; then
 		libpcre_a=$cnd
@@ -143,7 +147,7 @@ libxml2_a=""
 cnds=`xml2-config --libs | tr " " "\n" | grep "^-L" | sort -u | sed "s/^-L//"`
 xml2_configp=`which xml2-config 2> /dev/null`
 xml2_configd=`dirname $xml2_configp`
-cnds="$cnds `dirname $xml2_configd`/lib/"
+cnds="$cnds `dirname $xml2_configd`/lib"
 for dir in $cnds ; do
 	cnd=$dir/libxml2.a
 	if [ -f $cnd ]; then

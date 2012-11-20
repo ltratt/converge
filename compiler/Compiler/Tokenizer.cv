@@ -512,7 +512,11 @@ class Tokenizer:
 
     func error(self, msg, src_pos):
     
-        Core::peek_compiler().error(msg, [[self._src_path, src_pos]])
+        i := src_pos
+        while i < self._str.len() & not NEWLINES.find(self._str[i]):
+            i += 1
+        self.newlines.append(self._src_offset + i + 1)
+        Core::peek_compiler().error(msg, [[self._src_path, src_pos, 1]])
                     
 
 

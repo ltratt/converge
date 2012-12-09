@@ -50,7 +50,8 @@ Con_Obj *_Con_Builtins_Int_Class_new_object(Con_Obj *);
 
 Con_Obj *_Con_Builtins_Int_Class_to_str_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Int_Class_eq_func(Con_Obj *);
-Con_Obj *_Con_Builtins_Int_Class_less_than_func(Con_Obj *);
+Con_Obj *_Con_Builtins_Int_Class_lt_func(Con_Obj *);
+Con_Obj *_Con_Builtins_Int_Class_lt_eq_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Int_Class_gt_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Int_Class_add_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Int_Class_subtract_func(Con_Obj *);
@@ -89,7 +90,8 @@ void Con_Builtins_Int_Class_bootstrap(Con_Obj *thread)
 	
 	CON_SET_FIELD(int_class, "to_str", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Int_Class_to_str_func, "to_str", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), int_class));
 	CON_SET_FIELD(int_class, "==", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Int_Class_eq_func, "==", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), int_class));
-	CON_SET_FIELD(int_class, "<", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Int_Class_less_than_func, "<", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), int_class));
+	CON_SET_FIELD(int_class, "<", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Int_Class_lt_eq_func, "<", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), int_class));
+    CON_SET_FIELD(int_class, "<=", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Int_Class_lt_func, "<=", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), int_class));
 	CON_SET_FIELD(int_class, ">", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Int_Class_gt_func, ">", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), int_class));
 	CON_SET_FIELD(int_class, "+", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Int_Class_add_func, "+", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), int_class));
 	CON_SET_FIELD(int_class, "-", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Int_Class_subtract_func, "-", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), int_class));
@@ -195,7 +197,7 @@ Con_Obj *_Con_Builtins_Int_Class_eq_func(Con_Obj *thread)
 // '<(o)'.
 //
 
-Con_Obj *_Con_Builtins_Int_Class_less_than_func(Con_Obj *thread)
+Con_Obj *_Con_Builtins_Int_Class_lt_func(Con_Obj *thread)
 {
 	Con_Obj *self, *o;
 	CON_UNPACK_ARGS("IN", &self, &o);
@@ -204,6 +206,26 @@ Con_Obj *_Con_Builtins_Int_Class_less_than_func(Con_Obj *thread)
 	Con_Int o_val = Con_Numbers_Number_to_Con_Int(thread, o);
 	
 	if (self_int_atom->val < o_val)
+		return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
+	else
+		return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);
+}
+
+
+
+//
+// '<=(o)'.
+//
+
+Con_Obj *_Con_Builtins_Int_Class_lt_eq_func(Con_Obj *thread)
+{
+	Con_Obj *self, *o;
+	CON_UNPACK_ARGS("IN", &self, &o);
+	
+	Con_Builtins_Int_Atom *self_int_atom = CON_GET_ATOM(self, CON_BUILTIN(CON_BUILTIN_INT_ATOM_DEF_OBJECT));
+	Con_Int o_val = Con_Numbers_Number_to_Con_Int(thread, o);
+	
+	if (self_int_atom->val <= o_val)
 		return CON_BUILTIN(CON_BUILTIN_NULL_OBJ);
 	else
 		return CON_BUILTIN(CON_BUILTIN_FAIL_OBJ);

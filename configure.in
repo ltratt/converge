@@ -858,6 +858,10 @@ if [[ "$GCC" = "yes" ]]; then
 	found_opts=0
 	
 	case $cc_version in
+        gcc-4\.7\.* )
+            AC_MSG_RESULT(-O3 -fno-strict-aliasing -fno-tree-dce)
+            CFLAGS="$CFLAGS -O3 -fno-strict-aliasing -fno-tree-dce"
+            ;;
 		gcc-3\.3* | gcc-4\.* )
 			AC_MSG_RESULT(-O3 -fno-strict-aliasing)
 			CFLAGS="$CFLAGS -O3 -fno-strict-aliasing"

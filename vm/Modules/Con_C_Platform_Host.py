@@ -19,7 +19,7 @@
 # IN THE SOFTWARE.
 
 
-from pypy.rlib import rsocket
+from rpython.rlib import rsocket
 from Builtins import *
 
 

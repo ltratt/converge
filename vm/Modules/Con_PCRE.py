@@ -19,10 +19,10 @@
 # IN THE SOFTWARE.
 
 
-from pypy.rpython.lltypesystem import lltype, rffi
-from pypy.rpython.tool import rffi_platform as platform
-from pypy.rlib.rsre import rsre_re
-from pypy.translator.tool.cbuild import ExternalCompilationInfo
+from rpython.rtyper.lltypesystem import lltype, rffi
+from rpython.rtyper.tool import rffi_platform as platform
+from rpython.rlib.rsre import rsre_re
+from rpython.translator.tool.cbuild import ExternalCompilationInfo
 import Config
 from Builtins import *
 from Core import *

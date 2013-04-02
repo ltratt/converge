@@ -19,8 +19,8 @@
 # IN THE SOFTWARE.
 
 
-from pypy.rlib.jit import *
-from pypy.rpython.lltypesystem import lltype, rffi
+from rpython.rlib.jit import *
+from rpython.rtyper.lltypesystem import lltype, rffi
 
 import sys
 

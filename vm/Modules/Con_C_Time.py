@@ -19,10 +19,10 @@
 # IN THE SOFTWARE.
 
 
-from pypy.rlib import rarithmetic
-from pypy.rpython.lltypesystem import lltype, rffi
-from pypy.rpython.tool import rffi_platform as platform
-from pypy.translator.tool.cbuild import ExternalCompilationInfo
+from rpython.rlib import rarithmetic
+from rpython.rtyper.lltypesystem import lltype, rffi
+from rpython.rtyper.tool import rffi_platform as platform
+from rpython.translator.tool.cbuild import ExternalCompilationInfo
 from Builtins import *
 
 

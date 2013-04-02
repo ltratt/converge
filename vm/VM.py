@@ -22,8 +22,8 @@
 import os, sys
 
 from pypy.config.pypyoption import get_pypy_config
-from pypy.rlib import debug, jit, objectmodel
-from pypy.rpython.lltypesystem import lltype, llmemory, rffi
+from rpython.rlib import debug, jit, objectmodel
+from rpython.rtyper.lltypesystem import lltype, llmemory, rffi
 
 from Core import *
 import Builtins, Target

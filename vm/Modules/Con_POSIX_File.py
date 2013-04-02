@@ -20,10 +20,10 @@
 
 
 import os
-from pypy.rpython.lltypesystem import lltype, rffi
-from pypy.rpython.tool import rffi_platform as platform
-from pypy.rlib import rarithmetic, rposix
-from pypy.translator.tool.cbuild import ExternalCompilationInfo
+from rpython.rtyper.lltypesystem import lltype, rffi
+from rpython.rtyper.tool import rffi_platform as platform
+from rpython.rlib import rarithmetic, rposix
+from rpython.translator.tool.cbuild import ExternalCompilationInfo
 from Builtins import *
 import Stdlib_Modules
 

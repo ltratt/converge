@@ -19,11 +19,11 @@
 # IN THE SOFTWARE.
 
 
-from pypy.rlib import rarithmetic, objectmodel
-from pypy.rpython.lltypesystem import llmemory, lltype, rffi
-from pypy.rpython.tool import rffi_platform as platform
-from pypy.rpython.annlowlevel import llhelper
-from pypy.translator.tool.cbuild import ExternalCompilationInfo
+from rpython.rlib import rarithmetic, objectmodel
+from rpython.rtyper.lltypesystem import llmemory, lltype, rffi
+from rpython.rtyper.tool import rffi_platform as platform
+from rpython.rtyper.annlowlevel import llhelper
+from rpython.translator.tool.cbuild import ExternalCompilationInfo
 from Builtins import *
 from Core import *
 import Config, Target

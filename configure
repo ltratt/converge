@@ -12,7 +12,7 @@ converge_date=`date '+%Y/%m/%d %H:%M:%S'`
 abs_top_srcdir=`pwd`
 
 prefix=""
-rpython_opt="jit"
+rpython_opt="Ojit"
 while [ $# -ge 1 ]; do
     case $1 in
         --prefix=*  ) prefix=`echo $1 | sed "s/--prefix=//g"`; shift;;
@@ -45,19 +45,19 @@ elif [ $? -ne 0 ]; then
 fi
 echo $PYTHON
 
-echo -n "Checking for RPython translate.py... "
+echo -n "Checking for RPython... "
 if [ "X$PYPY_SRC" != "X" ]; then
-    TRANSLATE_PY=$PYPY_SRC/pypy/translator/goal/translate.py
-    if [ ! -f $TRANSLATE_PY ]; then
-        TRANSLATE_PY=""
+    RPYTHON=$PYPY_SRC/rpython/bin/rpython
+    if [ ! -f $RPYTHON ]; then
+        RPYTHON=""
     fi
 fi
 
-if [ "X$TRANSLATE_PY" = "X" ]; then
+if [ "X$RPYTHON" = "X" ]; then
     echo "not found (try setting \$PYPY_SRC to the root of the PyPy source distribution)."
     exit 1
 fi
-echo $TRANSLATE_PY
+echo $RPYTHON
 
 operating_system=`uname -s`
 machine_type=`uname -m`
@@ -150,6 +150,7 @@ xml2_configd=`dirname $xml2_configp`
 cnds="$cnds `dirname $xml2_configd`/lib"
 for dir in $cnds ; do
 	cnd=$dir/libxml2.a
+    echo $cnd
 	if [ -f $cnd ]; then
 		libxml2_a=$cnd
 		break
@@ -232,7 +233,7 @@ if rewrite:
 EOF
 for p_in in `find . -name "*.in"`; do
     p=`echo $p_in | sed "s/.in$//g"`
-    $PYTHON $rewriter $p_in $p "@abs_top_srcdir@" "$abs_top_srcdir" "@PYTHON@" "$PYTHON" "@TRANSLATE_PY@" "$TRANSLATE_PY" "@RPYTHON_OPT@" "$rpython_opt" "@INSTALL@" "$INSTALL" "@prefix@" "$prefix" "@bindir@" "$prefix/bin" "@datadir@" "$prefix/share" "@libdir@" "$prefix/lib" "@INSTALL@" "$abs_top_srcdir/install.sh" "@CONVERGE_VERSION@" "$converge_version" "@CONVERGE_DATE@"  "$converge_date" "@PLATFORM@" "$operating_system" "@EXEC_EXT@" "$exec_ext" "@DIR_SEP@" "$DIR_SEP" "@LIBPCRE_INCLUDE_DIRS@" "$libpcre_include_dirs" "@LIBPCRE_LIBRARY_DIRS@" "$libpcre_library_dirs" "@LIBPCRE_LIBRARIES@" "$libpcre_libraries" "@LIBPCRE_LINK_FLAGS@" "$libpcre_link_flags" "@LIBPCRE_A@" "$libpcre_a" "@LIBXML2_INCLUDE_DIRS@" "$libxml2_include_dirs" "@LIBXML2_LIBRARY_DIRS@" "$libxml2_library_dirs" "@LIBXML2_LIBRARIES@" "$libxml2_libraries" "@LIBXML2_LINK_FLAGS@" "$libxml2_link_flags" "@LIBXML2_A@" "$libxml2_a" "@NO_ASMGCC_HACK@" "$no_asmgcc_hack"
+    $PYTHON $rewriter $p_in $p "@abs_top_srcdir@" "$abs_top_srcdir" "@PYTHON@" "$PYTHON" "@RPYTHON@" "$RPYTHON" "@RPYTHON_OPT@" "$rpython_opt" "@INSTALL@" "$INSTALL" "@prefix@" "$prefix" "@bindir@" "$prefix/bin" "@datadir@" "$prefix/share" "@libdir@" "$prefix/lib" "@INSTALL@" "$abs_top_srcdir/install.sh" "@CONVERGE_VERSION@" "$converge_version" "@CONVERGE_DATE@"  "$converge_date" "@PLATFORM@" "$operating_system" "@EXEC_EXT@" "$exec_ext" "@DIR_SEP@" "$DIR_SEP" "@LIBPCRE_INCLUDE_DIRS@" "$libpcre_include_dirs" "@LIBPCRE_LIBRARY_DIRS@" "$libpcre_library_dirs" "@LIBPCRE_LIBRARIES@" "$libpcre_libraries" "@LIBPCRE_LINK_FLAGS@" "$libpcre_link_flags" "@LIBPCRE_A@" "$libpcre_a" "@LIBXML2_INCLUDE_DIRS@" "$libxml2_include_dirs" "@LIBXML2_LIBRARY_DIRS@" "$libxml2_library_dirs" "@LIBXML2_LIBRARIES@" "$libxml2_libraries" "@LIBXML2_LINK_FLAGS@" "$libxml2_link_flags" "@LIBXML2_A@" "$libxml2_a" "@NO_ASMGCC_HACK@" "$no_asmgcc_hack"
 done
 echo
 rm -f $rewriter

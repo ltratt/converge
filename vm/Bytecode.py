@@ -18,8 +18,8 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-from pypy.rlib import jit
-from pypy.rpython.lltypesystem import lltype, rffi
+from rpython.rlib import jit
+from rpython.rtyper.lltypesystem import lltype, rffi
 
 from Target import *
 from VM import *

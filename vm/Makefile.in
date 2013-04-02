@@ -1,12 +1,12 @@
 PYTHON=@PYTHON@
-TRANSLATE_PY=@TRANSLATE_PY@
+RPYTHON=@RPYTHON@
 INSTALL=@INSTALL@
 bindir=@bindir@
 
 all: converge
 
 converge: *.py Modules/*.py
-	${PYTHON} ${TRANSLATE_PY} --opt=@RPYTHON_OPT@ @NO_ASMGCC_HACK@ --output=converge main.py
+	${PYTHON} ${RPYTHON} -@RPYTHON_OPT@ @NO_ASMGCC_HACK@ --output=converge main.py
 
 install:
 	${INSTALL} -d ${DESTDIR}${bindir}

@@ -19,19 +19,19 @@
 # IN THE SOFTWARE.
 
 
+import os, sys
+sys.path.append(os.getenv("PYPY_SRC"))
+print sys.path
 try:
     import pypy
 except:
-    import os, sys
     sys.setrecursionlimit(20000)
-    sys.path.append(os.getenv("PYPY_SRC"))
     
-from pypy.config.config import Config
-from pypy.rlib import rarithmetic, rposix
-from pypy.rlib.jit import *
-from pypy.rpython.lltypesystem import lltype, rffi
-from pypy.rpython.tool import rffi_platform as platform
-from pypy.translator.tool.cbuild import ExternalCompilationInfo
+from rpython.rlib import rarithmetic, rposix
+from rpython.rlib.jit import *
+from rpython.rtyper.lltypesystem import lltype, rffi
+from rpython.rtyper.tool import rffi_platform as platform
+from rpython.translator.tool.cbuild import ExternalCompilationInfo
 import os, os.path, sys
 import Builtins, Bytecode, Config, Stdlib_Modules, VM
 
@@ -370,7 +370,7 @@ def target(driver, args):
 
 
 def jitpolicy(driver):
-    from pypy.jit.codewriter.policy import JitPolicy
+    from rpython.jit.codewriter.policy import JitPolicy
     return JitPolicy()
 
 if __name__ == "__main__":

@@ -18,8 +18,8 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-from pypy.rlib import debug, jit, objectmodel, rarithmetic, rweakref
-from pypy.rpython.lltypesystem import lltype, rffi
+from rpython.rlib import debug, jit, objectmodel, rarithmetic, rweakref
+from rpython.rtyper.lltypesystem import lltype, rffi
 
 NUM_BUILTINS = 41
 

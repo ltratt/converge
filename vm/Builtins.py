@@ -2650,6 +2650,18 @@ def _Con_Dict_find(vm):
 
 
 @con_object_proc
+def _Con_Dict_extend(vm):
+    (self, o),_ = vm.decode_args("DD")
+    assert isinstance(self, Con_Dict)
+    assert isinstance(o, Con_Dict)
+    
+    for k, v in o.d.items():
+        self.d[k] = v
+    
+    return vm.get_builtin(BUILTIN_FAIL_OBJ)
+
+
+@con_object_proc
 def _Con_Dict_get(vm):
     (self, k),_ = vm.decode_args("DO")
     assert isinstance(self, Con_Dict)
@@ -2736,6 +2748,7 @@ def bootstrap_con_dict(vm):
     dict_class = vm.get_builtin(BUILTIN_DICT_CLASS)
     assert isinstance(dict_class, Con_Class)
 
+    new_c_con_func_for_class(vm, "extend", _Con_Dict_extend, dict_class)
     new_c_con_func_for_class(vm, "find", _Con_Dict_find, dict_class)
     new_c_con_func_for_class(vm, "get", _Con_Dict_get, dict_class)
     new_c_con_func_for_class(vm, "iter", _Con_Dict_iter, dict_class)

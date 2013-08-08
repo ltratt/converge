@@ -134,10 +134,21 @@ class Instrs_Opt:
             // present for correct operation.
             if target.Instr_Add_Failure_Frame.instantiated(instr):
                 stack_depth := 0
+                nesting := 0
                 j := i + 1
                 while j < instrs.len():
                     instr2 := instrs[j]
+                    if target.Instr_Add_Failure_Frame.instantiated(instr2):
+                        nesting += 1
+                        j += 1
+                        continue
+                    
                     if target.Instr_Remove_Failure_Frame.instantiated(instr2):
+                        if nesting > 0:
+                            nesting -= 1
+                            j += 1
+                            continue
+
                         self._instrs_replace(i, i + 1, [])
                         new_instrs := []
                         while stack_depth > 0:
@@ -147,22 +158,42 @@ class Instrs_Opt:
                         replaced := 1
                         break
 
-                    if target.Instr_Lookup_Var.instantiated(instr2) \
-                      | target.Instr_Dup.instantiated(instr2) \
-                      | target.Instr_Builtin_Lookup.instantiated(instr2) \
-                      | target.Instr_Constant_Get.instantiated(instr2):
-                        stack_depth += 1
-                    elif target.Instr_List.instantiated(instr2) \
-                      | target.Instr_Set.instantiated(instr2):
-                        stack_depth -= instr2.num_elems - 1
-                    elif target.Instr_Dict.instantiated(instr2):
-                        stack_depth -= 2 * instr2.num_elems - 1
-                    elif target.Instr_Pop.instantiated(instr2):
-                        stack_depth -= 1
-                    elif target.Instr_Assign_Var.instantiated(instr2):
-                        pass
+                    if nesting == 0:
+                        // For the failure frame we're trying to reduce, we have
+                        // to be very careful that only operations which can't
+                        // possibly need a failure frame are accepted. Hence
+                        // this is a whitelist.
+                        if target.Instr_Lookup_Var.instantiated(instr2) \
+                          | target.Instr_Dup.instantiated(instr2) \
+                          | target.Instr_Builtin_Lookup.instantiated(instr2) \
+                          | target.Instr_Constant_Get.instantiated(instr2):
+                            stack_depth += 1
+                        elif target.Instr_List.instantiated(instr2) \
+                          | target.Instr_Set.instantiated(instr2):
+                            stack_depth -= instr2.num_elems - 1
+                        elif target.Instr_Dict.instantiated(instr2):
+                            stack_depth -= 2 * instr2.num_elems - 1
+                        elif target.Instr_Pop.instantiated(instr2):
+                            stack_depth -= 1
+                        elif target.Instr_Assign_Var.instantiated(instr2):
+                            pass
+                        else:
+                            break
                     else:
-                        break
+                        // We don't have to be as careful with nested failure
+                        // frames, which act like a shock absorber. So long
+                        // as an instruction can't shoot back up a level, we
+                        // can be quite accepting of most instructions. Hence
+                        // this is a blacklist.
+                        for t := [target.Instr_Add_Fail_Up_Frame, \
+                          target.Instr_Func_Defn, \
+                          target.Instr_Pull, \
+                          target.Instr_Branch_If_Not_Fail, \
+                          target.Instr_Branch_If_Fail].iter():
+                            if t.instantiated(instr2):
+                                break
+                        broken:
+                            break
                     j += 1
             i += 1
 

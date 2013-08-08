@@ -31,7 +31,20 @@ class Instrs_Opt:
     func optimise(self, code_gen):
     
         self._code_gen := code_gen
-        self._constant_fold()
+        
+        while 1:
+            replaced := 0
+            if self._constant_fold() == 1:
+                replaced := 1
+
+            if self._remove_pops() == 1:
+                replaced := 1
+
+            if self._remove_failure_frames() == 1:
+                replaced := 1
+
+            if replaced == 0:
+                break
 
 
 
@@ -51,11 +64,13 @@ class Instrs_Opt:
 
 
     func _constant_fold(self):
-    
-        i := 0
+
+        // Simple constant folding in additions and subtractions.    
         target := self._code_gen._target
         instrs := self._code_gen._instructions
         consts := self._code_gen._constants
+        replaced := 0
+        i := 0
         while i < instrs.len():
             instr := instrs[i]
             if target.Instr_Sub.instantiated(instr) \
@@ -75,6 +90,80 @@ class Instrs_Opt:
                         new_instr := instrs.pop()
                         self._instrs_replace(i - 2, i + 1, [new_instr])
                         i -= 2
-                        continue
+                        replaced := 1
+
+            i += 1
+
+        return replaced
+
+
+
+    func _remove_pops(self):
+
+        // Pops before a failure frame removal are trivially removable.
+    
+        target := self._code_gen._target
+        instrs := self._code_gen._instructions
+        i := 0
+        replaced := 0
+        while i < instrs.len():
+            instr := instrs[i]
+
+            if target.Instr_Pop.instantiated(instr) & i + 1 < instrs.len() \
+              & target.Instr_Remove_Failure_Frame.instantiated(instrs[i + 1]):
+                self._instrs_replace(i, i + 1, [])
+                replaced := 1
             
             i += 1
+
+        return replaced
+
+
+    func _remove_failure_frames(self):
+    
+        target := self._code_gen._target
+        instrs := self._code_gen._instructions
+        i := 0
+        replaced := 0
+        while i < instrs.len():
+            instr := instrs[i]
+
+            // Remove failure frames which can't possibly influence anything.
+            // This has to be done rather conservatively, as there are many
+            // cases which, though they happen rarely, need a failure frame
+            // present for correct operation.
+            if target.Instr_Add_Failure_Frame.instantiated(instr):
+                stack_depth := 0
+                j := i + 1
+                while j < instrs.len():
+                    instr2 := instrs[j]
+                    if target.Instr_Remove_Failure_Frame.instantiated(instr2):
+                        self._instrs_replace(i, i + 1, [])
+                        new_instrs := []
+                        while stack_depth > 0:
+                            new_instrs.append(target.Instr_Pop.new(instr2.src_infos))
+                            stack_depth -= 1
+                        self._instrs_replace(j - 1, j, new_instrs)
+                        replaced := 1
+                        break
+
+                    if target.Instr_Lookup_Var.instantiated(instr2) \
+                      | target.Instr_Dup.instantiated(instr2) \
+                      | target.Instr_Builtin_Lookup.instantiated(instr2) \
+                      | target.Instr_Constant_Get.instantiated(instr2):
+                        stack_depth += 1
+                    elif target.Instr_List.instantiated(instr2) \
+                      | target.Instr_Set.instantiated(instr2):
+                        stack_depth -= instr2.num_elems - 1
+                    elif target.Instr_Dict.instantiated(instr2):
+                        stack_depth -= 2 * instr2.num_elems - 1
+                    elif target.Instr_Pop.instantiated(instr2):
+                        stack_depth -= 1
+                    elif target.Instr_Assign_Var.instantiated(instr2):
+                        pass
+                    else:
+                        break
+                    j += 1
+            i += 1
+
+        return replaced

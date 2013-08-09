@@ -12,7 +12,7 @@ converge_date=`date '+%Y/%m/%d %H:%M:%S'`
 abs_top_srcdir=`pwd`
 
 prefix=""
-rpython_opt="Ojit"
+rpython_opt="jit"
 while [ $# -ge 1 ]; do
     case $1 in
         --prefix=*  ) prefix=`echo $1 | sed "s/--prefix=//g"`; shift;;

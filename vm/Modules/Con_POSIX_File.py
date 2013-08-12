@@ -29,15 +29,19 @@ import Stdlib_Modules
 
 
 
-separate_module_files = []
 if not platform.has("fgetln", "#include <stdio.h>"):
-    separate_module_files.append(os.path.join(os.path.split(os.path.abspath(__file__))[0], "../platform/fgetln.c"))
+    # This should use separate_module_files, but that appears to be broken, hence
+    # this horrible hack.
+    f = open(os.path.join(os.path.split(os.path.abspath(__file__))[0], "../platform/fgetln.c"))
+    d = f.read()
+    separate_module_sources = [d]
     extra_includes = [os.path.join(os.path.split(os.path.abspath(__file__))[0], "../platform/fgetln.h")]
 else:
+    separate_module_sources = []
     extra_includes = []
 
 eci         = ExternalCompilationInfo(includes=["limits.h", "stdio.h", "stdlib.h", "string.h",
-                "unistd.h"] + extra_includes, separate_module_files=separate_module_files)
+                "unistd.h"] + extra_includes, separate_module_sources=separate_module_sources)
 
 FILEP       = rffi.COpaquePtr("FILE")
 fclose      = rffi.llexternal("fclose", [FILEP], rffi.INT, compilation_info=eci)

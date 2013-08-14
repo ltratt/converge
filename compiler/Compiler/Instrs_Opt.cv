@@ -188,6 +188,8 @@ class Instrs_Opt:
                         for t := [target.Instr_Add_Fail_Up_Frame, \
                           target.Instr_Func_Defn, \
                           target.Instr_Pull, \
+                          target.Instr_EYield, \
+                          target.Instr_Return, \
                           target.Instr_Branch_If_Not_Fail, \
                           target.Instr_Branch_If_Fail].iter():
                             if t.instantiated(instr2):

@@ -79,7 +79,7 @@ _BRACKET_MAP_ENTRIES = 1
 
 class Parser:
     __slots__ = ("grm", "toks", "items")
-    _immutable_slots = ("grm", "toks", "items")
+    _immutable_fields_ = ("grm", "toks", "items")
 
     def __init__(self, grm, toks):
         self.grm = grm
@@ -89,7 +89,7 @@ class Parser:
 
 class Alt:
     __slots__ = ("parent_rule", "precedence", "syms")
-    _immutable_slots_ = ("parent_rule", "precedence", "syms")
+    _immutable_fields_ = ("parent_rule", "precedence", "syms")
     
     def __init__(self, parent_rule, precedence, syms):
         self.parent_rule = parent_rule
@@ -103,7 +103,7 @@ class Item:
     # d is the position of the Earley "dot" within the rule we've currently reached
     # j is the position in the token input we've currently reached
     # w is the SPPF tree being built
-    _immutable_slots_ = ("s", "d", "j", "w")
+    _immutable_fields_ = ("s", "d", "j", "w")
     
     def __init__(self, s, d, j, w):
         self.s = s
@@ -128,7 +128,7 @@ class Tree:
 
 class Tree_Non_Term(Tree):
     __slots__ = ("s", "complete", "j", "i", "precedences", "families", "flattened")
-    _immutable_slots = ("t", "complete", "j", "i")
+    _immutable_fields_ = ("t", "complete", "j", "i")
 
     def __init__(self, s, complete, j, i):
         self.s = s
@@ -162,7 +162,7 @@ class Tree_Non_Term(Tree):
 
 class Tree_Term(Tree):
     __slots__ = ("t", "j", "i")
-    _immutable_slots = ("t", "j", "i")
+    _immutable_fields_ = ("t", "j", "i")
 
     def __init__(self, t, j, i):
         self.t = t

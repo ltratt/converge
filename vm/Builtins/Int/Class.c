@@ -63,6 +63,7 @@ Con_Obj *_Con_Builtins_Int_Class_mul_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Int_Class_lsl_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Int_Class_lsr_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Int_Class_or_func(Con_Obj *);
+Con_Obj *_Con_Builtins_Int_Class_pow_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Int_Class_xor_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Int_Class_iter_to_func(Con_Obj *);
 Con_Obj *_Con_Builtins_Int_Class_str_val_func(Con_Obj *);
@@ -103,6 +104,7 @@ void Con_Builtins_Int_Class_bootstrap(Con_Obj *thread)
 	CON_SET_FIELD(int_class, "lsl", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Int_Class_lsl_func, "lsl", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), int_class));
 	CON_SET_FIELD(int_class, "lsr", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Int_Class_lsr_func, "lsr", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), int_class));
 	CON_SET_FIELD(int_class, "or", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Int_Class_or_func, "or", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), int_class));
+	CON_SET_FIELD(int_class, "pow", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Int_Class_pow_func, "pow", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), int_class));
 CON_SET_FIELD(int_class, "xor", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Int_Class_xor_func, "xor", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), int_class));
 	CON_SET_FIELD(int_class, "iter_to", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Int_Class_iter_to_func, "iter_to", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), int_class));
     CON_SET_FIELD(int_class, "str_val", CON_NEW_BOUND_C_FUNC(_Con_Builtins_Int_Class_str_val_func, "str_val", CON_BUILTIN(CON_BUILTIN_NULL_OBJ), int_class));
@@ -477,6 +479,29 @@ Con_Obj *_Con_Builtins_Int_Class_xor_func(Con_Obj *thread)
         Con_Int n = Con_Numbers_Number_to_Con_Int(thread, n_obj);
 
         return CON_NEW_INT(self_int_atom->val ^ n);
+}
+
+
+
+//
+// 'pow(n)'.
+//
+
+Con_Obj *_Con_Builtins_Int_Class_pow_func(Con_Obj *thread)
+{
+	Con_Obj *self, *n_obj;
+	CON_UNPACK_ARGS("IN", &self, &n_obj);
+	
+	Con_Builtins_Int_Atom *self_int_atom = CON_GET_ATOM(self, CON_BUILTIN(CON_BUILTIN_INT_ATOM_DEF_OBJECT));
+	Con_Int n = Con_Numbers_Number_to_Con_Int(thread, n_obj);
+    
+    int x = 1;
+    while (n > 0) {
+        x *= self_int_atom->val;
+        n -= 1;
+    }
+	
+	return CON_NEW_INT(x);
 }
 
 

@@ -1254,6 +1254,17 @@ class Con_Int(Con_Number):
             return Con_Float(vm, self.as_float() * o.v)
 
 
+    def pow(self, vm, o):
+        o = type_check_int(vm, o)
+        p = 1
+        x = self.v
+        y = o.v
+        while y > 0:
+            p *= x
+            y -= 1
+        return Con_Int(vm, p)
+
+
     def eq(self, vm, o):
         if isinstance(o, Con_Int):
             return self.v == o.v
@@ -1499,6 +1510,15 @@ def _Con_Int_or(vm):
 
 
 @con_object_proc
+def _Con_Int_pow(vm):
+    (self, o_o),_ = vm.decode_args("IN")
+    assert isinstance(self, Con_Int)
+
+    return self.pow(vm, o_o)
+
+
+
+@con_object_proc
 def _Con_Int_sub(vm):
     (self, o_o),_ = vm.decode_args("IN")
     assert isinstance(self, Con_Int)
@@ -1560,6 +1580,7 @@ def bootstrap_con_int(vm):
     new_c_con_func_for_class(vm, "%", _Con_Int_mod, int_class)
     new_c_con_func_for_class(vm, "*", _Con_Int_mul, int_class)
     new_c_con_func_for_class(vm, "or", _Con_Int_or, int_class)
+    new_c_con_func_for_class(vm, "pow", _Con_Int_pow, int_class)
     new_c_con_func_for_class(vm, "str_val", _Con_Int_str_val, int_class)
     new_c_con_func_for_class(vm, "-", _Con_Int_sub, int_class)
     new_c_con_func_for_class(vm, "to_str", _Con_Int_to_str, int_class)

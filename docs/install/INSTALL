@@ -1,16 +1,16 @@
 To build Converge you need at a minimum PyPy's source. It is recommended you
-use the latest version of PyPy available on <http://pypy.org/download.html>.
+use at least PyPy 2.2.1, available from <http://pypy.org/download.html>.
 You do not need to install PyPy, but Converge needs access to its source in
 order to build itself. The PYPY_SRC variable should point at the root of the
 PyPy source distribution.
 
 If you are building from a formal Converge release, the latest stable release
-of PyPy is likely to be sufficient. e.g. if PyPy 1.9 is the latest version:
+of PyPy is likely to be sufficient. e.g. if PyPy 2.2.1 is the latest version:
 
   $ cd <somewhere>
-  $ wget https://bitbucket.org/pypy/pypy/get/release-1.9.tar.bz2
-  $ bunzip2 -c - release-1.9.tar.bz2 | tar xf -
-  $ export PYPY_SRC=<somewhere>/pypy
+  $ wget https://bitbucket.org/pypy/pypy/downloads/pypy-2.2.1-src.tar.bz2
+  $ bunzip2 -c - pypy-2.2.1-src.tar.bz2 | tar xf -
+  $ export PYPY_SRC=<somewhere>/pypy-2.2.1-src
 
 If you are building from a git checkout of Converge, it is recommended to
 check PyPy out from its Mercurial repository:

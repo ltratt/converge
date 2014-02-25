@@ -6,8 +6,8 @@
 #   converge_version=0.7
 #   converge_date=2006/01/04
 
-converge_version=current
-converge_date=`date '+%Y/%m/%d %H:%M:%S'`
+converge_version=2.1
+converge_date=2014-02-25
 
 abs_top_srcdir=`pwd`
 

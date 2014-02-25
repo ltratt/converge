@@ -153,7 +153,6 @@ xml2_configd=`dirname $xml2_configp`
 cnds="$cnds `dirname $xml2_configd`/lib"
 for dir in $cnds ; do
 	cnd=$dir/libxml2.a
-    echo $cnd
 	if [ -f $cnd ]; then
 		libxml2_a=$cnd
 		break

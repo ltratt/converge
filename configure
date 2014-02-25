@@ -113,6 +113,9 @@ cnds=`pcre-config --libs | tr " " "\n" | grep "^-L" | sort -u | sed "s/^-L//"`
 pcre_configp=`which pcre-config 2> /dev/null`
 pcre_configd=`dirname $pcre_configp`
 cnds="$cnds `dirname $pcre_configd`/lib"
+if [ `uname` = "Linux" ]; then
+    cnds="$cnds `ldconfig -v 2>/dev/null | grep -v ^$'\t'|sed s/://g`"
+fi
 for dir in $cnds; do
 	cnd=$dir/libpcre.a
 	if [ -f $cnd ]; then

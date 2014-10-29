@@ -139,15 +139,15 @@ if INTSIZE == 8:
         assert off > 0 and size >= 0
         return rffi.charpsize2str(rffi.ptradd(bc, off), size)
 
-    @elidable_promote("1")
+    @elidable_promote()
     def read_word(bc, i):
         return rffi.cast(lltype.Signed, rffi.cast(rffi.LONGP, bc)[i / 8])
 
-    @elidable_promote("1")
+    @elidable_promote()
     def read_uint32_word(bc, i):
         return rffi.cast(lltype.Signed, rffi.cast(rffi.UINTP, bc)[i / 4])
 
-    @elidable_promote("1")
+    @elidable_promote()
     def read_float(bc, i):
         return rffi.cast(lltype.Float, rffi.cast(rffi.DOUBLEP, bc)[i / 8])
 
@@ -381,15 +381,15 @@ else:
         assert off > 0 and size >= 0
         return rffi.charpsize2str(rffi.ptradd(bc, off), size)
 
-    @elidable_promote("1")
+    @elidable_promote()
     def read_word(bc, i):
         return rffi.cast(lltype.Signed, rffi.cast(rffi.INTP, bc)[i / 4])
 
-    @elidable_promote("1")
+    @elidable_promote()
     def read_uint32_word(bc, i):
         return rffi.cast(lltype.Signed, rffi.cast(rffi.UINTP, bc)[i / 4])
 
-    @elidable_promote("1")
+    @elidable_promote()
     def read_float(bc, i):
         return rffi.cast(lltype.Float, rffi.cast(rffi.DOUBLEP, bc)[i / 8])
 

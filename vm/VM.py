@@ -49,7 +49,7 @@ jitdriver = jit.JitDriver(greens=["bc_off", "mod_bc", "pc", "self"],
 
 class VM(object):
     __slots__ = ("argv", "builtins", "cur_cf", "mods", "pypy_config", "vm_path")
-    _immutable_fields = ("argv", "builtins", "cur_cf", "mods", "vm_path")
+    _immutable_fields = ("argv", "builtins", "mods", "vm_path")
 
     def __init__(self): 
         self.builtins = [None] * Builtins.NUM_BUILTINS

@@ -117,9 +117,9 @@ def _Pattern_match_search(vm, anchored):
     else:
         flags = 0
     sp = translate_idx_obj(vm, sp_o, len(s_o.v))
-    rs = rffi.get_nonmovingbuffer(s_o.v)
+    rs, is_pinned, is_raw = rffi.get_nonmovingbuffer(s_o.v)
     r = int(pcre_exec(self.cp, None, rs, len(s_o.v), sp, flags, ovect, ovect_size))
-    rffi.free_nonmovingbuffer(s_o.v, rs)
+    rffi.free_nonmovingbuffer(s_o.v, rs, is_pinned, is_raw)
     if r < 0:
         if r == PCRE_ERROR_NOMATCH:
             lltype.free(ovect, flavor="raw")

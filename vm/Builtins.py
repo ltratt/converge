@@ -408,7 +408,7 @@ def bootstrap_con_object(vm):
 
 class Con_Class(Con_Boxed_Object):
     __slots__ = ("supers", "fields_map", "fields", "new_func", "version", "dependents")
-    _immutable_fields = ("supers", "fields", "dependents")
+    _immutable_fields_ = ("supers", "fields", "dependents")
 
 
     def __init__(self, vm, name, supers, container, instance_of=None, new_func=None):

@@ -1025,8 +1025,10 @@ def new_bc_con_module(vm, bc, name, id_, src_path, imps, tlvars_map, num_consts)
 #
 
 class Con_Func(Con_Boxed_Object):
-    __slots__ = ("name", "is_bound", "pc", "max_stack_size", "num_vars", "container_closure")
-    _immutable_fields_ = ("name", "is_bound", "pc", "max_stack_size", "num_vars", "container_closure")
+    __slots__ = ("name", "is_bound", "pc", "max_stack_size", "num_vars", 
+                 "container_closure", "stack_count")
+    _immutable_fields_ = ("name", "is_bound", "pc", "max_stack_size",
+                 "num_vars", "container_closure")
 
 
     def __init__(self, vm, name, is_bound, pc, max_stack_size, num_params, num_vars, container, \
@@ -1041,6 +1043,7 @@ class Con_Func(Con_Boxed_Object):
         self.max_stack_size = max_stack_size
         self.num_vars = num_vars
         self.container_closure = container_closure
+        self.stack_count = 0
         
         self.set_slot(vm, "container", container)
         self.set_slot(vm, "name", name)

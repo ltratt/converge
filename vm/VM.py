@@ -169,17 +169,25 @@ class VM(object):
             nargs = 0
         else:
             nargs = len(args)
-        
+
         if isinstance(func, Builtins.Con_Partial_Application):
-            cf = self._add_continuation_frame(func.f, nargs + 1)
+            real_func = func.f
+            cf = self._add_continuation_frame(real_func, nargs + 1)
             cf.stack_extend(func.args)
-        else: 
+        else:
+            real_func = func
             cf = self._add_continuation_frame(func, nargs)
 
         if args:
             cf.stack_extend(list(args))
 
-        o = self.execute_proc(cf)
+        assert isinstance(real_func, Builtins.Con_Func)
+        old_stack_count = real_func.stack_count
+        real_func.stack_count = old_stack_count + 1
+        if old_stack_count > 0:
+            o = self.execute_proc_jit_hidden(cf)
+        else:
+            o = self.execute_proc(cf)
         self._remove_continuation_frame()
         
         if o is self.get_builtin(Builtins.BUILTIN_FAIL_OBJ):
@@ -427,6 +435,11 @@ class VM(object):
     ################################################################################################
     # The interepreter
     #
+
+    @jit.dont_look_inside
+    def execute_proc_jit_hidden(self, cf):
+        return self.execute_proc(cf)
+
 
     def execute_proc(self, cf):
         pc = cf.pc
@@ -1048,7 +1061,12 @@ class VM(object):
 
 
     def _remove_continuation_frame(self):
-        self.cur_cf = self.cur_cf.parent
+        old_cf = self.cur_cf
+        old_func = old_cf.func
+        old_stack_count = old_func.stack_count
+        assert old_stack_count > 0
+        old_func.stack_count = old_stack_count - 1
+        self.cur_cf = old_cf.parent
 
 
     def _remove_generator_frame(self, cf):

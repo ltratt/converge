@@ -383,12 +383,13 @@ class Instr_Func_Defn(Instruction):
         
         self.src_infos := src_infos
         self.is_bound := is_bound
+        self.has_loop := 0
 
 
 
     func to_bytecode(self):
     
-        return b_8_1_23(INSTR_FUNC_DEFN, self.is_bound, self.max_stack_size)
+        return b_8_1_22_1(INSTR_FUNC_DEFN, self.is_bound, self.max_stack_size, self.has_loop)
 
 
 
@@ -917,9 +918,9 @@ func b_8_1(b_8, b_1):
 
 
 
-func b_8_1_23(b_8, b_1, b_2):
+func b_8_1_22_1(b_8, b_1, b_2, b_3):
 
-    return b_8.or(b_1.lsl(8).or(b_2.lsl(9)))
+    return b_8.or(b_1.lsl(8).or(b_2.lsl(9).or(b_3.lsl(31))))
 
 
 

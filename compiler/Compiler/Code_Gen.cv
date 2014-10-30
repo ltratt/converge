@@ -109,6 +109,7 @@ class Code_Gen:
         self.parent_mode := null
         
         self._nesting := []
+        self._func_nesting := []
         self._imports := Dict{}
         self._instructions := []
         self._labels := Dict{}
@@ -621,6 +622,7 @@ class Code_Gen:
         max_stack_size += self._constant_get(self._target.CONST_INT, bound_vars.len() + node.is_bound, node.src_infos)
         max_stack_size += self._constant_get(self._target.CONST_INT, node.params.len(), node.src_infos)
         func_defn_instr := self._target.Instr_Func_Defn.new(node.src_infos, node.is_bound)
+        self._func_nesting.append(func_defn_instr)
         self._instructions.append(func_defn_instr)
         end_of_func_body_label := self._create_label()
         self._instructions.append(self._target.Instr_Branch.new(node.src_infos, end_of_func_body_label))
@@ -663,6 +665,7 @@ class Code_Gen:
         max_func_stack_size := self._max(max_func_stack_size, self._preorder(node.body))
         self._pop_vars()
         self._nesting.del(-1)
+        self._func_nesting.del(-1)
 
         self._instructions.append(self._target.Instr_Builtin_Lookup.new(node.src_infos, _BUILTIN_NULL_OBJ))
         max_func_stack_size := self._max(max_func_stack_size, 1)
@@ -793,7 +796,9 @@ class Code_Gen:
 
 
     func _t_iwhile(self, node):
-    
+        
+        self._func_nesting[-1].has_loop := 1
+
         start_of_while_label := self._create_label()
         body_label := self._create_label()
         end_of_while_label := self._create_label()
@@ -844,6 +849,8 @@ class Code_Gen:
 
     func _t_ifor(self, node):
     
+        self._func_nesting[-1].has_loop := 1
+
         broken_body_label := self._create_label()
         body_label := self._create_label()
 

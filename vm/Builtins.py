@@ -1026,13 +1026,13 @@ def new_bc_con_module(vm, bc, name, id_, src_path, imps, tlvars_map, num_consts)
 
 class Con_Func(Con_Boxed_Object):
     __slots__ = ("name", "is_bound", "pc", "max_stack_size", "num_vars", 
-                 "container_closure", "stack_count")
+                 "container_closure", "stack_count", "has_loop")
     _immutable_fields_ = ("name", "is_bound", "pc", "max_stack_size",
-                 "num_vars", "container_closure")
+                 "num_vars", "container_closure", "has_loop")
 
 
     def __init__(self, vm, name, is_bound, pc, max_stack_size, num_params, num_vars, container, \
-      container_closure, instance_of=None):
+      container_closure, instance_of=None, has_loop=0):
         if instance_of is None:
             instance_of = vm.get_builtin(BUILTIN_FUNC_CLASS)
         Con_Boxed_Object.__init__(self, vm, instance_of)
@@ -1044,6 +1044,7 @@ class Con_Func(Con_Boxed_Object):
         self.num_vars = num_vars
         self.container_closure = container_closure
         self.stack_count = 0
+        self.has_loop = has_loop
         
         self.set_slot(vm, "container", container)
         self.set_slot(vm, "name", name)

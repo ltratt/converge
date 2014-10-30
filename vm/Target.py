@@ -99,7 +99,7 @@ if INTSIZE == 8:
     CON_INSTR_LIST = 12                   # bits 0-7 12, bits 8-31 number of list elements
     CON_INSTR_SLOT_LOOKUP = 13            # bits 0-7 13, bits 8-31 size of slot name, bits 32-.. slot name
     CON_INSTR_APPLY = 14                  # bits 0-7 14, bits 8-31 number of args
-    CON_INSTR_FUNC_DEFN = 15              # bits 0-7 15, bits 8-9 is_bound
+    CON_INSTR_FUNC_DEFN = 15              # bits 0-7 15, bits 8-9 is_bound, bits 9-32 max_stack_size, bit 33 has_loop
     CON_INSTR_RETURN = 16                 # bits 0-7 16
     CON_INSTR_BRANCH = 17                 # bits 0-7 17, bits 8-30 pc offset, bit 31 offset sign (0 = positive, 1 = negative)
     CON_INSTR_YIELD = 18                  # bits 0-7 18
@@ -195,7 +195,7 @@ if INTSIZE == 8:
 
     @elidable_promote()
     def unpack_func_defn(instr):
-        return ((instr & 0x00000100) >> 8, (instr & 0x7ffffe00) >> 9)
+        return ((instr & 0x00000100) >> 8, (instr & 0x7ffffe00) >> 9, (instr & 0x80000000))
 
     @elidable_promote()
     def unpack_list(instr):
@@ -445,7 +445,7 @@ else:
     @elidable_promote()
     def unpack_func_defn(instr):
         x = 0x7ffffe
-        return ((instr & 0x00000100) >> 8, (instr & (x << 8)) >> 9)
+        return ((instr & 0x00000100) >> 8, (instr & (x << 8)) >> 9, (instr & (1 << 31)))
 
     @elidable_promote()
     def unpack_list(instr):

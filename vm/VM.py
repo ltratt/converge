@@ -172,19 +172,17 @@ class VM(object):
 
         if isinstance(func, Builtins.Con_Partial_Application):
             real_func = func.f
-            cf = self._add_continuation_frame(real_func, nargs + 1)
+            cf, stack_count = self._add_continuation_frame(real_func, nargs + 1)
             cf.stack_extend(func.args)
         else:
             real_func = func
-            cf = self._add_continuation_frame(func, nargs)
+            cf, stack_count = self._add_continuation_frame(func, nargs)
 
         if args:
             cf.stack_extend(list(args))
 
         assert isinstance(real_func, Builtins.Con_Func)
-        old_stack_count = real_func.stack_count
-        real_func.stack_count = old_stack_count + 1
-        if old_stack_count > 0:
+        if stack_count > 1 or real_func.has_loop:
             o = self.execute_proc_jit_hidden(cf)
         else:
             o = self.execute_proc(cf)
@@ -214,10 +212,10 @@ class VM(object):
         cf.gfp = cf.stackpe
         cf.stack_push(gf)
         if isinstance(func, Builtins.Con_Partial_Application):
-            new_cf = self._add_continuation_frame(func.f, nargs + 1)
+            new_cf, _ = self._add_continuation_frame(func.f, nargs + 1)
             new_cf.stack_extend(func.args)
         else: 
-            new_cf = self._add_continuation_frame(func, nargs)
+            new_cf, _ = self._add_continuation_frame(func, nargs)
 
         if args:
             new_cf.stack_extend(list(args))
@@ -750,11 +748,11 @@ class VM(object):
         func = cf.stack_get(fp)
 
         if isinstance(func, Builtins.Con_Partial_Application):
-            new_cf = self._add_continuation_frame(func.f, num_args + 1)
+            new_cf, _ = self._add_continuation_frame(func.f, num_args + 1)
             new_cf.stack_extend(func.args)
             i = 1
         else:
-            new_cf = self._add_continuation_frame(func, num_args)
+            new_cf, _ = self._add_continuation_frame(func, num_args)
             i = 0
 
         for j in range(0, num_args):
@@ -788,7 +786,7 @@ class VM(object):
 
 
     def _instr_func_defn(self, instr, cf):
-        is_bound, max_stack_size = Target.unpack_func_defn(instr)
+        is_bound, max_stack_size, has_loop = Target.unpack_func_defn(instr)
         np_o = cf.stack_pop()
         assert isinstance(np_o, Builtins.Con_Int)
         nv_o = cf.stack_pop()
@@ -797,7 +795,7 @@ class VM(object):
         new_pc = BC_PC(cf.pc.mod, cf.bc_off + 2 * Target.INTSIZE)
         container = cf.func.get_slot(self, "container")
         f = Builtins.Con_Func(self, name, is_bound, new_pc, max_stack_size, np_o.v, nv_o.v, \
-          container, cf.closure)
+          container, cf.closure, has_loop=has_loop)
         cf.stack_push(f)
         cf.bc_off += Target.INTSIZE
 
@@ -1034,7 +1032,6 @@ class VM(object):
     def _add_continuation_frame(self, func, nargs):
         if not isinstance(func, Builtins.Con_Func):
             self.raise_helper("Apply_Exception", [func])
-        func = jit.promote(func) # XXX this will promote lambdas, which will be inefficient
 
         pc = func.pc
         if isinstance(pc, BC_PC):
@@ -1053,11 +1050,15 @@ class VM(object):
         else:
             max_stack_size = nargs
 
+        stack_count = func.stack_count
+        stack_count += 1
+        func.stack_count = stack_count
+
         cf = Stack_Continuation_Frame(self.cur_cf, func, pc, max_stack_size, nargs, bc_off,
           closure)
         self.cur_cf = cf
         
-        return cf
+        return cf, stack_count
 
 
     def _remove_continuation_frame(self):

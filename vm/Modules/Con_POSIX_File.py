@@ -44,7 +44,7 @@ eci         = ExternalCompilationInfo(includes=["limits.h", "stdio.h", "stdlib.h
                 "unistd.h"] + extra_includes, separate_module_sources=separate_module_sources)
 
 FILEP       = rffi.COpaquePtr("FILE")
-fclose      = rffi.llexternal("fclose", [FILEP], rffi.INT, compilation_info=eci)
+fclose      = rffi.llexternal("fclose", [FILEP], rffi.INT, compilation_info=eci, releasegil=False)
 fdopen      = rffi.llexternal("fdopen", [rffi.INT, rffi.CCHARP], FILEP, compilation_info=eci)
 feof        = rffi.llexternal("feof", [FILEP], rffi.INT, compilation_info=eci)
 ferror      = rffi.llexternal("ferror", [FILEP], rffi.INT, compilation_info=eci)
@@ -116,9 +116,9 @@ def import_(vm):
 
 def _errno_raise(vm, path):
     if isinstance(path, Con_String):
-        msg = "File '%s': %s." % (path.v, os.strerror(rposix.get_errno()))
+        msg = "File '%s': %s." % (path.v, os.strerror(rposix.get_saved_errno()))
     else:
-        msg = os.strerror(rposix.get_errno())
+        msg = os.strerror(rposix.get_saved_errno())
     vm.raise_helper("File_Exception", [Con_String(vm, msg)])
 
 
@@ -128,7 +128,7 @@ def _errno_raise(vm, path):
 
 class File(Con_Boxed_Object):
     __slots__ = ("filep", "closed")
-    _immutable_fields_ = ("file")
+    _immutable_fields_ = ("file", )
 
 
     def __init__(self, vm, instance_of, path, filep):
@@ -141,7 +141,7 @@ class File(Con_Boxed_Object):
 
     def __del__(self):
         if not self.closed:
-		    # If the file is still open, we now close it to prevent a memory leak, as well as return
+            # If the file is still open, we now close it to prevent a memory leak, as well as return
             # resources to the OS. Errors from fclose are ignored as there's nothing sensible we can
             # do with them at this point.
             fclose(self.filep)

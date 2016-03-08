@@ -143,23 +143,26 @@ class Con_Boxed_Object(Con_Object):
         self.slots = None
 
 
-    def has_slot(self, vm, n):
+    def _get_slot_off(self, vm, n):
         if self.slots is not None:
             m = jit.promote(self.slots_map)
             i = m.find(n)
-            if i != -1:
-                return True
+            return i
+        return -1
 
+
+    def has_slot(self, vm, n):
+        if self._get_slot_off(vm, n) != -1:
+            return True
         return False
 
 
     def find_slot(self, vm, n):
-        o = None
-        if self.slots is not None:
-            m = jit.promote(self.slots_map)
-            i = m.find(n)
-            if i != -1:
-                o = self.slots[i]
+        i = self._get_slot_off(vm, n)
+        if i != -1:
+            o = self.slots[i]
+        else:
+            o = None
     
         if o is None:
             o = self.instance_of.find_field(vm, n)
@@ -176,13 +179,12 @@ class Con_Boxed_Object(Con_Object):
 
 
     def get_slot(self, vm, n):
-        o = None
-        if self.slots is not None:
-            m = jit.promote(self.slots_map)
-            i = m.find(n)
-            if i != -1:
-                o = self.slots[i]
-    
+        i = self._get_slot_off(vm, n)
+        if i != -1:
+            o = self.slots[i]
+        else:
+            o = None
+
         if o is None:
             o = self.instance_of.find_field(vm, n)
             if o is None:
@@ -197,19 +199,17 @@ class Con_Boxed_Object(Con_Object):
         return o
 
 
-
     def set_slot(self, vm, n, o):
         assert o is not None
-        m = jit.promote(self.slots_map)
         if self.slots is not None:
-            i = m.find(n)
+            i = self._get_slot_off(vm, n)
             if i == -1:
-                self.slots_map = m.extend(n)
+                self.slots_map = self.slots_map.extend(n)
                 self.slots.append(o)
             else:
                 self.slots[i] = o
         else:
-            self.slots_map = m.extend(n)
+            self.slots_map = self.slots_map.extend(n)
             self.slots = [o]
 
 

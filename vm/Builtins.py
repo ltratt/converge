@@ -125,6 +125,31 @@ class _Con_Map(object):
         return self.other_maps[n]
 
 
+    # Is this map compatible with 'o' (i.e. is self a subset of o).
+    @jit.elidable_promote()
+    def is_compatible(self, o):
+        if len(self.index_map) > len(o.index_map):
+            return False
+        for sk, sv in self.index_map.items():
+            try:
+                ov = o.index_map[sk]
+            except KeyError:
+                return False
+            if sv != ov:
+                return False
+        return True
+
+map_driver = jit.JitDriver(greens=["old"], reds=["new"])
+
+@jit.dont_look_inside
+def get_compatible_map(old, new):
+    if old is new:
+        return old
+    map_driver.jit_merge_point(old=old, new=new)
+    if new.is_compatible(old):
+        return old
+    return new
+
 
 _EMPTY_MAP = _Con_Map()
 
@@ -145,9 +170,13 @@ class Con_Boxed_Object(Con_Object):
 
     def _get_slot_off(self, vm, n):
         if self.slots is not None:
-            m = jit.promote(self.slots_map)
-            i = m.find(n)
-            return i
+            if not jit.we_are_jitted():
+                return self.slots_map.find(n)
+            # The next line should be something like:
+            # m = get_compatible_map(jit.guardless_promote(self.slots_map), slots.map)
+            m = get_compatible_map(self.slots_map, self.slots_map)
+            pm = jit.promote(m)
+            return pm.find(n)
         return -1
 
 

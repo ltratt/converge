@@ -44,7 +44,7 @@ def get_printable_location(bc_off, mod_bc, pc, self):
 jitdriver = jit.JitDriver(greens=["bc_off", "mod_bc", "pc", "self"],
                           reds=["prev_bc_off", "cf"],
                           virtualizables=["cf"],
-                          get_printable_location=get_printable_location)
+                          get_printable_location=get_printable_location, is_recursive=True)
 
 
 class VM(object):

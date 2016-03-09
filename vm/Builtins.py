@@ -648,10 +648,10 @@ def _Con_Class_instantiated(vm):
         # We optimise the easy case.
         return vm.get_builtin(BUILTIN_NULL_OBJ)
     else:
-		# What we do now is to put 'instance_of' onto a stack; if the current class on the stack
-		# does not match 'self', we push all the class's superclasses onto the stack.
-		#
-		# If we run off the end of the stack then there is no match.
+        # What we do now is to put 'instance_of' onto a stack; if the current class on the stack
+        # does not match 'self', we push all the class's superclasses onto the stack.
+        #
+        # If we run off the end of the stack then there is no match.
         stack = [o.instance_of]
         while len(stack) > 0:
             cnd = stack.pop()

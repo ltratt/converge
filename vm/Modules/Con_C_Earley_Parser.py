@@ -546,7 +546,7 @@ def _resolve_ambiguities(vm, alts, tok_os, rn_os, n):
                         elif len2 < len1:
                             del ffamilies[j + 1]
                         else:
-                            i += 1
+                            j += 1
                     if len(ffamilies) == 1:
                         break
                 

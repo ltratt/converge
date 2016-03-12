@@ -173,8 +173,9 @@ class Con_Boxed_Object(Con_Object):
             if not jit.we_are_jitted():
                 return self.slots_map.find(n)
             # The next line should be something like:
-            # m = get_compatible_map(jit.guardless_promote(self.slots_map), slots.map)
-            m = get_compatible_map(self.slots_map, self.slots_map)
+            old_map = jit.hint(self.slots_map, guardless_promote=True)
+            m = get_compatible_map(old_map, self.slots_map)
+
             pm = jit.promote(m)
             return pm.find(n)
         return -1

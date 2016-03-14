@@ -151,6 +151,9 @@ cnds=`xml2-config --libs | tr " " "\n" | grep "^-L" | sort -u | sed "s/^-L//"`
 xml2_configp=`which xml2-config 2> /dev/null`
 xml2_configd=`dirname $xml2_configp`
 cnds="$cnds `dirname $xml2_configd`/lib"
+if [ $operating_system = "Linux" ]; then
+    cnds="$cnds `ldconfig -v 2>/dev/null | grep -v ^$'\t'|sed s/://g`"
+fi
 for dir in $cnds ; do
 	cnd=$dir/libxml2.a
 	if [ -f $cnd ]; then

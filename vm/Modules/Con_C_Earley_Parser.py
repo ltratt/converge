@@ -518,9 +518,6 @@ def _resolve_ambiguities(vm, alts, tok_os, rn_os, n):
                     return
 
         ffamilies = [_flatten_kids(k) for k in n.families]
-        for fkids in ffamilies:
-            if len(fkids) != len(ffamilies[0]):
-                break
         
         if len(ffamilies) > 1:
             # We still have ambiguities left, so, as a sensible default, we prefer

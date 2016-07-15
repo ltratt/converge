@@ -2547,6 +2547,19 @@ def _Con_Set_complement(vm):
 
 
 @con_object_proc
+def _Con_Set_del(vm):
+    (self, o_o),_ = vm.decode_args("WO")
+    assert isinstance(self, Con_Set)
+   
+    try:
+        del self.s[o_o]
+    except KeyError:
+        vm.raise_helper("Key_Exception", [o_o])
+
+    return vm.get_builtin(BUILTIN_NULL_OBJ)
+
+
+@con_object_proc
 def _Con_Set_extend(vm):
     (self, o_o),_ = vm.decode_args("WO")
     assert isinstance(self, Con_Set)
@@ -2618,6 +2631,7 @@ def bootstrap_con_set(vm):
 
     new_c_con_func_for_class(vm, "add", _Con_Set_add, set_class)
     new_c_con_func_for_class(vm, "+", _Con_Set_add_plus, set_class)
+    new_c_con_func_for_class(vm, "del", _Con_Set_del, set_class)
     new_c_con_func_for_class(vm, "complement", _Con_Set_complement, set_class)
     new_c_con_func_for_class(vm, "extend", _Con_Set_extend, set_class)
     new_c_con_func_for_class(vm, "find", _Con_Set_find, set_class)
@@ -2659,6 +2673,19 @@ def _dict_key_eq(k1, k2):
         return True
     else:
         return False
+
+
+@con_object_proc
+def _Con_Dict_del(vm):
+    (self, k),_ = vm.decode_args("DO")
+    assert isinstance(self, Con_Dict)
+   
+    try:
+        del self.d[k]
+    except KeyError:
+        vm.raise_helper("Key_Exception", [k])
+
+    return vm.get_builtin(BUILTIN_NULL_OBJ)
 
 
 @con_object_proc
@@ -2772,6 +2799,7 @@ def bootstrap_con_dict(vm):
     dict_class = vm.get_builtin(BUILTIN_DICT_CLASS)
     assert isinstance(dict_class, Con_Class)
 
+    new_c_con_func_for_class(vm, "del", _Con_Dict_del, dict_class)
     new_c_con_func_for_class(vm, "extend", _Con_Dict_extend, dict_class)
     new_c_con_func_for_class(vm, "find", _Con_Dict_find, dict_class)
     new_c_con_func_for_class(vm, "get", _Con_Dict_get, dict_class)

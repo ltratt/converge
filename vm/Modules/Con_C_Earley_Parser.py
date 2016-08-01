@@ -252,8 +252,6 @@ def Parser_parse(vm):
                 first_src_info = vm.get_slot_apply(src_infos, "get", [Con_Int(vm, 0)])
                 src_file = vm.get_slot_apply(first_src_info, "get", [Con_Int(vm, 0)])
                 src_off = type_check_int(vm, vm.get_slot_apply(first_src_info, "get", [Con_Int(vm, 1)])).v
-                #rn_ss = [type_check_string(vm, x).v for x in rn_os]
-                #print int_tree.pp(0, names=rn_ss, alts=alts)
                 n, _, _ = _int_tree_to_ptree(vm, alts, tok_os, rn_os, int_tree, src_file, src_off)
                 return n
 

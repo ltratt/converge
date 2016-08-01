@@ -128,7 +128,7 @@ class Tree:
 
 class Tree_Non_Term(Tree):
     __slots__ = ("s", "complete", "j", "i", "precedences", "families", "flattened")
-    _immutable_fields_ = ("t", "complete", "j", "i")
+    _immutable_fields_ = ("s", "t", "complete", "j", "i")
 
     def __init__(self, s, complete, j, i):
         self.s = s

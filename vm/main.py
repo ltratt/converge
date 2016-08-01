@@ -203,8 +203,8 @@ def _make_mode(vm_path, path, bc, verbosity, mk_fresh):
     if not cp or mk_fresh:
         return _do_make_mode(vm_path, path, None, verbosity, mk_fresh)
     else:
-		# There is a cached path, so now we try and load it and see if it is upto date. If any part
-		# of this fails, we simply go straight to full make mode.
+        # There is a cached path, so now we try and load it and see if it is upto date. If any part
+        # of this fails, we simply go straight to full make mode.
         try:
             st = os.stat(cp)
         except OSError:
@@ -223,10 +223,10 @@ def _make_mode(vm_path, path, bc, verbosity, mk_fresh):
 
 
 def _do_make_mode(vm_path, path, cp, verbosity, mk_fresh):
-	# Fire up convergec -m on progpath. We do this by creating a pipe, forking, getting the child
+    # Fire up convergec -m on progpath. We do this by creating a pipe, forking, getting the child
     # to output to the pipe (although note that we leave stdin and stdout unmolested on the child
-	# process, as user programs might want to print stuff to screen) and reading from that pipe
-	# to get the necessary bytecode.
+    # process, as user programs might want to print stuff to screen) and reading from that pipe
+    # to get the necessary bytecode.
 
     convergecp = _find_con_exec(vm_path, "convergec")
     if convergecp is None:
@@ -270,8 +270,8 @@ def _do_make_mode(vm_path, path, cp, verbosity, mk_fresh):
             break
         bc += r
 
-	# Now we've read all the data from the child convergec, we check its return status; if it
-	# returned something other than 0 then we return that value and do not continue.
+    # Now we've read all the data from the child convergec, we check its return status; if it
+    # returned something other than 0 then we return that value and do not continue.
 
     _, status = os.waitpid(pid, 0)
     if os.WIFEXITED(status):

@@ -259,7 +259,11 @@ def Parser_parse(vm):
 
     for i in range(len(tok_os) - 1, -1, -1):
         if len(E[i]) > 0:
-            vm.get_slot_apply(self, "error", [tok_os[i]])
+            if i == 0:
+                tok = tok_os[1]
+            else:
+                tok = tok_os[i]
+            vm.get_slot_apply(self, "error", [tok])
 
 
 #

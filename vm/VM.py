@@ -431,7 +431,7 @@ class VM(object):
 
 
     ################################################################################################
-    # The interepreter
+    # The interpreter
     #
 
     @jit.dont_look_inside

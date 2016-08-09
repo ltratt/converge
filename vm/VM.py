@@ -399,7 +399,7 @@ class VM(object):
 
     def get_mod_and_bc_off(self, i):
         cf = self.cur_cf
-        while i >= 0:
+        while i > 0:
             cf = cf.parent
             i -= 1
         mod = cf.pc.mod

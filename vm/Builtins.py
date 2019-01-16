@@ -421,7 +421,9 @@ class Con_Class(Con_Boxed_Object):
             # See http://tratt.net/laurie/tech_articles/articles/more_meta_matters for
             # more details about this algorithm.
             for sc in supers:
-                assert isinstance(sc, Con_Class)
+                if not isinstance(sc, Con_Class):
+                    vm.raise_helper("VM_Exception", [Con_String(vm, \
+                        "Can't inherit from an object that's not a direct instance of Class.")])
                 if new_func is None:
                     new_func = sc.new_func
                 elif new_func is not sc.new_func:
@@ -433,7 +435,8 @@ class Con_Class(Con_Boxed_Object):
                         new_func = sc.new_func
                     else:
                         # There's a clash between superclass's metaclasses.
-                        raise Exception("XXX")
+                        vm.raise_helper("VM_Exception", [Con_String(vm, \
+                            "Can't inherit from classes that instantiated different meta-classes.")])
         self.new_func = new_func
         
         self.supers = supers

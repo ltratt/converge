@@ -35,9 +35,9 @@ which pypy 2> /dev/null > /dev/null
 if [ $? -eq 0 ]; then
     PYTHON=`which pypy`
 elif [ $? -ne 0 ]; then
-    which python 2> /dev/null > /dev/null
+    which python2 2> /dev/null > /dev/null
     if [ $? -eq 0 ]; then
-        PYTHON=`which python`
+        PYTHON=`which python2`
     else
         echo "not found."
         exit 1

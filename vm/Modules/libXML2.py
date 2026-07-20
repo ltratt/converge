@@ -35,7 +35,8 @@ eci                        = ExternalCompilationInfo(includes=["libxml/parser.h"
                                libraries=Config.LIBXML2_LIBRARIES, \
                                link_extra=Config.LIBXML2_LINK_FLAGS, \
                                link_files=[Config.LIBXML2_A])
-xmlCharP                   = lltype.Ptr(lltype.Array(rffi.UCHAR, hints={'nolength': True}))
+xmlCharP                   = lltype.Ptr(lltype.Array(rffi.UCHAR, \
+                               hints={'nolength': True, 'render_as_const': True}))
 xmlCharPP                  = lltype.Ptr(lltype.Array(xmlCharP, hints={'nolength': True}))
 charactersSAXFunc          = lltype.FuncType((rffi.VOIDP, xmlCharP, rffi.INT), lltype.Void)
 charactersSAXFuncP         = lltype.Ptr(charactersSAXFunc)

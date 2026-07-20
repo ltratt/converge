@@ -46,6 +46,10 @@ class CConfig:
 cconfig = platform.configure(CConfig)
 
 PCREP                  = rffi.COpaquePtr("pcre")
+PCRE_EXTRAP            = rffi.COpaquePtr("pcre_extra")
+CONST_CCHARPP          = lltype.Ptr(lltype.Array(rffi.CONST_CCHARP, hints={'nolength': True}))
+CONST_UCHARP           = lltype.Ptr(lltype.Array(rffi.UCHAR, \
+                           hints={'nolength': True, 'render_as_const': True}))
 PCRE_DOTALL            = cconfig["PCRE_DOTALL"]
 PCRE_MULTILINE         = cconfig["PCRE_MULTILINE"]
 PCRE_INFO_CAPTURECOUNT = cconfig["PCRE_INFO_CAPTURECOUNT"]
@@ -53,11 +57,12 @@ PCRE_ANCHORED          = cconfig["PCRE_ANCHORED"]
 PCRE_ERROR_NOMATCH     = cconfig["PCRE_ERROR_NOMATCH"]
 
 pcre_compile = rffi.llexternal("pcre_compile", \
-  [rffi.CCHARP, rffi.INT, rffi.CCHARPP, rffi.INTP, rffi.VOIDP], PCREP, compilation_info=eci)
+  [rffi.CONST_CCHARP, rffi.INT, CONST_CCHARPP, rffi.INTP, CONST_UCHARP], PCREP, \
+  compilation_info=eci)
 pcre_fullinfo = rffi.llexternal("pcre_fullinfo", \
-  [PCREP, rffi.VOIDP, rffi.INT, rffi.INTP], rffi.INT, compilation_info=eci)
+  [PCREP, PCRE_EXTRAP, rffi.INT, rffi.VOIDP], rffi.INT, compilation_info=eci)
 pcre_exec = rffi.llexternal("pcre_exec", \
-  [PCREP, rffi.VOIDP, rffi.CCHARP, rffi.INT, rffi.INT, rffi.INT, rffi.INTP, rffi.INT], \
+  [PCREP, PCRE_EXTRAP, rffi.CONST_CCHARP, rffi.INT, rffi.INT, rffi.INT, rffi.INTP, rffi.INT], \
   rffi.INT, compilation_info=eci)
 
 
@@ -118,7 +123,8 @@ def _Pattern_match_search(vm, anchored):
         flags = 0
     sp = translate_idx_obj(vm, sp_o, len(s_o.v))
     with rffi.scoped_nonmovingbuffer(s_o.v) as rs:
-        r = int(pcre_exec(self.cp, None, rs, len(s_o.v), sp, flags, ovect, ovect_size))
+        r = int(pcre_exec(self.cp, lltype.nullptr(PCRE_EXTRAP.TO), \
+          rffi.cast(rffi.CONST_CCHARP, rs), len(s_o.v), sp, flags, ovect, ovect_size))
     if r < 0:
         if r == PCRE_ERROR_NOMATCH:
             lltype.free(ovect, flavor="raw")
@@ -150,10 +156,12 @@ def compile(vm):
     (pat,),_ = vm.decode_args("S")
     assert isinstance(pat, Con_String)
     
-    errptr = lltype.malloc(rffi.CCHARPP.TO, 1, flavor="raw")
+    errptr = lltype.malloc(CONST_CCHARPP.TO, 1, flavor="raw")
     erroff = lltype.malloc(rffi.INTP.TO, 1, flavor="raw")
     try:
-        cp = pcre_compile(pat.v, PCRE_DOTALL | PCRE_MULTILINE, errptr, erroff, None)
+        with rffi.scoped_str2charp(pat.v) as patp:
+            cp = pcre_compile(rffi.cast(rffi.CONST_CCHARP, patp), \
+              PCRE_DOTALL | PCRE_MULTILINE, errptr, erroff, lltype.nullptr(CONST_UCHARP.TO))
         if cp is None:
             raise Exception("XXX")
     finally:
@@ -161,7 +169,7 @@ def compile(vm):
         lltype.free(erroff, flavor="raw")
 
     with lltype.scoped_alloc(rffi.INTP.TO, 1) as num_capsp:
-        r = int(pcre_fullinfo(cp, None, PCRE_INFO_CAPTURECOUNT, num_capsp))
+        r = int(pcre_fullinfo(cp, lltype.nullptr(PCRE_EXTRAP.TO), PCRE_INFO_CAPTURECOUNT, num_capsp))
         if r != 0:
             raise Exception("XXX")
         num_caps = int(num_capsp[0])

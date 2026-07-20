@@ -8,7 +8,7 @@ The easiest way of obtaining PyPy's source is to check PyPy out from its
 Mercurial repository:
 
   $ cd <somewhere>
-  $ hg clone https://foss.heptapod.net/pypy/pypy
+  $ git clone --depth=1 https://github.com/pypy/pypy
   $ export PYPY_SRC=<somewhere>/pypy
 
 Once you have obtained PyPy and set the PYPY_SRC variable appropriately then,
